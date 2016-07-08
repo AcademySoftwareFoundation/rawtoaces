@@ -1,0 +1,17 @@
+include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
+
+add_library( Half ${DO_SHARED}
+	half.cpp
+)
+
+install ( FILES
+	eLut.h
+	half.h
+	halfExport.h
+	halfFunction.h
+	halfLimits.h
+	toFloat.h
+  DESTINATION include/RAWTOACES 
+)
+
+install( TARGETS Half DESTINATION lib )

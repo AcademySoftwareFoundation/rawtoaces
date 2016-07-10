@@ -10,7 +10,6 @@ set( RAWTOACES_VERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${R
 set( INSTALL_LIB_DIR lib CACHE PATH "Install directory for libraries" )
 set( INSTALL_BIN_DIR bin CACHE PATH "Install directory for executable binaries" )
 set( INSTALL_INCLUDE_DIR include CACHE PATH "Install directory for public header files" )
-set( INSTALL_DOC_DIR doc CACHE PATH "Install directory for documentation" )
 if( WIN32 AND NOT CYGWIN )
   set(DEF_INSTALL_CMAKE_DIR CMake)
 else()
@@ -65,7 +64,7 @@ if ( WIN32 AND NOT CYGWIN )
 endif ()
 
 # Add all targets to the build-tree export set
-export( TARGETS LibRaw AcesContainer Half FILE "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" )
+export( TARGETS Half libraw AcesContainer FILE "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" )
 export( PACKAGE RAWTOACES )
  
 # Create a RAWTOACESBuildTreeSettings.cmake file for the use from the build tree

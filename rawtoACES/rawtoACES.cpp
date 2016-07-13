@@ -31,15 +31,15 @@ it under the terms of the one of three licenses as you choose:
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#ifndef NO_ACESCONTAINER
-// #include <aces/aces_Writer.h>
 #include "aces_Writer.h"
+#ifdef WIN32
+#include "../lib/aces_container/aces_Writer.h"
 #endif
 
-#ifndef NO_OPENEXR
-// #include <OpenEXR/half.h>
 #include "half.h"
-#endif 
+#ifdef WIN32
+#include "../lib/half/half.h"
+#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -56,10 +56,12 @@ it under the terms of the one of three licenses as you choose:
 #include <sys/time.h>
 #endif
 
-#include "libraw.h"
 #ifdef WIN32
 #define snprintf _snprintf
 #include <windows.h>
+#include "../lib/libraw/libraw.h"
+#else
+#include "libraw.h"
 #endif
 
 

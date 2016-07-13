@@ -6,6 +6,19 @@ set( RAWTOACES_MINOR_VERSION 0 )
 set( RAWTOACES_PATCH_VERSION 0 )
 set( RAWTOACES_VERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${RAWTOACES_PATCH_VERSION} )
 
+set( CMAKE_MACOSX_RPATH 1 )
+
+if( MSVC )
+  if( CMAKE_CXX_FLAGS MATCHES "/W[0-4]" )
+     string(REGEX REPLACE "/W[0-4]" "/W0" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  else() 
+    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "/W0")
+  endif()
+#  elseif ( CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX )
+#  set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic" )
+endif ()
+
+
 ## Make install directories overrideable
 set( INSTALL_LIB_DIR lib CACHE PATH "Install directory for libraries" )
 set( INSTALL_BIN_DIR bin CACHE PATH "Install directory for executable binaries" )
@@ -22,7 +35,7 @@ SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
 # when building, don't use the install RPATH already
 # (but later on when installing)
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
-#SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+# SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 # add the automatically determined parts of the RPATH
 # which point to directories outside the build tree to the install RPATH
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
@@ -34,7 +47,7 @@ ENDIF("${isSystemDir}" STREQUAL "-1")
 
 
 ## convert install paths to absolute
-foreach( p LIB BIN INCLUDE CMAKE DOC)
+foreach( p LIB BIN INCLUDE CMAKE )
   set( var INSTALL_${p}_DIR )
   if( NOT IS_ABSOLUTE "${${var}}" )
     set( ${var} "${CMAKE_INSTALL_PREFIX}/${${var}}" )
@@ -60,11 +73,13 @@ include_directories( "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" )
 add_definitions( -DPACKAGE="RAWTOACES" -DVERSION="${RAWTOACES_VERSION}" )
 if ( WIN32 AND NOT CYGWIN )
 	add_subdirectory(lib)
-	add_subdirectories(rawtoACES)
 endif ()
+add_subdirectory(rawtoACES)
 
 # Add all targets to the build-tree export set
-export( TARGETS Half libraw AcesContainer FILE "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" )
+if ( WIN32 AND NOT CYGWIN )
+  export( TARGETS Half Raw AcesContainer FILE "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" )
+endif ()
 export( PACKAGE RAWTOACES )
  
 # Create a RAWTOACESBuildTreeSettings.cmake file for the use from the build tree
@@ -74,14 +89,14 @@ configure_file(config/RAWTOACESConfig.cmake.in "${PROJECT_BINARY_DIR}/RAWTOACESC
 configure_file(config/RAWTOACESConfigVersion.cmake.in "${PROJECT_BINARY_DIR}/RAWTOACESConfigVersion.cmake" @ONLY)
 
 if ( PKG_CONFIG_FOUND )
-configure_file(config/RAWTOACES.pc.in "${PROJECT_BINARY_DIR}/RAWTOACES.pc" @ONLY)
-install( FILES "${PROJECT_BINARY_DIR}/RAWTOACES.pc" DESTINATION lib/pkgconfig COMPONENT dev )
+  configure_file(config/RAWTOACES.pc.in "${PROJECT_BINARY_DIR}/RAWTOACES.pc" @ONLY)
+  install( FILES "${PROJECT_BINARY_DIR}/RAWTOACES.pc" DESTINATION lib/pkgconfig COMPONENT dev )
 endif()
 
 install( FILES
   "${PROJECT_BINARY_DIR}/RAWTOACESConfig.cmake"
   "${PROJECT_BINARY_DIR}/RAWTOACESConfigVersion.cmake"
   DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
-install(FILES "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" DESTINATION
-  "${INSTALL_CMAKE_DIR}" COMPONENT dev)
+install( FILES "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" DESTINATION
+  "${INSTALL_CMAKE_DIR}" COMPONENT dev )
 

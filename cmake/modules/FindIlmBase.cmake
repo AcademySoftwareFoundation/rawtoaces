@@ -60,6 +60,7 @@ foreach(ILMBASE_LIB ${IlmBase_ALL_LIBRARIES})
                NAMES ${ILMBASE_LIB} lib${ILMBASE_LIB}
                HINTS ${_IlmBase_HINT_LIB}
   )
+
   if(IlmBase_${_upper_ilmbase_lib}_LIBRARY)
     set(IlmBase_LIBRARY ${IlmBase_LIBRARY} ${IlmBase_${_upper_ilmbase_lib}_LIBRARY})
     mark_as_advanced(IlmBase_${_upper_ilmbase_lib}_LIBRARY)

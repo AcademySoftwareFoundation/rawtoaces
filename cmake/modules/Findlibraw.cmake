@@ -52,13 +52,21 @@ if(libraw_INCLUDE_DIR AND EXISTS "${libraw_INCLUDE_DIR}/libraw_version.h")
     endif()
 endif()
 
+find_library(RAW_LIBRARY
+             NAMES raw
+             HINTS ${_libraw_HINT_LIB}
+)
+
+if(RAW_LIBRARY)
+  set(libraw_LIBRARY ${RAW_LIBRARY})
+  mark_as_advanced(${RAW_LIBRARY})
+endif()
+
 unset(_libraw_HINT_INCLUDE)
 unset(_libraw_HINT_LIB)
 
-set(libraw_LIBRARY ${libraw_LIBRARY_DIRS} )
 set(libraw_LIBRARIES ${libraw_LIBRARY} )
 set(libraw_INCLUDE_DIRS ${libraw_INCLUDE_DIR} )
-# message ( STATUS "${libraw_LIBRARY_DIRS}")
 
 if(NOT PC_LIBRAW_FOUND)
 get_filename_component(libraw_LDFLAGS_OTHER ${libraw_LIBRARY} PATH)

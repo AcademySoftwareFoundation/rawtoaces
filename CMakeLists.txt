@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
 project( RAWTOACES )
-include(ExternalProject)
 
 set( RAWTOACES_MAJOR_VERSION 1 )
 set( RAWTOACES_MINOR_VERSION 0 )
@@ -64,17 +63,37 @@ else()
 endif()
 
 # Find packages and set up global settings
-if ( APPLE OR UNIX)
+if ( APPLE OR UNIX )
   include( configure.cmake )
-else ()
-ExternalProject_Add( project_aces_container
-  GIT_REPOSITORY https://github.com/miaoqi/aces_container.git
-  PREFIX ${CMAKE_CURRENT_BINARY_DIR}/aces_container
-  CONFIGURE_COMMAND ""
-)
 endif()
 
+# If none of the libraries are found, we can git-clone them and build them
 
+if ( NOT IlmBase_FOUND AND NOT AcesContainer_FOUND AND NOT libraw_FOUND )
+  include(ExternalProject)
+  set (ACES_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/aces_container")
+  ExternalProject_Add( project_aces_container
+    GIT_REPOSITORY https://github.com/miaoqi/aces_container.git
+    GIT_TAG "windowBuildSupport"
+
+    SOURCE_DIR "${ACES_EXTERNAL_BUILD}"
+    CONFIGURE_COMMAND mkdir "${ACES_EXTERNAL_BUILD}/build" && cd "${ACES_EXTERNAL_BUILD}/build"
+    BUILD_COMMAND cmake "${ACES_EXTERNAL_BUILD}" && make "${ACES_EXTERNAL_BUILD}/build"
+
+    CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_aces_container
+  )
+
+#ExternalProject_Add_Step(
+#  project_aces_container CopyToBin
+#  COMMAND ${CMAKE_COMMAND} -E copy_directory ${GLOBAL_OUTPUT_PATH}/project_aces_container/bin ${GLOBAL_OUTPUT_PATH}
+#  COMMAND ${CMAKE_COMMAND} -E copy_directory ${GLOBAL_OUTPUT_PATH}/project_aces_container/lib ${GLOBAL_OUTPUT_PATH}
+#  DEPENDEES install
+#)
+
+  set (IlmBase_FOUND TRUE)
+  set (AcesContainer_FOUND TRUE)
+  set (libraw_FOUND TRUE)
+endif()
 
 # generated config files end up in binary dir so to find them, need
 # to add to include path

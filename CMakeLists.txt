@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project( RAWTOACES )
+include(ExternalProject)
 
 set( RAWTOACES_MAJOR_VERSION 1 )
 set( RAWTOACES_MINOR_VERSION 0 )
@@ -63,7 +64,17 @@ else()
 endif()
 
 # Find packages and set up global settings
-include( configure.cmake )
+if ( APPLE OR UNIX)
+  include( configure.cmake )
+else ()
+ExternalProject_Add( project_aces_container
+  GIT_REPOSITORY https://github.com/miaoqi/aces_container.git
+  PREFIX ${CMAKE_CURRENT_BINARY_DIR}/aces_container
+  CONFIGURE_COMMAND ""
+)
+endif()
+
+
 
 # generated config files end up in binary dir so to find them, need
 # to add to include path

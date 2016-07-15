@@ -43,12 +43,13 @@ if(libraw_INCLUDE_DIR AND EXISTS "${libraw_INCLUDE_DIR}/libraw_version.h")
     set(libraw_VERSION ${PC_LIBRAW_VERSION})
 
     if("${libraw_VERSION}" STREQUAL "")
-      file(STRINGS "${libraw_INCLUDE_DIR}/libraw_version.h" LIBRAW_VERSION
-           REGEX "^#define[\t ]+LIBRAW_VERSION[\t ]+\".*")
+      file(STRINGS "${libraw_INCLUDE_DIR}/libraw_version.h" libraw_version_str
+           REGEX "^#define[\t ]+LIBRAW_VERSION_STR[\t ]+\".*")
 
       string(REGEX REPLACE "^#define[\t ]+LIBRAW_VERSION[\t ]+\"([^ \\n]*)\".*"
-             "\\1" libraw_VERSION "${LIBRAW_VERSION}")
-      unset(LIBRAW_VERSION)
+             "\\1" libraw_VERSION "${libraw_version_str}")
+      message (STATUS "${libraw_version_str}")
+      unset(libraw_version_str)
     endif()
 endif()
 

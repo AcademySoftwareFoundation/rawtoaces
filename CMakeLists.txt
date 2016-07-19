@@ -67,26 +67,28 @@ if ( APPLE OR UNIX )
   include( configure.cmake )
 endif()
 
-# If none of the libraries are found, we can git-clone each library and build it
-if ( NOT IlmBase_FOUND )
+# If Half libary is found, we can git-clone it and build it
+# if ( NOT IlmBase_FOUND )
   include(ExternalProject)
-  set (ilmbase_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/openexr/IlmBase/")
+  set (ilmbase_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/openexr")
   ExternalProject_Add( project_ilmbase
     GIT_REPOSITORY https://github.com/openexr/openexr.git
+    GIT_TAG "master"
 
     SOURCE_DIR "${ilmbase_EXTERNAL_BUILD}"
-    CONFIGURE_COMMAND cd ${ilmbase_EXTERNAL_BUILD} && "${ilmbase_EXTERNAL_BUILD}/bootstrap" && "${ilmbase_EXTERNAL_BUILD}/configure"
-    BUILD_COMMAND make && make install
+    CONFIGURE_COMMAND cd "${ilmbase_EXTERNAL_BUILD}/IlmBase" && "${ilmbase_EXTERNAL_BUILD}/IlmBase/bootstrap" 
+    BUILD_COMMAND "${ilmbase_EXTERNAL_BUILD}/IlmBase/configure" && make -s "${ilmbase_EXTERNAL_BUILD}/IlmBase"
 
-    CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_aces_container
+    CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_ilmbase
   )
 
   set (IlmBase_FOUND TRUE)
-endif()
+  set (AcesContainer_INCLUDE_DIRS "${ilmbase_EXTERNAL_BUILD}/IlmBase/Half")
+  set (AcesContainer_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_ilmbase-prefix/src/project_ilmbase-build/Half")
+# endif()
 
-# If none of the libraries are found, we can git-clone them and build them
-
-if ( NOT AcesContainer_FOUND )
+# If Aces_Container is not found, we can git-clone it and build it
+# if ( NOT AcesContainer_FOUND )
   include(ExternalProject)
   set (ACES_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/aces_container")
   ExternalProject_Add( project_aces_container
@@ -95,24 +97,18 @@ if ( NOT AcesContainer_FOUND )
 
     SOURCE_DIR "${ACES_EXTERNAL_BUILD}"
     CONFIGURE_COMMAND mkdir "${ACES_EXTERNAL_BUILD}/build" && cd "${ACES_EXTERNAL_BUILD}/build"
-    BUILD_COMMAND cmake "${ACES_EXTERNAL_BUILD}" && make "${ACES_EXTERNAL_BUILD}/build"
+    BUILD_COMMAND cmake "${ACES_EXTERNAL_BUILD}" && make -s "${ACES_EXTERNAL_BUILD}/build"
 
     CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_aces_container
   )
 
-#ExternalProject_Add_Step(
-#  project_aces_container CopyToBin
-#  COMMAND ${CMAKE_COMMAND} -E copy_directory ${GLOBAL_OUTPUT_PATH}/project_aces_container/bin ${GLOBAL_OUTPUT_PATH}
-#  COMMAND ${CMAKE_COMMAND} -E copy_directory ${GLOBAL_OUTPUT_PATH}/project_aces_container/lib ${GLOBAL_OUTPUT_PATH}
-#  DEPENDEES install
-#)
-
   set (AcesContainer_FOUND TRUE)
-endif()
+  set (AcesContainer_INCLUDE_DIRS "${ACES_EXTERNAL_BUILD}")
+  set (AcesContainer_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_aces_container-prefix/src/project_aces_container-build")
+# endif()
 
-# If none of the libraries are found, we can git-clone them and build them
-
-if ( NOT libraw_FOUND )
+# If libraw is not found, we can git-clone it and build it
+# if ( NOT libraw_FOUND )
   include(ExternalProject)
   set (libraw_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/libraw")
   ExternalProject_Add( project_libraw
@@ -120,14 +116,16 @@ if ( NOT libraw_FOUND )
     GIT_TAG "0.17-stable"
 
     SOURCE_DIR "${libraw_EXTERNAL_BUILD}"
-    CONFIGURE_COMMAND cd "${libraw_EXTERNAL_BUILD}" && "${libraw_EXTERNAL_BUILD}/mkdist.sh" && "${libraw_EXTERNAL_BUILD}/configure"
-    BUILD_COMMAND make && make install
+    CONFIGURE_COMMAND cd "${libraw_EXTERNAL_BUILD}" && "${libraw_EXTERNAL_BUILD}/mkdist.sh"
+    BUILD_COMMAND "${libraw_EXTERNAL_BUILD}/configure" && make -s "${libraw_EXTERNAL_BUILD}"
 
     CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_libraw
   )
 
   set (libraw_FOUND TRUE)
-endif()
+  set (libraw_INCLUDE_DIRS "${libraw_EXTERNAL_BUILD}/libraw")
+  set (libraw_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_libraw-prefix/src/project_libraw-build/lib/.libs")
+# endif()
 
 # generated config files end up in binary dir so to find them, need
 # to add to include path
@@ -136,8 +134,9 @@ include_directories( "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" )
 
 add_definitions( -DPACKAGE="RAWTOACES" -DVERSION="${RAWTOACES_VERSION}" )
 if ( WIN32 AND NOT CYGWIN )
-	add_subdirectory(lib)
-  add_subdirectory(rawtoACES)
+	# add_subdirectory(lib)
+  # add_subdirectory(rawtoACES)
+
 endif ()
 
 # Add all targets to the build-tree export set

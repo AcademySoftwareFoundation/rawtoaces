@@ -67,9 +67,26 @@ if ( APPLE OR UNIX )
   include( configure.cmake )
 endif()
 
+# If none of the libraries are found, we can git-clone each library and build it
+if ( NOT IlmBase_FOUND )
+  include(ExternalProject)
+  set (ilmbase_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/openexr/IlmBase/")
+  ExternalProject_Add( project_ilmbase
+    GIT_REPOSITORY https://github.com/openexr/openexr.git
+
+    SOURCE_DIR "${ilmbase_EXTERNAL_BUILD}"
+    CONFIGURE_COMMAND cd ${ilmbase_EXTERNAL_BUILD} && "${ilmbase_EXTERNAL_BUILD}/bootstrap" && "${ilmbase_EXTERNAL_BUILD}/configure"
+    BUILD_COMMAND make && make install
+
+    CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_aces_container
+  )
+
+  set (IlmBase_FOUND TRUE)
+endif()
+
 # If none of the libraries are found, we can git-clone them and build them
 
-if ( NOT IlmBase_FOUND AND NOT AcesContainer_FOUND AND NOT libraw_FOUND )
+if ( NOT AcesContainer_FOUND )
   include(ExternalProject)
   set (ACES_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/aces_container")
   ExternalProject_Add( project_aces_container
@@ -90,8 +107,25 @@ if ( NOT IlmBase_FOUND AND NOT AcesContainer_FOUND AND NOT libraw_FOUND )
 #  DEPENDEES install
 #)
 
-  set (IlmBase_FOUND TRUE)
   set (AcesContainer_FOUND TRUE)
+endif()
+
+# If none of the libraries are found, we can git-clone them and build them
+
+if ( NOT libraw_FOUND )
+  include(ExternalProject)
+  set (libraw_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/libraw")
+  ExternalProject_Add( project_libraw
+    GIT_REPOSITORY https://github.com/LibRaw/LibRaw.git
+    GIT_TAG "0.17-stable"
+
+    SOURCE_DIR "${libraw_EXTERNAL_BUILD}"
+    CONFIGURE_COMMAND cd "${libraw_EXTERNAL_BUILD}" && "${libraw_EXTERNAL_BUILD}/mkdist.sh" && "${libraw_EXTERNAL_BUILD}/configure"
+    BUILD_COMMAND make && make install
+
+    CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_libraw
+  )
+
   set (libraw_FOUND TRUE)
 endif()
 

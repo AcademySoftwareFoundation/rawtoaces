@@ -14,8 +14,8 @@ if( MSVC )
   else() 
     set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "/W0")
   endif()
-#  elseif ( CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX )
-#  set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic" )
+elseif ( CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX )
+    set (CMAKE_CXX_FLAGS “${CMAKE_CXX_FLAGS} -w”)
 endif ()
 
 
@@ -68,7 +68,7 @@ if ( APPLE OR UNIX )
 endif()
 
 # If Half libary is found, we can git-clone it and build it
-# if ( NOT IlmBase_FOUND )
+if ( NOT IlmBase_FOUND )
   include(ExternalProject)
   set (ilmbase_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/openexr")
   ExternalProject_Add( project_ilmbase
@@ -83,9 +83,9 @@ endif()
   )
 
   set (IlmBase_FOUND TRUE)
-  set (AcesContainer_INCLUDE_DIRS "${ilmbase_EXTERNAL_BUILD}/IlmBase/Half")
-  set (AcesContainer_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_ilmbase-prefix/src/project_ilmbase-build/Half")
-# endif()
+  set (IlmBase_INCLUDE_DIRS "${ilmbase_EXTERNAL_BUILD}/IlmBase/Half")
+  set (IlmBase_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_ilmbase-prefix/src/project_ilmbase-build/Half")
+endif()
 
 # If Aces_Container is not found, we can git-clone it and build it
 # if ( NOT AcesContainer_FOUND )
@@ -108,7 +108,7 @@ endif()
 # endif()
 
 # If libraw is not found, we can git-clone it and build it
-# if ( NOT libraw_FOUND )
+if ( NOT libraw_FOUND )
   include(ExternalProject)
   set (libraw_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/libraw")
   ExternalProject_Add( project_libraw
@@ -124,8 +124,8 @@ endif()
 
   set (libraw_FOUND TRUE)
   set (libraw_INCLUDE_DIRS "${libraw_EXTERNAL_BUILD}/libraw")
-  set (libraw_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_libraw-prefix/src/project_libraw-build/lib/.libs")
-# endif()
+  set (libraw_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_libraw-prefix/src/project_libraw-build/lib/.libs") 
+endif()
 
 # generated config files end up in binary dir so to find them, need
 # to add to include path
@@ -133,16 +133,13 @@ include_directories( "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" )
 # implement find library stuff...
 
 add_definitions( -DPACKAGE="RAWTOACES" -DVERSION="${RAWTOACES_VERSION}" )
-if ( WIN32 AND NOT CYGWIN )
-	# add_subdirectory(lib)
-  # add_subdirectory(rawtoACES)
-
-endif ()
 
 # Add all targets to the build-tree export set
-if ( WIN32 AND NOT CYGWIN )
-  export( TARGETS Half Raw AcesContainer FILE "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" )
-endif ()
+# if ( WIN32 AND NOT CYGWIN )
+#  export( TARGETS Half Raw AcesContainer FILE "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" )
+# install ( TARGETS Half Raw AcesContainer EXPORT HRA_targets )
+# install ( EXPORT HRA_targets FILE "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake") 
+# endif ()
 export( PACKAGE RAWTOACES )
  
 # Create a RAWTOACESBuildTreeSettings.cmake file for the use from the build tree
@@ -166,7 +163,7 @@ install( FILES "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" DESTINATION
 endif( )
 
 
-### to build rawtoaces
+### to build rawtoaces ###
 if ( AcesContainer_FOUND )
   add_definitions( -DHAVE_ACESFILE=1 )
   include_directories( ${AcesContainer_INCLUDE_DIRS} )
@@ -179,18 +176,23 @@ if ( libraw_FOUND )
   link_directories( ${libraw_LIBRARY_DIRS} )
 endif() 
 
-if ( WIN32 AND NOT CYGWIN )
-  include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/lib/half" "${PROJECT_SOURCE_DIR}/lib/libraw" "${PROJECT_SOURCE_DIR}/lib/aces_container" )
-endif ()
-
-include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" "${IlmBase_INCLUDE_DIRS}" "${libraw_INCLUDE_DIRS}" )
+include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" "${IlmBase_INCLUDE_DIRS}" "${AcesContainer_INCLUDE_DIRS}" "${libraw_INCLUDE_DIRS}" )
 
 add_executable( rawtoaces
   rawtoACES.cpp
 )
 
-target_link_libraries( rawtoaces ${IlmBase_LIBRARIES} )
-target_link_libraries( rawtoaces ${IlmBase_LDFLAGS_OTHER} )
+message (STATUS “${IlmBase_INCLUDE_DIRS}”)
+message (STATUS “${AcesContainer_LIBRARIES}”)
+message (STATUS “${libraw_LIBRARIES}”)
+message (STATUS “${PROJECT_SOURCE_DIR}”)
+message (STATUS “${PROJECT_BINARY_DIR}”)
+
+if ( IlmBase_FOUND )
+ target_link_libraries( rawtoaces ${IlmBase_LIBRARIES} )
+ target_link_libraries( rawtoaces ${IlmBase_LDFLAGS_OTHER} )
+endif()
+
 if ( AcesContainer_FOUND )
   target_link_libraries( rawtoaces ${AcesContainer_LIBRARIES} )
   target_link_libraries( rawtoaces ${AcesContainer_LDFLAGS_OTHER} )

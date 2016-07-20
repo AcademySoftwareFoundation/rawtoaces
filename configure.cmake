@@ -30,8 +30,8 @@ else()
   )
 
   set (IlmBase_FOUND TRUE)
-  set (AcesContainer_INCLUDE_DIRS "${ilmbase_EXTERNAL_BUILD}/IlmBase/Half")
-  set (AcesContainer_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_ilmbase-prefix/src/project_ilmbase-build/Half")
+  set (IlmBase_INCLUDE_DIRS "${ilmbase_EXTERNAL_BUILD}/IlmBase/Half")
+  set (IlmBase_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_ilmbase-prefix/src/project_ilmbase-build/Half")
 endif()
 
 find_package( AcesContainer QUIET )
@@ -83,4 +83,6 @@ else()
   )
 
   set (libraw_FOUND TRUE)
+  set (libraw_INCLUDE_DIRS "${libraw_EXTERNAL_BUILD}/libraw")
+  set (libraw_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_libraw-prefix/src/project_libraw-build/lib/.libs")
 endif()

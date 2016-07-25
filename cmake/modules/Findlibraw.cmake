@@ -66,8 +66,8 @@ endif()
 unset(_libraw_HINT_INCLUDE)
 unset(_libraw_HINT_LIB)
 
-set(libraw_LIBRARIES ${libraw_LIBRARY} )
-set(libraw_INCLUDE_DIRS ${libraw_INCLUDE_DIR} )
+set( libraw_LIBRARIES ${libraw_LIBRARY} )
+set( libraw_INCLUDE_DIRS ${libraw_INCLUDE_DIR} )
 
 if(NOT PC_LIBRAW_FOUND)
 get_filename_component(libraw_LDFLAGS_OTHER ${libraw_LIBRARY} PATH)

@@ -45,7 +45,6 @@ IF("${isSystemDir}" STREQUAL "-1")
   SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 ENDIF("${isSystemDir}" STREQUAL "-1")
 
-
 ## convert install paths to absolute
 foreach( p LIB BIN INCLUDE CMAKE )
   set( var INSTALL_${p}_DIR )
@@ -67,19 +66,20 @@ if ( APPLE OR UNIX )
   include( configure.cmake )
 endif()
 
+include(ExternalProject)
 # If Half libary is found, we can git-clone it and build it
 if ( NOT IlmBase_FOUND )
-  include(ExternalProject)
   set (ilmbase_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/openexr")
   ExternalProject_Add( project_ilmbase
     GIT_REPOSITORY https://github.com/openexr/openexr.git
-    GIT_TAG "master"
+    #GIT_TAG "master"
 
-    SOURCE_DIR "${ilmbase_EXTERNAL_BUILD}"
-    CONFIGURE_COMMAND cd "${ilmbase_EXTERNAL_BUILD}/IlmBase" && "${ilmbase_EXTERNAL_BUILD}/IlmBase/bootstrap" 
-    BUILD_COMMAND "${ilmbase_EXTERNAL_BUILD}/IlmBase/configure" && make -s "${ilmbase_EXTERNAL_BUILD}/IlmBase"
-
-    CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_ilmbase
+    if ( NOT WIN32 OR NOT CYGWIN )
+      SOURCE_DIR "${ilmbase_EXTERNAL_BUILD}"
+      CONFIGURE_COMMAND cd "${ilmbase_EXTERNAL_BUILD}/IlmBase" && "${ilmbase_EXTERNAL_BUILD}/IlmBase/bootstrap" 
+      BUILD_COMMAND "${ilmbase_EXTERNAL_BUILD}/IlmBase/configure" && make -s "${ilmbase_EXTERNAL_BUILD}/IlmBase"
+      CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_ilmbase
+    endif()
   )
 
   set (IlmBase_FOUND TRUE)
@@ -88,24 +88,39 @@ if ( NOT IlmBase_FOUND )
 endif()
 
 # If Aces_Container is not found, we can git-clone it and build it
-# if ( NOT AcesContainer_FOUND )
-  include(ExternalProject)
+if ( NOT AcesContainer_FOUND )
   set (ACES_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/aces_container")
-  ExternalProject_Add( project_aces_container
-    GIT_REPOSITORY https://github.com/miaoqi/aces_container.git
-    GIT_TAG "windowBuildSupport"
+  if (WIN32)
+  	STRING(REGEX REPLACE "\\\\" "/" ACES_EXTERNAL_BUILD ${ACES_EXTERNAL_BUILD})
 
-    SOURCE_DIR "${ACES_EXTERNAL_BUILD}"
-    CONFIGURE_COMMAND mkdir "${ACES_EXTERNAL_BUILD}/build" && cd "${ACES_EXTERNAL_BUILD}/build"
-    BUILD_COMMAND cmake "${ACES_EXTERNAL_BUILD}" && make -s "${ACES_EXTERNAL_BUILD}/build"
+ 	ExternalProject_Add( project_aces_container
+    	GIT_REPOSITORY https://github.com/miaoqi/aces_container.git
+    	# windowBuildSupport
+    	GIT_TAG "master"
 
-    CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_aces_container
-  )
+        SOURCE_DIR ${ACES_EXTERNAL_BUILD}
+    	CMAKE_GENERATOR "Visual Studio 14 2015"
+    	CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_aces_container
+   	)
+  else ()
+   	ExternalProject_Add( project_aces_container
+    	GIT_REPOSITORY https://github.com/miaoqi/aces_container.git
+    	# windowBuildSupport
+    	GIT_TAG "master"
+
+        SOURCE_DIR ${ACES_EXTERNAL_BUILD}
+        #CONFIGURE_COMMAND mkdir ${ACES_EXTERNAL_BUILD}/build && cd ${ACES_EXTERNAL_BUILD}/build
+        #BUILD_COMMAND cmake "${ACES_EXTERNAL_BUILD}" && make -s "${ACES_EXTERNAL_BUILD}/build"
+        CMAKE_COMMAND "${ACES_EXTERNAL_BUILD}/CMakeLists.txt"
+        BUILD_COMMAND make -s "${ACES_EXTERNAL_BUILD}/build"
+        CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_aces_container
+    )
+  endif ()
 
   set (AcesContainer_FOUND TRUE)
   set (AcesContainer_INCLUDE_DIRS "${ACES_EXTERNAL_BUILD}")
   set (AcesContainer_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_aces_container-prefix/src/project_aces_container-build")
-# endif()
+endif()
 
 # If libraw is not found, we can git-clone it and build it
 if ( NOT libraw_FOUND )
@@ -113,13 +128,14 @@ if ( NOT libraw_FOUND )
   set (libraw_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/libraw")
   ExternalProject_Add( project_libraw
     GIT_REPOSITORY https://github.com/LibRaw/LibRaw.git
-    GIT_TAG "0.17-stable"
+    #GIT_TAG "0.17-stable"
 
-    SOURCE_DIR "${libraw_EXTERNAL_BUILD}"
-    CONFIGURE_COMMAND cd "${libraw_EXTERNAL_BUILD}" && "${libraw_EXTERNAL_BUILD}/mkdist.sh"
-    BUILD_COMMAND "${libraw_EXTERNAL_BUILD}/configure" && make -s "${libraw_EXTERNAL_BUILD}"
-
-    CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_libraw
+   if ( NOT WIN32 OR NOT CYGWIN )
+      SOURCE_DIR "${libraw_EXTERNAL_BUILD}"
+      CONFIGURE_COMMAND cd "${libraw_EXTERNAL_BUILD}" && "${libraw_EXTERNAL_BUILD}/mkdist.sh"
+      BUILD_COMMAND "${libraw_EXTERNAL_BUILD}/configure" && make -s "${libraw_EXTERNAL_BUILD}"
+      CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_libraw
+    endif()
   )
 
   set (libraw_FOUND TRUE)
@@ -181,12 +197,6 @@ include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" "${IlmBase_INCLUDE_DIRS}" "${
 add_executable( rawtoaces
   rawtoACES.cpp
 )
-
-message (STATUS “${IlmBase_INCLUDE_DIRS}”)
-message (STATUS “${AcesContainer_LIBRARIES}”)
-message (STATUS “${libraw_LIBRARIES}”)
-message (STATUS “${PROJECT_SOURCE_DIR}”)
-message (STATUS “${PROJECT_BINARY_DIR}”)
 
 if ( IlmBase_FOUND )
  target_link_libraries( rawtoaces ${IlmBase_LIBRARIES} )

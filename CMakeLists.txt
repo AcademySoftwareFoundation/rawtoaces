@@ -93,7 +93,7 @@ if ( NOT AcesContainer_FOUND )
   if (WIN32)
   	STRING(REGEX REPLACE "\\\\" "/" ACES_EXTERNAL_BUILD ${ACES_EXTERNAL_BUILD})
 
- 	ExternalProject_Add( project_aces_container
+ 	  ExternalProject_Add( project_aces_container
     	GIT_REPOSITORY https://github.com/miaoqi/aces_container.git
     	# windowBuildSupport
     	GIT_TAG "master"
@@ -109,10 +109,8 @@ if ( NOT AcesContainer_FOUND )
     	GIT_TAG "master"
 
         SOURCE_DIR ${ACES_EXTERNAL_BUILD}
-        #CONFIGURE_COMMAND mkdir ${ACES_EXTERNAL_BUILD}/build && cd ${ACES_EXTERNAL_BUILD}/build
-        #BUILD_COMMAND cmake "${ACES_EXTERNAL_BUILD}" && make -s "${ACES_EXTERNAL_BUILD}/build"
-        CMAKE_COMMAND "${ACES_EXTERNAL_BUILD}/CMakeLists.txt"
-        BUILD_COMMAND make -s "${ACES_EXTERNAL_BUILD}/build"
+        CONFIGURE_COMMAND mkdir ${ACES_EXTERNAL_BUILD}/build && cd ${ACES_EXTERNAL_BUILD}/build
+        BUILD_COMMAND cmake "${ACES_EXTERNAL_BUILD}" && make -s "${ACES_EXTERNAL_BUILD}/build"
         CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_aces_container
     )
   endif ()

@@ -32,14 +32,14 @@ it under the terms of the one of three licenses as you choose:
 #endif
 
 #include "aces_Writer.h"
-#ifdef WIN32
-#include "../lib/aces_container/aces_Writer.h"
-#endif
+// #ifdef WIN32
+// #include "../lib/aces_container/aces_Writer.h"
+// #endif
 
 #include "half.h"
-#ifdef WIN32
-#include "../lib/half/half.h"
-#endif
+// #ifdef WIN32
+// #include "../lib/half/half.h"
+// #endif
 
 #include <stdio.h>
 #include <string.h>
@@ -56,10 +56,10 @@ it under the terms of the one of three licenses as you choose:
 #include <sys/time.h>
 #endif
 
+#include "libraw.h"
 #ifdef WIN32
 #define snprintf _snprintf
 #include <windows.h>
-#include "../lib/libraw/libraw.h"
 #else
 #include "libraw.h"
 #endif

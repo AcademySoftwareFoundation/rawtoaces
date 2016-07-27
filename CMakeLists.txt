@@ -14,8 +14,6 @@ if( MSVC )
   else() 
     set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "/W0")
   endif()
-elseif ( CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX )
-    set (CMAKE_CXX_FLAGS “${CMAKE_CXX_FLAGS} -w”)
 endif ()
 
 
@@ -67,7 +65,7 @@ if ( APPLE OR UNIX )
 endif()
 
 include(ExternalProject)
-if ( NOT IlmBase_FOUND )
+# if ( NOT IlmBase_FOUND )
   set (openexr_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/openexr")
   set (ilmbase_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/openexr/IlmBase")
 
@@ -102,9 +100,9 @@ if ( NOT IlmBase_FOUND )
 
   set (IlmBase_FOUND TRUE)
   set (IlmBase_INCLUDE_DIRS "${ilmbase_EXTERNAL_BUILD}/IlmBase/Half")
-endif()
+# endif()
 
-if ( NOT AcesContainer_FOUND )
+# if ( NOT AcesContainer_FOUND )
   set (ACES_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/aces_container")
   if (WIN32)
   	STRING(REGEX REPLACE "\\\\" "/" ACES_EXTERNAL_BUILD ${ACES_EXTERNAL_BUILD})
@@ -134,7 +132,7 @@ if ( NOT AcesContainer_FOUND )
 
   set (AcesContainer_FOUND TRUE)
   set (AcesContainer_INCLUDE_DIRS "${ACES_EXTERNAL_BUILD}")
-endif()
+# endif()
 
 # if ( NOT libraw_FOUND )
   include(ExternalProject)
@@ -165,6 +163,7 @@ endif()
 
   set (libraw_FOUND TRUE)
   set (libraw_INCLUDE_DIRS "${libraw_EXTERNAL_BUILD}/libraw")
+
 # endif()
 
 # generated config files end up in binary dir so to find them, need
@@ -205,11 +204,11 @@ endif( )
 
 ### to build rawtoaces ###
 
-if ( IlmBase_FOUND )
-  add_definitions( -DHAVE_IlmBase=1 )
+#if ( IlmBase_FOUND )
+  #add_definitions( -DHAVE_IlmBase=1 )
   #include_directories( ${IlmBase_INCLUDE_DIRS} )
   #link_directories( {$IlmBase_LIBRARY_DIRS} )
-endif()
+#endif()
 
 if ( AcesContainer_FOUND )
   add_definitions( -DHAVE_ACESFILE=1 )

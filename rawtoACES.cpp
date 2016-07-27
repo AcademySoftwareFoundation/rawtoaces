@@ -21,25 +21,25 @@ it under the terms of the one of three licenses as you choose:
 
  */
 
+
 // # C++ 11:201103L, C++ 97:199711L
 #define null_ptr (__cplusplus > 201103L ? (nullptr) : 0)
 #define INV_255 (1.0/(double) 255.0)
 #define INV_65535 (1.0/(double) 65535.0)
 
+
+#ifndef NO_ACESCONTAINER
+#include <aces/aces_Writer.h>
+#endif
+
+#ifndef NO_OPENEXR
+#include <OpenEXR/half.h>
+#endif
+
 #ifdef WIN32
 // suppress sprintf-related warning. sprintf() is permitted in sample code
 #define _CRT_SECURE_NO_WARNINGS
 #endif
-
-#include "aces_Writer.h"
-// #ifdef WIN32
-// #include "../lib/aces_container/aces_Writer.h"
-// #endif
-
-#include "half.h"
-// #ifdef WIN32
-// #include "../lib/half/half.h"
-// #endif
 
 #include <stdio.h>
 #include <string.h>
@@ -56,12 +56,10 @@ it under the terms of the one of three licenses as you choose:
 #include <sys/time.h>
 #endif
 
-#include "libraw.h"
+#include <libraw/libraw.h>
 #ifdef WIN32
 #define snprintf _snprintf
 #include <windows.h>
-#else
-#include "libraw.h"
 #endif
 
 
@@ -356,7 +354,7 @@ int main(int argc, char *argv[])
 #endif
 
 #define OUT RawProcessor.imgdata.params
-    // OUT.use_camera_matrix = 3 * (opm == '+');
+    OUT.use_camera_matrix = 3 * (opm == '+');
     OUT.output_color      = 5;
     OUT.use_camera_wb     = 1;
     OUT.gamm[0]           = 1;

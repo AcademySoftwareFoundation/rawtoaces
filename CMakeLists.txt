@@ -94,12 +94,12 @@ include(ExternalProject)
       	BUILD_COMMAND cmake "${ilmbase_EXTERNAL_BUILD}" && make -s "${ilmbase_EXTERNAL_BUILD}/build"
     )
 
-       set (IlmBase_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_ilmbase-prefix/src/project_ilmbase-build/Half")
+      # set (IlmBase_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_ilmbase-prefix/src/project_ilmbase-build/Half")
 
   endif ()
 
   set (IlmBase_FOUND TRUE)
-  set (IlmBase_INCLUDE_DIRS "${ilmbase_EXTERNAL_BUILD}/IlmBase/Half")
+  # set (IlmBase_INCLUDE_DIRS "${ilmbase_EXTERNAL_BUILD}/IlmBase/Half")
 # endif()
 
 # if ( NOT AcesContainer_FOUND )
@@ -111,8 +111,8 @@ include(ExternalProject)
     	GIT_REPOSITORY https://github.com/miaoqi/aces_container.git
     	GIT_TAG "origin/windowBuildSupport"
 
-        SOURCE_DIR ${ACES_EXTERNAL_BUILD}
-        CMAKE_ARGS -DBuildShared=OFF -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_aces_container
+      SOURCE_DIR ${ACES_EXTERNAL_BUILD}
+      CMAKE_ARGS -DBuildShared=OFF -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_aces_container
     	CMAKE_GENERATOR "Visual Studio 14 2015"
    	)
   else ()
@@ -126,12 +126,12 @@ include(ExternalProject)
         BUILD_COMMAND cmake "${ACES_EXTERNAL_BUILD}" && make -s "${ACES_EXTERNAL_BUILD}/build"
 
     )
-    set (AcesContainer_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_aces_container-prefix/src/project_aces_container-build")
+    # set (AcesContainer_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_aces_container-prefix/src/project_aces_container-build")
     
   endif ()
 
   set (AcesContainer_FOUND TRUE)
-  set (AcesContainer_INCLUDE_DIRS "${ACES_EXTERNAL_BUILD}")
+  # set (AcesContainer_INCLUDE_DIRS "${ACES_EXTERNAL_BUILD}")
 # endif()
 
 # if ( NOT libraw_FOUND )
@@ -154,15 +154,14 @@ include(ExternalProject)
       	SOURCE_DIR "${libraw_EXTERNAL_BUILD}"
       	CONFIGURE_COMMAND cd "${libraw_EXTERNAL_BUILD}" && "${libraw_EXTERNAL_BUILD}/mkdist.sh"
       	BUILD_COMMAND "${libraw_EXTERNAL_BUILD}/configure" && make -s "${libraw_EXTERNAL_BUILD}"
-      	CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_libraw
     )
 
-    set (libraw_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_libraw-prefix/src/project_libraw-build/lib/.libs") 
+    # set (libraw_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_libraw-prefix/src/project_libraw-build/lib/.libs") 
 
   endif()
 
   set (libraw_FOUND TRUE)
-  set (libraw_INCLUDE_DIRS "${libraw_EXTERNAL_BUILD}/libraw")
+  # set (libraw_INCLUDE_DIRS "${libraw_EXTERNAL_BUILD}/libraw")
 
 # endif()
 

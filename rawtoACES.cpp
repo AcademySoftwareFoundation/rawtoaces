@@ -27,7 +27,6 @@ it under the terms of the one of three licenses as you choose:
 #define INV_255 (1.0/(double) 255.0)
 #define INV_65535 (1.0/(double) 65535.0)
 
-
 #ifndef NO_ACESCONTAINER
 #include <aces/aces_Writer.h>
 #endif
@@ -41,6 +40,8 @@ it under the terms of the one of three licenses as you choose:
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+#include <valarray>
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -62,15 +63,21 @@ it under the terms of the one of three licenses as you choose:
 #include <windows.h>
 #endif
 
+using namespace std;
 
-static const double acesrgb_XYZ_3[3][3] ={
+static const double XYZ_sRGB_3[3][3] = {
+    { 0.4124564,  0.3575761,  0.1804375 },
+    { 0.2126729,  0.7151522,  0.0721750 },
+    { 0.0193339,  0.1191920,  0.9503041 }
+};
+
+static const double acesrgb_XYZ_3[3][3] = {
     { 1.0634731317028,      0.00639793641966071,   -0.0157891874506841 },
     { -0.492082784686793,   1.36823709310019,      0.0913444629573544 },
     { -0.0028137154424595,  0.00463991165243123,   0.91649468506889 }
 };
 
-
-static const double acesrgb_XYZ_4[4][4] ={
+static const double acesrgb_XYZ_4[4][4] = {
     { 1.0634731317028,      0.00639793641966071,   -0.0157891874506841,     0.0 },
     { -0.492082784686793,   1.36823709310019,      0.0913444629573544,      0.0 },
     { -0.0028137154424595,  0.00463991165243123,   0.91649468506889,        0.0 },
@@ -78,12 +85,413 @@ static const double acesrgb_XYZ_4[4][4] ={
 
 };
 
+static const float chromaticitiesACES[4][2] = {
+    { 0.73470f,     0.26530f },
+    { 0.00000f,     1.00000f },
+    { 0.00010f,     -0.07700f},
+    { 0.32168f,     0.33767f }
+};
 
-float * convert_to_aces(libraw_processed_image_t *image)
+static const float deviceWhite[3] = {1.0, 1.0, 1.0};
+
+// Beginning -- For DNG chromatic adoption matrix calculations //
+#define sign(x)		((x) > 0 ? 1 : ( (x) < 0 ? (0-1) : 0))
+#define itemsIn(a)	(sizeof(a) / sizeof((a)[0]))
+
+valarray<float>  cameraCalibration1DNG = valarray<float>(1.0f, 9);
+valarray<float>  cameraCalibration2DNG = valarray<float>(1.0f, 9);
+valarray<float>  cameraToXYZMtx        = valarray<float>(1.0f, 9);
+valarray<float>  xyz2rgbMatrix1DNG     = valarray<float>(1.0f, 9);
+valarray<float>  xyz2rgbMatrix2DNG     = valarray<float>(1.0f, 9);
+valarray<float>  analogBalanceDNG      = valarray<float>(1.0f, 3);
+valarray<float>  neutralRGBDNG         = valarray<float>(1.0f, 3);
+valarray<float>  cameraXYZWhitePoint   = valarray<float>(1.0f, 3);
+valarray<float>  calibrateIllum        = valarray<float>(1.0f, 2);
+
+template<class T>
+void printValarray (const valarray<T>&va, string s, int num)
+{
+    assert (num <= va.size());
+    printf("%s:", s.c_str());
+    for (int i=0; i<num; i++) {
+        printf("%f ", va[i]);
+    }
+    printf(";\n");
+    return;
+}
+
+static const float RobertsonMired[] = {1.0e-10f,10.0f,20.0f,30.0f,40.0f,50.0f,60.0f,70.0f,80.0f,90.0f,100.0f,
+    125.0f,150.0f,175.0f,200.0f,225.0f,250.0f,275.0f,300.0f,325.0f,350.0f,375.0f,400.0f,425.0f,450.0f,475.0f,500.0f,525.0f,550.0f,575.0f,600.0f};
+
+valarray<float> matrixBradford( )
+{
+    float CBradford[] = {
+        0.8951f,  0.2664f,  -0.1614f,
+        -0.7502f, 1.7135f,  0.0367f,
+        0.0389f,  -0.0685f, 1.0296f
+    };
+    
+    return valarray<float>(CBradford, 9);
+};
+
+static const float Robertson_uvtTable[][3] = {
+    { 0.18006f, 0.26352f, -0.24341f},
+    { 0.18066f, 0.26589f, -0.25479f},
+    { 0.18133f, 0.26846f, -0.26876f},
+    { 0.18208f, 0.27119f, -0.28539f},
+    { 0.18293f, 0.27407f, -0.3047f},
+    { 0.18388f, 0.27709f, -0.32675f},
+    { 0.18494f, 0.28021f, -0.35156f},
+    { 0.18611f, 0.28342f, -0.37915f},
+    { 0.18740f, 0.28668f, -0.40955f},
+    { 0.18880f, 0.28997f, -0.44278f},
+    { 0.19032f, 0.29326f, -0.47888f},
+    { 0.19462f, 0.30141f, -0.58204f},
+    { 0.19962f, 0.30921f, -0.70471f},
+    { 0.20525f, 0.31647f, -0.84901f},
+    { 0.21142f, 0.32312f, -1.0182f},
+    { 0.21807f, 0.32909f, -1.2168f},
+    { 0.22511f, 0.33439f, -1.4512f},
+    { 0.23247f, 0.33904f, -1.7298f},
+    { 0.24010f, 0.34308f, -2.0637f},
+    { 0.24792f, 0.34655f, -2.4681f},
+    { 0.25591f, 0.34951f, -2.9641f},
+    { 0.26400f, 0.35200f, -3.5814f},
+    { 0.27218f, 0.35407f, -4.3633f},
+    { 0.28039f, 0.35577f, -5.3762f},
+    { 0.28863f, 0.35714f, -6.7262f},
+    { 0.29685f, 0.35823f, -8.5955f},
+    { 0.30505f, 0.35907f, -11.324f},
+    { 0.31320f, 0.35968f, -15.628f},
+    { 0.32129f, 0.36011f, -23.325f},
+    { 0.32931f, 0.36038f, -40.77f},
+    { 0.33724f, 0.36051f, -116.45f}
+};
+
+valarray<float> multiplyMatrix (valarray <float> mtxA, valarray <float> mtxB, size_t K=3)
+{
+    size_t rows = mtxA.size()/K;
+    size_t cols = mtxB.size()/K;
+    
+    assert (rows * K == (size_t)mtxA.size());
+    assert (K * cols == (size_t)mtxB.size());
+    
+    valarray<float> mtxC(rows * cols);
+    float * pA = &mtxA[0];
+    float * pB = &mtxB[0];
+    float * pC = &mtxC[0];
+    
+    for (size_t r = 0; r < rows; r++) {
+        for (size_t cArB = 0; cArB < K; cArB++) {
+            for (size_t c = 0; c < cols; c++) {
+                pC[r * cols + c] += pA[r * K + cArB] * pB[cArB * cols + c];
+            }
+        }
+    }
+    
+    return mtxC;
+};
+
+valarray<float> invertMatrix (const valarray<float> &mtx)
+{
+    assert ( mtx.size() == 9 );
+    
+    float CinvMtx[] = {
+        - mtx[5] * mtx[7] + mtx[4] * mtx[8],
+        + mtx[2] * mtx[7] - mtx[1] * mtx[8],
+        - mtx[2] * mtx[4] + mtx[1] * mtx[5],
+        + mtx[5] * mtx[6] - mtx[3] * mtx[8],
+        - mtx[2] * mtx[6] + mtx[0] * mtx[8],
+        + mtx[2] * mtx[3] - mtx[0] * mtx[5],
+        - mtx[4] * mtx[6] + mtx[3] * mtx[7],
+        + mtx[1] * mtx[6] - mtx[0] * mtx[7],
+        - mtx[1] * mtx[3] + mtx[0] * mtx[4]
+    };
+    
+    valarray<float> invMtx(CinvMtx, mtx.size());
+    
+    float det = mtx[0] * invMtx[0] + mtx[1] * invMtx[3] + mtx[2] * invMtx[6];
+    assert ( det != 0 );
+    invMtx /= det;			// divide requires valarray
+    
+    return invMtx;
+};
+
+valarray<float> diagonalMatrix (const valarray<float> &vectorA)
+{
+    size_t length = vectorA.size();
+    
+    valarray<float> diagonal(0.0f, length * length);
+    
+    for (size_t rmtxA = 0; rmtxA < length; rmtxA++) {
+        diagonal[rmtxA * length + rmtxA] = vectorA [rmtxA];
+    }
+    
+    return diagonal;
+};
+
+valarray<float> xyToXYZ (const valarray<float> &xy)
+{
+    valarray<float> XYZ(3);
+    XYZ[0] = xy[0];
+    XYZ[1] = xy[1];
+    XYZ[2] = 1 - xy[0] - xy[1];
+    
+    return XYZ;
+};
+
+valarray<float> uvToxy (const valarray<float> &uv)
+{
+    float xyS[] ={3.0f, 2.0f};
+    valarray<float> xyScale (xyS, 2);
+    
+    return (xyScale * uv) / (2 * uv [0] - 8 * uv[1] + 4);
+};
+
+valarray<float> uvToXYZ (const valarray<float> &uv)
+{
+    return xyToXYZ(uvToxy (uv) );
+};
+
+void prepareMatrices()
+{
+    if (cameraCalibration1DNG.size() != 0 ) {
+        xyz2rgbMatrix1DNG = multiplyMatrix (cameraCalibration1DNG, xyz2rgbMatrix1DNG, 3);
+    }
+    if (cameraCalibration2DNG.size() != 0 ) {
+        xyz2rgbMatrix2DNG = multiplyMatrix (cameraCalibration2DNG, xyz2rgbMatrix2DNG, 3);
+    }
+    if (analogBalanceDNG.size() != 0 ) {
+        xyz2rgbMatrix1DNG = multiplyMatrix(diagonalMatrix(analogBalanceDNG), xyz2rgbMatrix1DNG, 3);
+        xyz2rgbMatrix2DNG = multiplyMatrix(diagonalMatrix(analogBalanceDNG), xyz2rgbMatrix2DNG, 3);
+    }
+};
+
+valarray<float> XYZtoCameraWeightedMatrix(const float &mir,
+                                          const float &mir1,
+                                          const float &mir2)
+{
+    float weight = max(0.0f, min(1.0f, (mir1 - mir)/(mir1 - mir2)));
+    return xyz2rgbMatrix1DNG+weight*(xyz2rgbMatrix2DNG-xyz2rgbMatrix1DNG);
+};
+
+float cross(const valarray <float> &vectorA, const valarray <float> &vectorB)
+{
+    assert (vectorA.size() == 2 && vectorB.size() == 2 );
+    return vectorA[0] * vectorB[1] - vectorA[1] * vectorB[0];
+};
+
+float cctToMired(float cct)
+{
+    return 1.0e6f/cct;
+};
+
+float RobertsonDistance(const valarray <float> &uv, const float* uvt)
+{
+    float t = uvt[2];
+    valarray<float> slope(2);
+    slope[0] = - sign(t) / sqrt( 1 + t * t );
+    slope[1] = t * slope[0];
+    
+    valarray<float> uvR( uvt, 2 );
+    return cross(slope, uv - uvR ) ;
+};
+
+valarray<float> colorTemperatureToXYZ (const float cct)
+{
+    
+    float mired = 1.0e6f/cct;
+    valarray<float> uv(2);
+    int Nrobert=(int)itemsIn(Robertson_uvtTable);
+    int i;
+    
+    for (i = 0; i < Nrobert; i++) {
+        if (RobertsonMired [i] >= mired)
+            break;
+    }
+    if (i <= 0)
+        uv = valarray <float> (Robertson_uvtTable [0], 2);
+    else if (i >= Nrobert)
+        uv = valarray <float> (Robertson_uvtTable [Nrobert - 1], 2);
+    else {
+        float weight = (mired - RobertsonMired [i-1]) / (RobertsonMired [i] - RobertsonMired [i-1]);
+        uv = weight * valarray <float>(Robertson_uvtTable[i], 2) + (1 - weight) * valarray<float> ( Robertson_uvtTable[i-1], 2);
+    }
+    
+    return uvToXYZ(uv);
+};
+
+valarray<float> XYZTouv(const valarray<float> &XYZ )
+{
+    float uvS[] = {4.0f, 6.0f};
+    valarray <float> uvScale(uvS, 2);
+    return (uvScale * XYZ[slice(0,2,1)])/(XYZ[0] + 15 * XYZ[1] + 3 * XYZ[2]) ;
+};
+
+float lightSourceToColorTemp(const unsigned short tag)
+{
+    if(tag >= 32768)
+        return (static_cast<float>(tag))-32768.0f;
+    
+    uint16_t LightSourceEXIFTagValues[][2] = {
+        { 0,	5500},	//	"Unidentified"
+        { 1,	5500},	//	"Daylight"
+        { 2,	3500},	//	"Fluorescent light"
+        { 3,	3400},	//	"Tungsten Lamp"
+        {10,	5550},	//	"Flash"
+        {17,	2856},	//	"Standard Illuminant A"
+        {18,	4874},	//	"Standard Illuminant B"
+        {19,	6774},	//	"Standard Illuminant C"
+        {20,	5500},	//	"D55 Illuminant"
+        {21,	6500},	//	"D65 Illuminant"
+        {22,	7500}	//  "D75 Illuminant"
+    };
+    
+    for (uint16_t i = 0; i < uint16_t(itemsIn(LightSourceEXIFTagValues)); i++) {
+        if (LightSourceEXIFTagValues[i][0] == (uint16_t)tag){
+            return (float)LightSourceEXIFTagValues[i][1];
+        }
+    }
+    
+    // If not found, return "Not identified"
+    return 5500.0f;
+};
+
+float XYZToColorTemperature(const valarray<float> &XYZ)
+{
+    valarray<float> uv(XYZTouv(XYZ));
+    int Nrobert = static_cast<int>(itemsIn(Robertson_uvtTable));
+    int i;
+    
+    float mired;
+    float RDthis = 0, RDprevious = 0;
+    
+    for(i = 0; i < Nrobert; i++) {
+        if ((RDthis = RobertsonDistance(uv, Robertson_uvtTable[i])) <= 0.0)
+            break;
+        RDprevious = RDthis;
+    }
+    if(i <= 0)
+        mired = RobertsonMired[0];
+    else if(i >= Nrobert)
+        mired = RobertsonMired[Nrobert - 1];
+    else
+        mired = RobertsonMired[i-1]+RDprevious*(RobertsonMired[i]-RobertsonMired[i-1])/(RDprevious-RDthis);
+    
+    float cct = 1.0e6f/mired;
+    cct = max(2000.0f, min(50000.0f, cct));
+    
+    return cct;
+};
+
+valarray <float> findXYZtoCameraMtx(valarray<float> neutralRGB)
+{
+    if(calibrateIllum.size() == 0) {
+        printf("Found no calibration illuminants.");
+        return xyz2rgbMatrix1DNG;
+    }
+    
+    if(neutralRGB.size() == 0) {
+        printf("Found no neutral RGB value.");
+        return xyz2rgbMatrix1DNG;
+    }
+    
+    float cct1 = lightSourceToColorTemp(static_cast<const unsigned short>(calibrateIllum[0]));
+    float cct2 = lightSourceToColorTemp(static_cast<const unsigned short>(calibrateIllum[1]));
+    
+    float mir1 = cctToMired(cct1);
+    float mir2 = cctToMired(cct2);
+    
+    float maxMir = cctToMired(2000.0f);
+    float minMir = cctToMired(50000.0f);
+    
+    float lomir = max(minMir, min(maxMir, min(mir1, mir2)));
+    float himir = max(minMir, min(maxMir, max(mir1, mir2)));
+    float mirStep = max(5.0f, (himir - lomir)/50.0f);
+    
+    float mir = 0.0f, lastMired = 0.0f, estimatedMired = 0.0f, lerror = 0.0f, lastError = 0.0f, smallestError = 0.0f;
+    
+    for (mir=lomir; mir<himir; mir+=mirStep) {
+        // error = distance between the sampling mired (mir) and the mired of the white balance as returned through the weightred matrices
+        lerror = mir - cctToMired(XYZToColorTemperature(multiplyMatrix(invertMatrix(XYZtoCameraWeightedMatrix(mir, mir1, mir2)), neutralRGBDNG)));
+
+        if (lerror==0) {
+            // no error. We found the exact mired
+            estimatedMired = mir;
+            break;
+        }
+        if (mir!=lomir && lerror * lastError<=0) {
+            estimatedMired = mir+lerror/(lerror-lastError) * (mir-lastMired);
+            break;
+        }
+        if (mir == lomir || abs(lerror) < abs(smallestError) )	{
+            estimatedMired = mir ;
+            smallestError = lerror;
+        }
+        lastError = lerror;
+        lastMired = mir;
+    }
+    
+    valarray<float> xyzToCameraRGBMatrix(XYZtoCameraWeightedMatrix(estimatedMired, mir1, mir2));
+    return xyzToCameraRGBMatrix;
+};
+
+valarray<float> matrixRGBtoXYZ (const float chromaticities[][2])
+{
+    valarray<float> rXYZ (xyToXYZ(valarray<float> (chromaticities[0], 2 )));
+    valarray<float> gXYZ (xyToXYZ(valarray<float> (chromaticities[1], 2 )));
+    valarray<float> bXYZ (xyToXYZ(valarray<float> (chromaticities[2], 2 )));
+    valarray<float> wXYZ (xyToXYZ(valarray<float> (chromaticities[3], 2 )));
+    
+    valarray<float> rgbMtx(9);
+    rgbMtx[slice(0, 3, 3)] = rXYZ;
+    rgbMtx[slice(1, 3, 3)] = gXYZ;
+    rgbMtx[slice(2, 3, 3)] = bXYZ;
+    
+    valarray<float> normalizedWhite(wXYZ / wXYZ[1]);
+    valarray<float> channelgains(multiplyMatrix(invertMatrix(rgbMtx), normalizedWhite, 3));
+    valarray<float> colorMatrix(multiplyMatrix(rgbMtx, diagonalMatrix(channelgains), 3));
+    
+    return colorMatrix;
+};
+
+void getCameraXYZMtxAndWhitePoint(float baseExpo)
+{
+    cameraToXYZMtx = invertMatrix(findXYZtoCameraMtx(neutralRGBDNG));
+    assert(cameraToXYZMtx.sum() != 0 );
+    
+    cameraToXYZMtx *= pow(2.0, (double)baseExpo);
+    
+    valarray<float> neutralXYZ(3);
+    if (neutralRGBDNG.size() > 0) {
+        neutralXYZ = multiplyMatrix(cameraToXYZMtx, neutralRGBDNG);
+    } else {
+        neutralXYZ = colorTemperatureToXYZ(lightSourceToColorTemp(calibrateIllum[0])) ;
+    }
+    
+    cameraXYZWhitePoint = neutralXYZ/neutralXYZ[1];
+    assert (cameraXYZWhitePoint.sum() != 0 );
+    
+    return;
+};
+
+valarray <float> matrixChromaticAdaptation (const valarray <float> &whiteFrom,
+                                            const valarray <float> &whiteTo)
+{
+    valarray <float> diagonal = diagonalMatrix(multiplyMatrix(matrixBradford(), whiteTo)/multiplyMatrix (matrixBradford(), whiteFrom) );
+    valarray <float> invBrd   = invertMatrix(matrixBradford());
+    
+    return multiplyMatrix(invBrd, multiplyMatrix(diagonal, matrixBradford()));
+};
+
+// End -- For DNG chromatic adoption matrix calculations //
+
+
+float * convert_to_aces_NODNG(libraw_processed_image_t *image)
 {
     uchar * pixel = image->data;
     uint32_t total = image->width*image->height*image->colors;
-    float * aces = new (std::nothrow) float[total];;
+    float * aces = new (std::nothrow) float[total];
     
     for(uint32_t i = 0; i < total; i++ ){
         aces[i] = static_cast<float>(pixel[i]);
@@ -125,17 +533,142 @@ float * convert_to_aces(libraw_processed_image_t *image)
     return aces;
  }
 
+float * convert_to_aces_DNG(libraw_processed_image_t *image,
+                            valarray<float> cameraToDisplayMtx)
+{
+    uchar * pixel = image->data;
+    uint32_t total = image->width*image->height*image->colors;
+    float * aces = new (std::nothrow) float[total];
+    
+    float matrix3[3][3];
+    float matrix4[4][4];
+    
+    for(int i=0; i<cameraToDisplayMtx.size()/3; i++)
+        for(int j=0; j<3; j++){
+            matrix3[i][j] = cameraToDisplayMtx[i*3+j];
+            matrix4[i][j] = cameraToDisplayMtx[i*3+j];
+    }
+    
+    matrix4[0][3]=0.0;
+    matrix4[1][3]=0.0;
+    matrix4[2][3]=0.0;
+    matrix4[3][3]=1.0;
+    matrix4[3][0]=0.0;
+    matrix4[3][1]=0.0;
+    matrix4[3][2]=0.0;
+    
+    for(uint32_t i = 0; i < total; i++){
+        aces[i] = static_cast<float>(pixel[i]);
+    }
+    
+    if(!aces) {
+        fprintf(stderr, "The pixel code value may not exist. \n");
+        return 0;
+    }
+    else {
+        if(image->colors == 3){
+            for(uint32_t i = 0; i < total; i+=3 ){
+                aces[i] = matrix3[0][0]*(aces[i]) + matrix3[0][1]*(aces[i+1])
+                + matrix3[0][2]*(aces[i+2]);
+                aces[i+1] = matrix3[1][0]*(aces[i]) + matrix3[1][1]*(aces[i+1])
+                + matrix3[1][2]*(aces[i+2]);
+                aces[i+2] = matrix3[2][0]*(aces[i]) + matrix3[2][1]*(aces[i+1])
+                + matrix3[2][2]*(aces[i+2]);
+            }
+        }
+        else if (image->colors == 4){
+            for(uint32 i = 0; i < total; i+=4 ){
+                aces[i] = matrix4[0][0]*pixel[i] + matrix4[0][1]*pixel[i+1]
+                + matrix4[0][2]*pixel[i+2] + matrix4[0][3]*pixel[i+3];
+                aces[i+1] = matrix4[1][0]*pixel[i] + matrix4[1][1]*pixel[i+1]
+                + matrix4[1][2]*pixel[i+2] + matrix4[1][3]*pixel[i+3];
+                aces[i+2] = matrix4[2][0]*pixel[i] + matrix4[2][1]*pixel[i+1]
+                + matrix4[2][2]*pixel[i+2] + matrix4[2][3]*pixel[i+3];
+                aces[i+3] = matrix4[3][0]*pixel[i] + matrix4[3][1]*pixel[i+1]
+                + matrix4[3][2]*pixel[i+2] + matrix4[3][3]*pixel[i+3];
+            }
+        }
+        else{
+            fprintf(stderr, "Currenly support 3 channels and 4 channels. \n");
+            return 0;
+        }
+    }
+
+    return aces;
+}
 
 void aces_write(const char *name,
                 float scale,
-                libraw_processed_image_t *image)
+                libraw_processed_image_t *image,
+                bool isDNG,
+                libraw_colordata_t C)
 {
     uint16_t width = image->width;
     uint16_t height = image->height;
-    uint8_t channels = image->colors;
-    uint8_t bits = image->bits;
+    uint8_t  channels = image->colors;
+    uint8_t  bits = image->bits;
+    
+    float * pixels = 0;
 
-    float * pixels = convert_to_aces(image);
+    if(!isDNG)
+        pixels = convert_to_aces_NODNG(image);
+    else {
+//        float *camXYZWhite = C.cam_mul;
+//        float (*RGBtoXYZ)[3] =  C.cam_xyz;
+        
+        float (*dng_cm1)[3] = C.dng_color[0].colormatrix;
+        float (*dng_cc1)[4] = C.dng_color[0].calibration;
+        float (*dng_cm2)[3] = C.dng_color[1].colormatrix;
+        float (*dng_cc2)[4] = C.dng_color[1].calibration;
+        
+        //            for (int i=0; i<4; i++){
+        //                printf ("rawtoACES - RGB to XYZ: %f, %f, %f\n", (RGBtoXYZ)[i][0], (RGBtoXYZ)[i][1], (RGBtoXYZ)[i][2]);
+        //            }
+        
+        calibrateIllum[0] = C.dng_color[0].illuminant;
+        calibrateIllum[1] = C.dng_color[1].illuminant;
+        
+        for (int i=0; i<3; i++) {
+            neutralRGBDNG[i] = 1.0f/(C.cam_mul)[i];
+            for (int j=0; j<3; j++){
+                xyz2rgbMatrix1DNG[i*3+j] = (dng_cm1)[i][j];
+                xyz2rgbMatrix2DNG[i*3+j] = (dng_cm2)[i][j];
+                cameraCalibration1DNG[i*3+j] = (dng_cc1)[i][j];
+                cameraCalibration2DNG[i*3+j] = (dng_cc2)[i][j];
+            }
+        }
+        
+        valarray<float> deviceWhiteV(deviceWhite, 3);
+        getCameraXYZMtxAndWhitePoint(C.baseline_exposure);
+        valarray<float> outputRGBtoXYZMtx(matrixRGBtoXYZ(chromaticitiesACES));
+        valarray<float> XYZToDisplayMtx(invertMatrix(outputRGBtoXYZMtx));
+        valarray<float> outputXYZWhitePoint(multiplyMatrix(outputRGBtoXYZMtx, deviceWhiteV));
+        valarray<float> chadMtx(matrixChromaticAdaptation(cameraXYZWhitePoint, outputXYZWhitePoint));
+        valarray<float> cameraToDisplayMtx(multiplyMatrix(multiplyMatrix(XYZToDisplayMtx, chadMtx), cameraToXYZMtx));
+        
+        valarray<float> outRGBWhite(multiplyMatrix(cameraToDisplayMtx, multiplyMatrix(invertMatrix(cameraToXYZMtx), cameraXYZWhitePoint)));
+        outRGBWhite	= outRGBWhite/outRGBWhite.max();
+        
+        valarray<float> absdif = abs(outRGBWhite-deviceWhiteV);
+        if ( absdif.max() >= 0.0001 ) {
+            printf("WARNING: The neutrals should come out white balanced.");
+        }
+        
+        assert(cameraToDisplayMtx.sum()!= 0);
+        
+////        because FORCC cam_mul[c] = 1 / asn[c] and we are using cameraToDisplayMtx
+//        valarray<float> camXYZWhiteInverse(C.cam_mul, 3);
+//        camXYZWhiteInverse = invertMatrix(camXYZWhiteInverse);
+        
+//        printValarray(cameraXYZWhitePoint, "cameraXYZWhitePoint", cameraXYZWhitePoint.size());
+//        printValarray(outputRGBtoXYZMtx, "outputRGBtoXYZMtx", outputRGBtoXYZMtx.size());
+//        printValarray(chadMtx, "chadMtx", chadMtx.size());
+//        printValarray(XYZToDisplayMtx, "XYZToDisplayMtx", XYZToDisplayMtx.size());
+//        printValarray(cameraToXYZMtx, "cameraToXYZMtx", cameraToXYZMtx.size());
+//        printValarray(cameraToDisplayMtx, "cameraToDisplayMtx", cameraToDisplayMtx.size());
+
+        pixels = convert_to_aces_DNG(image, cameraToDisplayMtx);
+    }
     
     halfBytes *in = new (std::nothrow) halfBytes[channels*width*height];
     for (uint32_t i=0; i<channels*width*height; i++) {
@@ -343,6 +876,7 @@ int main(int argc, char *argv[])
     int i,arg,c,ret;
     char opm,opt,*cp,*sp;
     int use_bigfile=0, use_timing=0;
+    bool isDNG = 0;
     
 #ifndef WIN32
     int msize = 0,use_mmap=0;
@@ -526,22 +1060,21 @@ int main(int argc, char *argv[])
             snprintf(outfn,sizeof(outfn),
                      "%s%s",
                      argv[arg], "_aces.exr");
-
+            
+            if(P1.dng_version != 0)
+                isDNG = 1;
+            
             libraw_processed_image_t *image = RawProcessor.dcraw_make_mem_image(&ret);
             
             if(verbosity>=2) // verbosity set by repeat -v switches
-            {
                 printf("Converting to aces RGB\n");
-            }
             else if(verbosity)
-            {
                 printf("Writing file %s\n",outfn);
-            }
             
-            aces_write(outfn,1.0,image);
+//            get raw data
+//            RawProcessor.raw2image();
+            aces_write(outfn,1.0,image,isDNG,C);
             
-           
-
 #ifndef WIN32
             if(use_mmap && iobuffer)
                 {

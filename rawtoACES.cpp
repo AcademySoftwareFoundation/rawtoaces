@@ -299,7 +299,6 @@ float RobertsonDistance(const valarray <float> &uv, const float* uvt)
 
 valarray<float> colorTemperatureToXYZ (const float cct)
 {
-    
     float mired = 1.0e6f/cct;
     valarray<float> uv(2);
     int Nrobert=(int)itemsIn(Robertson_uvtTable);
@@ -470,7 +469,7 @@ void getCameraXYZMtxAndWhitePoint(float baseExpo)
     }
     
     cameraXYZWhitePoint = neutralXYZ/neutralXYZ[1];
-    assert (cameraXYZWhitePoint.sum() != 0 );
+    assert(cameraXYZWhitePoint.sum() != 0);
     
     return;
 };
@@ -485,7 +484,6 @@ valarray <float> matrixChromaticAdaptation (const valarray <float> &whiteFrom,
 };
 
 // End -- For DNG chromatic adoption matrix calculations //
-
 
 float * convert_to_aces_NODNG(libraw_processed_image_t *image)
 {
@@ -524,7 +522,7 @@ float * convert_to_aces_NODNG(libraw_processed_image_t *image)
                 + acesrgb_XYZ_4[3][2]*pixel[i+2] + acesrgb_XYZ_4[3][3]*pixel[i+3];
             }
         }
-        else{
+        else {
             fprintf(stderr, "Currenly support 3 channels and 4 channels. \n");
             return 0;
         }
@@ -536,8 +534,12 @@ float * convert_to_aces_NODNG(libraw_processed_image_t *image)
 float * convert_to_aces_DNG(libraw_processed_image_t *image,
                             valarray<float> cameraToDisplayMtx)
 {
+//    uchar * pixel = (uchar *)(R.raw_image);
+//    uint32_t total = (R.sizes.width)*(R.sizes.height)*(P.colors);
+    
     uchar * pixel = image->data;
     uint32_t total = image->width*image->height*image->colors;
+
     float * aces = new (std::nothrow) float[total];
     
     float matrix3[3][3];
@@ -566,7 +568,7 @@ float * convert_to_aces_DNG(libraw_processed_image_t *image,
         return 0;
     }
     else {
-        if(image->colors == 3){
+        if (image->colors == 3){
             for(uint32_t i = 0; i < total; i+=3 ){
                 aces[i] = matrix3[0][0]*(aces[i]) + matrix3[0][1]*(aces[i+1])
                 + matrix3[0][2]*(aces[i+2]);
@@ -597,79 +599,83 @@ float * convert_to_aces_DNG(libraw_processed_image_t *image,
     return aces;
 }
 
-void aces_write(const char *name,
-                float scale,
-                libraw_processed_image_t *image,
-                bool isDNG,
-                libraw_colordata_t C)
+float * prepareAcesData(libraw_processed_image_t *image)
 {
-    uint16_t width = image->width;
-    uint16_t height = image->height;
-    uint8_t  channels = image->colors;
-    uint8_t  bits = image->bits;
-    
     float * pixels = 0;
-
-    if(!isDNG)
-        pixels = convert_to_aces_NODNG(image);
-    else {
-//        float *camXYZWhite = C.cam_mul;
-//        float (*RGBtoXYZ)[3] =  C.cam_xyz;
-        
-        float (*dng_cm1)[3] = C.dng_color[0].colormatrix;
-        float (*dng_cc1)[4] = C.dng_color[0].calibration;
-        float (*dng_cm2)[3] = C.dng_color[1].colormatrix;
-        float (*dng_cc2)[4] = C.dng_color[1].calibration;
-        
-        //            for (int i=0; i<4; i++){
-        //                printf ("rawtoACES - RGB to XYZ: %f, %f, %f\n", (RGBtoXYZ)[i][0], (RGBtoXYZ)[i][1], (RGBtoXYZ)[i][2]);
-        //            }
-        
-        calibrateIllum[0] = C.dng_color[0].illuminant;
-        calibrateIllum[1] = C.dng_color[1].illuminant;
-        
-        for (int i=0; i<3; i++) {
-            neutralRGBDNG[i] = 1.0f/(C.cam_mul)[i];
-            for (int j=0; j<3; j++){
-                xyz2rgbMatrix1DNG[i*3+j] = (dng_cm1)[i][j];
-                xyz2rgbMatrix2DNG[i*3+j] = (dng_cm2)[i][j];
-                cameraCalibration1DNG[i*3+j] = (dng_cc1)[i][j];
-                cameraCalibration2DNG[i*3+j] = (dng_cc2)[i][j];
-            }
-        }
-        
-        valarray<float> deviceWhiteV(deviceWhite, 3);
-        getCameraXYZMtxAndWhitePoint(C.baseline_exposure);
-        valarray<float> outputRGBtoXYZMtx(matrixRGBtoXYZ(chromaticitiesACES));
-        valarray<float> XYZToDisplayMtx(invertMatrix(outputRGBtoXYZMtx));
-        valarray<float> outputXYZWhitePoint(multiplyMatrix(outputRGBtoXYZMtx, deviceWhiteV));
-        valarray<float> chadMtx(matrixChromaticAdaptation(cameraXYZWhitePoint, outputXYZWhitePoint));
-        valarray<float> cameraToDisplayMtx(multiplyMatrix(multiplyMatrix(XYZToDisplayMtx, chadMtx), cameraToXYZMtx));
-        
-        valarray<float> outRGBWhite(multiplyMatrix(cameraToDisplayMtx, multiplyMatrix(invertMatrix(cameraToXYZMtx), cameraXYZWhitePoint)));
-        outRGBWhite	= outRGBWhite/outRGBWhite.max();
-        
-        valarray<float> absdif = abs(outRGBWhite-deviceWhiteV);
-        if ( absdif.max() >= 0.0001 ) {
-            printf("WARNING: The neutrals should come out white balanced.");
-        }
-        
-        assert(cameraToDisplayMtx.sum()!= 0);
-        
-////        because FORCC cam_mul[c] = 1 / asn[c] and we are using cameraToDisplayMtx
-//        valarray<float> camXYZWhiteInverse(C.cam_mul, 3);
-//        camXYZWhiteInverse = invertMatrix(camXYZWhiteInverse);
-        
-//        printValarray(cameraXYZWhitePoint, "cameraXYZWhitePoint", cameraXYZWhitePoint.size());
-//        printValarray(outputRGBtoXYZMtx, "outputRGBtoXYZMtx", outputRGBtoXYZMtx.size());
-//        printValarray(chadMtx, "chadMtx", chadMtx.size());
-//        printValarray(XYZToDisplayMtx, "XYZToDisplayMtx", XYZToDisplayMtx.size());
-//        printValarray(cameraToXYZMtx, "cameraToXYZMtx", cameraToXYZMtx.size());
-//        printValarray(cameraToDisplayMtx, "cameraToDisplayMtx", cameraToDisplayMtx.size());
-
-        pixels = convert_to_aces_DNG(image, cameraToDisplayMtx);
-    }
+    pixels = convert_to_aces_NODNG(image);
     
+    return pixels;
+
+}
+
+float * prepareAcesData_DNG(libraw_rawdata_t R,
+//                            libraw_iparams_t P
+                            libraw_processed_image_t *image)
+{
+    float (*dng_cm1)[3] = R.color.dng_color[0].colormatrix;
+    float (*dng_cc1)[4] = R.color.dng_color[0].calibration;
+    float (*dng_cm2)[3] = R.color.dng_color[1].colormatrix;
+    float (*dng_cc2)[4] = R.color.dng_color[1].calibration;
+        
+    calibrateIllum[0] = R.color.dng_color[0].illuminant;
+    calibrateIllum[1] = R.color.dng_color[1].illuminant;
+    valarray<float> XYZToDisplayMtx(1.0f, 9);
+    
+    for(int i=0; i<3; i++) {
+        neutralRGBDNG[i] = 1.0f/(R.color.cam_mul)[i];
+        for (int j=0; j<3; j++){
+            xyz2rgbMatrix1DNG[i*3+j] = (dng_cm1)[i][j];
+            xyz2rgbMatrix2DNG[i*3+j] = (dng_cm2)[i][j];
+            cameraCalibration1DNG[i*3+j] = (dng_cc1)[i][j];
+            cameraCalibration1DNG[i*3+j] = (dng_cc2)[i][j];
+            XYZToDisplayMtx[i*3+j] = acesrgb_XYZ_3[i][j];
+        }
+    }
+        
+    valarray<float> deviceWhiteV(deviceWhite, 3);
+    getCameraXYZMtxAndWhitePoint(R.color.baseline_exposure);
+    valarray<float> outputRGBtoXYZMtx(matrixRGBtoXYZ(chromaticitiesACES));
+//    valarray<float> XYZToDisplayMtx(invertMatrix(outputRGBtoXYZMtx));
+    valarray<float> outputXYZWhitePoint(multiplyMatrix(outputRGBtoXYZMtx, deviceWhiteV));
+    valarray<float> chadMtx(matrixChromaticAdaptation(cameraXYZWhitePoint, outputXYZWhitePoint));
+//    valarray<float> cameraToDisplayMtx(multiplyMatrix(multiplyMatrix(XYZToDisplayMtx, chadMtx), cameraToXYZMtx));
+    valarray<float> cameraToDisplayMtx(multiplyMatrix(XYZToDisplayMtx, chadMtx));
+        
+    valarray<float> outRGBWhite(multiplyMatrix(cameraToDisplayMtx, multiplyMatrix(invertMatrix(cameraToXYZMtx), cameraXYZWhitePoint)));
+    outRGBWhite	= outRGBWhite/outRGBWhite.max();
+        
+    valarray<float> absdif = abs(outRGBWhite-deviceWhiteV);
+    if (absdif.max() >= 0.0001 ) {
+        printf("WARNING: The neutrals should come out white balanced.\n");
+    }
+        
+    assert(cameraToDisplayMtx.sum()!= 0);
+        
+    ////        because FORCC cam_mul[c] = 1 / asn[c] and we are using cameraToDisplayMtx
+    //        valarray<float> camXYZWhiteInverse(R.color.cam_mul, 3);
+    //        camXYZWhiteInverse = invertMatrix(camXYZWhiteInverse);
+    
+//    printValarray(cameraXYZWhitePoint, "cameraXYZWhitePoint", cameraXYZWhitePoint.size());
+//    printValarray(outputRGBtoXYZMtx, "outputRGBtoXYZMtx", outputRGBtoXYZMtx.size());
+//    printValarray(chadMtx, "chadMtx", chadMtx.size());
+//    printValarray(XYZToDisplayMtx, "XYZToDisplayMtx", XYZToDisplayMtx.size());
+//    printValarray(cameraToXYZMtx, "cameraToXYZMtx", cameraToXYZMtx.size());
+//    printValarray(cameraToDisplayMtx, "cameraToDisplayMtx", cameraToDisplayMtx.size());
+    
+//    float * pixels = convert_to_aces_DNG(R, P, cameraToDisplayMtx);
+    float * pixels = convert_to_aces_DNG(image, cameraToDisplayMtx);
+
+    return pixels;
+}
+
+void aces_write(const char * name,
+                float    scale,
+                uint16_t width,
+                uint16_t height,
+                uint8_t  channels,
+                uint8_t  bits,
+                float *  pixels)
+{
     halfBytes *in = new (std::nothrow) halfBytes[channels*width*height];
     for (uint32_t i=0; i<channels*width*height; i++) {
         if (bits == 8) {
@@ -679,12 +685,12 @@ void aces_write(const char *name,
             pixels[i] = (double)pixels[i] * INV_65535;
         }
         
-        half tmpV( pixels[i] / 1.0f );
+        half tmpV(pixels[i]/1.0f);
         in[i] = tmpV.bits();
     }
     
     std::vector<std::string> filenames;
-    filenames.push_back( name );
+    filenames.push_back(name);
     
     aces_Writer x;
     
@@ -747,10 +753,10 @@ void aces_write(const char *name,
     dynamicMeta.imageIndex = 0;
     dynamicMeta.imageCounter = 0;
     
-    x.configure ( writeParams );
-    x.newImageObject ( dynamicMeta );
+    x.configure(writeParams);
+    x.newImageObject(dynamicMeta);
     
-    for ( uint32_t row = 0; row < height; row++) {
+    for(uint32_t row = 0; row < height; row++){
         halfBytes *rgbData = in + width*channels*row;
         x.storeHalfRow ( rgbData, row );
     }
@@ -876,7 +882,6 @@ int main(int argc, char *argv[])
     int i,arg,c,ret;
     char opm,opt,*cp,*sp;
     int use_bigfile=0, use_timing=0;
-    bool isDNG = 0;
     
 #ifndef WIN32
     int msize = 0,use_mmap=0;
@@ -964,6 +969,7 @@ int main(int argc, char *argv[])
 #define P1 RawProcessor.imgdata.idata
 #define S RawProcessor.imgdata.sizes
 #define C RawProcessor.imgdata.color
+#define R RawProcessor.imgdata.rawdata
 #define T RawProcessor.imgdata.thumbnail
 #define P2 RawProcessor.imgdata.other
 
@@ -1041,6 +1047,9 @@ int main(int argc, char *argv[])
                     fprintf(stderr,"Cannot unpack %s: %s\n",argv[arg],libraw_strerror(ret));
                     continue;
                 }
+            
+//            if(P1.dng_version != 0)
+//                OUT.output_color = 0;
 
             if(use_timing)
                 timerprint("LibRaw::unpack()",argv[arg]);
@@ -1061,19 +1070,43 @@ int main(int argc, char *argv[])
                      "%s%s",
                      argv[arg], "_aces.exr");
             
-            if(P1.dng_version != 0)
-                isDNG = 1;
-            
-            libraw_processed_image_t *image = RawProcessor.dcraw_make_mem_image(&ret);
-            
             if(verbosity>=2) // verbosity set by repeat -v switches
                 printf("Converting to aces RGB\n");
             else if(verbosity)
                 printf("Writing file %s\n",outfn);
             
-//            get raw data
-//            RawProcessor.raw2image();
-            aces_write(outfn,1.0,image,isDNG,C);
+            libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
+            if(P1.dng_version == 0) {
+                float * aces = prepareAcesData(post_image);
+                aces_write(outfn,
+                           1.0,
+                           post_image->width,
+                           post_image->height,
+                           post_image->colors,
+                           post_image->bits,
+                           aces);
+            }
+            else {
+//                float * aces = prepareAcesData_DNG(R,P1);
+//                aces_write(outfn,
+//                           1.0,
+//                           R.sizes.width,
+//                           R.sizes.height,
+//                           P1.colors,
+//                           post_image->bits,
+//                           aces);
+                printf("%i,%i,%i\n",post_image->width,post_image->height,post_image->colors);
+                printf("%i,%i,%i\n",R.sizes.width,R.sizes.height,P1.colors);
+                
+                float * aces = prepareAcesData_DNG(R, post_image);
+                aces_write(outfn,
+                           1.0,
+                           post_image->width,
+                           post_image->height,
+                           post_image->colors,
+                           post_image->bits,
+                           aces);
+            }
             
 #ifndef WIN32
             if(use_mmap && iobuffer)

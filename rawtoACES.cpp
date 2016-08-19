@@ -96,7 +96,7 @@ static const float deviceWhite[3] = {1.0, 1.0, 1.0};
 
 // Beginning -- For DNG chromatic adoption matrix calculations //
 #define sign(x)		((x) > 0 ? 1 : ( (x) < 0 ? (0-1) : 0))
-#define itemsIn(a)	(sizeof(a) / sizeof((a)[0]))
+#define countSize(a)	(sizeof(a) / sizeof((a)[0]))
 
 valarray<float>  cameraCalibration1DNG = valarray<float>(1.0f, 9);
 valarray<float>  cameraCalibration2DNG = valarray<float>(1.0f, 9);
@@ -168,13 +168,13 @@ static const float Robertson_uvtTable[][3] = {
     { 0.33724f, 0.36051f, -116.45f}
 };
 
-valarray<float> multiplyMatrix (valarray <float> mtxA, valarray <float> mtxB, size_t K=3)
+valarray<float> multiplyMatrix(valarray<float> mtxA, valarray<float> mtxB, size_t K=3)
 {
     size_t rows = mtxA.size()/K;
     size_t cols = mtxB.size()/K;
     
-    assert (rows * K == (size_t)mtxA.size());
-    assert (K * cols == (size_t)mtxB.size());
+    assert (rows * K == mtxA.size());
+    assert (K * cols == mtxB.size());
     
     valarray<float> mtxC(rows * cols);
     float * pA = &mtxA[0];
@@ -211,6 +211,8 @@ valarray<float> invertMatrix (const valarray<float> &mtx)
     valarray<float> invMtx(CinvMtx, mtx.size());
     
     float det = mtx[0] * invMtx[0] + mtx[1] * invMtx[3] + mtx[2] * invMtx[6];
+    
+    // pay attention to this
     assert ( det != 0 );
     invMtx /= det;			// divide requires valarray
     
@@ -286,7 +288,7 @@ float cctToMired(float cct)
     return 1.0e6f/cct;
 };
 
-float RobertsonDistance(const valarray <float> &uv, const float* uvt)
+float robertsonLength(const valarray <float> &uv, const float* uvt)
 {
     float t = uvt[2];
     valarray<float> slope(2);
@@ -301,7 +303,7 @@ valarray<float> colorTemperatureToXYZ (const float cct)
 {
     float mired = 1.0e6f/cct;
     valarray<float> uv(2);
-    int Nrobert=(int)itemsIn(Robertson_uvtTable);
+    int Nrobert=static_cast<int>(countSize(Robertson_uvtTable));
     int i;
     
     for (i = 0; i < Nrobert; i++) {
@@ -346,7 +348,7 @@ float lightSourceToColorTemp(const unsigned short tag)
         {22,	7500}	//  "D75 Illuminant"
     };
     
-    for (uint16_t i = 0; i < uint16_t(itemsIn(LightSourceEXIFTagValues)); i++) {
+    for (uint16_t i = 0; i < static_cast<int>(countSize(LightSourceEXIFTagValues)); i++) {
         if (LightSourceEXIFTagValues[i][0] == (uint16_t)tag){
             return (float)LightSourceEXIFTagValues[i][1];
         }
@@ -359,14 +361,14 @@ float lightSourceToColorTemp(const unsigned short tag)
 float XYZToColorTemperature(const valarray<float> &XYZ)
 {
     valarray<float> uv(XYZTouv(XYZ));
-    int Nrobert = static_cast<int>(itemsIn(Robertson_uvtTable));
+    int Nrobert = static_cast<int>(countSize(Robertson_uvtTable));
     int i;
     
     float mired;
     float RDthis = 0, RDprevious = 0;
     
     for(i = 0; i < Nrobert; i++) {
-        if ((RDthis = RobertsonDistance(uv, Robertson_uvtTable[i])) <= 0.0)
+        if ((RDthis = robertsonLength(uv, Robertson_uvtTable[i])) <= 0.0)
             break;
         RDprevious = RDthis;
     }
@@ -437,10 +439,10 @@ valarray <float> findXYZtoCameraMtx(valarray<float> neutralRGB)
 
 valarray<float> matrixRGBtoXYZ (const float chromaticities[][2])
 {
-    valarray<float> rXYZ (xyToXYZ(valarray<float> (chromaticities[0], 2 )));
-    valarray<float> gXYZ (xyToXYZ(valarray<float> (chromaticities[1], 2 )));
-    valarray<float> bXYZ (xyToXYZ(valarray<float> (chromaticities[2], 2 )));
-    valarray<float> wXYZ (xyToXYZ(valarray<float> (chromaticities[3], 2 )));
+    valarray<float> rXYZ (xyToXYZ(valarray<float> (chromaticities[0], 2)));
+    valarray<float> gXYZ (xyToXYZ(valarray<float> (chromaticities[1], 2)));
+    valarray<float> bXYZ (xyToXYZ(valarray<float> (chromaticities[2], 2)));
+    valarray<float> wXYZ (xyToXYZ(valarray<float> (chromaticities[3], 2)));
     
     valarray<float> rgbMtx(9);
     rgbMtx[slice(0, 3, 3)] = rXYZ;
@@ -477,7 +479,7 @@ void getCameraXYZMtxAndWhitePoint(float baseExpo)
 valarray <float> matrixChromaticAdaptation (const valarray <float> &whiteFrom,
                                             const valarray <float> &whiteTo)
 {
-    valarray <float> diagonal = diagonalMatrix(multiplyMatrix(matrixBradford(), whiteTo)/multiplyMatrix (matrixBradford(), whiteFrom) );
+    valarray <float> diagonal = diagonalMatrix(multiplyMatrix(matrixBradford(), whiteTo)/multiplyMatrix(matrixBradford(), whiteFrom));
     valarray <float> invBrd   = invertMatrix(matrixBradford());
     
     return multiplyMatrix(invBrd, multiplyMatrix(diagonal, matrixBradford()));
@@ -485,7 +487,8 @@ valarray <float> matrixChromaticAdaptation (const valarray <float> &whiteFrom,
 
 // End -- For DNG chromatic adoption matrix calculations //
 
-float * convert_to_aces_NODNG(libraw_processed_image_t *image)
+
+float * convert_to_aces_NonDNG(libraw_processed_image_t *image)
 {
     uchar * pixel = image->data;
     uint32_t total = image->width*image->height*image->colors;
@@ -502,12 +505,12 @@ float * convert_to_aces_NODNG(libraw_processed_image_t *image)
     else {
         if(image->colors == 3){
             for(uint32_t i = 0; i < total; i+=3 ){
-                aces[i] = acesrgb_XYZ_3[0][0]*(aces[i]) + acesrgb_XYZ_3[0][1]*(aces[i+1])
-                + acesrgb_XYZ_3[0][2]*(aces[i+2]);
-                aces[i+1] = acesrgb_XYZ_3[1][0]*(aces[i]) + acesrgb_XYZ_3[1][1]*(aces[i+1])
-                + acesrgb_XYZ_3[1][2]*(aces[i+2]);
-                aces[i+2] = acesrgb_XYZ_3[2][0]*(aces[i]) + acesrgb_XYZ_3[2][1]*(aces[i+1])
-                + acesrgb_XYZ_3[2][2]*(aces[i+2]);
+                aces[i] = acesrgb_XYZ_3[0][0]*(pixel[i]) + acesrgb_XYZ_3[0][1]*(pixel[i+1])
+                + acesrgb_XYZ_3[0][2]*(pixel[i+2]);
+                aces[i+1] = acesrgb_XYZ_3[1][0]*(pixel[i]) + acesrgb_XYZ_3[1][1]*(pixel[i+1])
+                + acesrgb_XYZ_3[1][2]*(pixel[i+2]);
+                aces[i+2] = acesrgb_XYZ_3[2][0]*(pixel[i]) + acesrgb_XYZ_3[2][1]*(pixel[i+1])
+                + acesrgb_XYZ_3[2][2]*(pixel[i+2]);
             }
         }
         else if (image->colors == 4){
@@ -531,9 +534,14 @@ float * convert_to_aces_NODNG(libraw_processed_image_t *image)
     return aces;
  }
 
-float * convert_to_aces_DNG(libraw_processed_image_t *image,
-                            valarray<float> cameraToDisplayMtx)
+float * convert_to_aces_DNG(
+//                            libraw_rawdata_t R,
+//                            libraw_iparams_t P,
+                            libraw_processed_image_t *image,
+                            valarray<float> cameraToDisplayMtx
+)
 {
+    
 //    uchar * pixel = (uchar *)(R.raw_image);
 //    uint32_t total = (R.sizes.width)*(R.sizes.height)*(P.colors);
     
@@ -563,12 +571,31 @@ float * convert_to_aces_DNG(libraw_processed_image_t *image,
         aces[i] = static_cast<float>(pixel[i]);
     }
     
+//    printf("R.raw_image: %p\n", R.raw_image);
+//    printf("R.color3_image: %p\n", R.color3_image);
+//    printf("R.color4_image: %p\n", R.color4_image);
+
+//    for(uint32_t i = 0; i < R.sizes.height; i++){
+//        if(P.colors == 3) {
+//            for (int j = 0; j < 3; j++){
+//                aces[i*3+j] = static_cast<float>(R.color3_image[i][j]);
+//            }
+//        }
+//        else if (P.colors == 4) {
+//            for (int j = 0; j < 4; j++){
+//                aces[i*4+j] = static_cast<float>(R.color4_image[i][j]);
+//            }
+//        }
+//    }
+
+    
     if(!aces) {
         fprintf(stderr, "The pixel code value may not exist. \n");
         return 0;
     }
     else {
         if (image->colors == 3){
+//        if (P.colors == 3){
             for(uint32_t i = 0; i < total; i+=3 ){
                 aces[i] = matrix3[0][0]*(aces[i]) + matrix3[0][1]*(aces[i+1])
                 + matrix3[0][2]*(aces[i+2]);
@@ -579,15 +606,16 @@ float * convert_to_aces_DNG(libraw_processed_image_t *image,
             }
         }
         else if (image->colors == 4){
+//        else if (P.colors == 4){
             for(uint32 i = 0; i < total; i+=4 ){
-                aces[i] = matrix4[0][0]*pixel[i] + matrix4[0][1]*pixel[i+1]
-                + matrix4[0][2]*pixel[i+2] + matrix4[0][3]*pixel[i+3];
-                aces[i+1] = matrix4[1][0]*pixel[i] + matrix4[1][1]*pixel[i+1]
-                + matrix4[1][2]*pixel[i+2] + matrix4[1][3]*pixel[i+3];
-                aces[i+2] = matrix4[2][0]*pixel[i] + matrix4[2][1]*pixel[i+1]
-                + matrix4[2][2]*pixel[i+2] + matrix4[2][3]*pixel[i+3];
-                aces[i+3] = matrix4[3][0]*pixel[i] + matrix4[3][1]*pixel[i+1]
-                + matrix4[3][2]*pixel[i+2] + matrix4[3][3]*pixel[i+3];
+                aces[i] = matrix4[0][0]*aces[i] + matrix4[0][1]*aces[i+1]
+                + matrix4[0][2]*aces[i+2] + matrix4[0][3]*aces[i+3];
+                aces[i+1] = matrix4[1][0]*aces[i] + matrix4[1][1]*aces[i+1]
+                + matrix4[1][2]*aces[i+2] + matrix4[1][3]*aces[i+3];
+                aces[i+2] = matrix4[2][0]*aces[i] + matrix4[2][1]*aces[i+1]
+                + matrix4[2][2]*aces[i+2] + matrix4[2][3]*aces[i+3];
+                aces[i+3] = matrix4[3][0]*aces[i] + matrix4[3][1]*aces[i+1]
+                + matrix4[3][2]*aces[i+2] + matrix4[3][3]*aces[i+3];
             }
         }
         else{
@@ -602,7 +630,7 @@ float * convert_to_aces_DNG(libraw_processed_image_t *image,
 float * prepareAcesData(libraw_processed_image_t *image)
 {
     float * pixels = 0;
-    pixels = convert_to_aces_NODNG(image);
+    pixels = convert_to_aces_NonDNG(image);
     
     return pixels;
 
@@ -610,7 +638,8 @@ float * prepareAcesData(libraw_processed_image_t *image)
 
 float * prepareAcesData_DNG(libraw_rawdata_t R,
 //                            libraw_iparams_t P
-                            libraw_processed_image_t *image)
+                            libraw_processed_image_t *image
+                            )
 {
     float (*dng_cm1)[3] = R.color.dng_color[0].colormatrix;
     float (*dng_cc1)[4] = R.color.dng_color[0].calibration;
@@ -619,7 +648,7 @@ float * prepareAcesData_DNG(libraw_rawdata_t R,
         
     calibrateIllum[0] = R.color.dng_color[0].illuminant;
     calibrateIllum[1] = R.color.dng_color[1].illuminant;
-    valarray<float> XYZToDisplayMtx(1.0f, 9);
+//    valarray<float> XYZToDisplayMtx(1.0f, 9);
     
     for(int i=0; i<3; i++) {
         neutralRGBDNG[i] = 1.0f/(R.color.cam_mul)[i];
@@ -628,39 +657,35 @@ float * prepareAcesData_DNG(libraw_rawdata_t R,
             xyz2rgbMatrix2DNG[i*3+j] = (dng_cm2)[i][j];
             cameraCalibration1DNG[i*3+j] = (dng_cc1)[i][j];
             cameraCalibration1DNG[i*3+j] = (dng_cc2)[i][j];
-            XYZToDisplayMtx[i*3+j] = acesrgb_XYZ_3[i][j];
+//            XYZToDisplayMtx[i*3+j] = acesrgb_XYZ_3[i][j];
         }
     }
         
     valarray<float> deviceWhiteV(deviceWhite, 3);
     getCameraXYZMtxAndWhitePoint(R.color.baseline_exposure);
     valarray<float> outputRGBtoXYZMtx(matrixRGBtoXYZ(chromaticitiesACES));
-//    valarray<float> XYZToDisplayMtx(invertMatrix(outputRGBtoXYZMtx));
+    valarray<float> XYZToDisplayMtx(invertMatrix(outputRGBtoXYZMtx));
     valarray<float> outputXYZWhitePoint(multiplyMatrix(outputRGBtoXYZMtx, deviceWhiteV));
     valarray<float> chadMtx(matrixChromaticAdaptation(cameraXYZWhitePoint, outputXYZWhitePoint));
-//    valarray<float> cameraToDisplayMtx(multiplyMatrix(multiplyMatrix(XYZToDisplayMtx, chadMtx), cameraToXYZMtx));
-    valarray<float> cameraToDisplayMtx(multiplyMatrix(XYZToDisplayMtx, chadMtx));
-        
+    valarray<float> cameraToDisplayMtx(multiplyMatrix(multiplyMatrix(XYZToDisplayMtx, chadMtx), cameraToXYZMtx));
+//    valarray<float> cameraToDisplayMtx(multiplyMatrix(XYZToDisplayMtx, chadMtx));
+    
     valarray<float> outRGBWhite(multiplyMatrix(cameraToDisplayMtx, multiplyMatrix(invertMatrix(cameraToXYZMtx), cameraXYZWhitePoint)));
     outRGBWhite	= outRGBWhite/outRGBWhite.max();
-        
+    
     valarray<float> absdif = abs(outRGBWhite-deviceWhiteV);
     if (absdif.max() >= 0.0001 ) {
         printf("WARNING: The neutrals should come out white balanced.\n");
     }
-        
+
     assert(cameraToDisplayMtx.sum()!= 0);
-        
-    ////        because FORCC cam_mul[c] = 1 / asn[c] and we are using cameraToDisplayMtx
-    //        valarray<float> camXYZWhiteInverse(R.color.cam_mul, 3);
-    //        camXYZWhiteInverse = invertMatrix(camXYZWhiteInverse);
-    
+
 //    printValarray(cameraXYZWhitePoint, "cameraXYZWhitePoint", cameraXYZWhitePoint.size());
 //    printValarray(outputRGBtoXYZMtx, "outputRGBtoXYZMtx", outputRGBtoXYZMtx.size());
-//    printValarray(chadMtx, "chadMtx", chadMtx.size());
+    printValarray(chadMtx, "chadMtx", chadMtx.size());
 //    printValarray(XYZToDisplayMtx, "XYZToDisplayMtx", XYZToDisplayMtx.size());
 //    printValarray(cameraToXYZMtx, "cameraToXYZMtx", cameraToXYZMtx.size());
-//    printValarray(cameraToDisplayMtx, "cameraToDisplayMtx", cameraToDisplayMtx.size());
+    printValarray(cameraToDisplayMtx, "cameraToDisplayMtx", cameraToDisplayMtx.size());
     
 //    float * pixels = convert_to_aces_DNG(R, P, cameraToDisplayMtx);
     float * pixels = convert_to_aces_DNG(image, cameraToDisplayMtx);
@@ -758,7 +783,7 @@ void aces_write(const char * name,
     
     for(uint32_t row = 0; row < height; row++){
         halfBytes *rgbData = in + width*channels*row;
-        x.storeHalfRow ( rgbData, row );
+        x.storeHalfRow (rgbData, row);
     }
     
 #if 0
@@ -1047,9 +1072,6 @@ int main(int argc, char *argv[])
                     fprintf(stderr,"Cannot unpack %s: %s\n",argv[arg],libraw_strerror(ret));
                     continue;
                 }
-            
-//            if(P1.dng_version != 0)
-//                OUT.output_color = 0;
 
             if(use_timing)
                 timerprint("LibRaw::unpack()",argv[arg]);
@@ -1075,6 +1097,7 @@ int main(int argc, char *argv[])
             else if(verbosity)
                 printf("Writing file %s\n",outfn);
             
+            
             libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
             if(P1.dng_version == 0) {
                 float * aces = prepareAcesData(post_image);
@@ -1095,8 +1118,8 @@ int main(int argc, char *argv[])
 //                           P1.colors,
 //                           post_image->bits,
 //                           aces);
-                printf("%i,%i,%i\n",post_image->width,post_image->height,post_image->colors);
-                printf("%i,%i,%i\n",R.sizes.width,R.sizes.height,P1.colors);
+//                printf("%i,%i,%i\n",post_image->width,post_image->height,post_image->colors);
+//                printf("%i,%i,%i\n",R.sizes.width,R.sizes.height,P1.colors);
                 
                 float * aces = prepareAcesData_DNG(R, post_image);
                 aces_write(outfn,

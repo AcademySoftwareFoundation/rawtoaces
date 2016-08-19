@@ -437,7 +437,7 @@ valarray <float> findXYZtoCameraMtx(valarray<float> neutralRGB)
     return xyzToCameraRGBMatrix;
 };
 
-valarray<float> matrixRGBtoXYZ (const float chromaticities[][2])
+valarray<float> matrixRGBtoXYZ(const float chromaticities[][2])
 {
     valarray<float> rXYZ (xyToXYZ(valarray<float> (chromaticities[0], 2)));
     valarray<float> gXYZ (xyToXYZ(valarray<float> (chromaticities[1], 2)));
@@ -648,7 +648,7 @@ float * prepareAcesData_DNG(libraw_rawdata_t R,
         
     calibrateIllum[0] = R.color.dng_color[0].illuminant;
     calibrateIllum[1] = R.color.dng_color[1].illuminant;
-//    valarray<float> XYZToDisplayMtx(1.0f, 9);
+    valarray<float> XYZToDisplayMtx(1.0f, 9);
     
     for(int i=0; i<3; i++) {
         neutralRGBDNG[i] = 1.0f/(R.color.cam_mul)[i];
@@ -657,18 +657,18 @@ float * prepareAcesData_DNG(libraw_rawdata_t R,
             xyz2rgbMatrix2DNG[i*3+j] = (dng_cm2)[i][j];
             cameraCalibration1DNG[i*3+j] = (dng_cc1)[i][j];
             cameraCalibration1DNG[i*3+j] = (dng_cc2)[i][j];
-//            XYZToDisplayMtx[i*3+j] = acesrgb_XYZ_3[i][j];
+            XYZToDisplayMtx[i*3+j] = acesrgb_XYZ_3[i][j];
         }
     }
         
     valarray<float> deviceWhiteV(deviceWhite, 3);
     getCameraXYZMtxAndWhitePoint(R.color.baseline_exposure);
     valarray<float> outputRGBtoXYZMtx(matrixRGBtoXYZ(chromaticitiesACES));
-    valarray<float> XYZToDisplayMtx(invertMatrix(outputRGBtoXYZMtx));
+//    valarray<float> XYZToDisplayMtx(invertMatrix(outputRGBtoXYZMtx));
     valarray<float> outputXYZWhitePoint(multiplyMatrix(outputRGBtoXYZMtx, deviceWhiteV));
     valarray<float> chadMtx(matrixChromaticAdaptation(cameraXYZWhitePoint, outputXYZWhitePoint));
-    valarray<float> cameraToDisplayMtx(multiplyMatrix(multiplyMatrix(XYZToDisplayMtx, chadMtx), cameraToXYZMtx));
-//    valarray<float> cameraToDisplayMtx(multiplyMatrix(XYZToDisplayMtx, chadMtx));
+//    valarray<float> cameraToDisplayMtx(multiplyMatrix(multiplyMatrix(XYZToDisplayMtx, chadMtx), cameraToXYZMtx));
+    valarray<float> cameraToDisplayMtx(multiplyMatrix(XYZToDisplayMtx, chadMtx));
     
     valarray<float> outRGBWhite(multiplyMatrix(cameraToDisplayMtx, multiplyMatrix(invertMatrix(cameraToXYZMtx), cameraXYZWhitePoint)));
     outRGBWhite	= outRGBWhite/outRGBWhite.max();

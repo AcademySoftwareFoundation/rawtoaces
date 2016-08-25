@@ -920,7 +920,7 @@ int main(int argc, char *argv[])
 #endif
 
 #define OUT RawProcessor.imgdata.params
-    OUT.use_camera_matrix = 3 * (opm == '+');
+//    OUT.use_camera_matrix = 3 * (opm == '+');
     OUT.output_color      = 5;
 //    OUT.use_camera_wb     = 1;
     OUT.gamm[0]           = 1;

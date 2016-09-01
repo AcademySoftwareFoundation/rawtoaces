@@ -252,10 +252,10 @@ valarray<float> uvToXYZ (const valarray<float> &uv)
 void prepareMatrices()
 {
     if (cameraCalibration1DNG.size() != 0 ) {
-        xyz2rgbMatrix1DNG = multiplyMatrix (cameraCalibration1DNG, xyz2rgbMatrix1DNG, 3);
+        xyz2rgbMatrix1DNG = multiplyMatrix(cameraCalibration1DNG, xyz2rgbMatrix1DNG, 3);
     }
     if (cameraCalibration2DNG.size() != 0 ) {
-        xyz2rgbMatrix2DNG = multiplyMatrix (cameraCalibration2DNG, xyz2rgbMatrix2DNG, 3);
+        xyz2rgbMatrix2DNG = multiplyMatrix(cameraCalibration2DNG, xyz2rgbMatrix2DNG, 3);
     }
     if (analogBalanceDNG.size() != 0 ) {
         xyz2rgbMatrix1DNG = multiplyMatrix(getDiagonalMatrix(analogBalanceDNG), xyz2rgbMatrix1DNG, 3);
@@ -268,7 +268,7 @@ valarray<float> XYZtoCameraWeightedMatrix(const float &mir,
                                           const float &mir2)
 {
     float weight = max(0.0f, min(1.0f, (mir1 - mir)/(mir1 - mir2)));
-    return xyz2rgbMatrix1DNG+weight*(xyz2rgbMatrix2DNG-xyz2rgbMatrix1DNG);
+    return xyz2rgbMatrix1DNG + weight * (xyz2rgbMatrix2DNG - xyz2rgbMatrix1DNG);
 };
 
 float cross(const valarray <float> &vectorA, const valarray <float> &vectorB)
@@ -643,7 +643,6 @@ float * prepareAcesData_DNG(libraw_rawdata_t R,
     calibrateIllum[0] = R.color.dng_color[0].illuminant;
     calibrateIllum[1] = R.color.dng_color[1].illuminant;
     valarray<float> XYZToACESMtx(1.0f, 9);
-    valarray<float> cam_xyz(1.0f, 9);
     
     for(int i=0; i<3; i++) {
         neutralRGBDNG[i] = 1.0f/(R.color.cam_mul)[i];
@@ -656,12 +655,6 @@ float * prepareAcesData_DNG(libraw_rawdata_t R,
         }
     }
     
-    // cam_xyz to convert XYZ to Camera space
-    for (int i=0; i < 3; i++)		/* Multiply out XYZ colorspace */
-        for (int j=0; j < 3; j++) {
-            cam_xyz[i*3+j] = (R.color.cam_xyz)[i][j];
-        }
-    
     valarray<float> deviceWhiteV(deviceWhite, 3);
     getCameraXYZMtxAndWhitePoint(R.color.baseline_exposure);
     valarray<float> outputRGBtoXYZMtx(matrixRGBtoXYZ(chromaticitiesACES));
@@ -670,6 +663,7 @@ float * prepareAcesData_DNG(libraw_rawdata_t R,
     valarray<float> chadMtx(matrixChromaticAdaptation(cameraXYZWhitePoint, outputXYZWhitePoint));
     
 //    valarray<float> cameraToDisplayMtx(multiplyMatrix(multiplyMatrix(XYZToDisplayMtx, chadMtx), cameraToXYZMtx));
+//    valarray<float> cameraToDisplayMtx(multiplyMatrix(multiplyMatrix(XYZToACESMtx, chadMtx), cameraToXYZMtx));
     valarray<float> cameraToDisplayMtx(multiplyMatrix(XYZToACESMtx, chadMtx));
     
     valarray<float> outRGBWhite(multiplyMatrix(cameraToDisplayMtx, multiplyMatrix(invertMatrix(cameraToXYZMtx), cameraXYZWhitePoint)));
@@ -920,12 +914,6 @@ int main(int argc, char *argv[])
 #endif
 
 #define OUT RawProcessor.imgdata.params
-//    OUT.use_camera_matrix = 3 * (opm == '+');
-    OUT.output_color      = 5;
-//    OUT.use_camera_wb     = 1;
-    OUT.gamm[0]           = 1;
-    OUT.gamm[1]           = 1;
-    OUT.no_auto_bright    = 1;
     
     argv[argc] = (char*)"";
     for (arg=1; (((opm = argv[arg][0]) - 2) | 2) == '+'; )
@@ -1076,12 +1064,22 @@ int main(int argc, char *argv[])
                     continue;
                 }
             
-//            if(P1.dng_version != 0)
-//                OUT.output_color = 1;
 
             if(use_timing)
                 timerprint("LibRaw::unpack()",argv[arg]);
-
+            
+            OUT.output_color       = 5;
+            OUT.use_camera_wb      = 1;
+            OUT.gamm[0]            = 1;
+            OUT.gamm[1]            = 1;
+            OUT.no_auto_bright     = 1;
+//            OUT.no_auto_scale      = 1;
+            OUT.adjust_maximum_thr = 0.0;
+            
+            if (P1.dng_version != 0) {
+                OUT.use_camera_wb     = 0;
+            }
+            
             timerstart_timeval();
             
             if (LIBRAW_SUCCESS != (ret = RawProcessor.dcraw_process()))

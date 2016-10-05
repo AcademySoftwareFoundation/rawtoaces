@@ -621,7 +621,7 @@ float * convert_to_aces_DNG(
     return aces;
 }
 
-float * prepareAcesData_NONDNG(libraw_processed_image_t *image)
+float * prepareAcesData_NonDNG(libraw_processed_image_t *image)
 {
     float * pixels = 0;
     pixels = convert_to_aces_NonDNG(image);
@@ -1068,6 +1068,7 @@ int main(int argc, char *argv[])
             if(use_timing)
                 timerprint("LibRaw::unpack()",argv[arg]);
             
+            OUT.use_camera_matrix = 3 * (opm == '+');
             OUT.output_color       = 5;
             OUT.use_camera_wb      = 1;
             OUT.gamm[0]            = 1;
@@ -1076,7 +1077,7 @@ int main(int argc, char *argv[])
 //            OUT.no_auto_scale      = 1;
             OUT.adjust_maximum_thr = 0.0;
             
-            if (P1.dng_version != 0) {
+            if (P1.dng_version) {
                 OUT.use_camera_wb     = 0;
             }
             
@@ -1102,9 +1103,11 @@ int main(int argc, char *argv[])
                 printf("Writing file %s\n",outfn);
             
             libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
+            if(use_timing)
+                timerprint("LibRaw::dcraw_make_mem_image()",argv[arg]);
             
             if(P1.dng_version == 0) {
-                float * aces = prepareAcesData_NONDNG(post_image);
+                float * aces = prepareAcesData_NonDNG(post_image);
                 aces_write(outfn,
                            1.0,
                            post_image->width,

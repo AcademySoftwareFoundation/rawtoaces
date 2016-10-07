@@ -937,6 +937,7 @@ int main(int argc, char *argv[])
               case 'c':  OUT.adjust_maximum_thr   = (float)atof(argv[arg++]);  break;
               // #define LIBRAW_DEFAULT_AUTO_BRIGHTNESS_THRESHOLD 0.01
               // case 'R':  OUT.auto_bright_thr   = (float)atof(argv[arg++]);  break;
+              // The camera information can be found from libraw_types.h
               // case 'i':identify_only = 1; break;
               case 'n':  OUT.threshold   = (float)atof(argv[arg++]);  break;
               case 'b':  OUT.bright      = (float)atof(argv[arg++]);  break;
@@ -1072,18 +1073,24 @@ int main(int argc, char *argv[])
             if(use_timing)
                 timerprint("LibRaw::unpack()",argv[arg]);
             
-            OUT.use_camera_matrix = 3 * (opm == '-');
+            OUT.use_camera_matrix  = 3 * (opm == '-');
             OUT.output_color       = 5;
+            OUT.highlight          = 0;
             OUT.use_camera_wb      = 1;
             OUT.gamm[0]            = 1;
             OUT.gamm[1]            = 1;
             OUT.no_auto_bright     = 1;
 //            OUT.no_auto_scale      = 1;
             OUT.adjust_maximum_thr = 0.0;
-            OUT.use_auto_wb       = 0;
             
-            if (P1.dng_version) {
-                OUT.use_camera_wb     = 0;
+            if(opt == 'r' || P1.dng_version){
+                OUT.use_camera_wb = 0;
+                OUT.use_auto_wb = 0;
+            }
+            
+            if(opt == 'a') {
+                OUT.use_camera_wb = 0;
+                OUT.use_auto_wb = 1;
             }
             
             timerstart_timeval();

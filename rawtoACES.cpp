@@ -834,7 +834,7 @@ void usage(const char *prog)
 "-F        Use FILE I/O instead of streambuf API\n"
 "-d        Detailed timing report\n"
 "-D        Using the coeff matrix from Adobe\n"
-"-M        Set the value for auto bright\n"
+//"-M        Set the value for auto bright\n"
 
 #ifndef WIN32
 "-E        Use mmap()-ed buffer instead of plain FILE I/O\n"
@@ -919,10 +919,11 @@ int main(int argc, char *argv[])
     for (arg=1; (((opm = argv[arg][0]) - 2) | 2) == '+'; )
         {
             opt = argv[arg++][1];
-            if ((cp = strchr (sp=(char*)"cnbrkStqmMHABCg", opt))!=0)
+            if ((cp = strchr (sp=(char*)"cnbrkStqmHABCgi", opt))!=0)
                 for (i=0; i < "111411111142"[cp-sp]-'0'; i++)
                     if (!isdigit(argv[arg+i][0]))
                         {
+//                            printf("argv[arg+i][0]: %c, %i\n", opt,(isdigit(argv[arg+i][0])));
                             fprintf (stderr,"Non-numeric argument to \"-%c\"\n", opt);
                             return 1;
                         }
@@ -930,10 +931,13 @@ int main(int argc, char *argv[])
           switch (opt) 
               {
               case 'v':  verbosity++;  break;
+              // Adobe Coefficients
               case 'D':  OUT.use_camera_matrix = 1; break;
               case 'G':  OUT.green_matching = 1; break;
               case 'c':  OUT.adjust_maximum_thr   = (float)atof(argv[arg++]);  break;
-              case 'M':  OUT.auto_bright_thr   = (float)atof(argv[arg++]);  break;
+              // #define LIBRAW_DEFAULT_AUTO_BRIGHTNESS_THRESHOLD 0.01
+              // case 'R':  OUT.auto_bright_thr   = (float)atof(argv[arg++]);  break;
+              // case 'i':identify_only = 1; break;
               case 'n':  OUT.threshold   = (float)atof(argv[arg++]);  break;
               case 'b':  OUT.bright      = (float)atof(argv[arg++]);  break;
               case 'P':  OUT.bad_pixels  = argv[arg++];        break;
@@ -968,7 +972,7 @@ int main(int argc, char *argv[])
               case 'j':  OUT.use_fuji_rotate   = 0;  break;
               case 'W':  OUT.no_auto_bright    = 1;  break;
               case 'F':  use_bigfile           = 1; break;
-              case 'd':  use_timing            = 1; break;
+              case 'd':  use_timing            = 1; break; 
 #ifndef WIN32
               case 'E':  use_mmap              = 1;  break;
 #endif
@@ -1068,7 +1072,7 @@ int main(int argc, char *argv[])
             if(use_timing)
                 timerprint("LibRaw::unpack()",argv[arg]);
             
-            OUT.use_camera_matrix = 3 * (opm == '+');
+            OUT.use_camera_matrix = 3 * (opm == '-');
             OUT.output_color       = 5;
             OUT.use_camera_wb      = 1;
             OUT.gamm[0]            = 1;
@@ -1076,6 +1080,7 @@ int main(int argc, char *argv[])
             OUT.no_auto_bright     = 1;
 //            OUT.no_auto_scale      = 1;
             OUT.adjust_maximum_thr = 0.0;
+            OUT.use_auto_wb       = 0;
             
             if (P1.dng_version) {
                 OUT.use_camera_wb     = 0;

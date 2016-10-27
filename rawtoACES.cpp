@@ -48,6 +48,7 @@ it under the terms of the one of three licenses as you choose:
 #include <math.h>
 #include <ctype.h>
 #include <stdexcept>
+#include "lib/idt.h"
 
 #ifndef WIN32
 #include <fcntl.h>
@@ -64,11 +65,12 @@ it under the terms of the one of three licenses as you choose:
 #endif
 
 using namespace std;
+using namespace idt;
 
 static const double XYZ_acesrgb_3[3][3] = {
     { 1.0634731317028,      0.00639793641966071,   -0.0157891874506841 },
-    { -0.492082784686793,   1.36823709310019,      0.0913444629573544 },
-    { -0.0028137154424595,  0.00463991165243123,   0.91649468506889 }
+    { -0.492082784686793,   1.36823709310019,      0.0913444629573544  },
+    { -0.0028137154424595,  0.00463991165243123,   0.91649468506889    }
 };
 
 static const double XYZ_acesrgb_4[4][4] = {
@@ -80,10 +82,10 @@ static const double XYZ_acesrgb_4[4][4] = {
 };
 
 static const float chromaticitiesACES[4][2] = {
-    { 0.73470f,     0.26530f },
-    { 0.00000f,     1.00000f },
-    { 0.00010f,     -0.07700f},
-    { 0.32168f,     0.33767f }
+    { 0.73470f,     0.26530f  },
+    { 0.00000f,     1.00000f  },
+    { 0.00010f,     -0.07700f },
+    { 0.32168f,     0.33767f  }
 };
 
 static const float deviceWhite[3] = {1.0, 1.0, 1.0};
@@ -1080,17 +1082,15 @@ int main(int argc, char *argv[])
             OUT.gamm[0]            = 1;
             OUT.gamm[1]            = 1;
             OUT.no_auto_bright     = 1;
-//            OUT.no_auto_scale      = 1;
-            OUT.adjust_maximum_thr = 0.0;
             
-            if(opt == 'r' || P1.dng_version){
+            // r option
+            if(isdigit(OUT.user_mul[0])|| P1.dng_version){
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
             }
             
-            if(opt == 'a') {
+            if(OUT.use_auto_wb == 1) {
                 OUT.use_camera_wb = 0;
-                OUT.use_auto_wb = 1;
             }
             
             timerstart_timeval();
@@ -1113,6 +1113,8 @@ int main(int argc, char *argv[])
                 printf("Converting to aces RGB\n");
             else if(verbosity)
                 printf("Writing file %s\n",outfn);
+            
+            
             
             libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
             if(use_timing)

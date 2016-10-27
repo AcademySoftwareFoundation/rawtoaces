@@ -8,16 +8,16 @@ set( RAWTOACES_VERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${R
 
 set( CMAKE_MACOSX_RPATH 1 )
 
-if( MSVC )
-  if( CMAKE_CXX_FLAGS MATCHES "/W[0-4]" )
-     string(REGEX REPLACE "/W[0-4]" "/W0" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-  else() 
-    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "/W0")
-  endif()
-endif ()
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    set(warnings "/W4 /WX /EHsc")
+endif()
 
+if (NOT CONFIGURED_ONCE)
+	set(CMAKE_CXX_FLAGS "${warnings}")
+	set(CMAKE_C_FLAGS "${warnings}")
+endif()
 
-## Make install directories overrideable
+## Make install directories overridable
 set( INSTALL_LIB_DIR lib CACHE PATH "Install directory for libraries" )
 set( INSTALL_BIN_DIR bin CACHE PATH "Install directory for executable binaries" )
 set( INSTALL_INCLUDE_DIR include CACHE PATH "Install directory for public header files" )
@@ -172,6 +172,7 @@ include_directories( "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" )
 # implement find library stuff...
 
 add_definitions( -DPACKAGE="RAWTOACES" -DVERSION="${RAWTOACES_VERSION}" )
+add_subdirectory(lib)
 
 # Add all targets to the build-tree export set
 # if ( WIN32 AND NOT CYGWIN )
@@ -227,6 +228,8 @@ include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" "${IlmBase_INCLUDE_DIRS}" "${
 add_executable( rawtoaces
   rawtoACES.cpp
 )
+
+target_link_libraries(rawtoaces rawtoacesIDT)
 
 if ( IlmBase_FOUND )
  target_link_libraries( rawtoaces ${IlmBase_LIBRARIES} )

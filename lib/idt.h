@@ -96,7 +96,6 @@ struct illum {
 
 struct spectra {
     float* data[3];
-    valarray <float> wavelength;
     uint8_t interval;
 };
 
@@ -125,13 +124,13 @@ namespace idt {
         
             const char * showBrand();
             const char * showModel();
-            const valarray <float> showSensitivity();
+            const valarray<float> showSensitivity();
         
         private:
             const char * _brand;
             const char * _model;
             uint8_t _increment;
-            const valarray <float> _sensitivity;
+            const valarray<float> _sensitivity;
     };
 
     class Idt {
@@ -151,9 +150,9 @@ namespace idt {
             float ** calc_cat_mat(illum src, illum desc, float CAT[3][3]);
         
             // Converts from CIE XYZ tristimulus values to CIE L*a*b*
-            CIELab XYZt_2_Lab(valarray <CIEXYZ> XYZt, CIEXYZ XYZw);
-            valarray <float> spec_interp(spectra &sp, valarray <float> wl, uint8_t interval);
-            float ** gen_final_idt(valarray <float> B_final);
+            CIELab XYZt_2_Lab(valarray<CIEXYZ> XYZt, CIEXYZ XYZw);
+            valarray<float> spec_interp(spectra &sp, valarray<float> wl, uint8_t interval);
+            float ** gen_final_idt(valarray<float> B_final);
         
             void readspstdata(const string &path);
         
@@ -162,10 +161,10 @@ namespace idt {
             lightsrc _lightSource;
             spectra _trainingSpectra;
         
-            valarray <float> _encodingWhite;
+            valarray<float> _encodingWhite;
             // white balance
-            valarray <float> _B_start;
-            valarray <Spst *> spsts;
+            valarray<float> _B_start;
+            valarray<Spst *> spsts;
         
             float _CAT[3][3];
     };

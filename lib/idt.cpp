@@ -87,15 +87,15 @@ static const float CATMatrix[3][3] = {
 };
 
 namespace idt {
-    const char * Spst::showBrand() {
+    const char * Spst::getBrand() {
         return this->_brand;
     }
     
-    const char * Spst::showModel() {
+    const char * Spst::getModel() {
         return this->_model;
     }
     
-    const valarray <float> Spst::showSensitivity() {
+    const valarray <RGBSen> Spst::getSensitivity() {
         return this->_sensitivity;
     }
 
@@ -112,7 +112,7 @@ namespace idt {
 
     
     float * Idt::XYZt_illum(lightsrc &ls) {
-        valarray<float> wl = ls.wavelength;
+        float* wl = ls.wavelength;
         return 0;
     }
     
@@ -148,20 +148,26 @@ namespace idt {
             exit(EXIT_FAILURE);
         }
         
+        valarray <RGBSen> rgbsen;
+        
         while(!fin.eof()){
             char buffer[512];
             fin.getline(buffer, 512);
             
-            const char* token[43] = {};
+            const char* token[5] = {};
             token[0] = strtok(buffer, " ,-");
             assert(token[0]);
             
-            valarray <float> sensitivity;
-            
-            for (int n = 1; n < 43; n++){
+            for (int n = 0; n < 3; n++){
                 token[n] = strtok(nullptr, " ,-");
-                if(!token[n] && n >= 2) {
-                    sensitivity[n-2] = atof(token[n]);
+                if(token[n] && n == 2) {
+                    rgbsen[i].RSen = atof(token[n]);
+                }
+                else if(token[n] && n == 3) {
+                    rgbsen[i].GSen = atof(token[n]);
+                }
+                else if(token[n] && n == 4) {
+                    rgbsen[i].BSen = atof(token[n]);
                 }
                 else if(!token[n]) {
 //                    continue;
@@ -170,8 +176,8 @@ namespace idt {
                 }
             }
             
-            Spst * tmp = new Spst(token[0], token[1], 10, (const valarray<float>)sensitivity);
-            spsts[i] = tmp;
+            Spst * tmp = new Spst(token[0], token[1], 10, rgbsen);
+            spsts[i++] = tmp;
         }
     }
     

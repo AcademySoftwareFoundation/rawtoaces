@@ -52,83 +52,65 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
-#include <iostream>
-#include <fstream>
-#include <stdexcept>
-#include <stdint.h>
-#include <math.h>
+#include <valarray>
+#include <string>
 
-#include <half.h>
-#include "data.h"
+#if !defined(TRUE)
+#define TRUE 1
+#endif
+
+#if !defined(FALSE)
+#define FALSE 0
+#endif
+
+typedef half   float16_t;
+typedef float  float32_t;
+typedef double float64_t;
 
 using namespace std;
 
-namespace idt {
-    class Spst {
-        public:
-            Spst() {};
-            Spst(const Spst& spstobject) : _brand(spstobject._brand),
-                                           _model(spstobject._model),
-                                           _increment(spstobject._increment),
-                                           _sensitivity(spstobject._sensitivity){ };
-            Spst(const char * brand,
-                 const char * model,
-                 uint8_t increment,
-                 valarray <RGBSen> sensitivity) : _brand(brand),
-                                              _model(model),
-                                              _increment(increment),
-                                              _sensitivity(sensitivity){ };
-            ~Spst(){};
-        
-            const char * getBrand();
-            const char * getModel();
-            const valarray <RGBSen> getSensitivity();
-        
-        private:
-            const char * _brand;
-            const char * _model;
-            uint8_t _increment;
-            const valarray <RGBSen> _sensitivity;
-    };
+struct CIEXYZ {
+    float Xt;
+    float Yt;
+    float Zt;
+};
 
-    class Idt {
-        public:
-            Idt();
-            ~Idt();
-        
-            // Matrix converting ACES RGB relative exposure values to CIE XYZ tristimulus values.
-            float ** aces_3_XYZt_mat();
-        
-            // If output encoding is XYZt by default w is the CIE XYZ tristimulus values of adopted white.
-            // ls -> Spectral power distribution of the illuminant or source.
-            // wl -> Wavelenghts corresponding to SPEC.
-            float * XYZt_illum(lightsrc &ls);
-        
-            // Returns a 3x3 Von Kries chromatic adaptation transform matrix
-            float ** calc_cat_mat(illum src, illum desc, float CAT[3][3]);
-        
-            // Converts from CIE XYZ tristimulus values to CIE L*a*b*
-            CIELab XYZt_2_Lab(valarray<CIEXYZ> XYZt, CIEXYZ XYZw);
-            valarray<float> spec_interp(spectra &sp, valarray<float> wl, uint8_t interval);
-            float ** gen_final_idt(valarray<float> B_final);
-        
-            void readspstdata(const string &path);
-        
-        private:
-            string _outputEncoding;
-            lightsrc _lightSource;
-            spectra _trainingSpectra;
-        
-            valarray<float> _encodingWhite;
-            // white balance
-            valarray<float> _B_start;
-            valarray<Spst *> spsts;
-        
-            float _CAT[3][3];
-    };
-    
-//    template <typename T>
-//    valarray <T> repmat(valarray <T> data, uint8_t row, uint8_t col=1);
+struct CIELab {
+    float L;
+    float a;
+    float b;
+};
 
-}
+struct RGBSen {
+    float RSen;
+    float GSen;
+    float BSen;
+};
 
+struct illum {
+    CIEXYZ XYZt;
+    string src;
+    string des;
+};
+
+struct spectra {
+    float* data[3];
+    uint8_t interval;
+};
+
+struct lightsrc {
+    string type;
+    float* data;
+    float* wavelength;
+};
+
+static const struct {
+    const char* maker;
+    const char* model;
+    uint8_t interval;
+    RGBSen sense[41];
+} Camera[] ={
+    { "ARRI", "D21", 5,
+      {{0.000188205, 8.59E-05, 9.58E-05}, {0.000440222,	0.000166118, 0.000258734}}
+    },
+};

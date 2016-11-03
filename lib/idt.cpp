@@ -53,56 +53,36 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #include "idt.h"
-#include "assert.h"
-
-#if 0
-    #define debug(x) (cout << x << endl)
-#else
-    #define debug(x)
-#endif
-
-
-static const float bradford[3][3] = {
-    {0.8951,  0.2664, -0.1614},
-    {-0.7502, 1.7135,  0.0367},
-    {0.0389,  -0.0685, 1.0296}
-};
-
-static const float cat02[3][3] = {
-    {0.7328,  0.4296,  -0.1624},
-    {-0.7036, 1.6975,  0.0061 },
-    {0.0030,  0.0136,  0.9834 }
-};
-
-static const float reillum[3][3] = {
-    {1.6160, -0.3591, -0.2569},
-    {-0.9542, 1.8731,  0.0811},
-    {0.0170,  -0.0333, 1.0163}
-};
-
-static const float CATMatrix[3][3] = {
-    { 1.0634731317028,      0.00639793641966071,   -0.0157891874506841 },
-    { -0.492082784686793,   1.36823709310019,      0.0913444629573544  },
-    { -0.0028137154424595,  0.00463991165243123,   0.91649468506889    }
-};
 
 namespace idt {
-    const char * Spst::getBrand() {
+    const char * Spst::getBrand() const {
         return this->_brand;
     }
     
-    const char * Spst::getModel() {
+    const char * Spst::getModel() const {
         return this->_model;
     }
     
-    const valarray <RGBSen> Spst::getSensitivity() {
+    const valarray <RGBSen>& Spst::getSensitivity() const {
+        return this->_sensitivity;
+    }
+    
+    char * Spst::getBrand() {
+        return this->_brand;
+    }
+    
+    char * Spst::getModel() {
+        return this->_model;
+    }
+    
+    valarray <RGBSen>& Spst::getSensitivity() {
         return this->_sensitivity;
     }
 
     Idt::Idt() {
         _outputEncoding = "ACES";
         _encodingWhite = valarray <float> (0.0, 3);
-        _B_start = valarray <float> (0.0, 3);
+        _WB_start = valarray <float> (0.0, 3);
         *_CAT[0] = CATMatrix[0][0];
     }
     
@@ -130,14 +110,60 @@ namespace idt {
     }
     
     CIELab Idt::XYZt_2_Lab(valarray<CIEXYZ> XYZt, CIEXYZ XYZw) {
-        CIELab lab = {1.0, 1.0, 1.0};
+        CIELab CLab = {1.0, 1.0, 1.0};
 //        static CIELab lab = {1.0, 1.0, 1.0};
 //        CIELab *lab = static_cast<CIELab>(malloc(1 * sizeof(CIELab)));
         
-        return lab;
+        return CLab;
     }
     
-    void Idt::readspstdata(const string & path){
+//    void Idt::readspstdata(const string & path){
+//        ifstream fin;
+//        fin.open(path);
+//        
+//        int i = 0;
+//        
+//        if(!fin.good()) {
+//            debug("The file may not exist.\n");
+//            exit(EXIT_FAILURE);
+//        }
+//        
+//        valarray <RGBSen> rgbsen;
+//        
+//        while(!fin.eof()){
+//            char buffer[512];
+//            fin.getline(buffer, 512);
+//            
+//            char* token[5] = {};
+//            token[0] = strtok(buffer, " ,-");
+//            assert(token[0]);
+//            
+//            for (int n = 0; n < 3; n++){
+//                token[n] = strtok(null_ptr, " ,-");
+//                if(token[n] && n == 2) {
+//                    rgbsen[i].RSen = atof(token[n]);
+//                }
+//                else if(token[n] && n == 3) {
+//                    rgbsen[i].GSen = atof(token[n]);
+//                }
+//                else if(token[n] && n == 4) {
+//                    rgbsen[i].BSen = atof(token[n]);
+//                }
+//                else if(!token[n]) {
+////                    continue;
+//                    debug("The spectral sensitivity file may need to be looked at\n");
+//                    exit(EXIT_FAILURE);
+//                }
+//            }
+//            
+//            fin.close();
+//
+//            Spst * tmp = new Spst(token[0], token[1], 10, rgbsen);
+//            spsts[i++] = tmp;
+//        }
+//    }
+    
+    void Idt::load_training_spectral(const char * path){
         ifstream fin;
         fin.open(path);
         
@@ -148,38 +174,73 @@ namespace idt {
             exit(EXIT_FAILURE);
         }
         
-        valarray <RGBSen> rgbsen;
+        while(!fin.eof()){
+            char buffer[4096];
+            fin.getline(buffer, 4096);
+            
+            char* token[121] = {};
+            token[0] = strtok(buffer, " ,-");
+            assert(token[0]);
+            this->_trainingSpec[i].wl = atof(token[0]);
+            
+            for (int n = 1; n < 121; n++){
+                token[n] = strtok(null_ptr, " ,-");
+                if(token[n]) {
+                    this->_trainingSpec[i].data[n-1] = atof(token[n]);
+                }
+                else {
+                    debug("The training spectral sensitivity file may need to be looked at\n");
+                    exit(EXIT_FAILURE);
+                }
+            }
+            i += 1;
+        }
+        
+        fin.close();
+    }
+    
+    void Idt::load_CMF(const char * path){
+        ifstream fin;
+        fin.open(path);
+        
+        int i = 0;
+        
+        if(!fin.good()) {
+            debug("The file may not exist.\n");
+            exit(EXIT_FAILURE);
+        }
         
         while(!fin.eof()){
             char buffer[512];
             fin.getline(buffer, 512);
             
-            const char* token[5] = {};
+            char* token[4] = {};
             token[0] = strtok(buffer, " ,-");
             assert(token[0]);
+            this->_trainingSpec[i].wl = atof(token[0]);
             
-            for (int n = 0; n < 3; n++){
-                token[n] = strtok(nullptr, " ,-");
-                if(token[n] && n == 2) {
-                    rgbsen[i].RSen = atof(token[n]);
+            for (int n = 1; n < 4; n++){
+                token[n] = strtok(null_ptr, " ,-");
+                if(token[n] && n == 1) {
+                    this->_cmf[i].xbar = atof(token[n]);
+                }
+                else if(token[n] && n == 2) {
+                    this->_cmf[i].ybar = atof(token[n]);
                 }
                 else if(token[n] && n == 3) {
-                    rgbsen[i].GSen = atof(token[n]);
+                    this->_cmf[i].zbar = atof(token[n]);
                 }
-                else if(token[n] && n == 4) {
-                    rgbsen[i].BSen = atof(token[n]);
-                }
-                else if(!token[n]) {
-//                    continue;
-                    debug("The spectral sensitivity file may need to be looked at\n");
+                else {
+                    debug("The color matching function file may need to be looked at\n");
                     exit(EXIT_FAILURE);
                 }
             }
-            
-            Spst * tmp = new Spst(token[0], token[1], 10, rgbsen);
-            spsts[i++] = tmp;
+            i += 1;
         }
+        
+        fin.close();
     }
+    
     
     template <typename T>
     valarray <T> repmat(valarray <T> data, uint8_t row, uint8_t col) {

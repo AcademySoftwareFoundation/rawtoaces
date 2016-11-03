@@ -52,13 +52,21 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
+
+// # C++ 11:201103L, C++ 97:199711L
+// #define null_ptr (__cplusplus > 201103L ? (nullptr) : 0)
+#define null_ptr nullptr
+
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
 #include <stdint.h>
 #include <math.h>
-
+#include <cstring>
 #include <half.h>
+#include <ctype.h>
+#include <stdlib.h>
+
 #include "data.h"
 
 using namespace std;
@@ -67,28 +75,32 @@ namespace idt {
     class Spst {
         public:
             Spst() {};
-            Spst(const Spst& spstobject) : _brand(spstobject._brand),
+            Spst(Spst& spstobject) : _brand(spstobject._brand),
                                            _model(spstobject._model),
                                            _increment(spstobject._increment),
                                            _sensitivity(spstobject._sensitivity){ };
-            Spst(const char * brand,
-                 const char * model,
+            Spst(char * brand,
+                 char * model,
                  uint8_t increment,
                  valarray <RGBSen> sensitivity) : _brand(brand),
-                                              _model(model),
-                                              _increment(increment),
-                                              _sensitivity(sensitivity){ };
+                                                  _model(model),
+                                                  _increment(increment),
+                                                  _sensitivity(sensitivity){ };
             ~Spst(){};
         
-            const char * getBrand();
-            const char * getModel();
-            const valarray <RGBSen> getSensitivity();
+            const char * getBrand() const;
+            const char * getModel() const;
+            const valarray <RGBSen>& getSensitivity() const;
+        
+            char * getBrand();
+            char * getModel();
+            valarray <RGBSen>& getSensitivity();
         
         private:
-            const char * _brand;
-            const char * _model;
+            char * _brand;
+            char * _model;
+            valarray <RGBSen> _sensitivity;
             uint8_t _increment;
-            const valarray <RGBSen> _sensitivity;
     };
 
     class Idt {
@@ -109,19 +121,20 @@ namespace idt {
         
             // Converts from CIE XYZ tristimulus values to CIE L*a*b*
             CIELab XYZt_2_Lab(valarray<CIEXYZ> XYZt, CIEXYZ XYZw);
-            valarray<float> spec_interp(spectra &sp, valarray<float> wl, uint8_t interval);
             float ** gen_final_idt(valarray<float> B_final);
         
-            void readspstdata(const string &path);
+//            void readspstdata(const string &path);
+            void load_training_spectral(const char * path);
+            void load_CMF(const char * path);
         
         private:
             string _outputEncoding;
             lightsrc _lightSource;
-            spectra _trainingSpectra;
+            valarray<trainSpec> _trainingSpec;
+            valarray<CMF> _cmf;
         
             valarray<float> _encodingWhite;
-            // white balance
-            valarray<float> _B_start;
+            valarray<float> _WB_start;
             valarray<Spst *> spsts;
         
             float _CAT[3][3];

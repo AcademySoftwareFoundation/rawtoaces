@@ -21,9 +21,6 @@ it under the terms of the one of three licenses as you choose:
 
  */
 
-
-// # C++ 11:201103L, C++ 97:199711L
-#define null_ptr (__cplusplus > 201103L ? (nullptr) : 0)
 #define INV_255 (1.0/(double) 255.0)
 #define INV_65535 (1.0/(double) 65535.0)
 
@@ -66,35 +63,6 @@ it under the terms of the one of three licenses as you choose:
 
 using namespace std;
 using namespace idt;
-
-//static const double XYZ_acesrgb_3[3][3] = {
-//    { 1.0634731317028,      0.00639793641966071,   -0.0157891874506841 },
-//    { -0.492082784686793,   1.36823709310019,      0.0913444629573544  },
-//    { -0.0028137154424595,  0.00463991165243123,   0.91649468506889    }
-//};
-
-static const double XYZ_acesrgb_3[3][3] = {
-    { 1.01584,   -0.01773,   0.04637 },
-    { -0.50780,  1.39129,    0.11917 },
-    { 0.00846,   -0.01404,   1.21907 }
-};
-
-static const double XYZ_acesrgb_4[4][4] = {
-    { 1.0634731317028,      0.00639793641966071,   -0.0157891874506841,     0.0 },
-    { -0.492082784686793,   1.36823709310019,      0.0913444629573544,      0.0 },
-    { -0.0028137154424595,  0.00463991165243123,   0.91649468506889,        0.0 },
-    { 0.0,                  0.0,                   0.0,                     1.0 }
-
-};
-
-static const float chromaticitiesACES[4][2] = {
-    { 0.73470f,     0.26530f  },
-    { 0.00000f,     1.00000f  },
-    { 0.00010f,     -0.07700f },
-    { 0.32168f,     0.33767f  }
-};
-
-static const float deviceWhite[3] = {1.0, 1.0, 1.0};
 
 // Beginning -- For DNG chromatic adoption matrix calculations //
 #define sign(x)		((x) > 0 ? 1 : ( (x) < 0 ? (0-1) : 0))

@@ -64,20 +64,7 @@ it under the terms of the one of three licenses as you choose:
 using namespace std;
 using namespace idt;
 
-// Beginning -- For DNG chromatic adoption matrix calculations //
-#define sign(x)		((x) > 0 ? 1 : ( (x) < 0 ? (0-1) : 0))
-#define countSize(a)	(sizeof(a) / sizeof((a)[0]))
-
-valarray<float>  cameraCalibration1DNG = valarray<float>(1.0f, 9);
-valarray<float>  cameraCalibration2DNG = valarray<float>(1.0f, 9);
-valarray<float>  cameraToXYZMtx        = valarray<float>(1.0f, 9);
-valarray<float>  xyz2rgbMatrix1DNG     = valarray<float>(1.0f, 9);
-valarray<float>  xyz2rgbMatrix2DNG     = valarray<float>(1.0f, 9);
-valarray<float>  analogBalanceDNG      = valarray<float>(1.0f, 3);
-valarray<float>  neutralRGBDNG         = valarray<float>(1.0f, 3);
-valarray<float>  cameraXYZWhitePoint   = valarray<float>(1.0f, 3);
-valarray<float>  calibrateIllum        = valarray<float>(1.0f, 2);
-
+// Beginning -- For DNG chromatic adoption matrix calculations /
 template<class T>
 void printValarray (const valarray<T>&va, string s, int num)
 {
@@ -104,39 +91,6 @@ valarray<float> matrixBradford( )
     return valarray<float>(CBradford, 9);
 };
 
-static const float Robertson_uvtTable[][3] = {
-    { 0.18006f, 0.26352f, -0.24341f},
-    { 0.18066f, 0.26589f, -0.25479f},
-    { 0.18133f, 0.26846f, -0.26876f},
-    { 0.18208f, 0.27119f, -0.28539f},
-    { 0.18293f, 0.27407f, -0.3047f},
-    { 0.18388f, 0.27709f, -0.32675f},
-    { 0.18494f, 0.28021f, -0.35156f},
-    { 0.18611f, 0.28342f, -0.37915f},
-    { 0.18740f, 0.28668f, -0.40955f},
-    { 0.18880f, 0.28997f, -0.44278f},
-    { 0.19032f, 0.29326f, -0.47888f},
-    { 0.19462f, 0.30141f, -0.58204f},
-    { 0.19962f, 0.30921f, -0.70471f},
-    { 0.20525f, 0.31647f, -0.84901f},
-    { 0.21142f, 0.32312f, -1.0182f},
-    { 0.21807f, 0.32909f, -1.2168f},
-    { 0.22511f, 0.33439f, -1.4512f},
-    { 0.23247f, 0.33904f, -1.7298f},
-    { 0.24010f, 0.34308f, -2.0637f},
-    { 0.24792f, 0.34655f, -2.4681f},
-    { 0.25591f, 0.34951f, -2.9641f},
-    { 0.26400f, 0.35200f, -3.5814f},
-    { 0.27218f, 0.35407f, -4.3633f},
-    { 0.28039f, 0.35577f, -5.3762f},
-    { 0.28863f, 0.35714f, -6.7262f},
-    { 0.29685f, 0.35823f, -8.5955f},
-    { 0.30505f, 0.35907f, -11.324f},
-    { 0.31320f, 0.35968f, -15.628f},
-    { 0.32129f, 0.36011f, -23.325f},
-    { 0.32931f, 0.36038f, -40.77f},
-    { 0.33724f, 0.36051f, -116.45f}
-};
 
 valarray<float> multiplyMatrix(valarray<float> mtxA, valarray<float> mtxB, size_t K=3)
 {
@@ -809,6 +763,7 @@ void usage(const char *prog)
 "-B <x y w h> use cropbox\n"
 "-F        Use FILE I/O instead of streambuf API\n"
 "-d        Detailed timing report\n"
+"-r        User supplied channel multipliers, at least one of them should be 1.0\n"
 "-D        Using the coeff matrix from Adobe\n"
 //"-M        Set the value for auto bright\n"
 
@@ -895,7 +850,8 @@ int main(int argc, char *argv[])
     for (arg=1; (((opm = argv[arg][0]) - 2) | 2) == '+'; )
         {
             opt = argv[arg++][1];
-            if ((cp = strchr (sp=(char*)"cnbrkStqmHABCgi", opt))!=0)
+//            if ((cp = strchr (sp=(char*)"cnbrkStqmHABCgi", opt))!=0)
+            if ((cp = strchr (sp=(char*)"cnbrkStqmHABCi", opt))!=0)
                 for (i=0; i < "111411111142"[cp-sp]-'0'; i++)
                     if (!isdigit(argv[arg+i][0]))
                         {
@@ -920,8 +876,8 @@ int main(int argc, char *argv[])
               case 'P':  OUT.bad_pixels  = argv[arg++];        break;
               case 'K':  OUT.dark_frame  = argv[arg++];        break;
               case 'r':
-                  for(c=0;c<4;c++) 
-                      OUT.user_mul[c] = (float)atof(argv[arg++]);  
+                      for(c=0;c<4;c++)
+                          OUT.user_mul[c] = (float)atof(argv[arg++]);
                   break;
               case 'C':  
                   OUT.aber[0] = 1 / atof(argv[arg++]);
@@ -1053,14 +1009,25 @@ int main(int argc, char *argv[])
             OUT.output_color       = 5;
             OUT.highlight          = 0;
             OUT.use_camera_wb      = 1;
-            OUT.gamm[0]            = 1;
-            OUT.gamm[1]            = 1;
+            OUT.gamm[0]            = 1.0;
+            OUT.gamm[1]            = 1.0;
             OUT.no_auto_bright     = 1;
             
             // r option
-            if(isdigit(OUT.user_mul[0])|| P1.dng_version){
+            bool checkMultiplier = 0;
+            if(!isnan(OUT.user_mul[0])|| P1.dng_version){
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
+                
+                for(c=0; c<3; c++){
+                    if (OUT.user_mul[c] == 1.0)
+                        checkMultiplier = 1;
+                }
+                
+                if (!checkMultiplier) {
+                    fprintf (stderr, "Please be aware that at least one channel multiplier is required to be equal to 1.0.\n");
+                    return 1;
+                }
             }
             
             if(OUT.use_auto_wb == 1) {

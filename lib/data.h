@@ -70,11 +70,24 @@
 #define debug(x)
 #endif
 
+#define sign(x)		((x) > 0 ? 1 : ( (x) < 0 ? (0-1) : 0))
+#define countSize(a)	(sizeof(a) / sizeof((a)[0]))
+
 typedef half   float16_t;
 typedef float  float32_t;
 typedef double float64_t;
 
 using namespace std;
+
+valarray<float>  cameraCalibration1DNG = valarray<float>(1.0f, 9);
+valarray<float>  cameraCalibration2DNG = valarray<float>(1.0f, 9);
+valarray<float>  cameraToXYZMtx        = valarray<float>(1.0f, 9);
+valarray<float>  xyz2rgbMatrix1DNG     = valarray<float>(1.0f, 9);
+valarray<float>  xyz2rgbMatrix2DNG     = valarray<float>(1.0f, 9);
+valarray<float>  analogBalanceDNG      = valarray<float>(1.0f, 3);
+valarray<float>  neutralRGBDNG         = valarray<float>(1.0f, 3);
+valarray<float>  cameraXYZWhitePoint   = valarray<float>(1.0f, 3);
+valarray<float>  calibrateIllum        = valarray<float>(1.0f, 2);
 
 struct CIEXYZ {
     float Xt;
@@ -118,17 +131,17 @@ struct lightsrc {
     float* wavelength;
 };
 
-//static const double XYZ_acesrgb_3[3][3] = {
-//    { 1.0634731317028,      0.00639793641966071,   -0.0157891874506841 },
-//    { -0.492082784686793,   1.36823709310019,      0.0913444629573544  },
-//    { -0.0028137154424595,  0.00463991165243123,   0.91649468506889    }
-//};
-
 static const double XYZ_acesrgb_3[3][3] = {
-    { 1.01584,   -0.01773,   0.04637 },
-    { -0.50780,  1.39129,    0.11917 },
-    { 0.00846,   -0.01404,   1.21907 }
+    { 1.0634731317028,      0.00639793641966071,   -0.0157891874506841 },
+    { -0.492082784686793,   1.36823709310019,      0.0913444629573544  },
+    { -0.0028137154424595,  0.00463991165243123,   0.91649468506889    }
 };
+
+//static const double XYZ_acesrgb_3[3][3] = {
+//    { 1.01584,   -0.01773,   0.04637 },
+//    { -0.50780,  1.39129,    0.11917 },
+//    { 0.00846,   -0.01404,   1.21907 }
+//};
 
 static const double XYZ_acesrgb_4[4][4] = {
     { 1.0634731317028,      0.00639793641966071,   -0.0157891874506841,     0.0 },
@@ -143,6 +156,40 @@ static const float chromaticitiesACES[4][2] = {
     { 0.00000f,     1.00000f  },
     { 0.00010f,     -0.07700f },
     { 0.32168f,     0.33767f  }
+};
+
+static const float Robertson_uvtTable[][3] = {
+    { 0.18006f, 0.26352f, -0.24341f},
+    { 0.18066f, 0.26589f, -0.25479f},
+    { 0.18133f, 0.26846f, -0.26876f},
+    { 0.18208f, 0.27119f, -0.28539f},
+    { 0.18293f, 0.27407f, -0.3047f},
+    { 0.18388f, 0.27709f, -0.32675f},
+    { 0.18494f, 0.28021f, -0.35156f},
+    { 0.18611f, 0.28342f, -0.37915f},
+    { 0.18740f, 0.28668f, -0.40955f},
+    { 0.18880f, 0.28997f, -0.44278f},
+    { 0.19032f, 0.29326f, -0.47888f},
+    { 0.19462f, 0.30141f, -0.58204f},
+    { 0.19962f, 0.30921f, -0.70471f},
+    { 0.20525f, 0.31647f, -0.84901f},
+    { 0.21142f, 0.32312f, -1.0182f},
+    { 0.21807f, 0.32909f, -1.2168f},
+    { 0.22511f, 0.33439f, -1.4512f},
+    { 0.23247f, 0.33904f, -1.7298f},
+    { 0.24010f, 0.34308f, -2.0637f},
+    { 0.24792f, 0.34655f, -2.4681f},
+    { 0.25591f, 0.34951f, -2.9641f},
+    { 0.26400f, 0.35200f, -3.5814f},
+    { 0.27218f, 0.35407f, -4.3633f},
+    { 0.28039f, 0.35577f, -5.3762f},
+    { 0.28863f, 0.35714f, -6.7262f},
+    { 0.29685f, 0.35823f, -8.5955f},
+    { 0.30505f, 0.35907f, -11.324f},
+    { 0.31320f, 0.35968f, -15.628f},
+    { 0.32129f, 0.36011f, -23.325f},
+    { 0.32931f, 0.36038f, -40.77f},
+    { 0.33724f, 0.36051f, -116.45f}
 };
 
 static const float deviceWhite[3] = {1.0, 1.0, 1.0};

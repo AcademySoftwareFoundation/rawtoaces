@@ -1015,7 +1015,8 @@ int main(int argc, char *argv[])
             
             // r option
             bool checkMultiplier = 0;
-            if(!isnan(OUT.user_mul[0])|| P1.dng_version){
+//            if(!isnan(OUT.user_mul[0]) || P1.dng_version){
+            if(OUT.user_mul[0]){
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
                 
@@ -1028,6 +1029,11 @@ int main(int argc, char *argv[])
                     fprintf (stderr, "Please be aware that at least one channel multiplier is required to be equal to 1.0.\n");
                     return 1;
                 }
+            }
+            
+            if (P1.dng_version) {
+                OUT.use_camera_wb = 0;
+                OUT.use_auto_wb = 0;
             }
             
             if(OUT.use_auto_wb == 1) {

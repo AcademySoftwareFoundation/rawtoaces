@@ -82,7 +82,7 @@ namespace idt {
             Spst(char * brand,
                  char * model,
                  uint8_t increment,
-                 valarray <RGBSen> sensitivity) : _brand(brand),
+                 vector <RGBSen> sensitivity) : _brand(brand),
                                                   _model(model),
                                                   _increment(increment),
                                                   _sensitivity(sensitivity){ };
@@ -90,16 +90,16 @@ namespace idt {
         
             const char * getBrand() const;
             const char * getModel() const;
-            const valarray <RGBSen>& getSensitivity() const;
+            const vector <RGBSen>& getSensitivity() const;
         
             char * getBrand();
             char * getModel();
-            valarray <RGBSen>& getSensitivity();
+            vector <RGBSen>& getSensitivity();
         
         private:
             char * _brand;
             char * _model;
-            valarray <RGBSen> _sensitivity;
+            vector <RGBSen> _sensitivity;
             uint8_t _increment;
     };
 
@@ -120,8 +120,8 @@ namespace idt {
             float ** calc_cat_mat(illum src, illum desc, float CAT[3][3]);
         
             // Converts from CIE XYZ tristimulus values to CIE L*a*b*
-            CIELab XYZt_2_Lab(valarray<CIEXYZ> XYZt, CIEXYZ XYZw);
-            float ** gen_final_idt(valarray<float> B_final);
+            CIELab XYZt_2_Lab(vector<CIEXYZ> XYZt, CIEXYZ XYZw);
+            float ** gen_final_idt(vector<float> B_final);
         
 //            void readspstdata(const string &path);
             void load_training_spectral(const char * path);
@@ -130,18 +130,18 @@ namespace idt {
         private:
             string _outputEncoding;
             lightsrc _lightSource;
-            valarray<trainSpec> _trainingSpec;
-            valarray<CMF> _cmf;
+            vector<trainSpec> _trainingSpec;
+            vector<CMF> _cmf;
         
-            valarray<float> _encodingWhite;
-            valarray<float> _WB_start;
-            valarray<Spst *> spsts;
+            vector<float> _encodingWhite;
+            vector<float> _WB_start;
+            vector<Spst *> spsts;
         
             float _CAT[3][3];
     };
     
 //    template <typename T>
-//    valarray <T> repmat(valarray <T> data, uint8_t row, uint8_t col=1);
+//    vector <T> repmat(vector <T> data, uint8_t row, uint8_t col=1);
 
 }
 

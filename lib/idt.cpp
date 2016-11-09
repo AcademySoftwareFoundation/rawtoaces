@@ -63,7 +63,7 @@ namespace idt {
         return this->_model;
     }
     
-    const valarray <RGBSen>& Spst::getSensitivity() const {
+    const vector <RGBSen>& Spst::getSensitivity() const {
         return this->_sensitivity;
     }
     
@@ -75,14 +75,14 @@ namespace idt {
         return this->_model;
     }
     
-    valarray <RGBSen>& Spst::getSensitivity() {
+    vector <RGBSen>& Spst::getSensitivity() {
         return this->_sensitivity;
     }
 
     Idt::Idt() {
         _outputEncoding = "ACES";
-        _encodingWhite = valarray <float> (0.0, 3);
-        _WB_start = valarray <float> (0.0, 3);
+        _encodingWhite = vector <float> (0.0, 3);
+        _WB_start = vector <float> (0.0, 3);
         *_CAT[0] = CATMatrix[0][0];
     }
     
@@ -109,7 +109,7 @@ namespace idt {
         return vkmat;
     }
     
-    CIELab Idt::XYZt_2_Lab(valarray<CIEXYZ> XYZt, CIEXYZ XYZw) {
+    CIELab Idt::XYZt_2_Lab(vector<CIEXYZ> XYZt, CIEXYZ XYZw) {
         CIELab CLab = {1.0, 1.0, 1.0};
 //        static CIELab lab = {1.0, 1.0, 1.0};
 //        CIELab *lab = static_cast<CIELab>(malloc(1 * sizeof(CIELab)));
@@ -128,7 +128,7 @@ namespace idt {
 //            exit(EXIT_FAILURE);
 //        }
 //        
-//        valarray <RGBSen> rgbsen;
+//        vector <RGBSen> rgbsen;
 //        
 //        while(!fin.eof()){
 //            char buffer[512];
@@ -243,8 +243,8 @@ namespace idt {
     
     
     template <typename T>
-    valarray <T> repmat(valarray <T> data, uint8_t row, uint8_t col) {
-        valarray <T> out(0.0, data.size()*row*col);
+    vector <T> repmat(vector <T> data, uint8_t row, uint8_t col) {
+        vector <T> out(0.0, data.size()*row*col);
         for (int i = 0; i < row; i++) {
             for (int j = 0; j < col; j++) {
                 out[i*col + j] = data[i];
@@ -252,6 +252,49 @@ namespace idt {
         }
         
         return out;
+    }
+    
+    cameraDataPath& cameraPathsFinder() {
+        static cameraDataPath cdp;
+        static bool firstTime = 1;
+        
+        if(firstTime)
+        {
+            vector <string>& cPaths = cdp.paths;
+            
+            string path;
+            const char* env = getenv("RAWTOACES_CAMERA_PATH");
+            if (env)
+                path = env;
+            
+            if (path == "") {
+                #if defined (WIN32) || defined (WIN64)
+                path = ".";
+                #else
+                path = ".:/usr/local/lib/RAWTOACES:/usr/local" PACKAGE "-" VERSION "/lib/RAWTOACES";
+                #endif
+            }
+            
+            size_t pos = 0;
+            while (pos < path.size()){
+                #if defined (WIN32) || defined (WIN64)
+                size_t end = path.find(';', pos);
+                #else
+                size_t end = path.find(':', pos);
+                #endif
+                
+                if (end == string::npos)
+                    end = path.size();
+                
+                string pathItem = path.substr(pos, end-pos);
+                
+                if(find(cPaths.begin(), cPaths.end(), pathItem) == cPaths.end())
+                    cPaths.push_back(pathItem);
+                
+                pos = end + 1;
+            }
+        }
+        return cdp;
     }
 }
 

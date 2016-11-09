@@ -834,6 +834,7 @@ int main(int argc, char *argv[])
     int i,arg,c,ret;
     char opm,opt,*cp,*sp;
     int use_bigfile=0, use_timing=0;
+    bool checkMultiplier = 0;
     
 #ifndef WIN32
     int msize = 0,use_mmap=0;
@@ -876,6 +877,7 @@ int main(int argc, char *argv[])
               case 'P':  OUT.bad_pixels  = argv[arg++];        break;
               case 'K':  OUT.dark_frame  = argv[arg++];        break;
               case 'r':
+                      checkMultiplier = 1;
                       for(c=0;c<4;c++)
                           OUT.user_mul[c] = (float)atof(argv[arg++]);
                   break;
@@ -1014,20 +1016,21 @@ int main(int argc, char *argv[])
             OUT.no_auto_bright     = 1;
             
             // r option
-            bool checkMultiplier = 0;
-//            if(!isnan(OUT.user_mul[0]) || P1.dng_version){
-            if(OUT.user_mul[0]){
+            if( checkMultiplier && !isnan(OUT.user_mul[0])){
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
                 
                 for(c=0; c<3; c++){
-                    if (OUT.user_mul[c] == 1.0)
+                    if (OUT.user_mul[c] == 1.0) {
                         checkMultiplier = 1;
+                        break;
+                    }
+                    else
+                        checkMultiplier = 0;
                 }
                 
                 if (!checkMultiplier) {
-                    fprintf (stderr, "Please be aware that at least one channel multiplier is required to be equal to 1.0.\n");
-                    return 1;
+                    fprintf (stderr, "Warning: At least one channel multiplier should be equal to 1.0.\n");
                 }
             }
             

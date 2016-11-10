@@ -96,7 +96,7 @@ namespace idt {
         return 0;
     }
     
-    float ** calc_cat_mat(illum src,
+    float ** Idt::calc_cat_mat(illum src,
                           illum desc,
                           float CAT[3][3]) {
         
@@ -180,20 +180,23 @@ namespace idt {
             
             char* token[121] = {};
             token[0] = strtok(buffer, " ,-");
+            cout << token[0] << endl;
             assert(token[0]);
-            this->_trainingSpec[i].wl = atof(token[0]);
             
-            for (int n = 1; n < 121; n++){
-                token[n] = strtok(null_ptr, " ,-");
-                if(token[n]) {
-                    this->_trainingSpec[i].data[n-1] = atof(token[n]);
-                }
-                else {
-                    debug("The training spectral sensitivity file may need to be looked at\n");
-                    exit(EXIT_FAILURE);
-                }
-            }
-            i += 1;
+            // pay attention here
+//            _trainingSpec[i].wl = atof(token[0]);
+
+//            for (int n = 1; n < 121; n++){
+//                token[n] = strtok(null_ptr, " ,-");
+//                if(token[n]) {
+//                    this->_trainingSpec[i].data[n-1] = atof(token[n]);
+//                }
+//                else {
+//                    debug("The training spectral sensitivity file may need to be looked at\n");
+//                    exit(EXIT_FAILURE);
+//                }
+//            }
+//            i += 1;
         }
         
         fin.close();
@@ -242,6 +245,7 @@ namespace idt {
     }
     
     
+    // Non-class functions
     template <typename T>
     vector <T> repmat(vector <T> data, uint8_t row, uint8_t col) {
         vector <T> out(0.0, data.size()*row*col);
@@ -270,8 +274,10 @@ namespace idt {
             if (path == "") {
                 #if defined (WIN32) || defined (WIN64)
                 path = ".";
+                cdp.os = "WIN";
                 #else
                 path = ".:/usr/local/lib/RAWTOACES:/usr/local" PACKAGE "-" VERSION "/lib/RAWTOACES";
+                cdp.os = "UNIX";
                 #endif
             }
             

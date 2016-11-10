@@ -133,7 +133,7 @@ struct lightsrc {
 };
 
 struct cameraDataPath {
-    char * os;
+    string os;
     vector <string> paths;
 };
 

@@ -67,7 +67,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#include "data.h"
+#include "define.h"
 
 using namespace std;
 

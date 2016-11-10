@@ -1064,7 +1064,8 @@ int main(int argc, char *argv[])
             else if(verbosity)
                 printf("Writing file %s\n",outfn);
             
-            
+            Idt * idt = new Idt();
+            idt->load_training_spectral("/Users/miaoqizhu/Desktop/rawtoaces_IDT/lib/data/training_spectral");
             
             libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
             if(use_timing)

@@ -76,16 +76,19 @@ namespace idt {
         public:
             Spst() {};
             Spst(Spst& spstobject) : _brand(spstobject._brand),
-                                           _model(spstobject._model),
-                                           _increment(spstobject._increment),
-                                           _sensitivity(spstobject._sensitivity){ };
+                                     _model(spstobject._model),
+                                     _increment(spstobject._increment),
+                                     _sensitivity(spstobject._sensitivity){ };
             Spst(char * brand,
                  char * model,
                  uint8_t increment,
                  vector <RGBSen> sensitivity) : _brand(brand),
-                                                  _model(model),
-                                                  _increment(increment),
-                                                  _sensitivity(sensitivity){ };
+                                                _model(model),
+                                                _increment(increment),
+                                                _sensitivity(sensitivity){ };
+        
+            Spst(vector <RGBSen> sensitivity) : _sensitivity(sensitivity){ };
+        
             ~Spst(){};
         
             const char * getBrand() const;
@@ -94,13 +97,19 @@ namespace idt {
         
             char * getBrand();
             char * getModel();
+        
+            void setBrand(char * brand);
+            void setModel(char * model);
+            void setWLIncrement(uint8_t inc);
+            void setSensitivity(vector <RGBSen> sensitivity);
+
             vector <RGBSen>& getSensitivity();
         
         private:
             char * _brand;
             char * _model;
-            vector <RGBSen> _sensitivity;
             uint8_t _increment;
+            vector <RGBSen> _sensitivity;
     };
 
     class Idt {
@@ -123,7 +132,7 @@ namespace idt {
             CIELab XYZt_2_Lab(vector<CIEXYZ> XYZt, CIEXYZ XYZw);
             float ** gen_final_idt(vector<float> B_final);
         
-//            void readspstdata(const string &path);
+            void load_cameraspst_data(const string &path);
             void load_training_spectral(const char * path);
             void load_CMF(const char * path);
         
@@ -131,11 +140,11 @@ namespace idt {
             string _outputEncoding;
             lightsrc _lightSource;
             vector<trainSpec> _trainingSpec;
+            vector<Spst *> _cameraSpsts;
             vector<CMF> _cmf;
         
             vector<float> _encodingWhite;
             vector<float> _WB_start;
-            vector<Spst *> spsts;
         
             float _CAT[3][3];
     };

@@ -56,34 +56,50 @@
 
 namespace idt {
     const char * Spst::getBrand() const {
-        return this->_brand;
+        return _brand;
     }
     
     const char * Spst::getModel() const {
-        return this->_model;
+        return _model;
     }
     
     const vector <RGBSen>& Spst::getSensitivity() const {
-        return this->_sensitivity;
+        return _sensitivity;
     }
     
     char * Spst::getBrand() {
-        return this->_brand;
+        return _brand;
     }
     
     char * Spst::getModel() {
-        return this->_model;
+        return _model;
+    }
+    
+    void Spst::setBrand(char * brand) {
+        _brand = brand;
+        return;
+    }
+    
+    void Spst::setModel(char * model) {
+        _model = model;
+        return;
+    }
+    
+    void Spst::setWLIncrement(uint8_t inc){
+        _increment = inc;
     }
     
     vector <RGBSen>& Spst::getSensitivity() {
-        return this->_sensitivity;
+        return _sensitivity;
     }
 
     Idt::Idt() {
         _outputEncoding = "ACES";
-        _encodingWhite = vector <float> (0.0, 3);
-        _WB_start = vector <float> (0.0, 3);
+        _encodingWhite = vector<float> (0.0, 3);
+        _WB_start = vector<float> (0.0, 3);
         *_CAT[0] = CATMatrix[0][0];
+        for (int i=0; i<202; i++)
+            _trainingSpec.push_back(trainSpec());
     }
     
     float ** Idt::aces_3_XYZt_mat() {
@@ -117,51 +133,54 @@ namespace idt {
         return CLab;
     }
     
-//    void Idt::readspstdata(const string & path){
-//        ifstream fin;
-//        fin.open(path);
-//        
-//        int i = 0;
-//        
-//        if(!fin.good()) {
-//            debug("The file may not exist.\n");
-//            exit(EXIT_FAILURE);
-//        }
-//        
-//        vector <RGBSen> rgbsen;
-//        
-//        while(!fin.eof()){
-//            char buffer[512];
-//            fin.getline(buffer, 512);
-//            
-//            char* token[5] = {};
-//            token[0] = strtok(buffer, " ,-");
-//            assert(token[0]);
-//            
-//            for (int n = 0; n < 3; n++){
-//                token[n] = strtok(null_ptr, " ,-");
-//                if(token[n] && n == 2) {
-//                    rgbsen[i].RSen = atof(token[n]);
-//                }
-//                else if(token[n] && n == 3) {
-//                    rgbsen[i].GSen = atof(token[n]);
-//                }
-//                else if(token[n] && n == 4) {
-//                    rgbsen[i].BSen = atof(token[n]);
-//                }
-//                else if(!token[n]) {
-////                    continue;
-//                    debug("The spectral sensitivity file may need to be looked at\n");
-//                    exit(EXIT_FAILURE);
-//                }
-//            }
-//            
-//            fin.close();
-//
-//            Spst * tmp = new Spst(token[0], token[1], 10, rgbsen);
-//            spsts[i++] = tmp;
-//        }
-//    }
+    void Idt::load_cameraspst_data(const string & path){
+        ifstream fin;
+        fin.open(path);
+        uint16_t line = 0;
+        
+        if(!fin.good()) {
+            debug("The file may not exist.\n");
+            exit(EXIT_FAILURE);
+        }
+        
+        vector <RGBSen> rgbsen;
+        Spst tmp_spst;
+
+        while(!fin.eof()){
+            char buffer[512];
+            fin.getline(buffer, 512);
+            
+            RGBSen tmp_sen;
+            
+            char* token[3] = {};
+            token[0] = strtok(buffer, " ,");
+            assert(token[0]);
+            
+            if(line == 0)
+                tmp_spst.setBrand(token[0]);
+            else if(line == 1)
+                tmp_spst.setModel(token[0]);
+//            else if(line == 2)
+//                tmp_spst.setWLIncrement(token[0])
+            else {
+                tmp_sen.RSen = atof(token[0]);
+            
+                token[1] = strtok(null_ptr, " ,");
+                tmp_sen.GSen = atof(token[1]);
+            
+                token[2] = strtok(null_ptr, " ,");
+                tmp_sen.BSen = atof(token[2]);
+            }
+            
+            rgbsen.push_back(tmp_sen);
+            
+            line++;
+        }
+        
+//        _sensitivity.push_back(tmp_spst);
+        fin.close();
+
+    }
     
     void Idt::load_training_spectral(const char * path){
         ifstream fin;
@@ -174,29 +193,27 @@ namespace idt {
             exit(EXIT_FAILURE);
         }
         
-        while(!fin.eof()){
+        while((!fin.eof())){
             char buffer[4096];
             fin.getline(buffer, 4096);
             
             char* token[121] = {};
-            token[0] = strtok(buffer, " ,-");
-            cout << token[0] << endl;
+            token[0] = strtok(buffer, " ,");
             assert(token[0]);
             
-            // pay attention here
-//            _trainingSpec[i].wl = atof(token[0]);
+            _trainingSpec[i].wl = atof(token[0]);
 
-//            for (int n = 1; n < 121; n++){
-//                token[n] = strtok(null_ptr, " ,-");
-//                if(token[n]) {
-//                    this->_trainingSpec[i].data[n-1] = atof(token[n]);
-//                }
-//                else {
-//                    debug("The training spectral sensitivity file may need to be looked at\n");
-//                    exit(EXIT_FAILURE);
-//                }
-//            }
-//            i += 1;
+            for (uint8_t n = 1; n < 121; n++){
+                token[n] = strtok(null_ptr, " ,");
+                if(token[n]) {
+                    _trainingSpec[i].data[n-1] = atof(token[n]);
+                }
+                else {
+                    debug("The training spectral sensitivity file may need to be looked at\n");
+                    exit(EXIT_FAILURE);
+                }
+            }
+            i++;
         }
         
         fin.close();

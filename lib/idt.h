@@ -74,42 +74,39 @@ using namespace std;
 namespace idt {
     class Spst {
         public:
-            Spst() {};
+            Spst();
             Spst(Spst& spstobject) : _brand(spstobject._brand),
                                      _model(spstobject._model),
                                      _increment(spstobject._increment),
-                                     _sensitivity(spstobject._sensitivity){ };
+                                     _rgbsen(spstobject._rgbsen){ };
             Spst(char * brand,
                  char * model,
                  uint8_t increment,
-                 vector <RGBSen> sensitivity) : _brand(brand),
+                 vector<RGBSen> rgbsen) : _brand(brand),
                                                 _model(model),
                                                 _increment(increment),
-                                                _sensitivity(sensitivity){ };
-        
-            Spst(vector <RGBSen> sensitivity) : _sensitivity(sensitivity){ };
+                                                _rgbsen(rgbsen){ };
         
             ~Spst(){};
         
             const char * getBrand() const;
             const char * getModel() const;
-            const vector <RGBSen>& getSensitivity() const;
+            const vector <RGBSen> & getSensitivity() const;
         
             char * getBrand();
             char * getModel();
+            vector<RGBSen> & getSensitivity();
         
-            void setBrand(char * brand);
-            void setModel(char * model);
+            void setBrand(const char * brand);
+            void setModel(const char * model);
             void setWLIncrement(uint8_t inc);
-            void setSensitivity(vector <RGBSen> sensitivity);
-
-            vector <RGBSen>& getSensitivity();
+            void setSensitivity(vector<RGBSen>& rgbsen);
         
         private:
             char * _brand;
             char * _model;
             uint8_t _increment;
-            vector <RGBSen> _sensitivity;
+            vector<RGBSen> _rgbsen;
     };
 
     class Idt {
@@ -148,9 +145,6 @@ namespace idt {
         
             float _CAT[3][3];
     };
-    
-//    template <typename T>
-//    vector <T> repmat(vector <T> data, uint8_t row, uint8_t col=1);
 
 }
 

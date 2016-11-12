@@ -55,6 +55,12 @@
 #include "idt.h"
 
 namespace idt {
+    Spst::Spst() {
+        for (int i=0; i<41; i++)
+            _rgbsen.push_back(RGBSen());
+
+    }
+    
     const char * Spst::getBrand() const {
         return _brand;
     }
@@ -63,8 +69,8 @@ namespace idt {
         return _model;
     }
     
-    const vector <RGBSen>& Spst::getSensitivity() const {
-        return _sensitivity;
+    const vector <RGBSen> & Spst::getSensitivity() const {
+        return _rgbsen;
     }
     
     char * Spst::getBrand() {
@@ -75,23 +81,61 @@ namespace idt {
         return _model;
     }
     
-    void Spst::setBrand(char * brand) {
-        _brand = brand;
+    vector <RGBSen> & Spst::getSensitivity() {
+        return _rgbsen;
+    }
+    
+    void Spst::setBrand(const char * brand) {
+        assert(brand != null_ptr);
+        uint8_t len = strlen(brand);
+        
+        assert(len < 9);
+        
+        if(len > 9)
+            len = 9;
+        
+        char * tmp;
+        memset(tmp, 0x0, 10);
+        memcpy(tmp, brand, len);
+        tmp[9] = '\0';
+        
+        _brand = (char *)tmp;
+
         return;
     }
     
-    void Spst::setModel(char * model) {
-        _model = model;
+    void Spst::setModel(const char * model) {
+        
+        assert(model != null_ptr);
+        uint8_t len = strlen(model);
+        
+        assert(len < 9);
+        
+        if(len > 9)
+            len = 9;
+        
+        char * tmp;
+        memset(tmp, 0x0, 10);
+        memcpy(tmp, model, len);
+        tmp[9] = '\0';
+        
+        _model = (char *)tmp;
+        
         return;
     }
     
     void Spst::setWLIncrement(uint8_t inc){
         _increment = inc;
+        
+        return;
     }
     
-    vector <RGBSen>& Spst::getSensitivity() {
-        return _sensitivity;
+    void Spst::setSensitivity(vector <RGBSen>& rgbsen){
+        _rgbsen = rgbsen;
+        
+        return;
     }
+    
 
     Idt::Idt() {
         _outputEncoding = "ACES";
@@ -109,6 +153,7 @@ namespace idt {
     
     float * Idt::XYZt_illum(lightsrc &ls) {
         float* wl = ls.wavelength;
+        
         return 0;
     }
     
@@ -155,13 +200,13 @@ namespace idt {
             char* token[3] = {};
             token[0] = strtok(buffer, " ,");
             assert(token[0]);
-            
+
             if(line == 0)
-                tmp_spst.setBrand(token[0]);
+                tmp_spst.setBrand(static_cast<const char *>(token[0]));
             else if(line == 1)
-                tmp_spst.setModel(token[0]);
-//            else if(line == 2)
-//                tmp_spst.setWLIncrement(token[0])
+                tmp_spst.setModel(static_cast<const char *>(token[0]));
+            else if(line == 2)
+                tmp_spst.setWLIncrement(static_cast<uint8_t>(atoi(token[0])));
             else {
                 tmp_sen.RSen = atof(token[0]);
             
@@ -170,16 +215,14 @@ namespace idt {
             
                 token[2] = strtok(null_ptr, " ,");
                 tmp_sen.BSen = atof(token[2]);
+                cout << "R:" << float(tmp_sen.RSen) << "; " << "G: " << float(tmp_sen.GSen) << "; " << "B: " << float(tmp_sen.BSen) << "\n";
+                rgbsen.push_back(tmp_sen);
             }
-            
-            rgbsen.push_back(tmp_sen);
-            
             line++;
         }
         
-//        _sensitivity.push_back(tmp_spst);
+        tmp_spst.setSensitivity(rgbsen);
         fin.close();
-
     }
     
     void Idt::load_training_spectral(const char * path){

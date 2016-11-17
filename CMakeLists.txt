@@ -197,11 +197,15 @@ install( FILES
   "${PROJECT_BINARY_DIR}/RAWTOACESConfig.cmake"
   "${PROJECT_BINARY_DIR}/RAWTOACESConfigVersion.cmake"
   DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
+
 if ( WIN32 AND NOT CYGWIN )
 install( FILES "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" DESTINATION
   "${INSTALL_CMAKE_DIR}" COMPONENT dev )
 endif( )
 
+## install camera spectrum sensitivities data, etc.
+## under /usr/local/include/RAWTOACES
+install (DIRECTORY data DESTINATION include/RAWTOACES)
 
 ### to build rawtoaces ###
 

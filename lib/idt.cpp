@@ -69,6 +69,10 @@ namespace idt {
         return _model;
     }
     
+    const uint8_t Spst::getWLIncrement() const {
+        return _increment;
+    }
+    
     const vector <RGBSen> & Spst::getSensitivity() const {
         return _rgbsen;
     }
@@ -81,45 +85,53 @@ namespace idt {
         return _model;
     }
     
+    uint8_t Spst::getWLIncrement() {
+        return _increment;
+    }
+    
     vector <RGBSen> & Spst::getSensitivity() {
         return _rgbsen;
     }
     
     void Spst::setBrand(const char * brand) {
-        assert(brand != null_ptr);
-        uint8_t len = strlen(brand);
+//        assert(brand != null_ptr);
+//        uint8_t len = strlen(brand);
+//        
+//        assert(len < 9);
+//        
+//        if(len > 9)
+//            len = 9;
+//        
+//        char * tmp;
+//        memset(tmp, 0x0, 10);
+//        memcpy(tmp, brand, len);
+//        tmp[9] = '\0';
+//        
+//        _brand = tmp;
         
-        assert(len < 9);
+        _brand = (char *) brand;
         
-        if(len > 9)
-            len = 9;
-        
-        char * tmp;
-        memset(tmp, 0x0, 10);
-        memcpy(tmp, brand, len);
-        tmp[9] = '\0';
-        
-        _brand = (char *)tmp;
-
         return;
     }
     
     void Spst::setModel(const char * model) {
         
-        assert(model != null_ptr);
-        uint8_t len = strlen(model);
+//        assert(model != null_ptr);
+//        uint8_t len = strlen(model);
+//        
+//        assert(len < 9);
+//        
+//        if(len > 9)
+//            len = 9;
+//        
+//        char * tmp;
+//        memset(tmp, 0x0, 10);
+//        memcpy(tmp, model, len);
+//        tmp[9] = '\0';
+//        
+//        _model = (char *)tmp;
         
-        assert(len < 9);
-        
-        if(len > 9)
-            len = 9;
-        
-        char * tmp;
-        memset(tmp, 0x0, 10);
-        memcpy(tmp, model, len);
-        tmp[9] = '\0';
-        
-        _model = (char *)tmp;
+        _model = (char *) model;
         
         return;
     }
@@ -184,6 +196,7 @@ namespace idt {
         uint16_t line = 0;
         
         if(!fin.good()) {
+            // need some more work to print out message if the file cannot be located
             debug("The file may not exist.\n");
             exit(EXIT_FAILURE);
         }
@@ -199,6 +212,7 @@ namespace idt {
             
             char* token[3] = {};
             token[0] = strtok(buffer, " ,");
+//            cout << token[0] << endl;
             assert(token[0]);
 
             if(line == 0)

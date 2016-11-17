@@ -7,3 +7,6 @@ endif()
 add_library( rawtoacesIDT SHARED
    idt.cpp 
 )
+
+install( TARGETS rawtoacesIDT DESTINATION lib )
+

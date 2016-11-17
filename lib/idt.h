@@ -83,18 +83,20 @@ namespace idt {
                  char * model,
                  uint8_t increment,
                  vector<RGBSen> rgbsen) : _brand(brand),
-                                                _model(model),
-                                                _increment(increment),
-                                                _rgbsen(rgbsen){ };
+                                          _model(model),
+                                          _increment(increment),
+                                          _rgbsen(rgbsen){ };
         
             ~Spst(){};
         
             const char * getBrand() const;
             const char * getModel() const;
+            const uint8_t getWLIncrement() const;
             const vector <RGBSen> & getSensitivity() const;
         
             char * getBrand();
             char * getModel();
+            uint8_t getWLIncrement();
             vector<RGBSen> & getSensitivity();
         
             void setBrand(const char * brand);

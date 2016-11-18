@@ -205,7 +205,9 @@ endif( )
 
 ## install camera spectrum sensitivities data, etc.
 ## under /usr/local/include/RAWTOACES
-install (DIRECTORY data DESTINATION include/RAWTOACES)
+if ( APPLE OR UNIX )
+	install (DIRECTORY data DESTINATION include/RAWTOACES)
+endif()
 
 ### to build rawtoaces ###
 

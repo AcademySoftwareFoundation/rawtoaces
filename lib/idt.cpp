@@ -56,6 +56,9 @@
 
 namespace idt {
     Spst::Spst() {
+        _brand = null_ptr;
+        _model = null_ptr;
+        _increment = 5;
         for (int i=0; i<41; i++)
             _rgbsen.push_back(RGBSen());
 
@@ -94,45 +97,36 @@ namespace idt {
     }
     
     void Spst::setBrand(const char * brand) {
-//        assert(brand != null_ptr);
-//        uint8_t len = strlen(brand);
-//        
-//        assert(len < 9);
-//        
-//        if(len > 9)
-//            len = 9;
-//        
-//        char * tmp;
-//        memset(tmp, 0x0, 10);
-//        memcpy(tmp, brand, len);
-//        tmp[9] = '\0';
-//        
-//        _brand = tmp;
+        assert(brand != null_ptr);
+        uint8_t len = strlen(brand);
         
-        _brand = (char *) brand;
+        assert(len < 10);
+        
+        if(len > 10)
+            len = 10;
+        
+        _brand = (char *)malloc(len+1);
+        memset(_brand, 0x0, len);
+        memcpy(_brand, brand, len);
+        _brand[len] = '\0';
         
         return;
     }
     
     void Spst::setModel(const char * model) {
+        assert(model != null_ptr);
+        uint8_t len = strlen(model);
         
-//        assert(model != null_ptr);
-//        uint8_t len = strlen(model);
-//        
-//        assert(len < 9);
-//        
-//        if(len > 9)
-//            len = 9;
-//        
-//        char * tmp;
-//        memset(tmp, 0x0, 10);
-//        memcpy(tmp, model, len);
-//        tmp[9] = '\0';
-//        
-//        _model = (char *)tmp;
+        assert(len < 10);
         
-        _model = (char *) model;
+        if(len > 10)
+            len = 10;
         
+        _model = (char *)malloc(len+1);
+        memset(_model, 0x0, len);
+        memcpy(_model, model, len);
+        _model[len] = '\0';
+  
         return;
     }
     
@@ -156,6 +150,8 @@ namespace idt {
         *_CAT[0] = CATMatrix[0][0];
         for (int i=0; i<202; i++)
             _trainingSpec.push_back(trainSpec());
+        for (int i=0; i<81; i++)
+            _cmf.push_back(CMF());
     }
     
     float ** Idt::aces_3_XYZt_mat() {
@@ -212,7 +208,6 @@ namespace idt {
             
             char* token[3] = {};
             token[0] = strtok(buffer, " ,");
-//            cout << token[0] << endl;
             assert(token[0]);
 
             if(line == 0)
@@ -229,7 +224,7 @@ namespace idt {
             
                 token[2] = strtok(null_ptr, " ,");
                 tmp_sen.BSen = atof(token[2]);
-                cout << "R:" << float(tmp_sen.RSen) << "; " << "G: " << float(tmp_sen.GSen) << "; " << "B: " << float(tmp_sen.BSen) << "\n";
+//                cout << "R:" << float(tmp_sen.RSen) << "; " << "G: " << float(tmp_sen.GSen) << "; " << "B: " << float(tmp_sen.BSen) << "\n";
                 rgbsen.push_back(tmp_sen);
             }
             line++;
@@ -243,7 +238,8 @@ namespace idt {
         ifstream fin;
         fin.open(path);
         
-        int i = 0;
+        uint8_t i = 0;
+        uint16_t wl = 380;
         
         if(!fin.good()) {
             debug("The file may not exist.\n");
@@ -258,19 +254,22 @@ namespace idt {
             token[0] = strtok(buffer, " ,");
             assert(token[0]);
             
-            _trainingSpec[i].wl = atof(token[0]);
+            _trainingSpec[i].wl = wl;
+            _trainingSpec[i].data[0] = atof(token[0]);
 
             for (uint8_t n = 1; n < 121; n++){
                 token[n] = strtok(null_ptr, " ,");
+
                 if(token[n]) {
-                    _trainingSpec[i].data[n-1] = atof(token[n]);
+                    _trainingSpec[i].data[n] = atof(token[n]);
                 }
                 else {
                     debug("The training spectral sensitivity file may need to be looked at\n");
                     exit(EXIT_FAILURE);
                 }
             }
-            i++;
+            i += 1;
+            wl += 5;
         }
         
         fin.close();
@@ -292,27 +291,32 @@ namespace idt {
             fin.getline(buffer, 512);
             
             char* token[4] = {};
-            token[0] = strtok(buffer, " ,-");
+            token[0] = strtok(buffer, " ,");
             assert(token[0]);
-            this->_trainingSpec[i].wl = atof(token[0]);
+            _cmf[i].wl = (uint16_t)atoi(token[0]);
             
-            for (int n = 1; n < 4; n++){
-                token[n] = strtok(null_ptr, " ,-");
-                if(token[n] && n == 1) {
-                    this->_cmf[i].xbar = atof(token[n]);
+            if (!(_cmf[i].wl % 5)) {
+                for (int n = 1; n < 4; n++){
+                    token[n] = strtok(null_ptr, " ,");
+                    if(token[n] && n == 1) {
+                        _cmf[i].xbar = atof(token[n]);
+                    }
+                    else if(token[n] && n == 2) {
+                        _cmf[i].ybar = atof(token[n]);
+                    }
+                    else if(token[n] && n == 3) {
+                        _cmf[i].zbar = atof(token[n]);
+                    }
+                    else {
+                        debug("The color matching function file may need to be looked at\n");
+                        exit(EXIT_FAILURE);
+                    }
                 }
-                else if(token[n] && n == 2) {
-                    this->_cmf[i].ybar = atof(token[n]);
-                }
-                else if(token[n] && n == 3) {
-                    this->_cmf[i].zbar = atof(token[n]);
-                }
-                else {
-                    debug("The color matching function file may need to be looked at\n");
-                    exit(EXIT_FAILURE);
-                }
+                
+//                cout << "WL: " << _cmf[i].wl << " X:" << float(_cmf[i].xbar) << "; " << "Y: " << float(_cmf[i].ybar) << "; " << "Z: " << float(_cmf[i].zbar) << "\n";
+
+                i += 1;
             }
-            i += 1;
         }
         
         fin.close();

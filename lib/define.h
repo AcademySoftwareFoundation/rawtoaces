@@ -103,12 +103,12 @@ struct CIELab {
 };
 
 struct trainSpec {
+    uint16_t wl;
     float data[120];
-    float wl;
 };
 
 struct CMF {
-    float wl;
+    uint16_t wl;
     float xbar;
     float ybar;
     float zbar;

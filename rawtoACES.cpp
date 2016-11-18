@@ -1068,6 +1068,7 @@ int main(int argc, char *argv[])
             Idt * idt = new Idt();
             idt->load_training_spectral("/Users/miaoqizhu/Desktop/rawtoaces_IDT/data/training/training_spectral");
             idt->load_cameraspst_data("/Users/miaoqizhu/Desktop/rawtoaces_IDT/data/camera/Arri_D21_380_780_5");
+            idt->load_CMF("/Users/miaoqizhu/Desktop/rawtoaces_IDT/data/cmf/cmf_193");
             
             libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
             if(use_timing)

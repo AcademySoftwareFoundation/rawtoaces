@@ -192,8 +192,7 @@ namespace idt {
         uint16_t line = 0;
         
         if(!fin.good()) {
-            // need some more work to print out message if the file cannot be located
-            debug("The file may not exist.\n");
+            fprintf(stderr, "The file may not exist.\n");
             exit(EXIT_FAILURE);
         }
         
@@ -204,12 +203,16 @@ namespace idt {
             char buffer[512];
             fin.getline(buffer, 512);
             
+            if (!buffer[0]) {
+                continue;
+            }
+            
             RGBSen tmp_sen;
             
             char* token[3] = {};
             token[0] = strtok(buffer, " ,");
-            assert(token[0]);
-
+//            assert(token[0]);
+            
             if(line == 0)
                 tmp_spst.setBrand(static_cast<const char *>(token[0]));
             else if(line == 1)
@@ -242,7 +245,7 @@ namespace idt {
         uint16_t wl = 380;
         
         if(!fin.good()) {
-            debug("The file may not exist.\n");
+            fprintf(stderr, "The file may not exist.\n");
             exit(EXIT_FAILURE);
         }
         
@@ -250,9 +253,13 @@ namespace idt {
             char buffer[4096];
             fin.getline(buffer, 4096);
             
+            if (!buffer[0]) {
+                continue;
+            }
+            
             char* token[121] = {};
             token[0] = strtok(buffer, " ,");
-            assert(token[0]);
+//            assert(token[0]);
             
             _trainingSpec[i].wl = wl;
             _trainingSpec[i].data[0] = atof(token[0]);
@@ -264,7 +271,7 @@ namespace idt {
                     _trainingSpec[i].data[n] = atof(token[n]);
                 }
                 else {
-                    debug("The training spectral sensitivity file may need to be looked at\n");
+                    fprintf(stderr, "The training spectral sensitivity file may need to be looked at\n");
                     exit(EXIT_FAILURE);
                 }
             }
@@ -282,7 +289,7 @@ namespace idt {
         int i = 0;
         
         if(!fin.good()) {
-            debug("The file may not exist.\n");
+            fprintf(stderr, "The file may not exist.\n");
             exit(EXIT_FAILURE);
         }
         
@@ -290,9 +297,13 @@ namespace idt {
             char buffer[512];
             fin.getline(buffer, 512);
             
+            if (!buffer[0]) {
+                continue;
+            }
+            
             char* token[4] = {};
             token[0] = strtok(buffer, " ,");
-            assert(token[0]);
+//            assert(token[0]);
             _cmf[i].wl = (uint16_t)atoi(token[0]);
             
             if (!(_cmf[i].wl % 5)) {
@@ -308,7 +319,7 @@ namespace idt {
                         _cmf[i].zbar = atof(token[n]);
                     }
                     else {
-                        debug("The color matching function file may need to be looked at\n");
+                        fprintf(stderr, "The color matching function file may need to be looked at\n");
                         exit(EXIT_FAILURE);
                     }
                 }

@@ -55,6 +55,8 @@
 #include <valarray>
 #include <vector>
 #include <string>
+#include <stdio.h>
+#include <ctype.h>
 #include "assert.h"
 
 #if !defined(TRUE)
@@ -66,7 +68,8 @@
 #endif
 
 #if 0
-#define debug(x) (cout << x << endl)
+#define debug(x) (fprintf(stderr, x));
+
 #else
 #define debug(x)
 #endif

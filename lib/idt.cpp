@@ -100,10 +100,10 @@ namespace idt {
         assert(brand != null_ptr);
         uint8_t len = strlen(brand);
         
-        assert(len < 10);
+        assert(len < 64);
         
-        if(len > 10)
-            len = 10;
+        if(len > 64)
+            len = 64;
         
         _brand = (char *)malloc(len+1);
         memset(_brand, 0x0, len);
@@ -117,10 +117,10 @@ namespace idt {
         assert(model != null_ptr);
         uint8_t len = strlen(model);
         
-        assert(len < 10);
+        assert(len < 64);
         
-        if(len > 10)
-            len = 10;
+        if(len > 64)
+            len = 64;
         
         _model = (char *)malloc(len+1);
         memset(_model, 0x0, len);
@@ -186,7 +186,7 @@ namespace idt {
         return CLab;
     }
     
-    void Idt::load_cameraspst_data(const string & path){
+    void Idt::load_cameraspst_data(const string & path, const char * maker, const char * model){
         ifstream fin;
         fin.open(path);
         uint16_t line = 0;
@@ -213,10 +213,20 @@ namespace idt {
             token[0] = strtok(buffer, " ,");
 //            assert(token[0]);
             
-            if(line == 0)
+            if(line == 0) {
+                if (cmp_str(maker, static_cast<const char *>(token[0]))) {
+                    fin.close();
+                    return;
+                }
                 tmp_spst.setBrand(static_cast<const char *>(token[0]));
-            else if(line == 1)
+            }
+            else if(line == 1) {
+                if (cmp_str(model, static_cast<const char *>(token[0]))) {
+                    fin.close();
+                    return;
+                }
                 tmp_spst.setModel(static_cast<const char *>(token[0]));
+            }
             else if(line == 2)
                 tmp_spst.setWLIncrement(static_cast<uint8_t>(atoi(token[0])));
             else {
@@ -227,7 +237,7 @@ namespace idt {
             
                 token[2] = strtok(null_ptr, " ,");
                 tmp_sen.BSen = atof(token[2]);
-//                cout << "R:" << float(tmp_sen.RSen) << "; " << "G: " << float(tmp_sen.GSen) << "; " << "B: " << float(tmp_sen.BSen) << "\n";
+                cout << "R:" << float(tmp_sen.RSen) << "; " << "G: " << float(tmp_sen.GSen) << "; " << "B: " << float(tmp_sen.BSen) << "\n";
                 rgbsen.push_back(tmp_sen);
             }
             line++;

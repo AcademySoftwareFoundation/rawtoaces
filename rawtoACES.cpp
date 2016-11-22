@@ -21,9 +21,6 @@ it under the terms of the one of three licenses as you choose:
 
  */
 
-#define INV_255 (1.0/(double) 255.0)
-#define INV_65535 (1.0/(double) 65535.0)
-
 #ifndef NO_ACESCONTAINER
 #include <aces/aces_Writer.h>
 #endif
@@ -32,34 +29,8 @@ it under the terms of the one of three licenses as you choose:
 #include <OpenEXR/half.h>
 #endif
 
-#ifdef WIN32
-// suppress sprintf-related warning. sprintf() is permitted in sample code
-#define _CRT_SECURE_NO_WARNINGS
-#endif
-
-#include <valarray>
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
-#include <ctype.h>
-#include <stdexcept>
 #include "lib/idt.h"
-
-#ifndef WIN32
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/mman.h>
-#include <sys/time.h>
-#endif
-
 #include <libraw/libraw.h>
-#ifdef WIN32
-#define snprintf _snprintf
-#include <windows.h>
-#endif
 
 using namespace std;
 using namespace idt;
@@ -730,6 +701,27 @@ void aces_write(const char * name,
     x.saveImageObject ( );
 }
 
+vector<string> openDirCamera(string path = ".") {
+    
+    DIR *    dir;
+    dirent * pDir;
+    struct stat fStat;
+    vector<string> fPaths;
+    
+    dir = opendir(path.c_str());
+    
+    while ((pDir = readdir(dir))) {
+        string fPath = path + "/" + pDir->d_name;
+        if (stat(fPath.c_str(), &fStat))
+            continue;
+        if (S_ISDIR( fStat.st_mode ))
+            continue;
+        fPaths.push_back(fPath);
+    }
+    
+    return fPaths;
+}
+
 
 void usage(const char *prog)
 {
@@ -832,9 +824,10 @@ int main(int argc, char *argv[])
     
     LibRaw RawProcessor;
     int i,arg,c,ret;
-    char opm,opt,*cp,*sp;
+    char opm,opt,*cp,*sp,*path;
     int use_bigfile=0, use_timing=0;
-    bool checkMultiplier = 0;
+    bool checkMul = 0, userCameraSen = 0;
+    string cameraSenPath;
     
 #ifndef WIN32
     int msize = 0,use_mmap=0;
@@ -854,9 +847,9 @@ int main(int argc, char *argv[])
 //            if ((cp = strchr (sp=(char*)"cnbrkStqmHABCgi", opt))!=0)
             if ((cp = strchr (sp=(char*)"cnbrkStqmHABCi", opt))!=0)
                 for (i=0; i < "111411111142"[cp-sp]-'0'; i++)
+//                    printf("argv[arg+i][0]: %c, %i\n", opt,(isdigit(argv[arg+i][0])));
                     if (!isdigit(argv[arg+i][0]))
                         {
-//                            printf("argv[arg+i][0]: %c, %i\n", opt,(isdigit(argv[arg+i][0])));
                             fprintf (stderr,"Non-numeric argument to \"-%c\"\n", opt);
                             return 1;
                         }
@@ -871,15 +864,16 @@ int main(int argc, char *argv[])
               // #define LIBRAW_DEFAULT_AUTO_BRIGHTNESS_THRESHOLD 0.01
               // case 'R':  OUT.auto_bright_thr   = (float)atof(argv[arg++]);  break;
               // The camera information can be found from libraw_types.h
-              // case 'i':identify_only = 1; break;
+//              case 'i':  OUT.identify_only = 1; break;
               case 'n':  OUT.threshold   = (float)atof(argv[arg++]);  break;
               case 'b':  OUT.bright      = (float)atof(argv[arg++]);  break;
               case 'P':  OUT.bad_pixels  = argv[arg++];        break;
               case 'K':  OUT.dark_frame  = argv[arg++];        break;
-              case 'r':
-                      checkMultiplier = 1;
+                  case 'r':{
+                      checkMul = 1.0;
                       for(c=0;c<4;c++)
                           OUT.user_mul[c] = (float)atof(argv[arg++]);
+                  }
                   break;
               case 'C':  
                   OUT.aber[0] = 1 / atof(argv[arg++]);
@@ -887,7 +881,8 @@ int main(int argc, char *argv[])
                   break;
               case 'g':  
                   OUT.gamm[0] = 1 / atof(argv[arg++]);
-                  OUT.gamm[1] =     atof(argv[arg++]);  
+                  OUT.gamm[1] =     atof(argv[arg++]);
+                  if (OUT.gamm[0])  OUT.gamm[0] = 1/OUT.gamm[0];
                   break;
               case 'k':  OUT.user_black  = atoi(argv[arg++]);  break;
               case 'S':  OUT.user_sat    = atoi(argv[arg++]);  break;
@@ -907,7 +902,11 @@ int main(int argc, char *argv[])
               case 'j':  OUT.use_fuji_rotate   = 0;  break;
               case 'W':  OUT.no_auto_bright    = 1;  break;
               case 'F':  use_bigfile           = 1; break;
-              case 'd':  use_timing            = 1; break; 
+              case 'd':  use_timing            = 1; break;
+              case 'Q':
+                      userCameraSen = 1;
+                      cameraSenPath = string(argv[arg++]);
+                      break;
 #ifndef WIN32
               case 'E':  use_mmap              = 1;  break;
 #endif
@@ -1007,7 +1006,8 @@ int main(int argc, char *argv[])
             if(use_timing)
                 timerprint("LibRaw::unpack()",argv[arg]);
             
-            OUT.use_camera_matrix  = 3 * (opm == '-');
+            OUT.use_camera_matrix  = 0;
+//            OUT.use_camera_matrix  = 3 * (opm == '-');
             OUT.output_color       = 5;
             OUT.highlight          = 0;
             OUT.use_camera_wb      = 1;
@@ -1015,22 +1015,22 @@ int main(int argc, char *argv[])
             OUT.gamm[1]            = 1.0;
             OUT.no_auto_bright     = 1;
             
+            
+            // 1.0 for exposure - the last thing to do.
+            
             // r option
-            if( checkMultiplier && !isnan(OUT.user_mul[0])){
+            if( checkMul && !isnan(OUT.user_mul[0] )){
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
                 
-                for(c=0; c<3; c++){
-                    if (OUT.user_mul[c] == 1.0) {
-                        checkMultiplier = 1;
-                        break;
-                    }
-                    else
-                        checkMultiplier = 0;
+                float sc = numeric_limits<float>::max();
+                for(c=0; c<P1.colors; c++){
+                    if (OUT.user_mul[c] <= sc)
+                        sc = OUT.user_mul[c];
                 }
                 
-                if (!checkMultiplier) {
-                    fprintf (stderr, "Warning: At least one channel multiplier should be equal to 1.0.\n");
+                if (sc != 1.0) {
+                    fprintf (stderr, "Warning: The smallest channel multiplier is not 1.0.\n");
                 }
             }
             
@@ -1064,11 +1064,35 @@ int main(int argc, char *argv[])
             else if(verbosity)
                 printf("Writing file %s\n",outfn);
             
+            // use cam_mul[4] to find the closest illuminate (e.g, D55)
             // For testing idt class purpose
             Idt * idt = new Idt();
-            idt->load_training_spectral("/Users/miaoqizhu/Desktop/rawtoaces_IDT/data/training/training_spectral");
-            idt->load_cameraspst_data("/Users/miaoqizhu/Desktop/rawtoaces_IDT/data/camera/Arri_D21_380_780_5");
-            idt->load_CMF("/Users/miaoqizhu/Desktop/rawtoaces_IDT/data/cmf/cmf_193");
+            
+            if (userCameraSen) {
+                idt->load_cameraspst_data(cameraSenPath,
+                                          static_cast<const char *>(P1.make),
+                                          static_cast<const char *>(P1.model));
+            }
+            else {
+                struct stat fStat;
+                if(!stat(FILEPATH, &fStat)) {
+                    vector<string> cFiles = openDirCamera(static_cast<string>(FILEPATH)
+                                                          +"/camera");
+
+                    for(vector<string>::iterator file = cFiles.begin(); file != cFiles.end(); ++file){
+                        idt->load_cameraspst_data(*file,
+                                                  static_cast<const char *>(P1.make),
+                                                  static_cast<const char *>(P1.model));
+                    }
+//              idt->load_cameraspst_data("/Users/miaoqizhu/Desktop/rawtoaces_IDT/data/camera/Arri_D21_380_780_5",
+//                                          static_cast<const char *>(P1.make),
+//                                          static_cast<const char *>(P1.model));
+                
+                }
+            }
+            
+            idt->load_training_spectral("/usr/local/include/RAWTOACES/data/training/training_spectral");
+            idt->load_CMF("/usr/local/include/RAWTOACES/data/cmf/cmf_193");
             
             libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
             if(use_timing)

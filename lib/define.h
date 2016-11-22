@@ -52,12 +52,39 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
+#include <assert.h>
+#include <stdlib.h>
+#include <math.h>
+#include <ctype.h>
+#include <stdexcept>
 #include <valarray>
 #include <vector>
 #include <string>
 #include <stdio.h>
 #include <ctype.h>
-#include "assert.h"
+#include <dirent.h>
+
+#ifndef WIN32
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <sys/time.h>
+#endif
+
+#define INV_255 (1.0/(double) 255.0)
+#define INV_65535 (1.0/(double) 65535.0)
+
+#ifdef WIN32
+// suppress sprintf-related warning. sprintf() is permitted in sample code
+#include <string.h>
+#include <windows.h>
+#define snprintf _snprintf
+#define _CRT_SECURE_NO_WARNINGS
+#define cmp_str stricmp
+#else
+#define cmp_str strcasecmp
+#endif
 
 #if !defined(TRUE)
 #define TRUE 1
@@ -76,6 +103,7 @@
 
 #define sign(x)		((x) > 0 ? 1 : ( (x) < 0 ? (0-1) : 0))
 #define countSize(a)	(sizeof(a) / sizeof((a)[0]))
+#define FILEPATH ("/usr/local/include/RAWTOACES/data/")
 
 typedef half   float16_t;
 typedef float  float32_t;

@@ -131,7 +131,7 @@ namespace idt {
             CIELab XYZt_2_Lab(vector<CIEXYZ> XYZt, CIEXYZ XYZw);
             float ** gen_final_idt(vector<float> B_final);
         
-            void load_cameraspst_data(const string &path);
+            void load_cameraspst_data(const string &path, const char * maker, const char * model);
             void load_training_spectral(const char * path);
             void load_CMF(const char * path);
         

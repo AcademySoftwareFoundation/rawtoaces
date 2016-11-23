@@ -102,7 +102,7 @@ namespace idt {
             void setBrand(const char * brand);
             void setModel(const char * model);
             void setWLIncrement(uint8_t inc);
-            void setSensitivity(vector<RGBSen>& rgbsen);
+            void setSensitivity(vector<RGBSen> rgbsen);
         
         private:
             char * _brand;
@@ -132,14 +132,14 @@ namespace idt {
             float ** gen_final_idt(vector<float> B_final);
         
             void load_cameraspst_data(const string &path, const char * maker, const char * model);
-            void load_training_spectral(const char * path);
-            void load_CMF(const char * path);
+            void load_training_spectral(const string &path);
+            void load_CMF(const string &path);
         
         private:
             string _outputEncoding;
             lightsrc _lightSource;
+            Spst     _cameraSpst;
             vector<trainSpec> _trainingSpec;
-            vector<Spst *> _cameraSpsts;
             vector<CMF> _cmf;
         
             vector<float> _encodingWhite;

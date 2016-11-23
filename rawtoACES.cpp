@@ -591,20 +591,20 @@ float * prepareAcesData_DNG(libraw_rawdata_t R,
 }
 
 void aces_write(const char * name,
-                float    scale,
                 uint16_t width,
                 uint16_t height,
                 uint8_t  channels,
                 uint8_t  bits,
-                float *  pixels)
+                float *  pixels,
+                float    scale = 1.0)
 {
     halfBytes *in = new (std::nothrow) halfBytes[channels*width*height];
     for (uint32_t i=0; i<channels*width*height; i++) {
         if (bits == 8) {
-            pixels[i] = (double)pixels[i] * INV_255;
+            pixels[i] = (double)pixels[i] * INV_255 * scale;
         }
         else if (bits == 16){
-            pixels[i] = (double)pixels[i] * INV_65535;
+            pixels[i] = (double)pixels[i] * INV_65535 * scale;
         }
         
         half tmpV(pixels[i]/1.0f);
@@ -629,7 +629,7 @@ void aces_write(const char * name,
     writeParams.hi.software				= "rawtoACES";
     
     writeParams.hi.channels.clear();
-    switch ( channels )
+    switch (channels)
     {
         case 3:
             writeParams.hi.channels.resize(3);
@@ -757,7 +757,8 @@ void usage(const char *prog)
 "-d        Detailed timing report\n"
 "-r        User supplied channel multipliers, at least one of them should be 1.0\n"
 "-D        Using the coeff matrix from Adobe\n"
-//"-M        Set the value for auto bright\n"
+"-Q        Specify the path to camera sensitivity data\n"
+"-M        Set the value for scaling\n"
 
 #ifndef WIN32
 "-E        Use mmap()-ed buffer instead of plain FILE I/O\n"
@@ -824,10 +825,11 @@ int main(int argc, char *argv[])
     
     LibRaw RawProcessor;
     int i,arg,c,ret;
-    char opm,opt,*cp,*sp,*path;
+    char opm,opt,*cp,*sp,*path,*cameraSenPath;
     int use_bigfile=0, use_timing=0;
+    float scale = 1.0;
     bool checkMul = 0, userCameraSen = 0;
-    string cameraSenPath;
+    struct stat st;
     
 #ifndef WIN32
     int msize = 0,use_mmap=0;
@@ -901,11 +903,12 @@ int main(int argc, char *argv[])
               case 'a':  OUT.use_auto_wb       = 1;  break;
               case 'j':  OUT.use_fuji_rotate   = 0;  break;
               case 'W':  OUT.no_auto_bright    = 1;  break;
-              case 'F':  use_bigfile           = 1; break;
-              case 'd':  use_timing            = 1; break;
+              case 'F':  use_bigfile           = 1;  break;
+              case 'd':  use_timing            = 1;  break;
+              case 'M':  scale                 = atof(argv[arg++]); break;
               case 'Q':
                       userCameraSen = 1;
-                      cameraSenPath = string(argv[arg++]);
+                      cameraSenPath = (char *)(argv[arg++]);
                       break;
 #ifndef WIN32
               case 'E':  use_mmap              = 1;  break;
@@ -946,7 +949,6 @@ int main(int argc, char *argv[])
             if(use_mmap)
                 {
                     int file = open(argv[arg],O_RDONLY);
-                    struct stat st;
                     if(file<0)
                         {
                             fprintf(stderr,"Cannot open %s: %s\n",argv[arg],strerror(errno));
@@ -1007,7 +1009,6 @@ int main(int argc, char *argv[])
                 timerprint("LibRaw::unpack()",argv[arg]);
             
             OUT.use_camera_matrix  = 0;
-//            OUT.use_camera_matrix  = 3 * (opm == '-');
             OUT.output_color       = 5;
             OUT.highlight          = 0;
             OUT.use_camera_wb      = 1;
@@ -1018,7 +1019,7 @@ int main(int argc, char *argv[])
             
             // 1.0 for exposure - the last thing to do.
             
-            // r option
+            // -r option
             if( checkMul && !isnan(OUT.user_mul[0] )){
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
@@ -1066,16 +1067,20 @@ int main(int argc, char *argv[])
             
             // use cam_mul[4] to find the closest illuminate (e.g, D55)
             // For testing idt class purpose
-            Idt * idt = new Idt();
             
+            Idt * idt = new Idt();
             if (userCameraSen) {
+                if (stat(static_cast<const char *>(cameraSenPath), &st)) {
+                    fprintf(stderr,"The camera sensitivity file does not seem to exist.\n");
+                    exit(EXIT_FAILURE);
+                }
+                
                 idt->load_cameraspst_data(cameraSenPath,
                                           static_cast<const char *>(P1.make),
                                           static_cast<const char *>(P1.model));
             }
             else {
-                struct stat fStat;
-                if(!stat(FILEPATH, &fStat)) {
+                if(!stat(FILEPATH, &st)) {
                     vector<string> cFiles = openDirCamera(static_cast<string>(FILEPATH)
                                                           +"/camera");
 
@@ -1084,15 +1089,18 @@ int main(int argc, char *argv[])
                                                   static_cast<const char *>(P1.make),
                                                   static_cast<const char *>(P1.model));
                     }
-//              idt->load_cameraspst_data("/Users/miaoqizhu/Desktop/rawtoaces_IDT/data/camera/Arri_D21_380_780_5",
-//                                          static_cast<const char *>(P1.make),
-//                                          static_cast<const char *>(P1.model));
-                
                 }
             }
             
-            idt->load_training_spectral("/usr/local/include/RAWTOACES/data/training/training_spectral");
-            idt->load_CMF("/usr/local/include/RAWTOACES/data/cmf/cmf_193");
+            idt->load_training_spectral(static_cast<string>(FILEPATH)+"/training/training_spectral");
+            idt->load_CMF(static_cast<string>(FILEPATH)+"/cmf/cmf_193");
+            
+////          test if the sensitity data is loaded into the memory
+//            for (int i =0 ; i<81; i++) {
+//                cout << "R:" << float(idt->_cameraSpst._rgbsen[i].RSen) << "; "
+//                << "G: " << float(idt->_cameraSpst._rgbsen[i].GSen) << "; "
+//                << "B: " << float(idt->_cameraSpst._rgbsen[i].BSen) << "\n";
+//            }
             
             libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
             if(use_timing)
@@ -1101,12 +1109,12 @@ int main(int argc, char *argv[])
             if(P1.dng_version == 0) {
                 float * aces = prepareAcesData_NonDNG(post_image);
                 aces_write(outfn,
-                           1.0,
                            post_image->width,
                            post_image->height,
                            post_image->colors,
                            post_image->bits,
-                           aces);
+                           aces,
+                           scale);
             }
             else {
 //                float * aces = prepareAcesData_DNG(R,P1);
@@ -1122,12 +1130,12 @@ int main(int argc, char *argv[])
                 
                 float * aces = prepareAcesData_DNG(R, post_image);
                 aces_write(outfn,
-                           1.0,
                            post_image->width,
                            post_image->height,
                            post_image->colors,
                            post_image->bits,
-                           aces);
+                           aces,
+                           scale);
             }
             
 #ifndef WIN32

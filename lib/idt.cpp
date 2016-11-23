@@ -136,8 +136,10 @@ namespace idt {
         return;
     }
     
-    void Spst::setSensitivity(vector <RGBSen>& rgbsen){
-        _rgbsen = rgbsen;
+    void Spst::setSensitivity(vector<RGBSen> rgbsen){
+        for(uint8_t i=0; i<rgbsen.size(); i++){
+            _rgbsen[i] = rgbsen[i];
+        }
         
         return;
     }
@@ -148,6 +150,7 @@ namespace idt {
         _encodingWhite = vector<float> (0.0, 3);
         _WB_start = vector<float> (0.0, 3);
         *_CAT[0] = CATMatrix[0][0];
+        
         for (int i=0; i<202; i++)
             _trainingSpec.push_back(trainSpec());
         for (int i=0; i<81; i++)
@@ -189,7 +192,7 @@ namespace idt {
     void Idt::load_cameraspst_data(const string & path, const char * maker, const char * model){
         ifstream fin;
         fin.open(path);
-        uint16_t line = 0;
+        uint8_t line = 0;
         
         if(!fin.good()) {
             fprintf(stderr, "The file may not exist.\n");
@@ -197,7 +200,6 @@ namespace idt {
         }
         
         vector <RGBSen> rgbsen;
-        Spst tmp_spst;
 
         while(!fin.eof()){
             char buffer[512];
@@ -218,17 +220,17 @@ namespace idt {
                     fin.close();
                     return;
                 }
-                tmp_spst.setBrand(static_cast<const char *>(token[0]));
+                _cameraSpst.setBrand(static_cast<const char *>(token[0]));
             }
             else if(line == 1) {
                 if (cmp_str(model, static_cast<const char *>(token[0]))) {
                     fin.close();
                     return;
                 }
-                tmp_spst.setModel(static_cast<const char *>(token[0]));
+                _cameraSpst.setModel(static_cast<const char *>(token[0]));
             }
             else if(line == 2)
-                tmp_spst.setWLIncrement(static_cast<uint8_t>(atoi(token[0])));
+                _cameraSpst.setWLIncrement(static_cast<uint8_t>(atoi(token[0])));
             else {
                 tmp_sen.RSen = atof(token[0]);
             
@@ -237,17 +239,22 @@ namespace idt {
             
                 token[2] = strtok(null_ptr, " ,");
                 tmp_sen.BSen = atof(token[2]);
-                cout << "R:" << float(tmp_sen.RSen) << "; " << "G: " << float(tmp_sen.GSen) << "; " << "B: " << float(tmp_sen.BSen) << "\n";
+//                cout << "R:" << float(tmp_sen.RSen) << "; " << "G: " << float(tmp_sen.GSen) << "; " << "B: " << float(tmp_sen.BSen) << "\n";
                 rgbsen.push_back(tmp_sen);
             }
             line++;
         }
         
-        tmp_spst.setSensitivity(rgbsen);
+        if(line != 84) {
+            fprintf(stderr, "The increment should be 5nm from 380nm to 780nm.\n");
+            exit(EXIT_FAILURE);
+        }
+            
+        _cameraSpst.setSensitivity(rgbsen);
         fin.close();
     }
     
-    void Idt::load_training_spectral(const char * path){
+    void Idt::load_training_spectral(const string &path){
         ifstream fin;
         fin.open(path);
         
@@ -292,7 +299,7 @@ namespace idt {
         fin.close();
     }
     
-    void Idt::load_CMF(const char * path){
+    void Idt::load_CMF(const string &path){
         ifstream fin;
         fin.open(path);
         
@@ -366,7 +373,7 @@ namespace idt {
             vector <string>& cPaths = cdp.paths;
             
             string path;
-            const char* env = getenv("RAWTOACES_CAMERA_PATH");
+            const char* env = getenv("RAWTOACES_CAMERASEN_PATH");
             if (env)
                 path = env;
             

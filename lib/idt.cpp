@@ -162,15 +162,13 @@ namespace idt {
     }
 
     
-    float * Idt::XYZt_illum(lightsrc &ls) {
-        float* wl = ls.wavelength;
-        
+    float * Idt::XYZt_illum(illum &ls) {
         return 0;
     }
     
-    float ** Idt::calc_cat_mat(illum src,
-                          illum desc,
-                          float CAT[3][3]) {
+    float ** Idt::calc_cat_mat(light src,
+                               light desc,
+                               float CAT[3][3]) {
         
         float **vkmat = new float*[3];
         
@@ -200,6 +198,7 @@ namespace idt {
         }
         
         vector <RGBSen> rgbsen;
+        
 
         while(!fin.eof()){
             char buffer[512];
@@ -253,6 +252,50 @@ namespace idt {
         _cameraSpst.setSensitivity(rgbsen);
         fin.close();
     }
+    
+    void Idt::load_illuminate(const string &path){
+        ifstream fin;
+        fin.open(path);
+        
+        uint8_t line = 0;
+        
+        if(!fin.good()) {
+            fprintf(stderr, "The file may not exist.\n");
+            exit(EXIT_FAILURE);
+        }
+        
+        while((!fin.eof())){
+            char buffer[128];
+            fin.getline(buffer, 128);
+            
+            if (!buffer[0]) {
+                continue;
+            }
+            
+            char* token;
+            token = strtok(buffer, " ");
+            //            assert(token);
+            
+            if(line == 0) {
+                _illuminate.type = static_cast<string>(token);
+            }
+            else if(line == 1) {
+                _illuminate.inc = atoi(token);
+            }
+            else {
+                _illuminate.data.push_back(atof(token));
+            }
+            
+            line += 1;
+        }
+        
+//        cout << "Type: " << string(_illuminate.type) << "; " << "Inc: " << int(_illuminate.inc) << "; "<< "Data: " << "\n";
+//        for (int i = 0; i < _illuminate.data.size(); i++)
+//            cout << float(_illuminate.data[i]) << "," << endl;
+        
+        fin.close();
+    }
+
     
     void Idt::load_training_spectral(const string &path){
         ifstream fin;

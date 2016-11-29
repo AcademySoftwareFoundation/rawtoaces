@@ -543,6 +543,10 @@ float * prepareAcesData_DNG(libraw_rawdata_t R,
         
     calibrateIllum[0] = R.color.dng_color[0].illuminant;
     calibrateIllum[1] = R.color.dng_color[1].illuminant;
+    
+//    cout << "calibrateIllum[0]: " << calibrateIllum[0] << endl;
+//    cout << "calibrateIllum[1]: " << calibrateIllum[1] << endl;
+    
     valarray<float> XYZToACESMtx(1.0f, 9);
     
     for(int i=0; i<3; i++) {
@@ -1067,7 +1071,6 @@ int main(int argc, char *argv[])
             
             // use cam_mul[4] to find the closest illuminate (e.g, D55)
             // For testing idt class purpose
-            
             Idt * idt = new Idt();
             if (userCameraSen) {
                 if (stat(static_cast<const char *>(cameraSenPath), &st)) {
@@ -1083,8 +1086,9 @@ int main(int argc, char *argv[])
                 if(!stat(FILEPATH, &st)) {
                     vector<string> cFiles = openDirCamera(static_cast<string>(FILEPATH)
                                                           +"/camera");
-
+                    
                     for(vector<string>::iterator file = cFiles.begin(); file != cFiles.end(); ++file){
+//                        cout << *file << "\n" << endl;
                         idt->load_cameraspst_data(*file,
                                                   static_cast<const char *>(P1.make),
                                                   static_cast<const char *>(P1.model));
@@ -1094,6 +1098,7 @@ int main(int argc, char *argv[])
             
             idt->load_training_spectral(static_cast<string>(FILEPATH)+"/training/training_spectral");
             idt->load_CMF(static_cast<string>(FILEPATH)+"/cmf/cmf_193");
+            idt->load_illuminate("/Users/miaoqizhu/Desktop/rawtoaces_IDT/data/illuminate/3200K_380_780_5");
             
 ////          test if the sensitity data is loaded into the memory
 //            for (int i =0 ; i<81; i++) {

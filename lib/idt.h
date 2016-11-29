@@ -122,23 +122,24 @@ namespace idt {
             // If output encoding is XYZt by default w is the CIE XYZ tristimulus values of adopted white.
             // ls -> Spectral power distribution of the illuminant or source.
             // wl -> Wavelenghts corresponding to SPEC.
-            float * XYZt_illum(lightsrc &ls);
+            float * XYZt_illum(illum &ls);
         
             // Returns a 3x3 Von Kries chromatic adaptation transform matrix
-            float ** calc_cat_mat(illum src, illum desc, float CAT[3][3]);
+            float ** calc_cat_mat(light src, light desc, float CAT[3][3]);
         
             // Converts from CIE XYZ tristimulus values to CIE L*a*b*
             CIELab XYZt_2_Lab(vector<CIEXYZ> XYZt, CIEXYZ XYZw);
             float ** gen_final_idt(vector<float> B_final);
         
             void load_cameraspst_data(const string &path, const char * maker, const char * model);
+            void load_illuminate(const string &path);
             void load_training_spectral(const string &path);
             void load_CMF(const string &path);
         
         private:
-            string _outputEncoding;
-            lightsrc _lightSource;
-            Spst     _cameraSpst;
+            string  _outputEncoding;
+            illum   _illuminate;
+            Spst    _cameraSpst;
             vector<trainSpec> _trainingSpec;
             vector<CMF> _cmf;
         

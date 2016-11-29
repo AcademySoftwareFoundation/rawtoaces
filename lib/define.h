@@ -151,16 +151,16 @@ struct RGBSen {
     float BSen;
 };
 
-struct illum {
+struct light {
     CIEXYZ XYZt;
     string src;
     string des;
 };
 
-struct lightsrc {
+struct illum {
     string type;
-    float* data;
-    float* wavelength;
+    uint8_t inc;
+    vector <float> data;
 };
 
 struct cameraDataPath {

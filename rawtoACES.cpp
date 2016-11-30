@@ -1107,6 +1107,15 @@ int main(int argc, char *argv[])
 //                << "B: " << float(idt->_cameraSpst._rgbsen[i].BSen) << "\n";
 //            }
             
+            for (int i=0; i<4; i++){
+                cout << "day light" << " " << i << ": " << float(C.pre_mul[i]) << endl;
+            }
+            
+            for (int i=0; i<4; i++){
+                cout << "as shot" << " " << i << ": " << float(C.cam_mul[i]) << endl;
+            }
+            
+            
             libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
             if(use_timing)
                 timerprint("LibRaw::dcraw_make_mem_image()",argv[arg]);

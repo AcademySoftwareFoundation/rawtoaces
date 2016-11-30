@@ -407,6 +407,51 @@ namespace idt {
         return out;
     }
     
+    vector<float> invertMatrix(const vector<float> &mtx)
+    {
+        assert (mtx.size() == 9);
+        
+        float CinvMtx[] = {
+            0.0 - mtx[5] * mtx[7] + mtx[4] * mtx[8],
+            0.0 + mtx[2] * mtx[7] - mtx[1] * mtx[8],
+            0.0 - mtx[2] * mtx[4] + mtx[1] * mtx[5],
+            0.0 + mtx[5] * mtx[6] - mtx[3] * mtx[8],
+            0.0 - mtx[2] * mtx[6] + mtx[0] * mtx[8],
+            0.0 + mtx[2] * mtx[3] - mtx[0] * mtx[5],
+            0.0 - mtx[4] * mtx[6] + mtx[3] * mtx[7],
+            0.0 + mtx[1] * mtx[6] - mtx[0] * mtx[7],
+            0.0 - mtx[1] * mtx[3] + mtx[0] * mtx[4]
+        };
+        
+        vector<float> invMtx(CinvMtx, CinvMtx+sizeof(CinvMtx) / sizeof(float));
+        float det = mtx[0] * invMtx[0] + mtx[1] * invMtx[3] + mtx[2] * invMtx[6];
+        
+        // pay attention to this
+        assert (det != 0);
+        
+        transform(invMtx.begin(),
+                  invMtx.end(),
+                  invMtx.begin(),
+                  bind1st(multiplies<float>(), det));
+        
+        return invMtx;
+    }
+    
+    void transpose(vector<float>& mtx, int row, int col)
+    {
+        assert (row != 0 || col != 0);
+
+        for(int i=0; i<row; i++) {
+            for (int j=0; j<col; j++) {
+                float tmp = mtx[i*row+j];
+                mtx[i*row+j] = mtx[j*col+i];
+                mtx[j*col+i] = tmp;
+            }
+        }
+        
+        return;
+    }
+    
     cameraDataPath& cameraPathsFinder() {
         static cameraDataPath cdp;
         static bool firstTime = 1;

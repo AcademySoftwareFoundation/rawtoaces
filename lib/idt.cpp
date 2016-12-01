@@ -452,6 +452,23 @@ namespace idt {
         return;
     }
     
+    
+    vector<float> vMultiply(vector<float>& vct1, vector<float>& vct2){
+        
+        assert(vct1.size() == vct2.size());
+        
+        vector<float> vct3(vct1.size());
+        transform(vct1.begin(), vct1.end(),
+                         vct2.begin(), vct3.begin(),
+                         multiplies<float>());
+        
+//        for(int i=0; i<vct1.size(); i++){
+//            cout << vct3[i] << endl;
+//        }
+        
+        return vct3;
+    }
+    
     cameraDataPath& cameraPathsFinder() {
         static cameraDataPath cdp;
         static bool firstTime = 1;

@@ -253,7 +253,7 @@ namespace idt {
         fin.close();
     }
     
-    void Idt::load_illuminate(const string &path){
+    void Idt::load_illuminate(const string &path, const char * type){
         ifstream fin;
         fin.open(path);
         
@@ -277,13 +277,18 @@ namespace idt {
             //            assert(token);
             
             if(line == 0) {
+                if (cmp_str(type, "na") &&
+                    cmp_str(type, static_cast<const char *>(token))) {
+                    fin.close();
+                    return;
+                }
                 _illuminate.type = static_cast<string>(token);
             }
             else if(line == 1) {
-                _illuminate.inc = atoi(token);
+                 _illuminate.inc = atoi(token);
             }
             else {
-                _illuminate.data.push_back(atof(token));
+                 _illuminate.data.push_back(atof(token));
             }
             
             line += 1;
@@ -293,9 +298,9 @@ namespace idt {
 //        for (int i = 0; i < _illuminate.data.size(); i++)
 //            cout << float(_illuminate.data[i]) << "," << endl;
         
+        cout << _illuminate.type << endl;
         fin.close();
     }
-
     
     void Idt::load_training_spectral(const string &path){
         ifstream fin;
@@ -393,6 +398,25 @@ namespace idt {
         fin.close();
     }
     
+    void Idt::determine_Illum(vector<float> mul, vector<float> pre_mul){
+        return;
+    }
+    
+    float invertD(float val){
+        assert (val != 0.0);
+        
+        return 1.0/val;
+    }
+    
+    void Idt::normalDayLight(vector<float>& mul){
+        float max = *max_element(mul.begin(), mul.end());
+        
+        transform(mul.begin(), mul.end(), mul.begin(), invertD);
+        transform(mul.begin(), mul.end(), mul.begin(),
+                  bind1st(multiplies<float>(), max));
+        
+        return;
+    }
     
     // Non-class functions
     template <typename T>
@@ -452,21 +476,36 @@ namespace idt {
         return;
     }
     
-    
-    vector<float> vMultiply(vector<float>& vct1, vector<float>& vct2){
+    vector<float> vMultiply(vector<float>& vct1, vector<float>& vct2)
+    {
         
         assert(vct1.size() == vct2.size());
         
         vector<float> vct3(vct1.size());
         transform(vct1.begin(), vct1.end(),
-                         vct2.begin(), vct3.begin(),
-                         multiplies<float>());
+                  vct2.begin(), vct3.begin(),
+                  multiplies<float>());
         
 //        for(int i=0; i<vct1.size(); i++){
 //            cout << vct3[i] << endl;
 //        }
         
         return vct3;
+    }
+    
+    float sseCal(vector<float>& tcp, vector<float>& src)
+    {
+        assert(tcp.size() == src.size());
+        vector<float> tmp(src.size());
+        
+        for (int i=0; i<tcp.size(); i++){
+            tmp.push_back(tcp[i]-src[i]);
+        }
+        
+//        cout << float(std::accumulate(tmp.begin(), tmp.end(), 0.0, square<float>())) << endl;
+        float result = accumulate(tmp.begin(), tmp.end(), 0.0, square<float>());
+        
+        return result;
     }
     
     cameraDataPath& cameraPathsFinder() {

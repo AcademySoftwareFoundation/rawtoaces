@@ -705,7 +705,7 @@ void aces_write(const char * name,
     x.saveImageObject ( );
 }
 
-vector<string> openDirCamera(string path = ".") {
+vector<string> openDir(string path = ".") {
     
     DIR *    dir;
     dirent * pDir;
@@ -829,10 +829,10 @@ int main(int argc, char *argv[])
     
     LibRaw RawProcessor;
     int i,arg,c,ret;
-    char opm,opt,*cp,*sp,*path,*cameraSenPath;
+    char opm,opt,*cp,*sp,*path,*cameraSenPath, *illumType;
     int use_bigfile=0, use_timing=0;
     float scale = 1.0;
-    bool checkMul = 0, userCameraSen = 0;
+    bool checkMul = 0, userCameraSen = 0, userIllum = 0;
     struct stat st;
     
 #ifndef WIN32
@@ -875,7 +875,7 @@ int main(int argc, char *argv[])
               case 'b':  OUT.bright      = (float)atof(argv[arg++]);  break;
               case 'P':  OUT.bad_pixels  = argv[arg++];        break;
               case 'K':  OUT.dark_frame  = argv[arg++];        break;
-                  case 'r':{
+              case 'r':{
                       checkMul = 1.0;
                       for(c=0;c<4;c++)
                           OUT.user_mul[c] = (float)atof(argv[arg++]);
@@ -914,6 +914,11 @@ int main(int argc, char *argv[])
                       userCameraSen = 1;
                       cameraSenPath = (char *)(argv[arg++]);
                       break;
+              case 'T':
+                      userIllum = 1;
+                      illumType = (char *)(argv[arg++]);
+                      break;
+                      
 #ifndef WIN32
               case 'E':  use_mmap              = 1;  break;
 #endif
@@ -1084,7 +1089,7 @@ int main(int argc, char *argv[])
             }
             else {
                 if(!stat(FILEPATH, &st)) {
-                    vector<string> cFiles = openDirCamera(static_cast<string>(FILEPATH)
+                    vector<string> cFiles = openDir(static_cast<string>(FILEPATH)
                                                           +"/camera");
                     
                     for(vector<string>::iterator file = cFiles.begin(); file != cFiles.end(); ++file){
@@ -1096,9 +1101,24 @@ int main(int argc, char *argv[])
                 }
             }
             
+            if(!stat(FILEPATH, &st)) {
+                vector<string> cFiles = openDir(static_cast<string>(FILEPATH)
+                                                +"/illuminate");
+                for(vector<string>::iterator file = cFiles.begin(); file != cFiles.end(); ++file){
+                    if (userIllum)
+                        idt->load_illuminate(*file, static_cast<const char *>(illumType));
+                    else
+                        idt->load_illuminate(*file);
+                }
+            }
+            
             idt->load_training_spectral(static_cast<string>(FILEPATH)+"/training/training_spectral");
             idt->load_CMF(static_cast<string>(FILEPATH)+"/cmf/cmf_193");
-            idt->load_illuminate("/Users/miaoqizhu/Desktop/rawtoaces_IDT/data/illuminate/3200K_380_780_5");
+            
+            float a[6] = {1.0, 1.5, 2.0, 200.0, 1.0, 0.099};
+            vector<float> test(a, a+sizeof(a)/sizeof(float));
+            
+            idt->normalDayLight(test);
             
 ////          test if the sensitity data is loaded into the memory
 //            for (int i =0 ; i<81; i++) {
@@ -1111,10 +1131,9 @@ int main(int argc, char *argv[])
                 cout << "day light" << " " << i << ": " << float(C.pre_mul[i]) << endl;
             }
             
-            for (int i=0; i<4; i++){
-                cout << "as shot" << " " << i << ": " << float(C.cam_mul[i]) << endl;
-            }
-            
+//            for (int i=0; i<4; i++){
+//                cout << "as shot" << " " << i << ": " << float(C.cam_mul[i]) << endl;
+//            }
             
             libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
             if(use_timing)

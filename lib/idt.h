@@ -132,14 +132,17 @@ namespace idt {
             float ** gen_final_idt(vector<float> B_final);
         
             void load_cameraspst_data(const string &path, const char * maker, const char * model);
-            void load_illuminate(const string &path);
+            void load_illuminate(const string &path, const char * type="na");
             void load_training_spectral(const string &path);
             void load_CMF(const string &path);
         
+            void determine_Illum(vector<float> mul, vector<float> pre_mul);
+            void normalDayLight(vector<float>& mul);
+        
         private:
             string  _outputEncoding;
-            illum   _illuminate;
             Spst    _cameraSpst;
+            illum _illuminate;
             vector<trainSpec> _trainingSpec;
             vector<CMF> _cmf;
         

@@ -59,9 +59,10 @@ namespace idt {
         _brand = null_ptr;
         _model = null_ptr;
         _increment = 5;
-        for (int i=0; i<41; i++)
-            _rgbsen.push_back(RGBSen());
-
+        for (int i=0; i<81; i++) {
+            RGBSen tmp = {0.0, 0.0, 0.0};
+            _rgbsen.push_back(tmp);
+        }
     }
     
     const char * Spst::getBrand() const {
@@ -143,7 +144,6 @@ namespace idt {
         
         return;
     }
-    
 
     Idt::Idt() {
         _outputEncoding = "ACES";
@@ -199,7 +199,6 @@ namespace idt {
         
         vector <RGBSen> rgbsen;
         
-
         while(!fin.eof()){
             char buffer[512];
             fin.getline(buffer, 512);
@@ -248,8 +247,9 @@ namespace idt {
             fprintf(stderr, "The increment should be 5nm from 380nm to 780nm.\n");
             exit(EXIT_FAILURE);
         }
-            
+        
         _cameraSpst.setSensitivity(rgbsen);
+        
         fin.close();
     }
     
@@ -263,6 +263,9 @@ namespace idt {
             fprintf(stderr, "The file may not exist.\n");
             exit(EXIT_FAILURE);
         }
+        
+        if((_illuminate.data).size() != 0)
+            (_illuminate.data).clear();
         
         while((!fin.eof())){
             char buffer[128];
@@ -298,8 +301,9 @@ namespace idt {
 //        for (int i = 0; i < _illuminate.data.size(); i++)
 //            cout << float(_illuminate.data[i]) << "," << endl;
         
-        cout << _illuminate.type << endl;
         fin.close();
+        
+        return;
     }
     
     void Idt::load_training_spectral(const string &path){
@@ -398,14 +402,12 @@ namespace idt {
         fin.close();
     }
     
-    void Idt::determine_Illum(vector<float> mul, vector<float> pre_mul){
-        return;
-    }
+//    const Spst Idt::getCameraSpst() const {
+//        return static_cast<const Spst>(_cameraSpst);
+//    }
     
-    float invertD(float val){
-        assert (val != 0.0);
-        
-        return 1.0/val;
+    const illum Idt::getIllum() const {
+        return static_cast<const illum>(_illuminate);
     }
     
     void Idt::normalDayLight(vector<float>& mul){
@@ -418,140 +420,40 @@ namespace idt {
         return;
     }
     
-    // Non-class functions
-    template <typename T>
-    vector <T> repmat(vector <T> data, uint8_t row, uint8_t col) {
-        vector <T> out(0.0, data.size()*row*col);
-        for (int i = 0; i < row; i++) {
-            for (int j = 0; j < col; j++) {
-                out[i*col + j] = data[i];
-            }
+    vector<float> Idt::calCM() {
+        vector<RGBSen> rgbsen = _cameraSpst.getSensitivity();
+        uint8_t size = rgbsen.size();
+        vector<float> R(size), G(size), B(size);
+        
+        for(uint8_t i=0; i<size; i++){
+            R[i] = rgbsen[i].RSen;
+            G[i] = rgbsen[i].GSen;
+            B[i] = rgbsen[i].BSen;
         }
         
-        return out;
+        vector<float> RGB(3, 1.0);
+        
+        RGB[0] = sumVector(mulVector(R, _illuminate.data));
+        RGB[1] = sumVector(mulVector(G, _illuminate.data));
+        RGB[2] = sumVector(mulVector(B, _illuminate.data));
+        
+//        cout << RGB[0] << "; "
+//             << RGB[1] << "; "
+//             << RGB[2] << endl;
+        
+        normalDayLight(RGB);
+        
+        cout << RGB[0] << "; "
+        << RGB[1] << "; "
+        << RGB[2] << endl;
+        
+        return RGB;
     }
     
-    vector<float> invertMatrix(const vector<float> &mtx)
-    {
-        assert (mtx.size() == 9);
-        
-        float CinvMtx[] = {
-            0.0 - mtx[5] * mtx[7] + mtx[4] * mtx[8],
-            0.0 + mtx[2] * mtx[7] - mtx[1] * mtx[8],
-            0.0 - mtx[2] * mtx[4] + mtx[1] * mtx[5],
-            0.0 + mtx[5] * mtx[6] - mtx[3] * mtx[8],
-            0.0 - mtx[2] * mtx[6] + mtx[0] * mtx[8],
-            0.0 + mtx[2] * mtx[3] - mtx[0] * mtx[5],
-            0.0 - mtx[4] * mtx[6] + mtx[3] * mtx[7],
-            0.0 + mtx[1] * mtx[6] - mtx[0] * mtx[7],
-            0.0 - mtx[1] * mtx[3] + mtx[0] * mtx[4]
-        };
-        
-        vector<float> invMtx(CinvMtx, CinvMtx+sizeof(CinvMtx) / sizeof(float));
-        float det = mtx[0] * invMtx[0] + mtx[1] * invMtx[3] + mtx[2] * invMtx[6];
-        
-        // pay attention to this
-        assert (det != 0);
-        
-        transform(invMtx.begin(),
-                  invMtx.end(),
-                  invMtx.begin(),
-                  bind1st(multiplies<float>(), det));
-        
-        return invMtx;
-    }
-    
-    void transpose(vector<float>& mtx, int row, int col)
-    {
-        assert (row != 0 || col != 0);
-
-        for(int i=0; i<row; i++) {
-            for (int j=0; j<col; j++) {
-                float tmp = mtx[i*row+j];
-                mtx[i*row+j] = mtx[j*col+i];
-                mtx[j*col+i] = tmp;
-            }
-        }
-        
+    void Idt::determineIllum() {
         return;
     }
     
-    vector<float> vMultiply(vector<float>& vct1, vector<float>& vct2)
-    {
-        
-        assert(vct1.size() == vct2.size());
-        
-        vector<float> vct3(vct1.size());
-        transform(vct1.begin(), vct1.end(),
-                  vct2.begin(), vct3.begin(),
-                  multiplies<float>());
-        
-//        for(int i=0; i<vct1.size(); i++){
-//            cout << vct3[i] << endl;
-//        }
-        
-        return vct3;
-    }
-    
-    float sseCal(vector<float>& tcp, vector<float>& src)
-    {
-        assert(tcp.size() == src.size());
-        vector<float> tmp(src.size());
-        
-        for (int i=0; i<tcp.size(); i++){
-            tmp.push_back(tcp[i]-src[i]);
-        }
-        
-//        cout << float(std::accumulate(tmp.begin(), tmp.end(), 0.0, square<float>())) << endl;
-        float result = accumulate(tmp.begin(), tmp.end(), 0.0, square<float>());
-        
-        return result;
-    }
-    
-    cameraDataPath& cameraPathsFinder() {
-        static cameraDataPath cdp;
-        static bool firstTime = 1;
-        
-        if(firstTime)
-        {
-            vector <string>& cPaths = cdp.paths;
-            
-            string path;
-            const char* env = getenv("RAWTOACES_CAMERASEN_PATH");
-            if (env)
-                path = env;
-            
-            if (path == "") {
-                #if defined (WIN32) || defined (WIN64)
-                path = ".";
-                cdp.os = "WIN";
-                #else
-                path = ".:/usr/local/lib/RAWTOACES:/usr/local" PACKAGE "-" VERSION "/lib/RAWTOACES";
-                cdp.os = "UNIX";
-                #endif
-            }
-            
-            size_t pos = 0;
-            while (pos < path.size()){
-                #if defined (WIN32) || defined (WIN64)
-                size_t end = path.find(';', pos);
-                #else
-                size_t end = path.find(':', pos);
-                #endif
-                
-                if (end == string::npos)
-                    end = path.size();
-                
-                string pathItem = path.substr(pos, end-pos);
-                
-                if(find(cPaths.begin(), cPaths.end(), pathItem) == cPaths.end())
-                    cPaths.push_back(pathItem);
-                
-                pos = end + 1;
-            }
-        }
-        return cdp;
-    }
 }
 
 

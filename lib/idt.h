@@ -133,16 +133,22 @@ namespace idt {
         
             void load_cameraspst_data(const string &path, const char * maker, const char * model);
             void load_illuminate(const string &path, const char * type="na");
+//            const illum* load_illuminate(const string &path, const char * type="na");
             void load_training_spectral(const string &path);
             void load_CMF(const string &path);
         
-            void determine_Illum(vector<float> mul, vector<float> pre_mul);
+            void determineIllum();
             void normalDayLight(vector<float>& mul);
         
+//            const Spst getCameraSpst() const;
+            const illum getIllum() const;
+        
+            vector<float> calCM();
+
         private:
             string  _outputEncoding;
             Spst    _cameraSpst;
-            illum _illuminate;
+            illum   _illuminate;
             vector<trainSpec> _trainingSpec;
             vector<CMF> _cmf;
         
@@ -151,6 +157,155 @@ namespace idt {
         
             float _CAT[3][3];
     };
+    
+    
+    // Non-class functions
+    template <typename T>
+    vector <T> repmat(vector <T> data, uint8_t row, uint8_t col) {
+        vector <T> out(0.0, data.size()*row*col);
+        for (int i = 0; i < row; i++) {
+            for (int j = 0; j < col; j++) {
+                out[i*col + j] = data[i];
+            }
+        }
+        
+        return out;
+    }
+    
+    vector<double> invertMatrix(const vector<double> &mtx)
+    {
+        assert (mtx.size() == 9);
+        
+        double CinvMtx[] = {
+            0.0 - mtx[5] * mtx[7] + mtx[4] * mtx[8],
+            0.0 + mtx[2] * mtx[7] - mtx[1] * mtx[8],
+            0.0 - mtx[2] * mtx[4] + mtx[1] * mtx[5],
+            0.0 + mtx[5] * mtx[6] - mtx[3] * mtx[8],
+            0.0 - mtx[2] * mtx[6] + mtx[0] * mtx[8],
+            0.0 + mtx[2] * mtx[3] - mtx[0] * mtx[5],
+            0.0 - mtx[4] * mtx[6] + mtx[3] * mtx[7],
+            0.0 + mtx[1] * mtx[6] - mtx[0] * mtx[7],
+            0.0 - mtx[1] * mtx[3] + mtx[0] * mtx[4]
+        };
+        
+        vector<double> invMtx(CinvMtx, CinvMtx+sizeof(CinvMtx) / sizeof(double));
+        double det = mtx[0] * invMtx[0] + mtx[1] * invMtx[3] + mtx[2] * invMtx[6];
+        
+        // pay attention to this
+        assert (det != 0);
+        
+        transform(invMtx.begin(),
+                  invMtx.end(),
+                  invMtx.begin(),
+                  bind1st(multiplies<double>(), det));
+        
+        return invMtx;
+    }
+    
+    float invertD(float val) {
+        assert (val != 0.0);
+        
+        return 1.0/val;
+    }
+    
+    void transpose(vector<float>& mtx, int row, int col)
+    {
+        assert (row != 0 || col != 0);
+        
+        for(int i=0; i<row; i++) {
+            for (int j=0; j<col; j++) {
+                float tmp = mtx[i*row+j];
+                mtx[i*row+j] = mtx[j*col+i];
+                mtx[j*col+i] = tmp;
+            }
+        }
+        
+        return;
+    }
+    
+    float sumVector(const vector<float>& vct)
+    {
+        return accumulate(vct.begin(), vct.end(), 0.0f);
+    }
+    
+    vector<float> mulVector(const vector<float>& vct1, const vector<float>& vct2)
+    {
+        cout << int(vct1.size()) << "; " << int(vct2.size()) << endl;
+        
+        assert(vct1.size() == vct2.size());
+        
+        vector<float> vct3(vct1.size());
+        transform(vct1.begin(), vct1.end(),
+                  vct2.begin(), vct3.begin(),
+                  multiplies<float>());
+        
+        //        for(int i=0; i<vct1.size(); i++){
+        //            cout << vct3[i] << endl;
+        //        }
+        
+        return vct3;
+    }
+    
+    float calSSE(vector<float>& tcp, vector<float>& src)
+    {
+        assert(tcp.size() == src.size());
+        vector<float> tmp(src.size());
+        
+        for (int i=0; i<tcp.size(); i++){
+            tmp.push_back(tcp[i]-src[i]);
+        }
+        
+        //        cout << float(std::accumulate(tmp.begin(), tmp.end(), 0.0, square<float>())) << endl;
+        float result = accumulate(tmp.begin(), tmp.end(), 0.0f, square<float>());
+        
+        return result;
+    }
+    
+    cameraDataPath& cameraPathsFinder() {
+        static cameraDataPath cdp;
+        static bool firstTime = 1;
+        
+        if(firstTime)
+        {
+            vector <string>& cPaths = cdp.paths;
+            
+            string path;
+            const char* env = getenv("RAWTOACES_CAMERASEN_PATH");
+            if (env)
+                path = env;
+            
+            if (path == "") {
+#if defined (WIN32) || defined (WIN64)
+                path = ".";
+                cdp.os = "WIN";
+#else
+                path = ".:/usr/local/lib/RAWTOACES:/usr/local" PACKAGE "-" VERSION "/lib/RAWTOACES";
+                cdp.os = "UNIX";
+#endif
+            }
+            
+            size_t pos = 0;
+            while (pos < path.size()){
+#if defined (WIN32) || defined (WIN64)
+                size_t end = path.find(';', pos);
+#else
+                size_t end = path.find(':', pos);
+#endif
+                
+                if (end == string::npos)
+                    end = path.size();
+                
+                string pathItem = path.substr(pos, end-pos);
+                
+                if(find(cPaths.begin(), cPaths.end(), pathItem) == cPaths.end())
+                    cPaths.push_back(pathItem);
+                
+                pos = end + 1;
+            }
+        }
+        return cdp;
+    }
+
 
 }
 

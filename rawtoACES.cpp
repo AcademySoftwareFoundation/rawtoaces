@@ -1025,7 +1025,6 @@ int main(int argc, char *argv[])
             OUT.gamm[1]            = 1.0;
             OUT.no_auto_bright     = 1;
             
-            
             // 1.0 for exposure - the last thing to do.
             
             // -r option
@@ -1107,8 +1106,10 @@ int main(int argc, char *argv[])
                 for(vector<string>::iterator file = cFiles.begin(); file != cFiles.end(); ++file){
                     if (userIllum)
                         idt->load_illuminate(*file, static_cast<const char *>(illumType));
-                    else
+                    else {
                         idt->load_illuminate(*file);
+                        idt->calCM();
+                    }
                 }
             }
             

@@ -60,6 +60,7 @@
 #include <valarray>
 #include <vector>
 #include <numeric>
+#include <limits>
 #include <string>
 #include <stdio.h>
 #include <ctype.h>

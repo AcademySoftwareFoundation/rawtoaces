@@ -59,6 +59,7 @@
 #include <stdexcept>
 #include <valarray>
 #include <vector>
+#include <map>
 #include <numeric>
 #include <limits>
 #include <string>

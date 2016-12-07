@@ -137,7 +137,7 @@ namespace idt {
             void load_training_spectral(const string &path);
             void load_CMF(const string &path);
         
-            void determineIllum();
+            void determineIllum(map< string, vector<float> >& illuCM, float src[]);
             void normalDayLight(vector<float>& mul);
         
 //            const Spst getCameraSpst() const;
@@ -147,11 +147,12 @@ namespace idt {
 
         private:
             string  _outputEncoding;
+            string  _bestIllum;
             Spst    _cameraSpst;
             illum   _illuminate;
             vector<trainSpec> _trainingSpec;
             vector<CMF> _cmf;
-        
+
             vector<float> _encodingWhite;
             vector<float> _WB_start;
         
@@ -230,7 +231,7 @@ namespace idt {
     
     vector<float> mulVector(const vector<float>& vct1, const vector<float>& vct2)
     {
-        cout << int(vct1.size()) << "; " << int(vct2.size()) << endl;
+//        cout << int(vct1.size()) << "; " << int(vct2.size()) << endl;
         
         assert(vct1.size() == vct2.size());
         
@@ -305,7 +306,5 @@ namespace idt {
         }
         return cdp;
     }
-
-
 }
 

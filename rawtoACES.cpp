@@ -1013,7 +1013,6 @@ int main(int argc, char *argv[])
                     continue;
                 }
             
-
             if(use_timing)
                 timerprint("LibRaw::unpack()",argv[arg]);
             
@@ -1092,7 +1091,6 @@ int main(int argc, char *argv[])
                                                           +"/camera");
                     
                     for(vector<string>::iterator file = cFiles.begin(); file != cFiles.end(); ++file){
-//                        cout << *file << "\n" << endl;
                         idt->load_cameraspst_data(*file,
                                                   static_cast<const char *>(P1.make),
                                                   static_cast<const char *>(P1.model));
@@ -1100,26 +1098,25 @@ int main(int argc, char *argv[])
                 }
             }
             
+            
+            map< string, vector<float> > illuCM;
             if(!stat(FILEPATH, &st)) {
-                vector<string> cFiles = openDir(static_cast<string>(FILEPATH)
-                                                +"/illuminate");
-                for(vector<string>::iterator file = cFiles.begin(); file != cFiles.end(); ++file){
+                vector<string> iFiles = openDir(static_cast<string>(FILEPATH)
+                                                +"illuminate");
+                for(vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file){
                     if (userIllum)
                         idt->load_illuminate(*file, static_cast<const char *>(illumType));
                     else {
                         idt->load_illuminate(*file);
-                        idt->calCM();
+                        illuCM[static_cast<string>(*file)] = idt->calCM();
                     }
                 }
             }
             
+            idt->determineIllum(illuCM, C.pre_mul);
+            
             idt->load_training_spectral(static_cast<string>(FILEPATH)+"/training/training_spectral");
             idt->load_CMF(static_cast<string>(FILEPATH)+"/cmf/cmf_193");
-            
-            float a[6] = {1.0, 1.5, 2.0, 200.0, 1.0, 0.099};
-            vector<float> test(a, a+sizeof(a)/sizeof(float));
-            
-            idt->normalDayLight(test);
             
 ////          test if the sensitity data is loaded into the memory
 //            for (int i =0 ; i<81; i++) {
@@ -1130,11 +1127,9 @@ int main(int argc, char *argv[])
             
             for (int i=0; i<4; i++){
                 cout << "day light" << " " << i << ": " << float(C.pre_mul[i]) << endl;
-            }
-            
-//            for (int i=0; i<4; i++){
 //                cout << "as shot" << " " << i << ": " << float(C.cam_mul[i]) << endl;
-//            }
+
+            }
             
             libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
             if(use_timing)

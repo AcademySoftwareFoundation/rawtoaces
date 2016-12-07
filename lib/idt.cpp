@@ -147,6 +147,7 @@ namespace idt {
 
     Idt::Idt() {
         _outputEncoding = "ACES";
+        _bestIllum = " ";
         _encodingWhite = vector<float> (0.0, 3);
         _WB_start = vector<float> (0.0, 3);
         *_CAT[0] = CATMatrix[0][0];
@@ -431,26 +432,36 @@ namespace idt {
             B[i] = rgbsen[i].BSen;
         }
         
-        vector<float> RGB(3, 1.0);
+        vector<float> CM(3, 1.0);
         
-        RGB[0] = sumVector(mulVector(R, _illuminate.data));
-        RGB[1] = sumVector(mulVector(G, _illuminate.data));
-        RGB[2] = sumVector(mulVector(B, _illuminate.data));
+        CM[0] = sumVector(mulVector(R, _illuminate.data));
+        CM[1] = sumVector(mulVector(G, _illuminate.data));
+        CM[2] = sumVector(mulVector(B, _illuminate.data));
         
-//        cout << RGB[0] << "; "
-//             << RGB[1] << "; "
-//             << RGB[2] << endl;
+        normalDayLight(CM);
         
-        normalDayLight(RGB);
+//        cout << CM[0] << "; "
+//        << CM[1] << "; "
+//        << CM[2] << endl;
         
-        cout << RGB[0] << "; "
-        << RGB[1] << "; "
-        << RGB[2] << endl;
-        
-        return RGB;
+        return CM;
     }
     
-    void Idt::determineIllum() {
+    void Idt::determineIllum(map< string, vector<float> >& illuCM, float src[]) {
+        float sse = numeric_limits<float>::max();
+        vector<float> vsrc(src, src+3);
+        
+        for (map< string, vector<float> >::iterator it = illuCM.begin(); it!=illuCM.end(); ++it){
+            float tmp = calSSE(it->second, vsrc);
+            cout << it->first << ": " << tmp << endl;
+
+            if (sse > tmp) {
+                sse = tmp;
+                _bestIllum = it->first;
+            }
+        }
+        
+        cout << "Hello, the best light source is: " << _bestIllum << endl;
         return;
     }
     

@@ -1113,23 +1113,14 @@ int main(int argc, char *argv[])
                 }
             }
             
-            idt->determineIllum(illuCM, C.pre_mul);
-            
             idt->load_training_spectral(static_cast<string>(FILEPATH)+"/training/training_spectral");
             idt->load_CMF(static_cast<string>(FILEPATH)+"/cmf/cmf_193");
+            idt->determineIllum(illuCM, C.pre_mul);
             
-////          test if the sensitity data is loaded into the memory
-//            for (int i =0 ; i<81; i++) {
-//                cout << "R:" << float(idt->_cameraSpst._rgbsen[i].RSen) << "; "
-//                << "G: " << float(idt->_cameraSpst._rgbsen[i].GSen) << "; "
-//                << "B: " << float(idt->_cameraSpst._rgbsen[i].BSen) << "\n";
-//            }
-            
-            for (int i=0; i<4; i++){
-                cout << "day light" << " " << i << ": " << float(C.pre_mul[i]) << endl;
+//            for (int i=0; i<4; i++){
+//                cout << "day light" << " " << i << ": " << float(C.pre_mul[i]) << endl;
 //                cout << "as shot" << " " << i << ": " << float(C.cam_mul[i]) << endl;
-
-            }
+//            }
             
             libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
             if(use_timing)

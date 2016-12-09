@@ -148,37 +148,14 @@ namespace idt {
     Idt::Idt() {
         _outputEncoding = "ACES";
         _bestIllum = " ";
-        _encodingWhite = vector<float> (0.0, 3);
-        _WB_start = vector<float> (0.0, 3);
-        *_CAT[0] = CATMatrix[0][0];
+//        *_CAT[0] = CATMatrix[0][0];
         
-        for (int i=0; i<202; i++)
+        for (int i=0; i<81; i++) {
             _trainingSpec.push_back(trainSpec());
-        for (int i=0; i<81; i++)
             _cmf.push_back(CMF());
-    }
-    
-    float ** Idt::aces_3_XYZt_mat() {
-        return 0;
+        }
     }
 
-    
-    float * Idt::XYZt_illum(illum &ls) {
-        return 0;
-    }
-    
-    float ** Idt::calc_cat_mat(light src,
-                               light desc,
-                               float CAT[3][3]) {
-        
-        float **vkmat = new float*[3];
-        
-        for(uint8_t i=0; i<3; i++){
-            vkmat[i] = new float[3];
-        }
-        
-        return vkmat;
-    }
     
     CIELab Idt::XYZt_2_Lab(vector<CIEXYZ> XYZt, CIEXYZ XYZw) {
         CIELab CLab = {1.0, 1.0, 1.0};
@@ -327,18 +304,18 @@ namespace idt {
                 continue;
             }
             
-            char* token[121] = {};
+            char* token[190] = {};
             token[0] = strtok(buffer, " ,");
 //            assert(token[0]);
             
             _trainingSpec[i].wl = wl;
-            _trainingSpec[i].data[0] = atof(token[0]);
+            _trainingSpec[i].data.push_back(atof(token[0]));
 
-            for (uint8_t n = 1; n < 121; n++){
+            for (uint8_t n = 1; n < 190; n++){
                 token[n] = strtok(null_ptr, " ,");
 
                 if(token[n]) {
-                    _trainingSpec[i].data[n] = atof(token[n]);
+                    _trainingSpec[i].data.push_back(atof(token[n]));
                 }
                 else {
                     fprintf(stderr, "The training spectral sensitivity file may need to be looked at\n");
@@ -453,18 +430,93 @@ namespace idt {
         
         for (map< string, vector<float> >::iterator it = illuCM.begin(); it!=illuCM.end(); ++it){
             float tmp = calSSE(it->second, vsrc);
-            cout << it->first << ": " << tmp << endl;
-
             if (sse > tmp) {
                 sse = tmp;
                 _bestIllum = it->first;
             }
         }
         
-        cout << "Hello, the best light source is: " << _bestIllum << endl;
+        if((_illuminate.data).size() != 0){
+            _illuminate.type = "";
+            _illuminate.inc = 5;
+            _illuminate.data.clear();
+        }
+
+        load_illuminate(_bestIllum);
+
+        calRGB(calTrainingIllum());
+        calXYZ(calTrainingIllum());
+        
+//        cout << "Hello, the best light source is: " << _bestIllum << endl;
         return;
     }
     
+    vector< vector<float> > Idt::calTrainingIllum() {
+        assert(_illuminate.data.size() == 81 &&
+               _trainingSpec[0].data.size() == 190);
+
+        vector< vector<float> > TI(81, vector <float>(190));
+        
+        for(int i=0; i < 81; i++) {
+            vector<float> row(81, _illuminate.data[i]);
+            for(int j=0; j < 190; j++){
+                vector<float> col;
+                for(int w=0; w < 81; w++){
+                    col.push_back((_trainingSpec[w].data)[j]);
+                }
+                TI[i].push_back(sumVector(mulVector(row, col)));
+            }
+        }
+        
+        return TI;
+    }
+    
+    vector< vector<float> > Idt::calRGB(vector< vector<float> > TI) {
+        assert(TI.size() == 81);
+        
+        vector< vector<float> > tansTI = transposeVec(TI, 81, 190);
+        
+        vector <float> colR, colG, colB;
+        for(int i=0; i < 81; i++){
+            colR.push_back(_cameraSpst._rgbsen[i].RSen);
+            colG.push_back(_cameraSpst._rgbsen[i].GSen);
+            colB.push_back(_cameraSpst._rgbsen[i].BSen);
+        }
+
+        vector< vector<float> > RGB(190, vector<float>(3));
+        for(int i=0; i < 190; i++) {
+            RGB[i][0] = (sumVector(mulVector(tansTI[i], colR)));
+            RGB[i][1] = (sumVector(mulVector(tansTI[i], colG)));
+            RGB[i][2] = (sumVector(mulVector(tansTI[i], colB)));
+        }
+        
+//        cout << "RGB size: " << RGB.size() << "; " << "RGB.size[0] size: " << RGB.size[0].size() << endl;
+        return RGB;
+    }
+    
+    vector< vector<float> > Idt::calXYZ(vector< vector<float> > TI) {
+        assert(TI.size() == 81);
+        
+        vector< vector<float> > tansTI = transposeVec(TI, 81, 190);
+    
+        vector <float> colX, colY, colZ;
+        for(int i=0; i < 81; i++){
+            colX.push_back(_cmf[i].xbar);
+            colY.push_back(_cmf[i].ybar);
+            colZ.push_back(_cmf[i].zbar);
+        }
+        
+        vector< vector<float> > XYZ(190, vector<float>(3));
+        for(int i=0; i < 190; i++) {
+            XYZ[i][0] = (sumVector(mulVector(tansTI[i], colX)));
+            XYZ[i][1] = (sumVector(mulVector(tansTI[i], colY)));
+            XYZ[i][2] = (sumVector(mulVector(tansTI[i], colZ)));
+        }
+        
+//        cout << "XYZ size: " << XYZ.size() << "; " << "XYZ[0] size: " << XYZ[0].size() << endl;
+        
+        return XYZ;
+    }
 }
 
 

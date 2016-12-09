@@ -72,7 +72,9 @@
 using namespace std;
 
 namespace idt {
+    class idt;
     class Spst {
+        friend class Idt;
         public:
             Spst();
             Spst(Spst& spstobject) : _brand(spstobject._brand),
@@ -116,24 +118,11 @@ namespace idt {
             Idt();
             ~Idt();
         
-            // Matrix converting ACES RGB relative exposure values to CIE XYZ tristimulus values.
-            float ** aces_3_XYZt_mat();
-        
-            // If output encoding is XYZt by default w is the CIE XYZ tristimulus values of adopted white.
-            // ls -> Spectral power distribution of the illuminant or source.
-            // wl -> Wavelenghts corresponding to SPEC.
-            float * XYZt_illum(illum &ls);
-        
-            // Returns a 3x3 Von Kries chromatic adaptation transform matrix
-            float ** calc_cat_mat(light src, light desc, float CAT[3][3]);
-        
-            // Converts from CIE XYZ tristimulus values to CIE L*a*b*
             CIELab XYZt_2_Lab(vector<CIEXYZ> XYZt, CIEXYZ XYZw);
             float ** gen_final_idt(vector<float> B_final);
         
             void load_cameraspst_data(const string &path, const char * maker, const char * model);
             void load_illuminate(const string &path, const char * type="na");
-//            const illum* load_illuminate(const string &path, const char * type="na");
             void load_training_spectral(const string &path);
             void load_CMF(const string &path);
         
@@ -143,18 +132,21 @@ namespace idt {
 //            const Spst getCameraSpst() const;
             const illum getIllum() const;
         
-            vector<float> calCM();
+            vector< float > calCM();
+            vector< vector<float> > calTrainingIllum();
+            vector< vector<float> > calXYZ( vector< vector<float> > TI);
+            vector< vector<float> > calRGB( vector< vector<float> > TI);
+        
 
         private:
             string  _outputEncoding;
             string  _bestIllum;
             Spst    _cameraSpst;
             illum   _illuminate;
-            vector<trainSpec> _trainingSpec;
+        
             vector<CMF> _cmf;
-
-            vector<float> _encodingWhite;
-            vector<float> _WB_start;
+            vector<trainSpec> _trainingSpec;
+//            vector< vector<float> > _CAT;
         
             float _CAT[3][3];
     };
@@ -162,7 +154,7 @@ namespace idt {
     
     // Non-class functions
     template <typename T>
-    vector <T> repmat(vector <T> data, uint8_t row, uint8_t col) {
+    vector <T> repmat(vector<T> data, int row, int col) {
         vector <T> out(0.0, data.size()*row*col);
         for (int i = 0; i < row; i++) {
             for (int j = 0; j < col; j++) {
@@ -173,11 +165,12 @@ namespace idt {
         return out;
     }
     
-    vector<double> invertMatrix(const vector<double> &mtx)
+    template <typename T>
+    vector<T> invertMatrix(const vector<T> &mtx)
     {
         assert (mtx.size() == 9);
         
-        double CinvMtx[] = {
+        T CinvMtx[] = {
             0.0 - mtx[5] * mtx[7] + mtx[4] * mtx[8],
             0.0 + mtx[2] * mtx[7] - mtx[1] * mtx[8],
             0.0 - mtx[2] * mtx[4] + mtx[1] * mtx[5],
@@ -189,8 +182,8 @@ namespace idt {
             0.0 - mtx[1] * mtx[3] + mtx[0] * mtx[4]
         };
         
-        vector<double> invMtx(CinvMtx, CinvMtx+sizeof(CinvMtx) / sizeof(double));
-        double det = mtx[0] * invMtx[0] + mtx[1] * invMtx[3] + mtx[2] * invMtx[6];
+        vector<T> invMtx(CinvMtx, CinvMtx+sizeof(CinvMtx) / sizeof(T));
+        T det = mtx[0] * invMtx[0] + mtx[1] * invMtx[3] + mtx[2] * invMtx[6];
         
         // pay attention to this
         assert (det != 0);
@@ -198,30 +191,48 @@ namespace idt {
         transform(invMtx.begin(),
                   invMtx.end(),
                   invMtx.begin(),
-                  bind1st(multiplies<double>(), det));
+                  bind1st(multiplies<T>(), det));
         
         return invMtx;
+    }
+    
+    template <typename T>
+    void transpose(T* mtx[], int row, int col)
+    {
+        assert (row != 0 || col != 0);
+        
+        for(int i=0; i<row; i++) {
+            for (int j=0; j<col; j++) {
+                T tmp = mtx[i][j];
+                mtx[i][j] = mtx[j][i];
+                mtx[j][i] = tmp;
+            }
+        }
+        
+        return;
+    }
+    
+    template <typename T>
+    vector< vector<T> > transposeVec(vector< vector<T> > vMtx,
+                                     int row,
+                                     int col)
+    {
+        assert (row != 0 || col != 0);
+        
+        vector< vector<T> > vTran(col, vector<T>(row));
+        for(int i=0; i<row; i++) {
+            for (int j=0; j<col; j++) {
+                vTran[j][i] = vMtx[i][j];
+            }
+        }
+        
+        return vTran;
     }
     
     float invertD(float val) {
         assert (val != 0.0);
         
         return 1.0/val;
-    }
-    
-    void transpose(vector<float>& mtx, int row, int col)
-    {
-        assert (row != 0 || col != 0);
-        
-        for(int i=0; i<row; i++) {
-            for (int j=0; j<col; j++) {
-                float tmp = mtx[i*row+j];
-                mtx[i*row+j] = mtx[j*col+i];
-                mtx[j*col+i] = tmp;
-            }
-        }
-        
-        return;
     }
     
     float sumVector(const vector<float>& vct)
@@ -232,17 +243,12 @@ namespace idt {
     vector<float> mulVector(const vector<float>& vct1, const vector<float>& vct2)
     {
 //        cout << int(vct1.size()) << "; " << int(vct2.size()) << endl;
-        
         assert(vct1.size() == vct2.size());
         
         vector<float> vct3(vct1.size());
         transform(vct1.begin(), vct1.end(),
                   vct2.begin(), vct3.begin(),
                   multiplies<float>());
-        
-        //        for(int i=0; i<vct1.size(); i++){
-        //            cout << vct3[i] << endl;
-        //        }
         
         return vct3;
     }

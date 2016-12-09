@@ -78,7 +78,7 @@
 #define INV_255 (1.0/(double) 255.0)
 #define INV_65535 (1.0/(double) 65535.0)
 
-#define FORL(val) for (int c=0; c < val; c++)
+//#define FORL(val) for (int c=0; c < val; c++)
 
 #ifdef WIN32
 // suppress sprintf-related warning. sprintf() is permitted in sample code

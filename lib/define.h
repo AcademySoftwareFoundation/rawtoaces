@@ -77,8 +77,7 @@
 
 #define INV_255 (1.0/(double) 255.0)
 #define INV_65535 (1.0/(double) 65535.0)
-
-//#define FORL(val) for (int c=0; c < val; c++)
+#define FILEPATH ("/usr/local/include/RAWTOACES/data/")
 
 #ifdef WIN32
 // suppress sprintf-related warning. sprintf() is permitted in sample code
@@ -108,7 +107,7 @@
 
 #define sign(x)		((x) > 0 ? 1 : ( (x) < 0 ? (0-1) : 0))
 #define countSize(a)	(sizeof(a) / sizeof((a)[0]))
-#define FILEPATH ("/usr/local/include/RAWTOACES/data/")
+#define FORL(val) for (int i=0; i < val; i++)
 
 typedef half   float16_t;
 typedef float  float32_t;

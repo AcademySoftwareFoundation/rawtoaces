@@ -258,11 +258,9 @@ namespace idt {
         assert(tcp.size() == src.size());
         vector<float> tmp(src.size());
         
-        for (int i=0; i<tcp.size(); i++){
+        FORL(tcp.size())
             tmp.push_back(tcp[i]-src[i]);
-        }
         
-        //        cout << float(std::accumulate(tmp.begin(), tmp.end(), 0.0, square<float>())) << endl;
         float result = accumulate(tmp.begin(), tmp.end(), 0.0f, square<float>());
         
         return result;

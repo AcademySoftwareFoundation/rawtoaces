@@ -138,7 +138,7 @@ namespace idt {
     }
     
     void Spst::setSensitivity(vector<RGBSen> rgbsen){
-        for(uint8_t i=0; i<rgbsen.size(); i++){
+        FORL(rgbsen.size()){
             _rgbsen[i] = rgbsen[i];
         }
         
@@ -403,7 +403,7 @@ namespace idt {
         uint8_t size = rgbsen.size();
         vector<float> R(size), G(size), B(size);
         
-        for(uint8_t i=0; i<size; i++){
+        FORL(size){
             R[i] = rgbsen[i].RSen;
             G[i] = rgbsen[i].GSen;
             B[i] = rgbsen[i].BSen;
@@ -444,8 +444,9 @@ namespace idt {
 
         load_illuminate(_bestIllum);
 
-        calRGB(calTrainingIllum());
-        calXYZ(calTrainingIllum());
+        vector< vector<float> > TI = calTrainingIllum();
+        calRGB(TI);
+        calXYZ(TI);
         
 //        cout << "Hello, the best light source is: " << _bestIllum << endl;
         return;
@@ -457,14 +458,14 @@ namespace idt {
 
         vector< vector<float> > TI(81, vector <float>(190));
         
-        for(int i=0; i < 81; i++) {
+       FORL(81) {
             vector<float> row(81, _illuminate.data[i]);
             for(int j=0; j < 190; j++){
                 vector<float> col;
                 for(int w=0; w < 81; w++){
                     col.push_back((_trainingSpec[w].data)[j]);
                 }
-                TI[i].push_back(sumVector(mulVector(row, col)));
+                TI[i][j] = (sumVector(mulVector(row, col)));
             }
         }
         
@@ -475,22 +476,25 @@ namespace idt {
         assert(TI.size() == 81);
         
         vector< vector<float> > tansTI = transposeVec(TI, 81, 190);
-        
         vector <float> colR, colG, colB;
-        for(int i=0; i < 81; i++){
+        
+        FORL(81) {
             colR.push_back(_cameraSpst._rgbsen[i].RSen);
             colG.push_back(_cameraSpst._rgbsen[i].GSen);
             colB.push_back(_cameraSpst._rgbsen[i].BSen);
         }
 
         vector< vector<float> > RGB(190, vector<float>(3));
-        for(int i=0; i < 190; i++) {
+        
+        FORL(190) {
             RGB[i][0] = (sumVector(mulVector(tansTI[i], colR)));
             RGB[i][1] = (sumVector(mulVector(tansTI[i], colG)));
             RGB[i][2] = (sumVector(mulVector(tansTI[i], colB)));
         }
         
-//        cout << "RGB size: " << RGB.size() << "; " << "RGB.size[0] size: " << RGB.size[0].size() << endl;
+//      cout << "RGB size: " << RGB.size() << "; " << "RGB.size[0] size: " << RGB.size[0].size() << endl;
+        cout << "RGB[0][0]: " << float(RGB[0][0]) << " RGB[189][2]: " << float(RGB[189][2]) << endl;
+
         return RGB;
     }
     
@@ -498,22 +502,24 @@ namespace idt {
         assert(TI.size() == 81);
         
         vector< vector<float> > tansTI = transposeVec(TI, 81, 190);
-    
         vector <float> colX, colY, colZ;
-        for(int i=0; i < 81; i++){
+        
+        FORL(81){
             colX.push_back(_cmf[i].xbar);
             colY.push_back(_cmf[i].ybar);
             colZ.push_back(_cmf[i].zbar);
         }
         
         vector< vector<float> > XYZ(190, vector<float>(3));
-        for(int i=0; i < 190; i++) {
+        
+        FORL(190) {
             XYZ[i][0] = (sumVector(mulVector(tansTI[i], colX)));
             XYZ[i][1] = (sumVector(mulVector(tansTI[i], colY)));
             XYZ[i][2] = (sumVector(mulVector(tansTI[i], colZ)));
         }
         
-//        cout << "XYZ size: " << XYZ.size() << "; " << "XYZ[0] size: " << XYZ[0].size() << endl;
+//       cout << "XYZ size: " << XYZ.size() << "; " << "XYZ[0] size: " << XYZ[0].size() << endl;
+       cout << "XYZ[0][0]: " << float(XYZ[0][0]) << " XYZ[189][2]: " << float(XYZ[189][2]) << endl;
         
         return XYZ;
     }

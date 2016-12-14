@@ -20,7 +20,6 @@ it under the terms of the one of three licenses as you choose:
 
 
  */
-
 #ifndef NO_ACESCONTAINER
 #include <aces/aces_Writer.h>
 #endif
@@ -29,28 +28,13 @@ it under the terms of the one of three licenses as you choose:
 #include <OpenEXR/half.h>
 #endif
 
-#include "lib/idt.h"
 #include <libraw/libraw.h>
+#include "lib/idt.h"
 
-using namespace std;
+//using namespace std;
 using namespace idt;
 
 // Beginning -- For DNG chromatic adoption matrix calculations /
-template<class T>
-void printValarray (const valarray<T>&va, string s, int num)
-{
-    assert (num <= va.size());
-    printf("%s:", s.c_str());
-    for (int i=0; i<num; i++) {
-        printf("%f ", va[i]);
-    }
-    printf(";\n");
-    return;
-}
-
-static const float RobertsonMired[] = {1.0e-10f,10.0f,20.0f,30.0f,40.0f,50.0f,60.0f,70.0f,80.0f,90.0f,100.0f,
-    125.0f,150.0f,175.0f,200.0f,225.0f,250.0f,275.0f,300.0f,325.0f,350.0f,375.0f,400.0f,425.0f,450.0f,475.0f,500.0f,525.0f,550.0f,575.0f,600.0f};
-
 valarray<float> matrixBradford( )
 {
     float CBradford[] = {
@@ -61,7 +45,6 @@ valarray<float> matrixBradford( )
     
     return valarray<float>(CBradford, 9);
 };
-
 
 valarray<float> multiplyMatrix(valarray<float> mtxA, valarray<float> mtxB, size_t K=3)
 {
@@ -1025,7 +1008,6 @@ int main(int argc, char *argv[])
             OUT.no_auto_bright     = 1;
             
             // 1.0 for exposure - the last thing to do.
-            
             // -r option
             if( checkMul && !isnan(OUT.user_mul[0] )){
                 OUT.use_camera_wb = 0;
@@ -1072,18 +1054,18 @@ int main(int argc, char *argv[])
             else if(verbosity)
                 printf("Writing file %s\n",outfn);
             
-            // use cam_mul[4] to find the closest illuminate (e.g, D55)
             // For testing idt class purpose
-            Idt * idt = new Idt();
+//            Idt * idt = new Idt();
+            Idt idt;
             if (userCameraSen) {
                 if (stat(static_cast<const char *>(cameraSenPath), &st)) {
                     fprintf(stderr,"The camera sensitivity file does not seem to exist.\n");
                     exit(EXIT_FAILURE);
                 }
                 
-                idt->load_cameraspst_data(cameraSenPath,
-                                          static_cast<const char *>(P1.make),
-                                          static_cast<const char *>(P1.model));
+                idt.load_cameraspst_data(cameraSenPath,
+                                         static_cast<const char *>(P1.make),
+                                         static_cast<const char *>(P1.model));
             }
             else {
                 if(!stat(FILEPATH, &st)) {
@@ -1091,31 +1073,33 @@ int main(int argc, char *argv[])
                                                           +"/camera");
                     
                     for(vector<string>::iterator file = cFiles.begin(); file != cFiles.end(); ++file){
-                        idt->load_cameraspst_data(*file,
-                                                  static_cast<const char *>(P1.make),
-                                                  static_cast<const char *>(P1.model));
+                        string fn(*file);
+                        if(fn.find("_380_780") !=std::string::npos)
+                            idt.load_cameraspst_data(fn, static_cast<const char *>(P1.make), static_cast<const char *>(P1.model));
                     }
                 }
             }
             
+            idt.load_training_spectral(static_cast<string>(FILEPATH)+"/training/training_spectral");
+            idt.load_CMF(static_cast<string>(FILEPATH)+"/cmf/cmf_193");
             
             map< string, vector<float> > illuCM;
             if(!stat(FILEPATH, &st)) {
                 vector<string> iFiles = openDir(static_cast<string>(FILEPATH)
                                                 +"illuminate");
                 for(vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file){
+                    string fn(*file);
                     if (userIllum)
-                        idt->load_illuminate(*file, static_cast<const char *>(illumType));
+                        idt.load_illuminate(fn, static_cast<const char *>(illumType));
                     else {
-                        idt->load_illuminate(*file);
-                        illuCM[static_cast<string>(*file)] = idt->calCM();
+                        if(fn.find("_380_780") != std::string::npos){
+                            idt.load_illuminate(fn);
+                            illuCM[static_cast<string>(*file)] = idt.calCM();
+                        }
                     }
                 }
             }
-            
-            idt->load_training_spectral(static_cast<string>(FILEPATH)+"/training/training_spectral");
-            idt->load_CMF(static_cast<string>(FILEPATH)+"/cmf/cmf_193");
-            idt->determineIllum(illuCM, C.pre_mul);
+            idt.determineIllum(illuCM, C.pre_mul);
             
 //            for (int i=0; i<4; i++){
 //                cout << "day light" << " " << i << ": " << float(C.pre_mul[i]) << endl;

@@ -59,10 +59,17 @@ namespace idt {
         _brand = null_ptr;
         _model = null_ptr;
         _increment = 5;
+        
         for (int i=0; i<81; i++) {
-            RGBSen tmp = {0.0, 0.0, 0.0};
-            _rgbsen.push_back(tmp);
+            _rgbsen.push_back(RGBSen());
         }
+    }
+    
+    Spst::~Spst() {
+        delete _brand;
+        delete _model;
+        
+        vector< RGBSen >().swap(_rgbsen);
     }
     
     const char * Spst::getBrand() const {
@@ -137,7 +144,7 @@ namespace idt {
         return;
     }
     
-    void Spst::setSensitivity(vector<RGBSen> rgbsen){
+    void Spst::setSensitivity(const vector<RGBSen> rgbsen){
         FORL(rgbsen.size()){
             _rgbsen[i] = rgbsen[i];
         }
@@ -155,7 +162,18 @@ namespace idt {
             _cmf.push_back(CMF());
         }
     }
-
+    
+    Idt::~Idt() {
+        vector< CMF >().swap(_cmf);
+        vector< trainSpec >().swap(_trainingSpec);
+        
+//        FORL(3) {
+//            float * currentPtr = _CAT[i];
+//            free(currentPtr);
+//        }
+//        
+//        free(_CAT);
+    }
     
     CIELab Idt::XYZt_2_Lab(vector<CIEXYZ> XYZt, CIEXYZ XYZw) {
         CIELab CLab = {1.0, 1.0, 1.0};
@@ -165,7 +183,7 @@ namespace idt {
         return CLab;
     }
     
-    void Idt::load_cameraspst_data(const string & path, const char * maker, const char * model){
+    void Idt::load_cameraspst_data(const string & path, const char * maker, const char * model) {
         ifstream fin;
         fin.open(path);
         uint8_t line = 0;
@@ -231,7 +249,7 @@ namespace idt {
         fin.close();
     }
     
-    void Idt::load_illuminate(const string &path, const char * type){
+    void Idt::load_illuminate(const string &path, const char * type) {
         ifstream fin;
         fin.open(path);
         
@@ -284,7 +302,7 @@ namespace idt {
         return;
     }
     
-    void Idt::load_training_spectral(const string &path){
+    void Idt::load_training_spectral(const string &path) {
         ifstream fin;
         fin.open(path);
         
@@ -329,7 +347,7 @@ namespace idt {
         fin.close();
     }
     
-    void Idt::load_CMF(const string &path){
+    void Idt::load_CMF(const string &path) {
         ifstream fin;
         fin.open(path);
         
@@ -380,9 +398,9 @@ namespace idt {
         fin.close();
     }
     
-//    const Spst Idt::getCameraSpst() const {
-//        return static_cast<const Spst>(_cameraSpst);
-//    }
+    const Spst Idt::getCameraSpst() const {
+        return static_cast<const Spst>(_cameraSpst);
+    }
     
     const illum Idt::getIllum() const {
         return static_cast<const illum>(_illuminate);
@@ -424,7 +442,7 @@ namespace idt {
         return CM;
     }
     
-    void Idt::determineIllum(map< string, vector<float> >& illuCM, float src[]) {
+    void Idt::determineIllum(map< string, vector<float> >& illuCM, const float src[]) {
         float sse = numeric_limits<float>::max();
         vector<float> vsrc(src, src+3);
         
@@ -452,7 +470,7 @@ namespace idt {
         return;
     }
     
-    vector< vector<float> > Idt::calTrainingIllum() {
+    vector< vector<float> > Idt::calTrainingIllum() const {
         assert(_illuminate.data.size() == 81 &&
                _trainingSpec[0].data.size() == 190);
 
@@ -472,7 +490,7 @@ namespace idt {
         return TI;
     }
     
-    vector< vector<float> > Idt::calRGB(vector< vector<float> > TI) {
+    vector< vector<float> > Idt::calRGB(vector< vector<float> > TI) const {
         assert(TI.size() == 81);
         
         vector< vector<float> > tansTI = transposeVec(TI, 81, 190);
@@ -498,7 +516,7 @@ namespace idt {
         return RGB;
     }
     
-    vector< vector<float> > Idt::calXYZ(vector< vector<float> > TI) {
+    vector< vector<float> > Idt::calXYZ(vector< vector<float> > TI) const {
         assert(TI.size() == 81);
         
         vector< vector<float> > tansTI = transposeVec(TI, 81, 190);

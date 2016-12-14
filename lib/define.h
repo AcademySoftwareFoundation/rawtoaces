@@ -208,6 +208,10 @@ static const float chromaticitiesACES[4][2] = {
     { 0.32168f,     0.33767f  }
 };
 
+static const float RobertsonMired[] = {1.0e-10f,10.0f,20.0f,30.0f,40.0f,50.0f,60.0f,70.0f,80.0f,90.0f,100.0f,
+                                       125.0f,150.0f,175.0f,200.0f,225.0f,250.0f,275.0f,300.0f,325.0f,350.0f,
+                                       375.0f,400.0f,425.0f,450.0f,475.0f,500.0f,525.0f,550.0f,575.0f,600.0f};
+
 static const float Robertson_uvtTable[][3] = {
     { 0.18006f, 0.26352f, -0.24341f},
     { 0.18066f, 0.26589f, -0.25479f},
@@ -268,4 +272,17 @@ static const float CATMatrix[3][3] = {
     { -0.492082784686793,   1.36823709310019,      0.0913444629573544  },
     { -0.0028137154424595,  0.00463991165243123,   0.91649468506889    }
 };
+
+// For print valarray data purpose
+template<class T>
+void printValarray (const valarray<T>&va, string s, int num)
+{
+    assert (num <= va.size());
+    printf("%s:", s.c_str());
+    for (int i=0; i<num; i++) {
+        printf("%f ", va[i]);
+    }
+    printf(";\n");
+    return;
+}
 

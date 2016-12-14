@@ -75,12 +75,14 @@ namespace idt {
     class idt;
     class Spst {
         friend class Idt;
+        
         public:
             Spst();
-            Spst(Spst& spstobject) : _brand(spstobject._brand),
-                                     _model(spstobject._model),
-                                     _increment(spstobject._increment),
-                                     _rgbsen(spstobject._rgbsen){ };
+            Spst(const Spst& spstobject) : _brand(spstobject._brand),
+                                           _model(spstobject._model),
+                                           _increment(spstobject._increment),
+                                           _rgbsen(spstobject._rgbsen){ };
+        
             Spst(char * brand,
                  char * model,
                  uint8_t increment,
@@ -89,7 +91,7 @@ namespace idt {
                                           _increment(increment),
                                           _rgbsen(rgbsen){ };
         
-            ~Spst(){};
+            ~Spst();
         
             const char * getBrand() const;
             const char * getModel() const;
@@ -104,7 +106,7 @@ namespace idt {
             void setBrand(const char * brand);
             void setModel(const char * model);
             void setWLIncrement(uint8_t inc);
-            void setSensitivity(vector<RGBSen> rgbsen);
+            void setSensitivity(const vector<RGBSen> rgbsen);
         
         private:
             char * _brand;
@@ -126,18 +128,17 @@ namespace idt {
             void load_training_spectral(const string &path);
             void load_CMF(const string &path);
         
-            void determineIllum(map< string, vector<float> >& illuCM, float src[]);
+            void determineIllum(map< string, vector<float> >& illuCM, const float src[]);
             void normalDayLight(vector<float>& mul);
         
-//            const Spst getCameraSpst() const;
+            const Spst getCameraSpst() const;
             const illum getIllum() const;
         
             vector< float > calCM();
-            vector< vector<float> > calTrainingIllum();
-            vector< vector<float> > calXYZ( vector< vector<float> > TI);
-            vector< vector<float> > calRGB( vector< vector<float> > TI);
+            vector< vector<float> > calTrainingIllum() const;
+            vector< vector<float> > calRGB( vector< vector<float> > TI) const;
+            vector< vector<float> > calXYZ( vector< vector<float> > TI) const;
         
-
         private:
             string  _outputEncoding;
             string  _bestIllum;
@@ -150,7 +151,6 @@ namespace idt {
         
             float _CAT[3][3];
     };
-    
     
     // Non-class functions
     template <typename T>

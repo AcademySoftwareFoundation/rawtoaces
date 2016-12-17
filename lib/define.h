@@ -67,6 +67,9 @@
 #include <ctype.h>
 #include <dirent.h>
 
+#include <ceres/ceres.h>
+#include <glog/logging.h>
+
 #ifndef WIN32
 #include <fcntl.h>
 #include <unistd.h>
@@ -107,13 +110,20 @@
 
 #define sign(x)		((x) > 0 ? 1 : ( (x) < 0 ? (0-1) : 0))
 #define countSize(a)	(sizeof(a) / sizeof((a)[0]))
-#define FORL(val) for (int i=0; i < val; i++)
+#define FORI(val) for (int i=0; i < val; i++)
+#define FORJ(val) for (int j=0; j < val; j++)
 
 typedef half   float16_t;
 typedef float  float32_t;
 typedef double float64_t;
 
 using namespace std;
+using ceres::AutoDiffCostFunction;
+using ceres::CostFunction;
+using ceres::CauchyLoss;
+using ceres::Problem;
+using ceres::Solve;
+using ceres::Solver;
 
 valarray<float>  cameraCalibration1DNG = valarray<float>(1.0f, 9);
 valarray<float>  cameraCalibration2DNG = valarray<float>(1.0f, 9);
@@ -208,6 +218,7 @@ static const float chromaticitiesACES[4][2] = {
     { 0.32168f,     0.33767f  }
 };
 
+static const float XYZ_w[3] = {0.952646074569846, 1.0, 1.00882518435159};
 static const float RobertsonMired[] = {1.0e-10f,10.0f,20.0f,30.0f,40.0f,50.0f,60.0f,70.0f,80.0f,90.0f,100.0f,
                                        125.0f,150.0f,175.0f,200.0f,225.0f,250.0f,275.0f,300.0f,325.0f,350.0f,
                                        375.0f,400.0f,425.0f,450.0f,475.0f,500.0f,525.0f,550.0f,575.0f,600.0f};
@@ -273,6 +284,7 @@ static const float CATMatrix[3][3] = {
     { -0.0028137154424595,  0.00463991165243123,   0.91649468506889    }
 };
 
+// Non-class functions
 // For print valarray data purpose
 template<class T>
 void printValarray (const valarray<T>&va, string s, int num)
@@ -285,4 +297,242 @@ void printValarray (const valarray<T>&va, string s, int num)
     printf(";\n");
     return;
 }
+
+template <typename T>
+const vector <T> repmat1d(const T data[], int row, int col) {
+    vector <T> vect(row*col, 1.0);
+    FORI(row) {
+        FORJ(col) {
+            vect[i*col + j] = data[i];
+        }
+    }
+    
+    const vector < T > cvect(vect);
+    return cvect;
+}
+
+template <typename T>
+const vector < vector <T> > repmat2d(const T data[], int row, int col) {
+    vector < vector <T> > vect(row, vector<T>(col, 1.0));
+    FORI(row) {
+        FORJ(col) {
+            vect[i][j] = data[i];
+        }
+    }
+    
+    const vector < vector <T> > cvect(vect);
+    return cvect;
+}
+
+template <typename T>
+vector<T> invertMatrix(const vector<T> &mtx)
+{
+    assert (mtx.size() == 9);
+    
+    T CinvMtx[] = {
+        0.0 - mtx[5] * mtx[7] + mtx[4] * mtx[8],
+        0.0 + mtx[2] * mtx[7] - mtx[1] * mtx[8],
+        0.0 - mtx[2] * mtx[4] + mtx[1] * mtx[5],
+        0.0 + mtx[5] * mtx[6] - mtx[3] * mtx[8],
+        0.0 - mtx[2] * mtx[6] + mtx[0] * mtx[8],
+        0.0 + mtx[2] * mtx[3] - mtx[0] * mtx[5],
+        0.0 - mtx[4] * mtx[6] + mtx[3] * mtx[7],
+        0.0 + mtx[1] * mtx[6] - mtx[0] * mtx[7],
+        0.0 - mtx[1] * mtx[3] + mtx[0] * mtx[4]
+    };
+    
+    vector<T> invMtx(CinvMtx, CinvMtx+sizeof(CinvMtx) / sizeof(T));
+    T det = mtx[0] * invMtx[0] + mtx[1] * invMtx[3] + mtx[2] * invMtx[6];
+    
+    // pay attention to this
+    assert (det != 0);
+    
+    transform(invMtx.begin(),
+              invMtx.end(),
+              invMtx.begin(),
+              bind1st(multiplies<T>(), det));
+    
+    return invMtx;
+}
+
+template <typename T>
+void transpose(T* mtx[], int row, int col)
+{
+    assert (row != 0 || col != 0);
+    
+    FORI(row) {
+        FORJ(col) {
+            T tmp = mtx[i][j];
+            mtx[i][j] = mtx[j][i];
+            mtx[j][i] = tmp;
+        }
+    }
+    
+    return;
+}
+
+template <typename T>
+vector< vector<T> > transposeVec(vector< vector<T> > vMtx,
+                                 int row,
+                                 int col)
+{
+    assert (row != 0 || col != 0);
+    
+    vector< vector<T> > vTran(col, vector<T>(row));
+    
+    FORI(row) {
+        FORJ(col) {
+            vTran[j][i] = vMtx[i][j];
+        }
+    }
+    
+    return vTran;
+}
+
+float invertD(float val) {
+    assert (val != 0.0);
+    
+    return 1.0/val;
+}
+
+template <typename T>
+float sumVector(const vector<T>& vct)
+{
+    return accumulate(vct.begin(), vct.end(), static_cast<T>(0));
+}
+
+template <typename T>
+vector<T> subVectors(const vector<T>& vct1, const vector<T>& vct2)
+{
+    assert(vct1.size() == vct2.size());
+
+    vector<T> vct3(vct1.size(), 1.0);
+    transform(vct1.begin(), vct1.end(),
+              vct2.begin(), vct3.begin(),
+              minus<T>());
+
+    return vct3;
+}
+
+template <typename T>
+vector<T> scaleVector(const vector<T>& vct, T scale)
+{
+    return transform(vct.begin(),
+                     vct.end(),
+                     vct.begin(),
+                     bind1st(multiplies<T>(), scale));
+}
+
+template <typename T>
+vector<T> minusVector(const vector<T>& vct, T sub)
+{
+    return transform(vct.begin(),
+                     vct.end(),
+                     vct.begin(),
+                     bind1st(minus<T>(), sub));
+}
+
+template <typename T>
+vector<T> mulVectorElement(const vector<T>& vct1, const vector<T>& vct2)
+{
+    //        cout << int(vct1.size()) << "; " << int(vct2.size()) << endl;
+    assert(vct1.size() == vct2.size());
+    
+    vector<T> vct3Element(vct1.size(), 1.0);
+    transform(vct1.begin(), vct1.end(),
+              vct2.begin(), vct3Element.begin(),
+              multiplies<T>());
+    
+    return vct3Element;
+}
+
+template <typename T>
+vector < vector<T> > mulVector(const vector< vector<T> >& vct1,
+                               const vector< vector<T> >& vct2,
+                               int row,
+                               int col)
+{
+    vector< vector<T> > vct3(row, vector<T>(col));
+    
+    FORI(row) {
+        FORJ(col) {
+            vct3[i][j] = (sumVector(mulVectorElement(vct1[i], vct2[j])));
+        }
+    }
+    
+    return vct3;
+}
+
+template <typename T>
+vector < T > mulVector(const vector< vector<T> >& vct1,
+                       const vector<T>& vct2,
+                       int row,
+                       int col)
+{
+    vector< T > vct3(row, 1.0);
+
+    FORI(row)
+        vct3[i] = (sumVector(mulVectorElement(vct1[i], vct2)));
+    
+    return vct3;
+}
+
+float calSSE(vector<float>& tcp, vector<float>& src)
+{
+    assert(tcp.size() == src.size());
+    vector<float> tmp(src.size());
+    
+    FORI(tcp.size())
+        tmp[i] = tcp[i]-src[i];
+    
+    float result = accumulate(tmp.begin(), tmp.end(), 0.0f, square<float>());
+    
+    return result;
+}
+
+cameraDataPath& cameraPathsFinder() {
+    static cameraDataPath cdp;
+    static bool firstTime = 1;
+    
+    if(firstTime)
+    {
+        vector <string>& cPaths = cdp.paths;
+        
+        string path;
+        const char* env = getenv("RAWTOACES_CAMERASEN_PATH");
+        if (env)
+            path = env;
+        
+        if (path == "") {
+#if defined (WIN32) || defined (WIN64)
+            path = ".";
+            cdp.os = "WIN";
+#else
+            path = ".:/usr/local/lib/RAWTOACES:/usr/local" PACKAGE "-" VERSION "/lib/RAWTOACES";
+            cdp.os = "UNIX";
+#endif
+        }
+        
+        size_t pos = 0;
+        while (pos < path.size()){
+#if defined (WIN32) || defined (WIN64)
+            size_t end = path.find(';', pos);
+#else
+            size_t end = path.find(':', pos);
+#endif
+            
+            if (end == string::npos)
+                end = path.size();
+            
+            string pathItem = path.substr(pos, end-pos);
+            
+            if(find(cPaths.begin(), cPaths.end(), pathItem) == cPaths.end())
+                cPaths.push_back(pathItem);
+            
+            pos = end + 1;
+        }
+    }
+    return cdp;
+}
+
 

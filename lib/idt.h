@@ -116,6 +116,7 @@ namespace idt {
     };
 
     class Idt {
+        friend class objfun;
         public:
             Idt();
             ~Idt();
@@ -127,17 +128,19 @@ namespace idt {
             void load_illuminate(const string &path, const char * type="na");
             void load_training_spectral(const string &path);
             void load_CMF(const string &path);
+            const Spst getCameraSpst() const;
+            const illum getIllum() const;
         
             void determineIllum(map< string, vector<float> >& illuCM, const float src[]);
             void normalDayLight(vector<float>& mul);
-        
-            const Spst getCameraSpst() const;
-            const illum getIllum() const;
         
             vector< float > calCM();
             vector< vector<float> > calTrainingIllum() const;
             vector< vector<float> > calRGB( vector< vector<float> > TI) const;
             vector< vector<float> > calXYZ( vector< vector<float> > TI) const;
+        
+            void curveFitting(vector< vector<float> > RGB,
+                              vector< vector<float> > XYZ);
         
         private:
             string  _outputEncoding;
@@ -152,163 +155,66 @@ namespace idt {
             float _CAT[3][3];
     };
     
-    // Non-class functions
-    template <typename T>
-    vector <T> repmat(vector<T> data, int row, int col) {
-        vector <T> out(0.0, data.size()*row*col);
-        for (int i = 0; i < row; i++) {
-            for (int j = 0; j < col; j++) {
-                out[i*col + j] = data[i];
+    class objfun {
+        public:
+            objfun(vector< vector<float> > RGB,
+               vector< vector<float> > XYZ): _RGB(RGB), _XYZ(XYZ) {
+                
             }
-        }
         
-        return out;
-    }
-    
-    template <typename T>
-    vector<T> invertMatrix(const vector<T> &mtx)
-    {
-        assert (mtx.size() == 9);
+            vector< vector<float> > XYZToLab(const vector< vector<float> > XYZ,
+                                             const vector < vector<float> > B)
+            {
+                const vector < vector< float > > XYZ_wv = repmat2d(XYZ_w, 3, 3);
+                _out_Lab = mulVector(_XYZ, XYZ_wv, 190, 3);
+                
+                float e = 216.0f/24389.0f;
+                float k = (24389.0f/27.0f)/116.0f;
+                float add = 16.0f/116.0f;
+
+                vector< vector<float> > out_calc_XYZt = transposeVec(mulVector(B, transposeVec(_RGB, 190, 3), 3, 190), 3, 190);
+                vector< vector<float> > tmp(190, vector<float>(3, 0.0));
+                FORI(190)
+                    FORJ(3)
+                    {
+                        tmp[i][j] = XYZ[i][j] / XYZ_w[j];
+                        if (tmp[i][j] > e)
+                            tmp[i][j] = pow (tmp[i][j], 1.0/3.0);
+                        else
+                            tmp[i][j] = k * tmp[i][j] + add;
+                    }
+                
+                vector< vector<float> > out_calc_Lab(190, vector<float>(3, 0.0));
+                FORI(190)
+                {
+                    out_calc_Lab[i][0] = 116.0f * tmp[i][1] - 16.0f;
+                    out_calc_Lab[i][1] = 500.0f * (tmp[i][0] - tmp[i][1]);
+                    out_calc_Lab[i][2] = 200.0f * (tmp[i][1] - tmp[i][2]);
+                }
+                
+                return out_calc_XYZt;
+            }
         
-        T CinvMtx[] = {
-            0.0 - mtx[5] * mtx[7] + mtx[4] * mtx[8],
-            0.0 + mtx[2] * mtx[7] - mtx[1] * mtx[8],
-            0.0 - mtx[2] * mtx[4] + mtx[1] * mtx[5],
-            0.0 + mtx[5] * mtx[6] - mtx[3] * mtx[8],
-            0.0 - mtx[2] * mtx[6] + mtx[0] * mtx[8],
-            0.0 + mtx[2] * mtx[3] - mtx[0] * mtx[5],
-            0.0 - mtx[4] * mtx[6] + mtx[3] * mtx[7],
-            0.0 + mtx[1] * mtx[6] - mtx[0] * mtx[7],
-            0.0 - mtx[1] * mtx[3] + mtx[0] * mtx[4]
+//            template <typename T>
+//            bool operator()(const T* const B0,
+//                            const T* const B1,
+//                            const T* const B2,
+//                            const T* const B3,
+//                            const T* const B4,
+//                            const T* const B5,
+//                            T* residual) const {
+//                const vector < vector <T> > B = { {B0[0], B1[0], 1.0-B0[0]-B1[0]}, {B2[0], B3[0], 1.0-B2[0]-B3[0]}, {B4[0], B5[0], 1.0-B4[0]-B5[0]} };
+//                vector < vector <T> > out_calc_Lab = XYZToLab(_XYZ, B);
+//                //                residual[0] = T(y_) - exp(m[0] * T(x_));
+//            
+//                return true;
+//            }
+        
+        private:
+            // Observations for a sample.
+            const vector< vector<float> > _RGB;
+            const vector< vector<float> > _XYZ;
+            vector< vector<float> > _out_Lab;
         };
-        
-        vector<T> invMtx(CinvMtx, CinvMtx+sizeof(CinvMtx) / sizeof(T));
-        T det = mtx[0] * invMtx[0] + mtx[1] * invMtx[3] + mtx[2] * invMtx[6];
-        
-        // pay attention to this
-        assert (det != 0);
-        
-        transform(invMtx.begin(),
-                  invMtx.end(),
-                  invMtx.begin(),
-                  bind1st(multiplies<T>(), det));
-        
-        return invMtx;
-    }
-    
-    template <typename T>
-    void transpose(T* mtx[], int row, int col)
-    {
-        assert (row != 0 || col != 0);
-        
-        for(int i=0; i<row; i++) {
-            for (int j=0; j<col; j++) {
-                T tmp = mtx[i][j];
-                mtx[i][j] = mtx[j][i];
-                mtx[j][i] = tmp;
-            }
-        }
-        
-        return;
-    }
-    
-    template <typename T>
-    vector< vector<T> > transposeVec(vector< vector<T> > vMtx,
-                                     int row,
-                                     int col)
-    {
-        assert (row != 0 || col != 0);
-        
-        vector< vector<T> > vTran(col, vector<T>(row));
-        for(int i=0; i<row; i++) {
-            for (int j=0; j<col; j++) {
-                vTran[j][i] = vMtx[i][j];
-            }
-        }
-        
-        return vTran;
-    }
-    
-    float invertD(float val) {
-        assert (val != 0.0);
-        
-        return 1.0/val;
-    }
-    
-    float sumVector(const vector<float>& vct)
-    {
-        return accumulate(vct.begin(), vct.end(), 0.0f);
-    }
-    
-    vector<float> mulVector(const vector<float>& vct1, const vector<float>& vct2)
-    {
-//        cout << int(vct1.size()) << "; " << int(vct2.size()) << endl;
-        assert(vct1.size() == vct2.size());
-        
-        vector<float> vct3(vct1.size());
-        transform(vct1.begin(), vct1.end(),
-                  vct2.begin(), vct3.begin(),
-                  multiplies<float>());
-        
-        return vct3;
-    }
-    
-    float calSSE(vector<float>& tcp, vector<float>& src)
-    {
-        assert(tcp.size() == src.size());
-        vector<float> tmp(src.size());
-        
-        FORL(tcp.size())
-            tmp.push_back(tcp[i]-src[i]);
-        
-        float result = accumulate(tmp.begin(), tmp.end(), 0.0f, square<float>());
-        
-        return result;
-    }
-    
-    cameraDataPath& cameraPathsFinder() {
-        static cameraDataPath cdp;
-        static bool firstTime = 1;
-        
-        if(firstTime)
-        {
-            vector <string>& cPaths = cdp.paths;
-            
-            string path;
-            const char* env = getenv("RAWTOACES_CAMERASEN_PATH");
-            if (env)
-                path = env;
-            
-            if (path == "") {
-#if defined (WIN32) || defined (WIN64)
-                path = ".";
-                cdp.os = "WIN";
-#else
-                path = ".:/usr/local/lib/RAWTOACES:/usr/local" PACKAGE "-" VERSION "/lib/RAWTOACES";
-                cdp.os = "UNIX";
-#endif
-            }
-            
-            size_t pos = 0;
-            while (pos < path.size()){
-#if defined (WIN32) || defined (WIN64)
-                size_t end = path.find(';', pos);
-#else
-                size_t end = path.find(':', pos);
-#endif
-                
-                if (end == string::npos)
-                    end = path.size();
-                
-                string pathItem = path.substr(pos, end-pos);
-                
-                if(find(cPaths.begin(), cPaths.end(), pathItem) == cPaths.end())
-                    cPaths.push_back(pathItem);
-                
-                pos = end + 1;
-            }
-        }
-        return cdp;
-    }
 }
 

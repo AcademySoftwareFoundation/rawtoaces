@@ -48,7 +48,7 @@ if(libraw_INCLUDE_DIR AND EXISTS "${libraw_INCLUDE_DIR}/libraw_version.h")
 
       string(REGEX REPLACE "^#define[\t ]+LIBRAW_VERSION[\t ]+\"([^ \\n]*)\".*"
              "\\1" libraw_VERSION "${libraw_version_str}")
-      message (STATUS "${libraw_version_str}")
+      # message (STATUS "${libraw_version_str}")
       unset(libraw_version_str)
     endif()
 endif()

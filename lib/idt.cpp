@@ -145,7 +145,7 @@ namespace idt {
     }
     
     void Spst::setSensitivity(const vector<RGBSen> rgbsen){
-        FORL(rgbsen.size()){
+        FORI(rgbsen.size()){
             _rgbsen[i] = rgbsen[i];
         }
         
@@ -167,7 +167,7 @@ namespace idt {
         vector< CMF >().swap(_cmf);
         vector< trainSpec >().swap(_trainingSpec);
         
-//        FORL(3) {
+//        FORI(3) {
 //            float * currentPtr = _CAT[i];
 //            free(currentPtr);
 //        }
@@ -418,20 +418,31 @@ namespace idt {
     
     vector<float> Idt::calCM() {
         vector<RGBSen> rgbsen = _cameraSpst.getSensitivity();
-        uint8_t size = rgbsen.size();
-        vector<float> R(size), G(size), B(size);
+//        uint8_t size = rgbsen.size();
+//        vector<float> R(size), G(size), B(size);
+        vector< vector<float> > rgbsenV(3, vector<float>(rgbsen.size(), 1.0));
+
         
-        FORL(size){
-            R[i] = rgbsen[i].RSen;
-            G[i] = rgbsen[i].GSen;
-            B[i] = rgbsen[i].BSen;
+        FORI(rgbsen.size()){
+//            R[i] = rgbsen[i].RSen;
+//            G[i] = rgbsen[i].GSen;
+//            B[i] = rgbsen[i].BSen;
+            
+            rgbsenV[0][i] = rgbsen[i].RSen;
+            rgbsenV[1][i] = rgbsen[i].GSen;
+            rgbsenV[2][i] = rgbsen[i].BSen;
         }
         
-        vector<float> CM(3, 1.0);
+//        vector<float> CM(3, 1.0);
         
-        CM[0] = sumVector(mulVector(R, _illuminate.data));
-        CM[1] = sumVector(mulVector(G, _illuminate.data));
-        CM[2] = sumVector(mulVector(B, _illuminate.data));
+//        CM[0] = sumVector((R, _illuminate.data));
+//        CM[1] = sumVector(mulVectorElement(G, _illuminate.data));
+//        CM[2] = sumVector(mulVectorElement(B, _illuminate.data));
+        
+        vector<float> CM = mulVector(rgbsenV,
+                                     _illuminate.data,
+                                     rgbsenV.size(),
+                                     _illuminate.data.size());
         
         normalDayLight(CM);
         
@@ -465,6 +476,7 @@ namespace idt {
         vector< vector<float> > TI = calTrainingIllum();
         calRGB(TI);
         calXYZ(TI);
+//        curveFitting(calRGB(TI),  calXYZ(TI));
         
 //        cout << "Hello, the best light source is: " << _bestIllum << endl;
         return;
@@ -476,14 +488,14 @@ namespace idt {
 
         vector< vector<float> > TI(81, vector <float>(190));
         
-       FORL(81) {
+       FORI(81) {
             vector<float> row(81, _illuminate.data[i]);
-            for(int j=0; j < 190; j++){
+            FORJ(190){
                 vector<float> col;
                 for(int w=0; w < 81; w++){
                     col.push_back((_trainingSpec[w].data)[j]);
                 }
-                TI[i][j] = (sumVector(mulVector(row, col)));
+                TI[i][j] = (sumVector(mulVectorElement(row, col)));
             }
         }
         
@@ -493,22 +505,20 @@ namespace idt {
     vector< vector<float> > Idt::calRGB(vector< vector<float> > TI) const {
         assert(TI.size() == 81);
         
-        vector< vector<float> > tansTI = transposeVec(TI, 81, 190);
-        vector <float> colR, colG, colB;
+        vector< vector<float> > transTI = transposeVec(TI, 81, 190);
+        vector< vector<float> > colRGB(3, vector<float>(TI.size(), 1.0));
         
-        FORL(81) {
-            colR.push_back(_cameraSpst._rgbsen[i].RSen);
-            colG.push_back(_cameraSpst._rgbsen[i].GSen);
-            colB.push_back(_cameraSpst._rgbsen[i].BSen);
+        FORI(81) {
+            colRGB[0][i] = _cameraSpst._rgbsen[i].RSen;
+            colRGB[1][i] = _cameraSpst._rgbsen[i].GSen;
+            colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
         }
 
-        vector< vector<float> > RGB(190, vector<float>(3));
-        
-        FORL(190) {
-            RGB[i][0] = (sumVector(mulVector(tansTI[i], colR)));
-            RGB[i][1] = (sumVector(mulVector(tansTI[i], colG)));
-            RGB[i][2] = (sumVector(mulVector(tansTI[i], colB)));
-        }
+        vector< vector<float> > RGB = mulVector(transTI,
+                                                colRGB,
+                                                transTI.size(),
+                                                colRGB.size());
+
         
 //      cout << "RGB size: " << RGB.size() << "; " << "RGB.size[0] size: " << RGB.size[0].size() << endl;
         cout << "RGB[0][0]: " << float(RGB[0][0]) << " RGB[189][2]: " << float(RGB[189][2]) << endl;
@@ -519,28 +529,59 @@ namespace idt {
     vector< vector<float> > Idt::calXYZ(vector< vector<float> > TI) const {
         assert(TI.size() == 81);
         
-        vector< vector<float> > tansTI = transposeVec(TI, 81, 190);
-        vector <float> colX, colY, colZ;
-        
-        FORL(81){
-            colX.push_back(_cmf[i].xbar);
-            colY.push_back(_cmf[i].ybar);
-            colZ.push_back(_cmf[i].zbar);
+        vector< vector<float> > transTI = transposeVec(TI, 81, 190);
+        vector< vector<float> > colXYZ(3, vector<float>(TI.size(), 1.0));
+
+        FORI(81){
+            colXYZ[0][i] = _cmf[i].xbar;
+            colXYZ[1][i] = _cmf[i].ybar;
+            colXYZ[2][i] = _cmf[i].zbar;
         }
         
-        vector< vector<float> > XYZ(190, vector<float>(3));
-        
-        FORL(190) {
-            XYZ[i][0] = (sumVector(mulVector(tansTI[i], colX)));
-            XYZ[i][1] = (sumVector(mulVector(tansTI[i], colY)));
-            XYZ[i][2] = (sumVector(mulVector(tansTI[i], colZ)));
-        }
+        vector< vector<float> > XYZ = mulVector(transTI,
+                                                colXYZ,
+                                                transTI.size(),
+                                                colXYZ.size());
+
         
 //       cout << "XYZ size: " << XYZ.size() << "; " << "XYZ[0] size: " << XYZ[0].size() << endl;
        cout << "XYZ[0][0]: " << float(XYZ[0][0]) << " XYZ[189][2]: " << float(XYZ[189][2]) << endl;
         
         return XYZ;
     }
+    
+//    void Idt::curveFitting(vector< vector<float> > RGB,
+//                           vector< vector<float> > XYZ)
+//    {
+//        float B_start0, B_start3 = 1.0;
+//        float B_start1, B_start2, B_start4, B_start5 = 0.0;
+//
+//        Problem problem;
+//        
+//        for (int i = 0; i < 10; ++i) {
+//            CostFunction* cost_function =
+//            new AutoDiffCostFunction<objfun, 1, 1, 1>(new objfun(RGB, XYZ));
+//            problem.AddResidualBlock(cost_function,
+//                                     new CauchyLoss(0.5),
+//                                     &B_start0,
+//                                     &B_start1,
+//                                     &B_start2,
+//                                     &B_start3,
+//                                     &B_start4,
+//                                     &B_start5);
+//        }
+//        
+//        Solver::Options options;
+//        options.linear_solver_type = ceres::DENSE_QR;
+//        options.minimizer_progress_to_stdout = true;
+//        Solver::Summary summary;
+//        Solve(options, &problem, &summary);
+//        std::cout << summary.BriefReport() << "\n";
+////        std::cout << "Initial m: " << 0.0 << " c: " << 0.0 << "\n";
+////        std::cout << "Final   m: " << m << " c: " << c << "\n";
+//        
+//        return;
+//    }
 }
 
 

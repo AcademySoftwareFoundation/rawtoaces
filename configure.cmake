@@ -28,7 +28,12 @@ endif()
 
 find_package( libraw QUIET )
 if (libraw_FOUND)
-  message( STATUS "found LibRaw, version ${libraw_VERSION}" )
+  message( STATUS "Found LibRaw, version ${libraw_VERSION}" )
 else()
   message( STATUS "libraw not found, you can brew it" )
+endif()
+
+find_package( ceres QUIET )
+if ( NOT ceres_FOUND)
+  message( STATUS "Ceres not found, you can brew it" )
 endif()

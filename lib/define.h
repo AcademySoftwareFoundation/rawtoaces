@@ -182,6 +182,9 @@ struct cameraDataPath {
     vector <string> paths;
 };
 
+const float e = 216.0f/24389.0f;
+const float k = (24389.0f/27.0f)/116.0f;
+
 template<typename T>
 struct square
 {
@@ -362,9 +365,8 @@ void transpose(T* mtx[], int row, int col)
     
     FORI(row) {
         FORJ(col) {
-            T tmp = mtx[i][j];
-            mtx[i][j] = mtx[j][i];
-            mtx[j][i] = tmp;
+            mtx[i][j] ^= mtx[j][i];
+            mtx[i][j] ^= (mtx[j][i] ^= mtx[i][j]);
         }
     }
     

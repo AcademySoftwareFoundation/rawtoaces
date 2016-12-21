@@ -542,46 +542,95 @@ namespace idt {
                                                 colXYZ,
                                                 transTI.size(),
                                                 colXYZ.size());
-
         
 //       cout << "XYZ size: " << XYZ.size() << "; " << "XYZ[0] size: " << XYZ[0].size() << endl;
-       cout << "XYZ[0][0]: " << float(XYZ[0][0]) << " XYZ[189][2]: " << float(XYZ[189][2]) << endl;
+        cout << "XYZ[0][0]: " << float(XYZ[0][0]) << " XYZ[189][2]: " << float(XYZ[189][2]) << endl;
         
         return XYZ;
     }
     
-//    void Idt::curveFitting(vector< vector<float> > RGB,
-//                           vector< vector<float> > XYZ)
+//    vector< vector<float> > Idt::calOutLAB(vector< vector<float> > XYZ) const
 //    {
-//        float B_start0, B_start3 = 1.0;
-//        float B_start1, B_start2, B_start4, B_start5 = 0.0;
-//
-//        Problem problem;
+//        assert(XYZ.size() == 190);
+//        const vector < vector< float > > XYZ_wv = repmat2d(XYZ_w, 3, 3);
+//        vector< vector<float> > out_Lab = mulVector(XYZ, XYZ_wv, 190, 3);
 //        
-//        for (int i = 0; i < 10; ++i) {
-//            CostFunction* cost_function =
-//            new AutoDiffCostFunction<objfun, 1, 1, 1>(new objfun(RGB, XYZ));
-//            problem.AddResidualBlock(cost_function,
-//                                     new CauchyLoss(0.5),
-//                                     &B_start0,
-//                                     &B_start1,
-//                                     &B_start2,
-//                                     &B_start3,
-//                                     &B_start4,
-//                                     &B_start5);
+//        return out_Lab;
+//        
+//    }
+//    
+//    vector< vector<float> > Idt::calLAB(const vector < vector<float> > RGB,
+//                                         const vector < vector<float> > XYZ,
+//                                         const vector < vector<float> > B) const
+//    {
+//        assert(RGB.size() == XYZ.size());
+//        float add = 16.0f/116.0f;
+//        
+//        vector< vector<float> > out_calc_XYZt = transposeVec(mulVector(B, transposeVec(RGB, 190, 3), 3, 190), 3, 190);
+//        vector< vector<float> > tmp(190, vector<float>(3, 0.0f));
+//        
+//        FORI(190) {
+//            FORJ(3)
+//            {
+//                tmp[i][j] = XYZ[i][j] / XYZ_w[j];
+//                if (tmp[i][j] > e)
+//                    tmp[i][j] = pow (tmp[i][j], 1.0f/3.0f);
+//                else
+//                    tmp[i][j] = k * tmp[i][j] + add;
+//            }
 //        }
 //        
+//        vector< vector<float> > out_calc_Lab(190, vector<float>(3, 0.0f));
+//        FORI(190)
+//        {
+//            out_calc_Lab[i][0] = 116.0f * tmp[i][1] - 16.0f;
+//            out_calc_Lab[i][1] = 500.0f * (tmp[i][0] - tmp[i][1]);
+//            out_calc_Lab[i][2] = 200.0f * (tmp[i][1] - tmp[i][2]);
+//        }
+//        
+//        return out_calc_Lab;
+//    }
+    
+    void Idt::curveFitting(vector< vector<float> > RGB,
+                           vector< vector<float> > XYZ) const
+    {
+        
+        double B_start0, B_start3 = 1.0;
+        double B_start1, B_start2, B_start4, B_start5 = 0.0;
+        
+        Problem problem;
+        
+        CostFunction* cost_function =
+        new AutoDiffCostFunction<Objfun, 1, 1, 1, 1, 1, 1, 1>(new Objfun(RGB, XYZ));
+        problem.AddResidualBlock(cost_function,
+                                 new CauchyLoss(0.5),
+                                 &B_start0,
+                                 &B_start1,
+                                 &B_start2,
+                                 &B_start3,
+                                 &B_start4,
+                                 &B_start5);
+        
+//        double B_start[6] = {B_start0, B_start1, B_start2, B_start3, B_start4, B_start5};
+//        
+//        CostFunction* cost_function =
+//        new AutoDiffCostFunction<Objfun, 1, 6>(new Objfun(RGB, XYZ));
+//        problem.AddResidualBlock(cost_function,
+//                                 new CauchyLoss(0.5),
+//                                 B_start);
+//        
+        
 //        Solver::Options options;
 //        options.linear_solver_type = ceres::DENSE_QR;
 //        options.minimizer_progress_to_stdout = true;
 //        Solver::Summary summary;
 //        Solve(options, &problem, &summary);
 //        std::cout << summary.BriefReport() << "\n";
-////        std::cout << "Initial m: " << 0.0 << " c: " << 0.0 << "\n";
-////        std::cout << "Final   m: " << m << " c: " << c << "\n";
-//        
-//        return;
-//    }
+//        std::cout << "Initial m: " << 0.0 << " c: " << 0.0 << "\n";
+//        std::cout << "Final   m: " << m << " c: " << c << "\n";
+        
+        return;
+    }
 }
 
 

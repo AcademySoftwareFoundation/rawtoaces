@@ -72,7 +72,7 @@
 using namespace std;
 
 namespace idt {
-    class idt;
+    class Idt;
     class Spst {
         friend class Idt;
         
@@ -116,7 +116,8 @@ namespace idt {
     };
 
     class Idt {
-        friend class objfun;
+        friend class Objfun;
+
         public:
             Idt();
             ~Idt();
@@ -138,9 +139,13 @@ namespace idt {
             vector< vector<float> > calTrainingIllum() const;
             vector< vector<float> > calRGB( vector< vector<float> > TI) const;
             vector< vector<float> > calXYZ( vector< vector<float> > TI) const;
+//            vector< vector<float> > calOutLAB(vector< vector<float> > XYZ) const;
+//            vector< vector<float> > calLAB(const vector < vector<float> > RGB,
+//                                            const vector < vector<float> > XYZ,
+//                                            const vector < vector<float> > B) const;
         
             void curveFitting(vector< vector<float> > RGB,
-                              vector< vector<float> > XYZ);
+                              vector< vector<float> > XYZ) const;
         
         private:
             string  _outputEncoding;
@@ -155,66 +160,119 @@ namespace idt {
             float _CAT[3][3];
     };
     
-    class objfun {
+    class Objfun {
         public:
-            objfun(vector< vector<float> > RGB,
-               vector< vector<float> > XYZ): _RGB(RGB), _XYZ(XYZ) {
-                
-            }
+            Objfun(vector< vector<float> > RGB,
+                   vector< vector<float> > XYZ): _RGB(RGB), _XYZ(XYZ) { }
         
-            vector< vector<float> > XYZToLab(const vector< vector<float> > XYZ,
-                                             const vector < vector<float> > B)
+            vector< vector<float> > calLAB(const vector < vector<float> > RGB,
+                                           const vector < vector<float> > XYZ,
+                                           const double * B) const
             {
-                const vector < vector< float > > XYZ_wv = repmat2d(XYZ_w, 3, 3);
-                _out_Lab = mulVector(_XYZ, XYZ_wv, 190, 3);
-                
-                float e = 216.0f/24389.0f;
-                float k = (24389.0f/27.0f)/116.0f;
+                assert(RGB.size() == XYZ.size() && XYZ.size() == 190);
                 float add = 16.0f/116.0f;
-
-                vector< vector<float> > out_calc_XYZt = transposeVec(mulVector(B, transposeVec(_RGB, 190, 3), 3, 190), 3, 190);
-                vector< vector<float> > tmp(190, vector<float>(3, 0.0));
-                FORI(190)
+            
+                vector < vector<float> > BV(3, vector<float>(3, 1.0));
+                FORI(3)
+                    FORJ(3) {
+                        BV[i][j] = float(B[i*3+j]);
+                    }
+            
+                vector< vector<float> > out_calc_XYZt = transposeVec(mulVector(BV, transposeVec(RGB, 190, 3), 3, 190), 3, 190);
+                vector< vector<float> > tmp(190, vector<float>(3, 0.0f));
+            
+                FORI(190) {
                     FORJ(3)
                     {
-                        tmp[i][j] = XYZ[i][j] / XYZ_w[j];
-                        if (tmp[i][j] > e)
-                            tmp[i][j] = pow (tmp[i][j], 1.0/3.0);
-                        else
-                            tmp[i][j] = k * tmp[i][j] + add;
+                    tmp[i][j] = XYZ[i][j] / XYZ_w[j];
+                    if (tmp[i][j] > e)
+                        tmp[i][j] = pow (tmp[i][j], 1.0f/3.0f);
+                    else
+                        tmp[i][j] = k * tmp[i][j] + add;
                     }
-                
-                vector< vector<float> > out_calc_Lab(190, vector<float>(3, 0.0));
+                }
+            
+                vector< vector<float> > out_calc_Lab(190, vector<float>(3, 0.0f));
                 FORI(190)
                 {
                     out_calc_Lab[i][0] = 116.0f * tmp[i][1] - 16.0f;
                     out_calc_Lab[i][1] = 500.0f * (tmp[i][0] - tmp[i][1]);
                     out_calc_Lab[i][2] = 200.0f * (tmp[i][1] - tmp[i][2]);
                 }
-                
-                return out_calc_XYZt;
+            
+                return out_calc_Lab;
             }
         
+            float calDistance(const vector < vector<float> > RGB,
+                              const vector < vector<float> > XYZ,
+                              const double * B) const
+            {
+                    assert(RGB.size() == XYZ.size() && XYZ.size() == 190);
+                
+                    vector< vector<float> > out_calc_Lab = calLAB(RGB, XYZ, B);
+                
+                    const vector < vector< float > > XYZ_wv = repmat2d(XYZ_w, 3, 3);
+                    vector< vector<float> > out_Lab = mulVector(XYZ, XYZ_wv, 190, 3);
+                
+                    float dist = 0.0f;
+                    FORI(190)
+                        FORJ(3){
+                            dist += pow((out_Lab[i][j] - out_calc_Lab[i][j]), 2);
+//                            dist += (out_Lab[i][j] - out_calc_Lab[i][j]) << 1 ;
+                        }
+            
+                    return pow(dist, 1.0f/2.0f);
+            }
+        
+            template <typename T>
+            bool operator()(const T* const B0,
+                            const T* const B1,
+                            const T* const B2,
+                            const T* const B3,
+                            const T* const B4,
+                            const T* const B5,
+                            T* residual) const {
+                T* B;
+                
+                B[0] = B0[0];
+                B[1] = B1[0];
+                B[2] = T(1.0) - B0[0] - B1[0];
+                B[3] = B2[0];
+                B[4] = B3[0];
+                B[5] = T(1.0) - B2[0] - B3[0];
+                B[6] = B4[0];
+                B[7] = B5[0];
+                B[8] = T(1.0) - B4[0] - B5[0];
+        
+//                residual[0] = calDistance(_idt.calLAB2(_RGB, _XYZ, B));
+                residual[0] = T(sqrt(10.0)) * (B0[0] - B2[0]) * (B1[0] - B3[0]) * (B4[0] - B5[0]);
+
+        
 //            template <typename T>
-//            bool operator()(const T* const B0,
-//                            const T* const B1,
-//                            const T* const B2,
-//                            const T* const B3,
-//                            const T* const B4,
-//                            const T* const B5,
+//            bool operator()(const T* const B_start,
 //                            T* residual) const {
-//                const vector < vector <T> > B = { {B0[0], B1[0], 1.0-B0[0]-B1[0]}, {B2[0], B3[0], 1.0-B2[0]-B3[0]}, {B4[0], B5[0], 1.0-B4[0]-B5[0]} };
-//                vector < vector <T> > out_calc_Lab = XYZToLab(_XYZ, B);
-//                //                residual[0] = T(y_) - exp(m[0] * T(x_));
+//                T* B;
 //            
-//                return true;
-//            }
+//                B[0] = (B_start[0])[0];
+//                B[1] = (B_start[0])[1];
+//                B[2] = T(1.0) - (B_start[0])[0] - (B_start[0])[1];
+//                B[3] = (B_start[0])[2];
+//                B[4] = (B_start[0])[3];
+//                B[5] = T(1.0) -(B_start[0])[2] - (B_start[0])[3];
+//                B[6] = (B_start[0])[4];
+//                B[7] = (B_start[0])[5];
+//                B[8] = T(1.0) - (B_start[0])[4] - (B_start[0])[5];
+//            
+////            residual[0] = T(calDistance(_idt.calLAB2(_RGB, _XYZ, B)));
+//            residual[0] = T(sqrt(10.0)) * ((B_start[0])[0] - (B_start[0])[2]) * ((B_start[0])[1] - (B_start[0])[3]) * ((B_start[0])[4] - (B_start[0])[5]);
+
+
+            return true;
+        }
         
         private:
-            // Observations for a sample.
             const vector< vector<float> > _RGB;
             const vector< vector<float> > _XYZ;
-            vector< vector<float> > _out_Lab;
         };
 }
 

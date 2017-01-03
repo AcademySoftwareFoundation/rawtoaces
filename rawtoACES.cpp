@@ -31,7 +31,6 @@ it under the terms of the one of three licenses as you choose:
 #include <libraw/libraw.h>
 #include "lib/idt.h"
 
-//using namespace std;
 using namespace idt;
 
 // Beginning -- For DNG chromatic adoption matrix calculations /
@@ -340,7 +339,7 @@ void getCameraXYZMtxAndWhitePoint(float baseExpo)
     cameraToXYZMtx = invertMatrix(findXYZtoCameraMtx(neutralRGBDNG));
     assert(cameraToXYZMtx.sum() != 0 );
     
-    cameraToXYZMtx *= pow(2.0, (double)baseExpo);
+    cameraToXYZMtx *= std::pow(2.0, (double)baseExpo);
     
     valarray<float> neutralXYZ(3);
     if (neutralRGBDNG.size() > 0) {
@@ -1083,7 +1082,7 @@ int main(int argc, char *argv[])
             idt.load_training_spectral(static_cast<string>(FILEPATH)+"/training/training_spectral");
             idt.load_CMF(static_cast<string>(FILEPATH)+"/cmf/cmf_193");
             
-            map< string, vector<float> > illuCM;
+            map< string, vector<double> > illuCM;
             if(!stat(FILEPATH, &st)) {
                 vector<string> iFiles = openDir(static_cast<string>(FILEPATH)
                                                 +"illuminate");
@@ -1099,7 +1098,7 @@ int main(int argc, char *argv[])
                     }
                 }
             }
-            idt.determineIllum(illuCM, C.pre_mul);
+            idt.determineIllum(illuCM, (double *)(C.pre_mul));
             
 //            for (int i=0; i<4; i++){
 //                cout << "day light" << " " << i << ": " << float(C.pre_mul[i]) << endl;

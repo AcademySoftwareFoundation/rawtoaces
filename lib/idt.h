@@ -70,6 +70,7 @@
 #include "define.h"
 
 using namespace std;
+using namespace ceres;
 
 namespace idt {
     class Idt;
@@ -123,7 +124,7 @@ namespace idt {
             ~Idt();
         
             CIELab XYZt_2_Lab(vector<CIEXYZ> XYZt, CIEXYZ XYZw);
-            float ** gen_final_idt(vector<float> B_final);
+//            double ** gen_final_idt(vector<double> B_final);
         
             void load_cameraspst_data(const string &path, const char * maker, const char * model);
             void load_illuminate(const string &path, const char * type="na");
@@ -132,20 +133,15 @@ namespace idt {
             const Spst getCameraSpst() const;
             const illum getIllum() const;
         
-            void determineIllum(map< string, vector<float> >& illuCM, const float src[]);
-            void normalDayLight(vector<float>& mul);
+            void determineIllum(map< string, vector<double> >& illuCM, const double src[]);
+            void normalDayLight(vector<double>& mul);
         
-            vector< float > calCM();
-            vector< vector<float> > calTrainingIllum() const;
-            vector< vector<float> > calRGB( vector< vector<float> > TI) const;
-            vector< vector<float> > calXYZ( vector< vector<float> > TI) const;
-//            vector< vector<float> > calOutLAB(vector< vector<float> > XYZ) const;
-//            vector< vector<float> > calLAB(const vector < vector<float> > RGB,
-//                                            const vector < vector<float> > XYZ,
-//                                            const vector < vector<float> > B) const;
-        
-            void curveFitting(vector< vector<float> > RGB,
-                              vector< vector<float> > XYZ) const;
+            vector< double > calCM();
+            vector< vector<double> > calTrainingIllum() const;
+            vector< vector<double> > calRGB( vector< vector<double> > TI) const;
+            vector< vector<double> > calXYZ( vector< vector<double> > TI) const;
+            void curveFitting(vector< vector<double> > RGB,
+                              vector< vector<double> > XYZ) const;
         
         private:
             string  _outputEncoding;
@@ -155,124 +151,117 @@ namespace idt {
         
             vector<CMF> _cmf;
             vector<trainSpec> _trainingSpec;
-//            vector< vector<float> > _CAT;
+//            vector< vector<double> > _CAT;
         
-            float _CAT[3][3];
+            double _CAT[3][3];
     };
     
     class Objfun {
         public:
-            Objfun(vector< vector<float> > RGB,
-                   vector< vector<float> > XYZ): _RGB(RGB), _XYZ(XYZ) { }
+            Objfun(vector< vector<double> > RGB,
+                   vector< vector<double> > XYZ): _RGB(RGB), _XYZ(XYZ) { }
         
-            vector< vector<float> > calLAB(const vector < vector<float> > RGB,
-                                           const vector < vector<float> > XYZ,
-                                           const double * B) const
+            vector< vector<double> > calLAB(const vector < vector<double> > RGB,
+                                           const vector < vector<double> > XYZ,
+                                           const double* B) const
             {
                 assert(RGB.size() == XYZ.size() && XYZ.size() == 190);
-                float add = 16.0f/116.0f;
+                double add = 16.0/116.0;
             
-                vector < vector<float> > BV(3, vector<float>(3, 1.0));
-                FORI(3)
-                    FORJ(3) {
-                        BV[i][j] = float(B[i*3+j]);
-                    }
-            
-                vector< vector<float> > out_calc_XYZt = transposeVec(mulVector(BV, transposeVec(RGB, 190, 3), 3, 190), 3, 190);
-                vector< vector<float> > tmp(190, vector<float>(3, 0.0f));
+                vector < vector<double> > BV(3, vector<double>(3));
+                
+                BV[0][0] = (B[0]);
+                BV[0][1] = (B[1]);
+                BV[0][2] = 1.0 - (B[0]) - (B[1]);
+                BV[1][0] = (B[3]);
+                BV[1][1] = (B[4]);
+                BV[1][2] = 1.0 - (B[3]) - (B[4]);
+                BV[2][0] = (B[5]);
+                BV[2][1] = (B[6]);
+                BV[2][2] = 1.0 - (B[5]) - (B[6]);
+                
+//                cout << double(BV[0][0]) << double(BV[2][2]) << endl;
+
+//                vector< vector<double> > out_calc_XYZt = transposeVec(mulVector(BV, transposeVec(RGB, 190, 3), 3, 190), 3, 190);
+                vector< vector<double> > out_calc_XYZt = mulVector(BV, RGB, 3, 190);
+                vector< vector<double> > tmp(190, vector<double>(3));
             
                 FORI(190) {
                     FORJ(3)
                     {
-                    tmp[i][j] = XYZ[i][j] / XYZ_w[j];
-                    if (tmp[i][j] > e)
-                        tmp[i][j] = pow (tmp[i][j], 1.0f/3.0f);
-                    else
-                        tmp[i][j] = k * tmp[i][j] + add;
+                        tmp[i][j] = XYZ[i][j] / XYZ_w[j];
+                        if (tmp[i][j] > e)
+                            tmp[i][j] = std::pow (tmp[i][j], 1.0/3.0);
+                        else
+                            tmp[i][j] = k * tmp[i][j] + add;
                     }
                 }
             
-                vector< vector<float> > out_calc_Lab(190, vector<float>(3, 0.0f));
+                vector< vector<double> > out_calc_Lab(190, vector<double>(3, 0.0));
                 FORI(190)
                 {
-                    out_calc_Lab[i][0] = 116.0f * tmp[i][1] - 16.0f;
-                    out_calc_Lab[i][1] = 500.0f * (tmp[i][0] - tmp[i][1]);
-                    out_calc_Lab[i][2] = 200.0f * (tmp[i][1] - tmp[i][2]);
+                    out_calc_Lab[i][0] = 116.0 * tmp[i][1] - 16.0;
+                    out_calc_Lab[i][1] = 500.0 * (tmp[i][0] - tmp[i][1]);
+                    out_calc_Lab[i][2] = 200.0 * (tmp[i][1] - tmp[i][2]);
                 }
             
                 return out_calc_Lab;
             }
         
-            float calDistance(const vector < vector<float> > RGB,
-                              const vector < vector<float> > XYZ,
-                              const double * B) const
+            double findDistance(const vector < vector<double> > RGB,
+                               const vector < vector<double> > XYZ,
+                               const double * const B) const
             {
-                    assert(RGB.size() == XYZ.size() && XYZ.size() == 190);
+                assert(RGB.size() == XYZ.size() && XYZ.size() == 190);
                 
-                    vector< vector<float> > out_calc_Lab = calLAB(RGB, XYZ, B);
+                vector< vector<double> > out_calc_Lab = calLAB(RGB, XYZ, B);
+                const vector < vector<double> > XYZ_wv = repmat2d(XYZ_w, 3, 3);
+                vector< vector<double> > out_Lab = mulVector(XYZ, XYZ_wv, 190, 3);
                 
-                    const vector < vector< float > > XYZ_wv = repmat2d(XYZ_w, 3, 3);
-                    vector< vector<float> > out_Lab = mulVector(XYZ, XYZ_wv, 190, 3);
+                double dist = 0.0;
+                FORI(190)
+                    FORJ(3){
+                        dist += std::pow((out_Lab[i][j] - out_calc_Lab[i][j]), 2);
+//                        cout << double(std::pow((out_Lab[i][j] - out_calc_Lab[i][j]), 2)) << endl;
+                }
                 
-                    float dist = 0.0f;
-                    FORI(190)
-                        FORJ(3){
-                            dist += pow((out_Lab[i][j] - out_calc_Lab[i][j]), 2);
-//                            dist += (out_Lab[i][j] - out_calc_Lab[i][j]) << 1 ;
-                        }
-            
-                    return pow(dist, 1.0f/2.0f);
+//                cout << dist << endl;
+                return std::pow(dist, 1.0/2.0);
+            }
+
+            double simpleFunction(const double* B) const
+            {
+                double Bf[9];
+                
+                Bf[0] = (B[0]);
+                Bf[1] = (B[1]);
+                Bf[2] = 1.0 - (B[0]) - (B[1]);
+                Bf[3] = (B[3]);
+                Bf[4] = (B[4]);
+                Bf[5] = 1.0 - (B[3]) - (B[4]);
+                Bf[6] = (B[5]);
+                Bf[7] = (B[6]);
+                Bf[8] = 1.0 - (B[5]) - (B[6]);
+
+                double tmp = 1.0 - std::pow(Bf[0], 2) + Bf[1] + Bf[2] - Bf[5] + Bf[3] + (1.0 - Bf[4]) + Bf[6] - Bf[7] + Bf[8];
+//                double tmp = std::pow(B[0], 2.0) + B[1] + B[2];
+
+                return tmp;
             }
         
-            template <typename T>
-            bool operator()(const T* const B0,
-                            const T* const B1,
-                            const T* const B2,
-                            const T* const B3,
-                            const T* const B4,
-                            const T* const B5,
-                            T* residual) const {
-                T* B;
+            bool operator()(const double* const B,
+                            double* residual) const {
                 
-                B[0] = B0[0];
-                B[1] = B1[0];
-                B[2] = T(1.0) - B0[0] - B1[0];
-                B[3] = B2[0];
-                B[4] = B3[0];
-                B[5] = T(1.0) - B2[0] - B3[0];
-                B[6] = B4[0];
-                B[7] = B5[0];
-                B[8] = T(1.0) - B4[0] - B5[0];
-        
-//                residual[0] = calDistance(_idt.calLAB2(_RGB, _XYZ, B));
-                residual[0] = T(sqrt(10.0)) * (B0[0] - B2[0]) * (B1[0] - B3[0]) * (B4[0] - B5[0]);
-
-        
-//            template <typename T>
-//            bool operator()(const T* const B_start,
-//                            T* residual) const {
-//                T* B;
-//            
-//                B[0] = (B_start[0])[0];
-//                B[1] = (B_start[0])[1];
-//                B[2] = T(1.0) - (B_start[0])[0] - (B_start[0])[1];
-//                B[3] = (B_start[0])[2];
-//                B[4] = (B_start[0])[3];
-//                B[5] = T(1.0) -(B_start[0])[2] - (B_start[0])[3];
-//                B[6] = (B_start[0])[4];
-//                B[7] = (B_start[0])[5];
-//                B[8] = T(1.0) - (B_start[0])[4] - (B_start[0])[5];
-//            
-////            residual[0] = T(calDistance(_idt.calLAB2(_RGB, _XYZ, B)));
-//            residual[0] = T(sqrt(10.0)) * ((B_start[0])[0] - (B_start[0])[2]) * ((B_start[0])[1] - (B_start[0])[3]) * ((B_start[0])[4] - (B_start[0])[5]);
-
-
-            return true;
-        }
+                std::cout << double(B[0]) << ", " << double(B[5]) << ", " << "\n";
+                residual[0] = findDistance(_RGB, _XYZ, B);
+//                residual[0] = simpleFunction(B);
+                
+                return true;
+            }
         
         private:
-            const vector< vector<float> > _RGB;
-            const vector< vector<float> > _XYZ;
+            const vector< vector<double> > _RGB;
+            const vector< vector<double> > _XYZ;
         };
 }
 

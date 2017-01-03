@@ -136,33 +136,33 @@ valarray<float>  cameraXYZWhitePoint   = valarray<float>(1.0f, 3);
 valarray<float>  calibrateIllum        = valarray<float>(1.0f, 2);
 
 struct CIEXYZ {
-    float Xt;
-    float Yt;
-    float Zt;
+    double Xt;
+    double Yt;
+    double Zt;
 };
 
 struct CIELab {
-    float L;
-    float a;
-    float b;
+    double L;
+    double a;
+    double b;
 };
 
 struct trainSpec {
     uint16_t wl;
-    vector <float> data;
+    vector <double> data;
 };
 
 struct CMF {
     uint16_t wl;
-    float xbar;
-    float ybar;
-    float zbar;
+    double xbar;
+    double ybar;
+    double zbar;
 };
 
 struct RGBSen {
-    float RSen;
-    float GSen;
-    float BSen;
+    double RSen;
+    double GSen;
+    double BSen;
 };
 
 struct light {
@@ -174,7 +174,7 @@ struct light {
 struct illum {
     string type;
     uint8_t inc;
-    vector <float> data;
+    vector <double> data;
 };
 
 struct cameraDataPath {
@@ -182,8 +182,8 @@ struct cameraDataPath {
     vector <string> paths;
 };
 
-const float e = 216.0f/24389.0f;
-const float k = (24389.0f/27.0f)/116.0f;
+const double e = 216.0/24389.0;
+const double k = (24389.0/27.0)/116.0;
 
 template<typename T>
 struct square
@@ -221,7 +221,7 @@ static const float chromaticitiesACES[4][2] = {
     { 0.32168f,     0.33767f  }
 };
 
-static const float XYZ_w[3] = {0.952646074569846, 1.0, 1.00882518435159};
+static const double XYZ_w[3] = {0.952646074569846, 1.0, 1.00882518435159};
 static const float RobertsonMired[] = {1.0e-10f,10.0f,20.0f,30.0f,40.0f,50.0f,60.0f,70.0f,80.0f,90.0f,100.0f,
                                        125.0f,150.0f,175.0f,200.0f,225.0f,250.0f,275.0f,300.0f,325.0f,350.0f,
                                        375.0f,400.0f,425.0f,450.0f,475.0f,500.0f,525.0f,550.0f,575.0f,600.0f};
@@ -391,7 +391,7 @@ vector< vector<T> > transposeVec(vector< vector<T> > vMtx,
     return vTran;
 }
 
-float invertD(float val) {
+double invertD(double val) {
     assert (val != 0.0);
     
     return 1.0/val;
@@ -479,15 +479,16 @@ vector < T > mulVector(const vector< vector<T> >& vct1,
     return vct3;
 }
 
-float calSSE(vector<float>& tcp, vector<float>& src)
+template <typename T>
+T calSSE(vector<T>& tcp, vector<T>& src)
 {
     assert(tcp.size() == src.size());
-    vector<float> tmp(src.size());
+    vector<T> tmp(src.size());
     
     FORI(tcp.size())
         tmp[i] = tcp[i]-src[i];
     
-    float result = accumulate(tmp.begin(), tmp.end(), 0.0f, square<float>());
+    float result = accumulate(tmp.begin(), tmp.end(), 0.0f, square<T>());
     
     return result;
 }

@@ -472,10 +472,17 @@ namespace idt {
         }
 
         load_illuminate(_bestIllum);
-
         vector< vector<double> > TI = calTrainingIllum();
-//        calRGB(TI);
-//        calXYZ(TI);
+        
+//        vector< vector<double> > RGB = calRGB(TI);
+//        vector< vector<double> > XYZ = calXYZ(TI);
+//        FORI(190) {
+//            FORJ(3){
+//                printf(" %f, %f ", RGB[i][j], XYZ[i][j]);
+//            }
+//            printf(" \n");
+//        }
+        
         curveFitting(calRGB(TI),  calXYZ(TI));
         
 //        cout << "Hello, the best light source is: " << _bestIllum << endl;
@@ -487,7 +494,6 @@ namespace idt {
                _trainingSpec[0].data.size() == 190);
 
         vector< vector<double> > TI(81, vector <double>(190));
-        
         FORI(81) {
             vector<double> row(81, _illuminate.data[i]);
             FORJ(190){
@@ -521,7 +527,7 @@ namespace idt {
 
         
 //      cout << "RGB size: " << RGB.size() << "; " << "RGB.size[0] size: " << RGB.size[0].size() << endl;
-        cout << "RGB[0][0]: " << double(RGB[0][0]) << " RGB[189][2]: " << double(RGB[189][2]) << endl;
+//        cout << "RGB[0][0]: " << double(RGB[0][0]) << " RGB[189][2]: " << double(RGB[189][2]) << endl;
 
         return RGB;
     }
@@ -539,12 +545,12 @@ namespace idt {
         }
         
         vector< vector<double> > XYZ = mulVector(transTI,
-                                                colXYZ,
-                                                transTI.size(),
-                                                colXYZ.size());
+                                                 colXYZ,
+                                                 transTI.size(),
+                                                 colXYZ.size());
         
 //       cout << "XYZ size: " << XYZ.size() << "; " << "XYZ[0] size: " << XYZ[0].size() << endl;
-        cout << "XYZ[0][0]: " << double(XYZ[0][0]) << " XYZ[189][2]: " << double(XYZ[189][2]) << endl;
+//        cout << "XYZ[0][0]: " << double(XYZ[0][0]) << " XYZ[189][2]: " << double(XYZ[189][2]) << endl;
         
         return XYZ;
     }
@@ -583,7 +589,7 @@ namespace idt {
         std::cout << summary.BriefReport() << "\n";
         std::cout << summary.FullReport() << "\n";
 
-//        std::cout << double(B_start[0]) << ", " << double(B_start[1]) << ", " << "\n";
+        std::cout << double(B_start[0]) << ", " << double(B_start[1]) << ", " << "\n";
         
         return;
     }

@@ -303,7 +303,7 @@ void printValarray (const valarray<T>&va, string s, int num)
 
 template <typename T>
 const vector <T> repmat1d(const T data[], int row, int col) {
-    vector <T> vect(row*col, 1.0);
+    vector <T> vect(row*col);
     FORI(row) {
         FORJ(col) {
             vect[i*col + j] = data[i];
@@ -316,7 +316,7 @@ const vector <T> repmat1d(const T data[], int row, int col) {
 
 template <typename T>
 const vector < vector <T> > repmat2d(const T data[], int row, int col) {
-    vector < vector <T> > vect(row, vector<T>(col, 1.0));
+    vector < vector <T> > vect(row, vector<T>(col));
     FORI(row) {
         FORJ(col) {
             vect[i][j] = data[i];
@@ -379,14 +379,22 @@ vector< vector<T> > transposeVec(vector< vector<T> > vMtx,
                                  int col)
 {
     assert (row != 0 || col != 0);
-    
     vector< vector<T> > vTran(col, vector<T>(row));
     
-    FORI(row) {
-        FORJ(col) {
-            vTran[j][i] = vMtx[i][j];
+    FORI(col) {
+        FORJ(row) {
+            vTran[i][j] = vMtx[j][i];
         }
     }
+    
+    return vTran;
+}
+
+template <typename T>
+vector< vector<T> > rotateVec(vector< vector<T> > vMtx)
+{
+    assert (vMtx.size() != 0 || vMtx[0].size() != 0);
+    vector< vector<T> > vTran = transposeVec(vMtx, vMtx.size(), vMtx[0].size());
     
     return vTran;
 }

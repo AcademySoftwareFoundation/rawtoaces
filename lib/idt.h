@@ -162,51 +162,40 @@ namespace idt {
                    vector< vector<double> > XYZ): _RGB(RGB), _XYZ(XYZ) { }
         
             vector< vector<double> > calLAB(const vector < vector<double> > RGB,
-                                           const vector < vector<double> > XYZ,
-                                           const double* B) const
+                                            const vector < vector<double> > XYZ,
+                                            const vector < vector<double> > B) const
             {
                 assert(RGB.size() == XYZ.size() && XYZ.size() == 190);
                 double add = 16.0/116.0;
-            
-                vector < vector<double> > BV(3, vector<double>(3));
                 
-                BV[0][0] = (B[0]);
-                BV[0][1] = (B[1]);
-                BV[0][2] = 1.0 - (B[0]) - (B[1]);
-                BV[1][0] = (B[3]);
-                BV[1][1] = (B[4]);
-                BV[1][2] = 1.0 - (B[3]) - (B[4]);
-                BV[2][0] = (B[5]);
-                BV[2][1] = (B[6]);
-                BV[2][2] = 1.0 - (B[5]) - (B[6]);
+                vector< vector<double> > out_calc_XYZt = transposeVec(mulVector(B,
+                                                                                rotateVec(transposeVec(RGB, 190, 3)),
+                                                                                3, 190),
+                                                                      3, 190);
                 
-//                cout << double(BV[0][0]) << double(BV[2][2]) << endl;
-
-//                vector< vector<double> > out_calc_XYZt = transposeVec(mulVector(BV, transposeVec(RGB, 190, 3), 3, 190), 3, 190);
-                vector< vector<double> > out_calc_XYZt = mulVector(BV, RGB, 3, 190);
-                vector< vector<double> > tmp(190, vector<double>(3));
             
                 FORI(190) {
                     FORJ(3)
                     {
-                        tmp[i][j] = XYZ[i][j] / XYZ_w[j];
-                        if (tmp[i][j] > e)
-                            tmp[i][j] = std::pow (tmp[i][j], 1.0/3.0);
+                        out_calc_XYZt[i][j] = out_calc_XYZt[i][j] / XYZ_w[j];
+                        if (out_calc_XYZt[i][j] > e)
+                            out_calc_XYZt[i][j] = std::pow(out_calc_XYZt[i][j], 1.0/3.0);
                         else
-                            tmp[i][j] = k * tmp[i][j] + add;
+                            out_calc_XYZt[i][j] = k * out_calc_XYZt[i][j] + add;
                     }
                 }
             
-                vector< vector<double> > out_calc_Lab(190, vector<double>(3, 0.0));
+                vector< vector<double> > out_calc_Lab(190, vector<double>(3, 1.0));
                 FORI(190)
                 {
-                    out_calc_Lab[i][0] = 116.0 * tmp[i][1] - 16.0;
-                    out_calc_Lab[i][1] = 500.0 * (tmp[i][0] - tmp[i][1]);
-                    out_calc_Lab[i][2] = 200.0 * (tmp[i][1] - tmp[i][2]);
+                    out_calc_Lab[i][0] = 116.0 * out_calc_XYZt[i][1] - 16.0;
+                    out_calc_Lab[i][1] = 500.0 * (out_calc_XYZt[i][0] - out_calc_XYZt[i][1]);
+                    out_calc_Lab[i][2] = 200.0 * (out_calc_XYZt[i][1] - out_calc_XYZt[i][2]);
                 }
             
                 return out_calc_Lab;
             }
+        
         
             double findDistance(const vector < vector<double> > RGB,
                                const vector < vector<double> > XYZ,
@@ -214,37 +203,52 @@ namespace idt {
             {
                 assert(RGB.size() == XYZ.size() && XYZ.size() == 190);
                 
-                vector< vector<double> > out_calc_Lab = calLAB(RGB, XYZ, B);
-                const vector < vector<double> > XYZ_wv = repmat2d(XYZ_w, 3, 3);
-                vector< vector<double> > out_Lab = mulVector(XYZ, XYZ_wv, 190, 3);
+                vector < vector<double> > BV(3, vector<double>(3));
+                
+                BV[0][0] = B[0];
+                BV[0][1] = B[1];
+                BV[0][2] = 1.0 - B[0] - B[1];
+                BV[1][0] = B[2];
+                BV[1][1] = B[3];
+                BV[1][2] = 1.0 - B[2] - B[3];
+                BV[2][0] = B[4];
+                BV[2][1] = B[5];
+                BV[2][2] = 1.0 - B[4] - B[5];
+                
+                vector< vector<double> > out_Lab = mulVector(XYZ, repmat2d(XYZ_w, 3, 3), 190, 3);
+                vector< vector<double> > out_calc_Lab = calLAB(RGB, XYZ, BV);
                 
                 double dist = 0.0;
-                FORI(190)
+                FORI(190) {
                     FORJ(3){
-                        dist += std::pow((out_Lab[i][j] - out_calc_Lab[i][j]), 2);
-//                        cout << double(std::pow((out_Lab[i][j] - out_calc_Lab[i][j]), 2)) << endl;
+//                        printf("%f ", out_calc_Lab[i][j]);
+//                        dist += std::pow((out_Lab[i][j] - out_calc_Lab[i][j]), 2.0);
+                        dist += out_Lab[i][j] - out_calc_Lab[i][j];
+                    }
+//                    printf("\n");
                 }
                 
 //                cout << dist << endl;
-                return std::pow(dist, 1.0/2.0);
+//                return std::pow(dist, 1.0/2.0);
+                return dist;
+                
             }
 
             double simpleFunction(const double* B) const
             {
-                double Bf[9];
+                double BD[9];
                 
-                Bf[0] = (B[0]);
-                Bf[1] = (B[1]);
-                Bf[2] = 1.0 - (B[0]) - (B[1]);
-                Bf[3] = (B[3]);
-                Bf[4] = (B[4]);
-                Bf[5] = 1.0 - (B[3]) - (B[4]);
-                Bf[6] = (B[5]);
-                Bf[7] = (B[6]);
-                Bf[8] = 1.0 - (B[5]) - (B[6]);
+                BD[0] = B[0];
+                BD[1] = B[1];
+                BD[2] = 1.0 - B[0] - B[1];
+                BD[3] = B[2];
+                BD[4] = B[3];
+                BD[5] = 1.0 - B[2] - B[3];
+                BD[6] = B[4];
+                BD[7] = B[5];
+                BD[8] = 1.0 - B[4] - B[5];
 
-                double tmp = 1.0 - std::pow(Bf[0], 2) + Bf[1] + Bf[2] - Bf[5] + Bf[3] + (1.0 - Bf[4]) + Bf[6] - Bf[7] + Bf[8];
-//                double tmp = std::pow(B[0], 2.0) + B[1] + B[2];
+                double tmp = 1.0 - std::pow(BD[0], 2) + BD[1] + BD[2] - BD[5] + BD[3] + (1.0 - BD[4]) + BD[6] - BD[7] + BD[8];
 
                 return tmp;
             }
@@ -252,7 +256,7 @@ namespace idt {
             bool operator()(const double* const B,
                             double* residual) const {
                 
-                std::cout << double(B[0]) << ", " << double(B[5]) << ", " << "\n";
+//                std::cout << double(B[0]) << ", " << double(B[5]) << ", " << "\n";
                 residual[0] = findDistance(_RGB, _XYZ, B);
 //                residual[0] = simpleFunction(B);
                 

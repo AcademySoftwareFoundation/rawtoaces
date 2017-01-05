@@ -1093,12 +1093,14 @@ int main(int argc, char *argv[])
                     else {
                         if(fn.find("_380_780") != std::string::npos){
                             idt.load_illuminate(fn);
-                            illuCM[static_cast<string>(*file)] = idt.calCM();
+                            illuCM[static_cast<string>(*file)] = idt.cal_CM();
                         }
                     }
                 }
             }
-            idt.determineIllum(illuCM, (double *)(C.pre_mul));
+            
+            idt.choose_illum(illuCM, (double *)(C.pre_mul));
+            idt.get_final_idt();
             
 //            for (int i=0; i<4; i++){
 //                cout << "day light" << " " << i << ": " << float(C.pre_mul[i]) << endl;

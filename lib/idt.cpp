@@ -175,14 +175,6 @@ namespace idt {
 //        free(_CAT);
     }
     
-    CIELab Idt::XYZt_2_Lab(vector<CIEXYZ> XYZt, CIEXYZ XYZw) {
-        CIELab CLab = {1.0, 1.0, 1.0};
-//        static CIELab lab = {1.0, 1.0, 1.0};
-//        CIELab *lab = static_cast<CIELab>(malloc(1 * sizeof(CIELab)));
-        
-        return CLab;
-    }
-    
     void Idt::load_cameraspst_data(const string & path, const char * maker, const char * model) {
         ifstream fin;
         fin.open(path);
@@ -398,15 +390,15 @@ namespace idt {
         fin.close();
     }
     
-    const Spst Idt::getCameraSpst() const {
+    const Spst Idt::get_cameraspst() const {
         return static_cast<const Spst>(_cameraSpst);
     }
     
-    const illum Idt::getIllum() const {
+    const illum Idt::get_illum() const {
         return static_cast<const illum>(_illuminate);
     }
     
-    void Idt::normalDayLight(vector<double>& mul){
+    void Idt::scale_day_light(vector<double>& mul){
         double max = *max_element(mul.begin(), mul.end());
         
         transform(mul.begin(), mul.end(), mul.begin(), invertD);
@@ -416,35 +408,23 @@ namespace idt {
         return;
     }
     
-    vector<double> Idt::calCM() {
+    vector<double> Idt::cal_CM() {
         vector<RGBSen> rgbsen = _cameraSpst.getSensitivity();
-//        uint8_t size = rgbsen.size();
-//        vector<double> R(size), G(size), B(size);
         vector< vector<double> > rgbsenV(3, vector<double>(rgbsen.size(), 1.0));
 
         
         FORI(rgbsen.size()){
-//            R[i] = rgbsen[i].RSen;
-//            G[i] = rgbsen[i].GSen;
-//            B[i] = rgbsen[i].BSen;
-            
             rgbsenV[0][i] = rgbsen[i].RSen;
             rgbsenV[1][i] = rgbsen[i].GSen;
             rgbsenV[2][i] = rgbsen[i].BSen;
         }
         
-//        vector<double> CM(3, 1.0);
-        
-//        CM[0] = sumVector((R, _illuminate.data));
-//        CM[1] = sumVector(mulVectorElement(G, _illuminate.data));
-//        CM[2] = sumVector(mulVectorElement(B, _illuminate.data));
-        
         vector<double> CM = mulVector(rgbsenV,
-                                     _illuminate.data,
-                                     rgbsenV.size(),
-                                     _illuminate.data.size());
+                                      _illuminate.data,
+                                      rgbsenV.size(),
+                                      _illuminate.data.size());
         
-        normalDayLight(CM);
+        scale_day_light(CM);
         
 //        cout << CM[0] << "; "
 //        << CM[1] << "; "
@@ -453,7 +433,7 @@ namespace idt {
         return CM;
     }
     
-    void Idt::determineIllum(map< string, vector<double> >& illuCM, const double src[]) {
+    void Idt::choose_illum(map< string, vector<double> >& illuCM, const double src[]) {
         double sse = numeric_limits<double>::max();
         vector<double> vsrc(src, src+3);
         
@@ -471,25 +451,10 @@ namespace idt {
             _illuminate.data.clear();
         }
 
-        load_illuminate(_bestIllum);
-        vector< vector<double> > TI = calTrainingIllum();
-        
-//        vector< vector<double> > RGB = calRGB(TI);
-//        vector< vector<double> > XYZ = calXYZ(TI);
-//        FORI(190) {
-//            FORJ(3){
-//                printf(" %f, %f ", RGB[i][j], XYZ[i][j]);
-//            }
-//            printf(" \n");
-//        }
-        
-        curveFitting(calRGB(TI),  calXYZ(TI));
-        
-//        cout << "Hello, the best light source is: " << _bestIllum << endl;
         return;
     }
     
-    vector< vector<double> > Idt::calTrainingIllum() const {
+    vector< vector<double> > Idt::cal_TI() const {
         assert(_illuminate.data.size() == 81 &&
                _trainingSpec[0].data.size() == 190);
 
@@ -508,7 +473,7 @@ namespace idt {
         return TI;
     }
     
-    vector< vector<double> > Idt::calRGB(vector< vector<double> > TI) const {
+    vector< vector<double> > Idt::cal_RGB(vector< vector<double> > TI) const {
         assert(TI.size() == 81);
         
         vector< vector<double> > transTI = transposeVec(TI, 81, 190);
@@ -532,7 +497,7 @@ namespace idt {
         return RGB;
     }
     
-    vector< vector<double> > Idt::calXYZ(vector< vector<double> > TI) const {
+    vector< vector<double> > Idt::cal_XYZ(vector< vector<double> > TI) const {
         assert(TI.size() == 81);
         
         vector< vector<double> > transTI = transposeVec(TI, 81, 190);
@@ -555,11 +520,10 @@ namespace idt {
         return XYZ;
     }
     
-    void Idt::curveFitting(vector< vector<double> > RGB,
-                           vector< vector<double> > XYZ) const
+    void Idt::curve_fit(vector< vector<double> > RGB,
+                                vector< vector<double> > XYZ,
+                                double * B)
     {
-        
-        double B_start[6] = {1.0, 0.0, 0.0, 1.0, 0.0, 0.0};
         
         Problem problem;
         
@@ -579,7 +543,7 @@ namespace idt {
                                                                    TAKE_OWNERSHIP);
         problem.AddResidualBlock(cost_function,
                                  new CauchyLoss(0.5),
-                                 B_start);
+                                 B);
         
         Solver::Options options;
         options.linear_solver_type = ceres::DENSE_QR;
@@ -587,12 +551,66 @@ namespace idt {
         Solver::Summary summary;
         Solve(options, &problem, &summary);
         std::cout << summary.BriefReport() << "\n";
-        std::cout << summary.FullReport() << "\n";
-
-        std::cout << double(B_start[0]) << ", " << double(B_start[1]) << ", " << "\n";
+//        std::cout << summary.FullReport() << "\n";
+        
+        _CAT[0][0] = B[0];
+        _CAT[0][1] = B[1];
+        _CAT[0][2] = 1.0 - B[0] - B[1];
+        _CAT[1][0] = B[2];
+        _CAT[1][1] = B[3];
+        _CAT[1][2] = 1.0 - B[2] - B[3];
+        _CAT[2][0] = B[4];
+        _CAT[2][1] = B[5];
+        _CAT[2][2] = 1.0 - B[4] - B[5];
+        
+        FORI(3)
+            FORJ(3)
+                printf("%f ", _CAT[i][j]);
         
         return;
     }
+    
+    void Idt::get_final_idt() {
+        load_illuminate(_bestIllum);
+        double B_start[6] = {1.0, 0.0, 0.0, 1.0, 0.0, 0.0};
+
+        vector< vector<double> > TI = cal_TI();
+        
+        //        vector< vector<double> > RGB = cal_RGB(TI);
+        //        vector< vector<double> > XYZ = cal_XYZ(TI);
+        //        vector< vector<double> > out_Lab = mulVector(XYZ, repmat2d(XYZ_w, 3, 3), 190, 3);
+        
+        vector < vector<double> > BV(3, vector<double>(3));
+        
+        BV[0][0] = B_start[0];
+        BV[0][1] = B_start[1];
+        BV[0][2] = 1.0 - B_start[0] - B_start[1];
+        BV[1][0] = B_start[2];
+        BV[1][1] = B_start[3];
+        BV[1][2] = 1.0 - B_start[2] - B_start[3];
+        BV[2][0] = B_start[4];
+        BV[2][1] = B_start[5];
+        BV[2][2] = 1.0 - B_start[4] - B_start[5];
+        
+        vector< vector<double> > out_calc_XYZt = transposeVec(mulVector(BV,
+                                                                        rotateVec(transposeVec(cal_RGB(TI), 190, 3)),
+                                                                        3, 190),
+                                                              3, 190);
+        
+//        vector< vector<double> > out_calc_XYZt = mulVector(cal_RGB(TI), BV, 190, 3);
+        
+        FORI(190) {
+            FORJ(3){
+                printf(" %f ", out_calc_XYZt[i][j]);
+            }
+            printf(" \n");
+        }
+
+        curve_fit(cal_RGB(TI), cal_XYZ(TI), B_start);
+        
+        return;
+    };
+
 }
 
 

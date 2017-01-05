@@ -117,31 +117,29 @@ namespace idt {
     };
 
     class Idt {
-        friend class Objfun;
-
         public:
             Idt();
             ~Idt();
         
-            CIELab XYZt_2_Lab(vector<CIEXYZ> XYZt, CIEXYZ XYZw);
-//            double ** gen_final_idt(vector<double> B_final);
-        
             void load_cameraspst_data(const string &path, const char * maker, const char * model);
-            void load_illuminate(const string &path, const char * type="na");
+            void load_illuminate(const string &path, const char * type="NA");
             void load_training_spectral(const string &path);
             void load_CMF(const string &path);
-            const Spst getCameraSpst() const;
-            const illum getIllum() const;
+            void scale_day_light(vector<double>& mul);
+            void choose_illum(map< string, vector<double> >& illuCM, const double src[]);
         
-            void determineIllum(map< string, vector<double> >& illuCM, const double src[]);
-            void normalDayLight(vector<double>& mul);
+            const Spst get_cameraspst() const;
+            const illum get_illum() const;
         
-            vector< double > calCM();
-            vector< vector<double> > calTrainingIllum() const;
-            vector< vector<double> > calRGB( vector< vector<double> > TI) const;
-            vector< vector<double> > calXYZ( vector< vector<double> > TI) const;
-            void curveFitting(vector< vector<double> > RGB,
-                              vector< vector<double> > XYZ) const;
+            vector< double > cal_CM();
+            vector< vector<double> > cal_TI() const;
+            vector< vector<double> > cal_RGB( vector< vector<double> > TI) const;
+            vector< vector<double> > cal_XYZ( vector< vector<double> > TI) const;
+        
+            void curve_fit(vector< vector<double> > RGB,
+                                   vector< vector<double> > XYZ,
+                                   double * B_start);
+            void get_final_idt();
         
         private:
             string  _outputEncoding;
@@ -151,8 +149,6 @@ namespace idt {
         
             vector<CMF> _cmf;
             vector<trainSpec> _trainingSpec;
-//            vector< vector<double> > _CAT;
-        
             double _CAT[3][3];
     };
     
@@ -161,34 +157,36 @@ namespace idt {
             Objfun(vector< vector<double> > RGB,
                    vector< vector<double> > XYZ): _RGB(RGB), _XYZ(XYZ) { }
         
-            vector< vector<double> > calLAB(const vector < vector<double> > RGB,
-                                            const vector < vector<double> > XYZ,
+            vector< vector<double> > cal_lab(const vector < vector<double> > RGB,
                                             const vector < vector<double> > B) const
             {
-                assert(RGB.size() == XYZ.size() && XYZ.size() == 190);
+                assert(RGB.size() == 190);
                 double add = 16.0/116.0;
                 
-                vector< vector<double> > out_calc_XYZt = transposeVec(mulVector(B,
-                                                                                rotateVec(transposeVec(RGB, 190, 3)),
-                                                                                3, 190),
-                                                                      3, 190);
+//                vector< vector<double> > out_calc_XYZt = transposeVec(mulVector(B,
+//                                                                                rotateVec(transposeVec(RGB, 190, 3)),
+//                                                                                3, 190),
+//                                                                      3, 190);
                 
-            
+                vector< vector<double> > out_calc_XYZt = mulVector(RGB, B, 190, 3);
+                
                 FORI(190) {
                     FORJ(3)
                     {
+//                        printf("%f ", out_calc_XYZt[i][j]);
                         out_calc_XYZt[i][j] = out_calc_XYZt[i][j] / XYZ_w[j];
                         if (out_calc_XYZt[i][j] > e)
                             out_calc_XYZt[i][j] = std::pow(out_calc_XYZt[i][j], 1.0/3.0);
                         else
                             out_calc_XYZt[i][j] = k * out_calc_XYZt[i][j] + add;
                     }
+//                    printf("\n");
                 }
             
                 vector< vector<double> > out_calc_Lab(190, vector<double>(3, 1.0));
                 FORI(190)
                 {
-                    out_calc_Lab[i][0] = 116.0 * out_calc_XYZt[i][1] - 16.0;
+                    out_calc_Lab[i][0] = 116.0 * out_calc_XYZt[i][1]  - 16.0;
                     out_calc_Lab[i][1] = 500.0 * (out_calc_XYZt[i][0] - out_calc_XYZt[i][1]);
                     out_calc_Lab[i][2] = 200.0 * (out_calc_XYZt[i][1] - out_calc_XYZt[i][2]);
                 }
@@ -197,9 +195,9 @@ namespace idt {
             }
         
         
-            double findDistance(const vector < vector<double> > RGB,
-                               const vector < vector<double> > XYZ,
-                               const double * const B) const
+            double find_distance(const vector < vector<double> > RGB,
+                                const vector < vector<double> > XYZ,
+                                const double * const B) const
             {
                 assert(RGB.size() == XYZ.size() && XYZ.size() == 190);
                 
@@ -216,12 +214,12 @@ namespace idt {
                 BV[2][2] = 1.0 - B[4] - B[5];
                 
                 vector< vector<double> > out_Lab = mulVector(XYZ, repmat2d(XYZ_w, 3, 3), 190, 3);
-                vector< vector<double> > out_calc_Lab = calLAB(RGB, XYZ, BV);
-                
+                vector< vector<double> > out_calc_Lab = cal_lab(RGB, BV);
+
                 double dist = 0.0;
                 FORI(190) {
                     FORJ(3){
-//                        printf("%f ", out_calc_Lab[i][j]);
+//                        printf("%f ", out_Lab[i][j]);
 //                        dist += std::pow((out_Lab[i][j] - out_calc_Lab[i][j]), 2.0);
                         dist += out_Lab[i][j] - out_calc_Lab[i][j];
                     }
@@ -234,7 +232,7 @@ namespace idt {
                 
             }
 
-            double simpleFunction(const double* B) const
+            double simple_function(const double* B) const
             {
                 double BD[9];
                 
@@ -257,8 +255,8 @@ namespace idt {
                             double* residual) const {
                 
 //                std::cout << double(B[0]) << ", " << double(B[5]) << ", " << "\n";
-                residual[0] = findDistance(_RGB, _XYZ, B);
-//                residual[0] = simpleFunction(B);
+                residual[0] = find_distance(_RGB, _XYZ, B);
+//                residual[0] = simple_function(B);
                 
                 return true;
             }

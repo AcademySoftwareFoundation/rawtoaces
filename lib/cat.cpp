@@ -52,9 +52,9 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
-#include "idt.h"
+#include "cat.h"
 
-namespace idt {
+namespace cat {
     Spst::Spst() {
         _brand = null_ptr;
         _model = null_ptr;
@@ -175,7 +175,7 @@ namespace idt {
 //        free(_CAT);
     }
     
-    void Idt::load_cameraspst_data(const string & path, const char * maker, const char * model) {
+    void Idt::loadCameraSpst(const string & path, const char * maker, const char * model) {
         ifstream fin;
         fin.open(path);
         uint8_t line = 0;
@@ -241,7 +241,7 @@ namespace idt {
         fin.close();
     }
     
-    void Idt::load_illuminate(const string &path, const char * type) {
+    void Idt::loadIlluminate(const string &path, const char * type) {
         ifstream fin;
         fin.open(path);
         
@@ -294,7 +294,7 @@ namespace idt {
         return;
     }
     
-    void Idt::load_training_spectral(const string &path) {
+    void Idt::loadTrainingData(const string &path) {
         ifstream fin;
         fin.open(path);
         
@@ -339,7 +339,7 @@ namespace idt {
         fin.close();
     }
     
-    void Idt::load_CMF(const string &path) {
+    void Idt::loadCMF(const string &path) {
         ifstream fin;
         fin.open(path);
         
@@ -390,15 +390,15 @@ namespace idt {
         fin.close();
     }
     
-    const Spst Idt::get_cameraspst() const {
+    const Spst Idt::getCameraSpst() const {
         return static_cast<const Spst>(_cameraSpst);
     }
     
-    const illum Idt::get_illum() const {
+    const illum Idt::getIlluminate() const {
         return static_cast<const illum>(_illuminate);
     }
     
-    void Idt::scale_day_light(vector<double>& mul){
+    void Idt::scaleDaylight(vector<double>& mul){
         double max = *max_element(mul.begin(), mul.end());
         
         transform(mul.begin(), mul.end(), mul.begin(), invertD);
@@ -408,10 +408,9 @@ namespace idt {
         return;
     }
     
-    vector<double> Idt::cal_CM() {
+    vector<double> Idt::calCM() {
         vector<RGBSen> rgbsen = _cameraSpst.getSensitivity();
         vector< vector<double> > rgbsenV(3, vector<double>(rgbsen.size(), 1.0));
-
         
         FORI(rgbsen.size()){
             rgbsenV[0][i] = rgbsen[i].RSen;
@@ -420,20 +419,14 @@ namespace idt {
         }
         
         vector<double> CM = mulVector(rgbsenV,
-                                      _illuminate.data,
-                                      rgbsenV.size(),
-                                      _illuminate.data.size());
-        
-        scale_day_light(CM);
-        
-//        cout << CM[0] << "; "
-//        << CM[1] << "; "
-//        << CM[2] << endl;
+                                      _illuminate.data);
+        scaleDaylight(CM);
         
         return CM;
     }
     
-    void Idt::choose_illum(map< string, vector<double> >& illuCM, const double src[]) {
+    void Idt::chooseIlluminate(map< string, vector<double> >& illuCM,
+                               const double src[]) {
         double sse = numeric_limits<double>::max();
         vector<double> vsrc(src, src+3);
         
@@ -454,29 +447,36 @@ namespace idt {
         return;
     }
     
-    vector< vector<double> > Idt::cal_TI() const {
+    vector< vector<double> > Idt::calTI() const {
         assert(_illuminate.data.size() == 81 &&
                _trainingSpec[0].data.size() == 190);
 
-        vector< vector<double> > TI(81, vector <double>(190));
+        vector< vector<double> > TI(81, vector<double>(190));
+        vector< vector<double> > illum81(81, vector<double>(81));
+        vector< vector<double> > trainSpec81(190, vector<double>(81));
+
         FORI(81) {
-            vector<double> row(81, _illuminate.data[i]);
-            FORJ(190){
-                vector<double> col;
-                for(int w=0; w < 81; w++){
-                    col.push_back((_trainingSpec[w].data)[j]);
-                }
-                TI[i][j] = (sumVector(mulVectorElement(row, col)));
-            }
+            illum81[i] = _illuminate.data;
+            FORJ(190)
+                trainSpec81[j][i] = (_trainingSpec[i].data)[j];
         }
+
+        TI = mulVector(illum81, trainSpec81);
+        
+//        FORI(81) {
+//            FORJ(190) {
+//                printf("%f, ", TI[i][j]);
+//            }
+//            printf("\n");
+//        }
         
         return TI;
     }
     
-    vector< vector<double> > Idt::cal_RGB(vector< vector<double> > TI) const {
+    vector< vector<double> > Idt::calRGB(vector< vector<double> > TI) const {
         assert(TI.size() == 81);
         
-        vector< vector<double> > transTI = transposeVec(TI, 81, 190);
+        vector< vector<double> > transTI = transposeVec(TI);
         vector< vector<double> > colRGB(3, vector<double>(TI.size(), 1.0));
         
         FORI(81) {
@@ -486,21 +486,19 @@ namespace idt {
         }
 
         vector< vector<double> > RGB = mulVector(transTI,
-                                                colRGB,
-                                                transTI.size(),
-                                                colRGB.size());
+                                                 colRGB);
 
         
 //      cout << "RGB size: " << RGB.size() << "; " << "RGB.size[0] size: " << RGB.size[0].size() << endl;
-//        cout << "RGB[0][0]: " << double(RGB[0][0]) << " RGB[189][2]: " << double(RGB[189][2]) << endl;
+//      cout << "RGB[0][0]: " << double(RGB[0][0]) << " RGB[189][2]: " << double(RGB[189][2]) << endl;
 
         return RGB;
     }
     
-    vector< vector<double> > Idt::cal_XYZ(vector< vector<double> > TI) const {
+    vector< vector<double> > Idt::calXYZ(vector< vector<double> > TI) const {
         assert(TI.size() == 81);
         
-        vector< vector<double> > transTI = transposeVec(TI, 81, 190);
+        vector< vector<double> > transTI = transposeVec(TI);
         vector< vector<double> > colXYZ(3, vector<double>(TI.size(), 1.0));
 
         FORI(81){
@@ -510,9 +508,7 @@ namespace idt {
         }
         
         vector< vector<double> > XYZ = mulVector(transTI,
-                                                 colXYZ,
-                                                 transTI.size(),
-                                                 colXYZ.size());
+                                                 colXYZ);
         
 //       cout << "XYZ size: " << XYZ.size() << "; " << "XYZ[0] size: " << XYZ[0].size() << endl;
 //        cout << "XYZ[0][0]: " << double(XYZ[0][0]) << " XYZ[189][2]: " << double(XYZ[189][2]) << endl;
@@ -520,24 +516,12 @@ namespace idt {
         return XYZ;
     }
     
-    void Idt::curve_fit(vector< vector<double> > RGB,
+    void Idt::curveFit(vector< vector<double> > RGB,
                                 vector< vector<double> > XYZ,
                                 double * B)
     {
         
         Problem problem;
-        
-//        CostFunction* cost_function =
-//        new AutoDiffCostFunction<Objfun, 1, 1, 1, 1, 1, 1, 1>(new Objfun(RGB, XYZ));
-//        problem.AddResidualBlock(cost_function,
-//                                 new CauchyLoss(0.5),
-//                                 &B_start0,
-//                                 &B_start1,
-//                                 &B_start2,
-//                                 &B_start3,
-//                                 &B_start4,
-//                                 &B_start5);
-        
         CostFunction* cost_function =
                 new NumericDiffCostFunction<Objfun, CENTRAL, 1, 6>(new Objfun(RGB, XYZ),
                                                                    TAKE_OWNERSHIP);
@@ -570,43 +554,42 @@ namespace idt {
         return;
     }
     
-    void Idt::get_final_idt() {
-        load_illuminate(_bestIllum);
-        double B_start[6] = {1.0, 0.0, 0.0, 1.0, 0.0, 0.0};
-
-        vector< vector<double> > TI = cal_TI();
+    void Idt::getIdt() {
+        loadIlluminate(_bestIllum);
+        cout << "The best illuminate is: " << _bestIllum << endl;
         
-        //        vector< vector<double> > RGB = cal_RGB(TI);
-        //        vector< vector<double> > XYZ = cal_XYZ(TI);
-        //        vector< vector<double> > out_Lab = mulVector(XYZ, repmat2d(XYZ_w, 3, 3), 190, 3);
+        double BStart[6] = {1.0, 0.0, 0.0, 1.0, 0.0, 0.0};
+        vector< vector<double> > TI = calTI();
+        
+        vector< vector<double> > RGB = calRGB(TI);
+        vector< vector<double> > XYZ = calXYZ(TI);
+        vector< vector<double> > outLAB = mulVector(XYZ, repmat2d(XYZ_w, 3, 3));
         
         vector < vector<double> > BV(3, vector<double>(3));
         
-        BV[0][0] = B_start[0];
-        BV[0][1] = B_start[1];
-        BV[0][2] = 1.0 - B_start[0] - B_start[1];
-        BV[1][0] = B_start[2];
-        BV[1][1] = B_start[3];
-        BV[1][2] = 1.0 - B_start[2] - B_start[3];
-        BV[2][0] = B_start[4];
-        BV[2][1] = B_start[5];
-        BV[2][2] = 1.0 - B_start[4] - B_start[5];
+        BV[0][0] = BStart[0];
+        BV[0][1] = BStart[1];
+        BV[0][2] = 1.0 - BStart[0] - BStart[1];
+        BV[1][0] = BStart[2];
+        BV[1][1] = BStart[3];
+        BV[1][2] = 1.0 - BStart[2] - BStart[3];
+        BV[2][0] = BStart[4];
+        BV[2][1] = BStart[5];
+        BV[2][2] = 1.0 - BStart[4] - BStart[5];
         
-        vector< vector<double> > out_calc_XYZt = transposeVec(mulVector(BV,
-                                                                        rotateVec(transposeVec(cal_RGB(TI), 190, 3)),
-                                                                        3, 190),
-                                                              3, 190);
+        vector< vector<double> > outCalcXYZt = transposeVec(mulVector(BV,
+                                                 transposeVec(transposeVec(calRGB(TI)))));
         
-//        vector< vector<double> > out_calc_XYZt = mulVector(cal_RGB(TI), BV, 190, 3);
+//        vector< vector<double> > outCalcXYZt = mulVector(calRGB(TI), BV);
         
-        FORI(190) {
-            FORJ(3){
-                printf(" %f ", out_calc_XYZt[i][j]);
-            }
-            printf(" \n");
-        }
+//        FORI(190) {
+//            FORJ(3){
+//                printf(" %f ", outLAB[i][j]);
+//            }
+//            printf(" \n");
+//        }
 
-        curve_fit(cal_RGB(TI), cal_XYZ(TI), B_start);
+        curveFit(calRGB(TI), calXYZ(TI), BStart);
         
         return;
     };

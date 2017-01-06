@@ -141,12 +141,6 @@ struct CIEXYZ {
     double Zt;
 };
 
-struct CIELab {
-    double L;
-    double a;
-    double b;
-};
-
 struct trainSpec {
     uint16_t wl;
     vector <double> data;
@@ -374,27 +368,22 @@ void transpose(T* mtx[], int row, int col)
 }
 
 template <typename T>
-vector< vector<T> > transposeVec(vector< vector<T> > vMtx,
-                                 int row,
-                                 int col)
+vector< vector<T> > transposeVec(const vector< vector<T> > vMtx)
 {
+    assert(vMtx.size() != 0
+           && vMtx[0].size() != 0);
+    
+    int row = vMtx.size();
+    int col = vMtx[0].size();
+    
     assert (row != 0 || col != 0);
     vector< vector<T> > vTran(col, vector<T>(row));
     
-    FORI(col) {
-        FORJ(row) {
-            vTran[i][j] = vMtx[j][i];
+    FORI(row) {
+        FORJ(col) {
+            vTran[j][i] = vMtx[i][j];
         }
     }
-    
-    return vTran;
-}
-
-template <typename T>
-vector< vector<T> > rotateVec(vector< vector<T> > vMtx)
-{
-    assert (vMtx.size() != 0 || vMtx[0].size() != 0);
-    vector< vector<T> > vTran = transposeVec(vMtx, vMtx.size(), vMtx[0].size());
     
     return vTran;
 }
@@ -458,14 +447,15 @@ vector<T> mulVectorElement(const vector<T>& vct1, const vector<T>& vct2)
 
 template <typename T>
 vector < vector<T> > mulVector(const vector< vector<T> >& vct1,
-                               const vector< vector<T> >& vct2,
-                               int row,
-                               int col)
+                               const vector< vector<T> >& vct2)
 {
-    vector< vector<T> > vct3(row, vector<T>(col));
+    assert(vct1.size() != 0
+           && vct2.size() != 0);
     
-    FORI(row) {
-        FORJ(col) {
+    vector< vector<T> > vct3(vct1.size(), vector<T>(vct2.size()));
+    
+    FORI(vct1.size()) {
+        FORJ(vct2.size()) {
             vct3[i][j] = (sumVector(mulVectorElement(vct1[i], vct2[j])));
         }
     }
@@ -475,13 +465,14 @@ vector < vector<T> > mulVector(const vector< vector<T> >& vct1,
 
 template <typename T>
 vector < T > mulVector(const vector< vector<T> >& vct1,
-                       const vector<T>& vct2,
-                       int row,
-                       int col)
+                       const vector<T>& vct2)
 {
-    vector< T > vct3(row, 1.0);
+    assert(vct1.size() != 0
+           && vct2.size() != 0);
+    
+    vector< T > vct3(vct1.size(), 1.0);
 
-    FORI(row)
+    FORI(vct1.size())
         vct3[i] = (sumVector(mulVectorElement(vct1[i], vct2)));
     
     return vct3;

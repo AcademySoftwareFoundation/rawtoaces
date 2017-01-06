@@ -29,9 +29,9 @@ it under the terms of the one of three licenses as you choose:
 #endif
 
 #include <libraw/libraw.h>
-#include "lib/idt.h"
+#include "lib/cat.h"
 
-using namespace idt;
+using namespace cat;
 
 // Beginning -- For DNG chromatic adoption matrix calculations /
 valarray<float> matrixBradford( )
@@ -1062,7 +1062,7 @@ int main(int argc, char *argv[])
                     exit(EXIT_FAILURE);
                 }
                 
-                idt.load_cameraspst_data(cameraSenPath,
+                idt.loadCameraSpst(cameraSenPath,
                                          static_cast<const char *>(P1.make),
                                          static_cast<const char *>(P1.model));
             }
@@ -1074,13 +1074,13 @@ int main(int argc, char *argv[])
                     for(vector<string>::iterator file = cFiles.begin(); file != cFiles.end(); ++file){
                         string fn(*file);
                         if(fn.find("_380_780") !=std::string::npos)
-                            idt.load_cameraspst_data(fn, static_cast<const char *>(P1.make), static_cast<const char *>(P1.model));
+                            idt.loadCameraSpst(fn, static_cast<const char *>(P1.make), static_cast<const char *>(P1.model));
                     }
                 }
             }
             
-            idt.load_training_spectral(static_cast<string>(FILEPATH)+"/training/training_spectral");
-            idt.load_CMF(static_cast<string>(FILEPATH)+"/cmf/cmf_193");
+            idt.loadTrainingData(static_cast<string>(FILEPATH)+"/training/training_spectral");
+            idt.loadCMF(static_cast<string>(FILEPATH)+"/cmf/cmf_193");
             
             map< string, vector<double> > illuCM;
             if(!stat(FILEPATH, &st)) {
@@ -1089,18 +1089,18 @@ int main(int argc, char *argv[])
                 for(vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file){
                     string fn(*file);
                     if (userIllum)
-                        idt.load_illuminate(fn, static_cast<const char *>(illumType));
+                        idt.loadIlluminate(fn, static_cast<const char *>(illumType));
                     else {
                         if(fn.find("_380_780") != std::string::npos){
-                            idt.load_illuminate(fn);
-                            illuCM[static_cast<string>(*file)] = idt.cal_CM();
+                            idt.loadIlluminate(fn);
+                            illuCM[static_cast<string>(*file)] = idt.calCM();
                         }
                     }
                 }
             }
             
-            idt.choose_illum(illuCM, (double *)(C.pre_mul));
-            idt.get_final_idt();
+            idt.chooseIlluminate(illuCM, (double *)(C.pre_mul));
+            idt.getIdt();
             
 //            for (int i=0; i<4; i++){
 //                cout << "day light" << " " << i << ": " << float(C.pre_mul[i]) << endl;

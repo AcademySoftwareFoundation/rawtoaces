@@ -246,6 +246,7 @@ namespace cat {
         fin.open(path);
         
         uint8_t line = 0;
+        int wl = 380;
         
         if(!fin.good()) {
             fprintf(stderr, "The file may not exist.\n");
@@ -280,6 +281,12 @@ namespace cat {
             }
             else {
                  _illuminate.data.push_back(atof(token));
+                
+                if(wl == 550) {
+                    _illuminate.index = atof(token);
+                }
+                
+                wl += _illuminate.inc;
             }
             
             line += 1;
@@ -453,16 +460,18 @@ namespace cat {
 
         vector< vector<double> > TI(81, vector<double>(190));
         vector< vector<double> > illum81(81, vector<double>(81));
-        vector< vector<double> > trainSpec81(190, vector<double>(81));
-
+        vector< vector<double> > trainSpec190(190, vector<double>(81));
+        
+        vector<double> illmData(_illuminate.data);
+        scaleVector(illmData, 1.0/_illuminate.index);
+        
         FORI(81) {
-            illum81[i] = _illuminate.data;
+            illum81[i] = illmData;
             FORJ(190)
-                trainSpec81[j][i] = (_trainingSpec[i].data)[j];
+                trainSpec190[j][i] = (_trainingSpec[i].data)[j];
         }
 
-        TI = mulVector(illum81, trainSpec81);
-        
+        TI = mulVector(illum81, trainSpec190);
 //        FORI(81) {
 //            FORJ(190) {
 //                printf("%f, ", TI[i][j]);
@@ -490,7 +499,6 @@ namespace cat {
 
         
 //      cout << "RGB size: " << RGB.size() << "; " << "RGB.size[0] size: " << RGB.size[0].size() << endl;
-//      cout << "RGB[0][0]: " << double(RGB[0][0]) << " RGB[189][2]: " << double(RGB[189][2]) << endl;
 
         return RGB;
     }
@@ -511,7 +519,6 @@ namespace cat {
                                                  colXYZ);
         
 //       cout << "XYZ size: " << XYZ.size() << "; " << "XYZ[0] size: " << XYZ[0].size() << endl;
-//        cout << "XYZ[0][0]: " << double(XYZ[0][0]) << " XYZ[189][2]: " << double(XYZ[189][2]) << endl;
         
         return XYZ;
     }

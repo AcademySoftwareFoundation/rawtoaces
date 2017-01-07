@@ -168,6 +168,7 @@ struct light {
 struct illum {
     string type;
     uint8_t inc;
+    double index;
     vector <double> data;
 };
 
@@ -355,7 +356,7 @@ vector<T> invertMatrix(const vector<T> &mtx)
 template <typename T>
 void transpose(T* mtx[], int row, int col)
 {
-    assert (row != 0 || col != 0);
+    assert (row != 0 && col != 0);
     
     FORI(row) {
         FORJ(col) {
@@ -376,7 +377,7 @@ vector< vector<T> > transposeVec(const vector< vector<T> > vMtx)
     int row = vMtx.size();
     int col = vMtx[0].size();
     
-    assert (row != 0 || col != 0);
+    assert (row != 0 && col != 0);
     vector< vector<T> > vTran(col, vector<T>(row));
     
     FORI(row) {
@@ -414,33 +415,38 @@ vector<T> subVectors(const vector<T>& vct1, const vector<T>& vct2)
 }
 
 template <typename T>
-vector<T> scaleVector(const vector<T>& vct, T scale)
+void scaleVector(vector<T>& vct, const T scale)
 {
-    return transform(vct.begin(),
-                     vct.end(),
-                     vct.begin(),
-                     bind1st(multiplies<T>(), scale));
+    transform(vct.begin(),
+              vct.end(),
+              vct.begin(),
+              bind1st(multiplies<T>(), scale));
+    
+    return;
 }
 
 template <typename T>
-vector<T> minusVector(const vector<T>& vct, T sub)
+void minusVector(vector<T>& vct, T sub)
 {
-    return transform(vct.begin(),
-                     vct.end(),
-                     vct.begin(),
-                     bind1st(minus<T>(), sub));
+    transform(vct.begin(),
+              vct.end(),
+              vct.begin(),
+              bind1st(minus<T>(), sub));
+    return;
 }
 
 template <typename T>
 vector<T> mulVectorElement(const vector<T>& vct1, const vector<T>& vct2)
 {
-    //        cout << int(vct1.size()) << "; " << int(vct2.size()) << endl;
     assert(vct1.size() == vct2.size());
     
     vector<T> vct3Element(vct1.size(), 1.0);
     transform(vct1.begin(), vct1.end(),
               vct2.begin(), vct3Element.begin(),
               multiplies<T>());
+    
+//    FORI(vct1.size())
+//        vct3Element[i] = vct1[i] * vct2[i];
     
     return vct3Element;
 }

@@ -59,6 +59,7 @@ namespace cat {
         _brand = null_ptr;
         _model = null_ptr;
         _increment = 5;
+        _spstMaxCol = -1;
         
         for (int i=0; i<81; i++) {
             _rgbsen.push_back(RGBSen());
@@ -175,6 +176,32 @@ namespace cat {
 //        free(_CAT);
     }
     
+    void Idt::scaleLSC(){
+        assert(_cameraSpst._spstMaxCol >= 0
+               && (_illuminate.data).size() != 0);
+        
+        vector<double> colMax(81, 1.0);
+        switch(_cameraSpst._spstMaxCol){
+            case 0:
+                FORI(81) colMax[i] = _cameraSpst._rgbsen[i].RSen;
+                break;
+            case 1:
+                FORI(81) colMax[i] = _cameraSpst._rgbsen[i].GSen;
+                break;
+            case 2:
+                FORI(81) colMax[i] = _cameraSpst._rgbsen[i].BSen;
+                break;
+            default:
+                return;
+        }
+        
+//        FORI(81) printf("%f ", colMax[i]);
+
+//        printf("%f", sumVector(mulVectorElement(_illuminate.data, colMax)));
+        scaleVector(_illuminate.data,
+                    1.0/sumVector(mulVectorElement(_illuminate.data, colMax)));
+    }
+    
     void Idt::loadCameraSpst(const string & path, const char * maker, const char * model) {
         ifstream fin;
         fin.open(path);
@@ -186,6 +213,7 @@ namespace cat {
         }
         
         vector <RGBSen> rgbsen;
+        vector<double> max(3, numeric_limits<double>::min());
         
         while(!fin.eof()){
             char buffer[512];
@@ -225,6 +253,14 @@ namespace cat {
             
                 token[2] = strtok(null_ptr, " ,");
                 tmp_sen.BSen = atof(token[2]);
+                
+                if(tmp_sen.RSen > max[0])
+                    max[0] = tmp_sen.RSen;
+                if(tmp_sen.GSen > max[1])
+                    max[1] = tmp_sen.GSen;
+                if(tmp_sen.BSen > max[2])
+                    max[2] = tmp_sen.BSen;
+                
 //                cout << "R:" << double(tmp_sen.RSen) << "; " << "G: " << double(tmp_sen.GSen) << "; " << "B: " << double(tmp_sen.BSen) << "\n";
                 rgbsen.push_back(tmp_sen);
             }
@@ -236,6 +272,7 @@ namespace cat {
             exit(EXIT_FAILURE);
         }
         
+        _cameraSpst._spstMaxCol = max_element(max.begin(), max.end()) - max.begin();
         _cameraSpst.setSensitivity(rgbsen);
         
         fin.close();
@@ -295,7 +332,7 @@ namespace cat {
 //        cout << "Type: " << string(_illuminate.type) << "; " << "Inc: " << int(_illuminate.inc) << "; "<< "Data: " << "\n";
 //        for (int i = 0; i < _illuminate.data.size(); i++)
 //            cout << double(_illuminate.data[i]) << "," << endl;
-        
+       
         fin.close();
         
         return;
@@ -370,7 +407,9 @@ namespace cat {
 //            assert(token[0]);
             _cmf[i].wl = (uint16_t)atoi(token[0]);
             
-            if (!(_cmf[i].wl % 5)) {
+            if (!(_cmf[i].wl % 5)
+                && _cmf[i].wl >= 380
+                && _cmf[i].wl <= 780) {
                 for (int n = 1; n < 4; n++){
                     token[n] = strtok(null_ptr, " ,");
                     if(token[n] && n == 1) {
@@ -405,15 +444,15 @@ namespace cat {
         return static_cast<const illum>(_illuminate);
     }
     
-    void Idt::scaleDaylight(vector<double>& mul){
-        double max = *max_element(mul.begin(), mul.end());
-        
-        transform(mul.begin(), mul.end(), mul.begin(), invertD);
-        transform(mul.begin(), mul.end(), mul.begin(),
-                  bind1st(multiplies<double>(), max));
-        
-        return;
-    }
+//    void Idt::scaleDaylight(vector<double>& mul){
+//        double max = *max_element(mul.begin(), mul.end());
+//        
+//        transform(mul.begin(), mul.end(), mul.begin(), invertD);
+//        transform(mul.begin(), mul.end(), mul.begin(),
+//                  bind1st(multiplies<double>(), max));
+//        
+//        return;
+//    }
     
     vector<double> Idt::calCM() {
         vector<RGBSen> rgbsen = _cameraSpst.getSensitivity();
@@ -427,18 +466,18 @@ namespace cat {
         
         vector<double> CM = mulVector(rgbsenV,
                                       _illuminate.data);
-        scaleDaylight(CM);
+        scaleVectorD(CM);
         
         return CM;
     }
     
     void Idt::chooseIlluminate(map< string, vector<double> >& illuCM,
-                               const double src[]) {
+                               vector<double>& src) {
         double sse = numeric_limits<double>::max();
-        vector<double> vsrc(src, src+3);
+//        vector<double> vsrc(src, src+3);
         
         for (map< string, vector<double> >::iterator it = illuCM.begin(); it!=illuCM.end(); ++it){
-            double tmp = calSSE(it->second, vsrc);
+            double tmp = calSSE(it->second, src);
             if (sse > tmp) {
                 sse = tmp;
                 _bestIllum = it->first;
@@ -459,27 +498,36 @@ namespace cat {
                _trainingSpec[0].data.size() == 190);
 
         vector< vector<double> > TI(81, vector<double>(190));
-        vector< vector<double> > illum81(81, vector<double>(81));
-        vector< vector<double> > trainSpec190(190, vector<double>(81));
         
-        vector<double> illmData(_illuminate.data);
-        scaleVector(illmData, 1.0/_illuminate.index);
+        vector<double> illumData(_illuminate.data);
+//        scaleVector(illumData, 1.0/_illuminate.index);
         
-        FORI(81) {
-            illum81[i] = illmData;
+        FORI(81)
             FORJ(190)
-                trainSpec190[j][i] = (_trainingSpec[i].data)[j];
-        }
-
-        TI = mulVector(illum81, trainSpec190);
-//        FORI(81) {
-//            FORJ(190) {
-//                printf("%f, ", TI[i][j]);
-//            }
-//            printf("\n");
-//        }
+                TI[i][j] = _illuminate.data[i] * (_trainingSpec[i].data)[j];
         
         return TI;
+    }
+    
+    vector< vector<double> > Idt::calCAT(vector<double> src, vector<double> des) const {
+        assert(src.size() == des.size());
+        
+        vector < vector <double> > vect(3, vector<double>(3));
+        FORI(3) {
+            FORJ(3) {
+                vect[i][j] = cat02[i][j];
+            }
+        }
+        vector< double > wSRC = mulVector(src, vect);
+        vector< double > wDES = mulVector(des, vect);
+        vector< vector<double> > vkm = solveVM(vect, diagVM(divVectorElement(wDES,wSRC)));
+        vkm = mulVector(vkm, transposeVec(vect));
+        
+//        FORI(3)
+//            FORJ(3)
+//                printf("%f, ", vkm[i][j]);
+        
+        return vkm;
     }
     
     vector< vector<double> > Idt::calRGB(vector< vector<double> > TI) const {
@@ -494,11 +542,21 @@ namespace cat {
             colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
         }
 
-        vector< vector<double> > RGB = mulVector(transTI,
-                                                 colRGB);
-
+        vector<double> b = mulVector(colRGB, _illuminate.data);
+        FORI(b.size()) {
+            b[i] = invertD(b[i]);
+        }
         
-//      cout << "RGB size: " << RGB.size() << "; " << "RGB.size[0] size: " << RGB.size[0].size() << endl;
+        vector< vector<double> > RGB = transposeVec(mulVector(colRGB, transTI));
+        FORI(RGB.size())
+            RGB[i] = mulVectorElement(b, RGB[i]);
+        
+        FORI(190) {
+            FORJ(3) {
+                printf("%f, ", RGB[i][j]);
+            }
+            printf("\n");
+        }
 
         return RGB;
     }
@@ -515,10 +573,25 @@ namespace cat {
             colXYZ[2][i] = _cmf[i].zbar;
         }
         
-        vector< vector<double> > XYZ = mulVector(transTI,
-                                                 colXYZ);
+        vector< vector<double> > XYZ = transposeVec(mulVector(colXYZ,
+                                                              transTI));
         
-//       cout << "XYZ size: " << XYZ.size() << "; " << "XYZ[0] size: " << XYZ[0].size() << endl;
+        FORI(XYZ.size())
+            scaleVector(XYZ[i],
+                        1.0/sumVector(mulVectorElement(colXYZ[1],_illuminate.data)));
+        
+        vector <double> ww = mulVector(colXYZ, _illuminate.data);
+        scaleVector(ww, (1.0/ww[1]));
+        vector <double> w(XYZ_w, XYZ_w+3);
+
+        XYZ = mulVector(XYZ, calCAT(ww, w));
+        
+//        FORI(190) {
+//            FORJ(3) {
+//                printf("%f, ", XYZ[i][j]);
+//            }
+//            printf("\n");
+//        }
         
         return XYZ;
     }
@@ -563,6 +636,8 @@ namespace cat {
     
     void Idt::getIdt() {
         loadIlluminate(_bestIllum);
+        scaleLSC();
+        
         cout << "The best illuminate is: " << _bestIllum << endl;
         
         double BStart[6] = {1.0, 0.0, 0.0, 1.0, 0.0, 0.0};
@@ -570,7 +645,7 @@ namespace cat {
         
         vector< vector<double> > RGB = calRGB(TI);
         vector< vector<double> > XYZ = calXYZ(TI);
-        vector< vector<double> > outLAB = mulVector(XYZ, repmat2d(XYZ_w, 3, 3));
+//        vector< vector<double> > outLAB = mulVector(XYZ, repmat2dr(XYZ_w, 3, 3));
         
         vector < vector<double> > BV(3, vector<double>(3));
         
@@ -584,20 +659,21 @@ namespace cat {
         BV[2][1] = BStart[5];
         BV[2][2] = 1.0 - BStart[4] - BStart[5];
         
-        vector< vector<double> > outCalcXYZt = transposeVec(mulVector(BV,
-                                                 transposeVec(transposeVec(calRGB(TI)))));
+//        vector< vector<double> > outCalcXYZt = transposeVec(mulVector(BV,
+//                                                 transposeVec(transposeVec(calRGB(TI)))));
         
 //        vector< vector<double> > outCalcXYZt = mulVector(calRGB(TI), BV);
         
 //        FORI(190) {
 //            FORJ(3){
-//                printf(" %f ", outLAB[i][j]);
+//                printf(" %f ", RGB[i][j]);
 //            }
 //            printf(" \n");
 //        }
 
-        curveFit(calRGB(TI), calXYZ(TI), BStart);
-        
+        curveFit(RGB, XYZ, BStart);
+//        curveFit(calRGB(TI), calXYZ(TI), BStart);
+
         return;
     };
 

@@ -113,6 +113,7 @@ namespace cat {
             char * _brand;
             char * _model;
             uint8_t _increment;
+            uint8_t _spstMaxCol;
             vector<RGBSen> _rgbsen;
     };
 
@@ -125,16 +126,17 @@ namespace cat {
             void loadIlluminate(const string &path, const char * type="NA");
             void loadTrainingData(const string &path);
             void loadCMF(const string &path);
-            void scaleDaylight(vector<double>& mul);
-            void chooseIlluminate(map< string, vector<double> >& illuCM, const double src[]);
+            void scaleLSC();
+            void chooseIlluminate(map< string, vector<double> >& illuCM, vector<double>& src);
         
             const Spst getCameraSpst() const;
             const illum getIlluminate() const;
         
             vector< double > calCM();
             vector< vector<double> > calTI() const;
-            vector< vector<double> > calRGB( vector< vector<double> > TI) const;
-            vector< vector<double> > calXYZ( vector< vector<double> > TI) const;
+            vector< vector<double> > calCAT(vector<double> src, vector<double> des) const;
+            vector< vector<double> > calRGB( vector< vector<double> > TI ) const;
+            vector< vector<double> > calXYZ( vector< vector<double> > TI ) const;
         
             void curveFit(vector< vector<double> > RGB,
                                   vector< vector<double> > XYZ,
@@ -210,50 +212,30 @@ namespace cat {
                 BV[2][1] = B[5];
                 BV[2][2] = 1.0 - B[4] - B[5];
                 
-                vector< vector<double> > outLAB = mulVector(XYZ, repmat2d(XYZ_w, 3, 3));
+                vector< vector<double> > outLAB = mulVector(XYZ, repmat2dr(XYZ_w, 3, 3));
                 vector< vector<double> > outCalcLAB = calLAB(RGB, BV);
 
                 double dist = 0.0;
                 FORI(190) {
                     FORJ(3){
 //                        printf("%f ", outLAB[i][j]);
-//                        dist += std::pow((outLAB[i][j] - outCalcLAB[i][j]), 2.0);
-                        dist += outLAB[i][j] - outCalcLAB[i][j];
+                        dist += std::pow((outLAB[i][j] - outCalcLAB[i][j]), 2.0);
+//                        dist += outLAB[i][j] - outCalcLAB[i][j];
                     }
 //                    printf("\n");
                 }
                 
 //                cout << dist << endl;
-//                return std::pow(dist, 1.0/2.0);
-                return dist;
+                return std::pow(dist, 1.0/2.0);
+//                return dist;
                 
             }
-
-//            double simpleFunction(const double* B) const
-//            {
-//                double BD[9];
-//                
-//                BD[0] = B[0];
-//                BD[1] = B[1];
-//                BD[2] = 1.0 - B[0] - B[1];
-//                BD[3] = B[2];
-//                BD[4] = B[3];
-//                BD[5] = 1.0 - B[2] - B[3];
-//                BD[6] = B[4];
-//                BD[7] = B[5];
-//                BD[8] = 1.0 - B[4] - B[5];
-//
-//                double tmp = 1.0 - std::pow(BD[0], 2) + BD[1] + BD[2] - BD[5] + BD[3] + (1.0 - BD[4]) + BD[6] - BD[7] + BD[8];
-//
-//                return tmp;
-//            }
         
             bool operator()(const double* const B,
                             double* residual) const {
                 
 //                std::cout << double(B[0]) << ", " << double(B[5]) << ", " << "\n";
                 residual[0] = findDistance(_RGB, _XYZ, B);
-//                residual[0] = simpleFunction(B);
                 
                 return true;
             }

@@ -1099,12 +1099,15 @@ int main(int argc, char *argv[])
                 }
             }
             
-            idt.chooseIlluminate(illuCM, (double *)(C.pre_mul));
+            vector<double> pre_mulV(3, 1.0);
+            FORI(3) pre_mulV[i] = (double)((C.pre_mul)[i]);
+            
+            idt.chooseIlluminate(illuCM, pre_mulV);
             idt.getIdt();
             
-//            for (int i=0; i<4; i++){
+//            FORI(4){
+//                printf("%f, ", pre_mulV[i]);
 //                cout << "day light" << " " << i << ": " << float(C.pre_mul[i]) << endl;
-//                cout << "as shot" << " " << i << ": " << float(C.cam_mul[i]) << endl;
 //            }
             
             libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);

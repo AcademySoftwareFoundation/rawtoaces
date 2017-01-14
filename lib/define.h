@@ -258,29 +258,30 @@ static const float Robertson_uvtTable[][3] = {
 static const float deviceWhite[3] = {1.0, 1.0, 1.0};
 
 // Different Color Adaptation Matrices
-static const float bradford[3][3] = {
+static const double bradford[3][3] = {
     {0.8951,  0.2664, -0.1614},
     {-0.7502, 1.7135,  0.0367},
     {0.0389,  -0.0685, 1.0296}
 };
 
-static const float cat02[3][3] = {
+static const double cat02[3][3] = {
     {0.7328,  0.4296,  -0.1624},
     {-0.7036, 1.6975,  0.0061 },
     {0.0030,  0.0136,  0.9834 }
 };
 
-static const float reillum[3][3] = {
-    {1.6160, -0.3591, -0.2569},
-    {-0.9542, 1.8731,  0.0811},
-    {0.0170,  -0.0333, 1.0163}
-};
-
-static const float CATMatrix[3][3] = {
+static const double CATMatrix[3][3] = {
     { 1.0634731317028,      0.00639793641966071,   -0.0157891874506841 },
     { -0.492082784686793,   1.36823709310019,      0.0913444629573544  },
     { -0.0028137154424595,  0.00463991165243123,   0.91649468506889    }
 };
+
+
+double invertD(double val) {
+    assert (val != 0.0);
+    
+    return 1.0/val;
+}
 
 // Non-class functions
 // For print valarray data purpose
@@ -297,6 +298,19 @@ void printValarray (const valarray<T>&va, string s, int num)
 }
 
 template <typename T>
+const vector <T> repmat(const T* data[], int row, int col) {
+    vector < vector <T> > vect(row, vector<T>(col));
+    FORI(row) {
+        FORJ(col) {
+            vect[i][j] = data[i][j];
+        }
+    }
+    
+    const vector < T > cvect(vect);
+    return cvect;
+}
+
+template <typename T>
 const vector <T> repmat1d(const T data[], int row, int col) {
     vector <T> vect(row*col);
     FORI(row) {
@@ -310,7 +324,7 @@ const vector <T> repmat1d(const T data[], int row, int col) {
 }
 
 template <typename T>
-const vector < vector <T> > repmat2d(const T data[], int row, int col) {
+const vector < vector <T> > repmat2dr(const T data[], int row, int col) {
     vector < vector <T> > vect(row, vector<T>(col));
     FORI(row) {
         FORJ(col) {
@@ -323,9 +337,28 @@ const vector < vector <T> > repmat2d(const T data[], int row, int col) {
 }
 
 template <typename T>
-vector<T> invertMatrix(const vector<T> &mtx)
+const vector < vector <T> > repmat2dc(const T data[], int row, int col) {
+    vector < vector <T> > vect(row, vector<T>(col));
+    FORI(row) {
+        FORJ(col) {
+            vect[i][j] = data[j];
+        }
+    }
+    
+    const vector < vector <T> > cvect(vect);
+    return cvect;
+}
+
+template <typename T>
+vector< vector<T> > invertVM3(const vector< vector<T> > &vMtx)
 {
-    assert (mtx.size() == 9);
+    assert(vMtx.size() == 3 &&
+           (vMtx[0]).size() == 3);
+    
+    vector <T> mtx(9);
+    FORI(3)
+        FORJ(3)
+            mtx[i*3+j] = vMtx[i][j];
     
     T CinvMtx[] = {
         0.0 - mtx[5] * mtx[7] + mtx[4] * mtx[8],
@@ -344,13 +377,27 @@ vector<T> invertMatrix(const vector<T> &mtx)
     
     // pay attention to this
     assert (det != 0);
+    FORI(9)
+        invMtx[i] /= det;
     
-    transform(invMtx.begin(),
-              invMtx.end(),
-              invMtx.begin(),
-              bind1st(multiplies<T>(), det));
+    vector< vector<T> > vMtxR(3, vector<T>(3));
+    FORI(3)
+        FORJ(3)
+            vMtxR[i][j] = invMtx[3*i+j];
     
-    return invMtx;
+    return vMtxR;
+}
+
+template <typename T>
+vector < vector<T> > diagVM(const vector<T>& vct)
+{
+    assert(vct.size() != 0);
+    vector < vector<T> > vctdiag(vct.size(), vector<T>(vct.size(), 0.0));
+    
+    FORI(vct.size())
+        vctdiag[i][i] = vct[i];
+    
+    return vctdiag;
 }
 
 template <typename T>
@@ -389,11 +436,7 @@ vector< vector<T> > transposeVec(const vector< vector<T> > vMtx)
     return vTran;
 }
 
-double invertD(double val) {
-    assert (val != 0.0);
-    
-    return 1.0/val;
-}
+
 
 template <typename T>
 float sumVector(const vector<T>& vct)
@@ -426,6 +469,17 @@ void scaleVector(vector<T>& vct, const T scale)
 }
 
 template <typename T>
+void scaleVectorD(vector<T>& vct){
+    T max = *max_element(vct.begin(), vct.end());
+    
+    transform(vct.begin(), vct.end(), vct.begin(), invertD);
+    transform(vct.begin(), vct.end(), vct.begin(),
+              bind1st(multiplies<T>(), max));
+    
+    return;
+}
+
+template <typename T>
 void minusVector(vector<T>& vct, T sub)
 {
     transform(vct.begin(),
@@ -445,8 +499,19 @@ vector<T> mulVectorElement(const vector<T>& vct1, const vector<T>& vct2)
               vct2.begin(), vct3Element.begin(),
               multiplies<T>());
     
-//    FORI(vct1.size())
-//        vct3Element[i] = vct1[i] * vct2[i];
+    return vct3Element;
+}
+
+
+template <typename T>
+vector<T> divVectorElement(const vector<T>& vct1, const vector<T>& vct2)
+{
+    assert(vct1.size() == vct2.size());
+    
+    vector<T> vct3Element(vct1.size(), 1.0);
+    transform(vct1.begin(), vct1.end(),
+              vct2.begin(), vct3Element.begin(),
+              divides<T>());
     
     return vct3Element;
 }
@@ -473,8 +538,8 @@ template <typename T>
 vector < T > mulVector(const vector< vector<T> >& vct1,
                        const vector<T>& vct2)
 {
-    assert(vct1.size() != 0
-           && vct2.size() != 0);
+    assert(vct1.size() != 0 &&
+           (vct1[0]).size() == vct2.size());
     
     vector< T > vct3(vct1.size(), 1.0);
 
@@ -482,6 +547,13 @@ vector < T > mulVector(const vector< vector<T> >& vct1,
         vct3[i] = (sumVector(mulVectorElement(vct1[i], vct2)));
     
     return vct3;
+}
+
+template <typename T>
+vector < T > mulVector(const vector<T>& vct1,
+                       const vector< vector<T> >& vct2)
+{
+    return mulVector(vct2, vct1);
 }
 
 template <typename T>
@@ -496,6 +568,12 @@ T calSSE(vector<T>& tcp, vector<T>& src)
     float result = accumulate(tmp.begin(), tmp.end(), 0.0f, square<T>());
     
     return result;
+}
+
+template<typename T>
+vector < vector<T> > solveVM(const vector< vector<T> >& vct1, const vector< vector<T> >& vct2)
+{
+    return mulVector(invertVM3(vct1), vct2);
 }
 
 cameraDataPath& cameraPathsFinder() {

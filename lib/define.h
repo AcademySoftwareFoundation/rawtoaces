@@ -51,6 +51,8 @@
 // COLOR ENCODING SYSTEM, OR APPLICATIONS THEREOF, HELD BY PARTIES OTHER 
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
+#ifndef _DEFINE_h__
+#define _DEFINE_h__
 
 #include <assert.h>
 #include <stdlib.h>
@@ -195,18 +197,25 @@ static const double XYZ_acesrgb_3[3][3] = {
     { -0.0028137154424595,  0.00463991165243123,   0.91649468506889    }
 };
 
-//static const double XYZ_acesrgb_3[3][3] = {
-//    { 1.01584,   -0.01773,   0.04637 },
-//    { -0.50780,  1.39129,    0.11917 },
-//    { 0.00846,   -0.01404,   1.21907 }
-//};
-
 static const double XYZ_acesrgb_4[4][4] = {
     { 1.0634731317028,      0.00639793641966071,   -0.0157891874506841,     0.0 },
     { -0.492082784686793,   1.36823709310019,      0.0913444629573544,      0.0 },
     { -0.0028137154424595,  0.00463991165243123,   0.91649468506889,        0.0 },
     { 0.0,                  0.0,                   0.0,                     1.0 }
 
+};
+
+static const double acesrgb_XYZ_3[3][3] = {
+    { 0.952552395938186,    0.0,                   9.36786316604686e-05 },
+    { 0.343966449765075,    0.728166096613485,     -0.0721325463785608  },
+    { 0.0,                             0.0,        1.00882518435159   }
+};
+
+static const double acesrgb_XYZ_4[4][4] = {
+    { 0.952552395938186,    0.0,                   9.36786316604686e-05,    0.0 },
+    { 0.343966449765075,    0.728166096613485,     -0.0721325463785608,     0.0 },
+    { 0.0,                  0.0,                   1.00882518435159,        0.0 },
+    { 0.0,                  0.0,                   0.0,                     1.0},
 };
 
 static const float chromaticitiesACES[4][2] = {
@@ -255,8 +264,6 @@ static const float Robertson_uvtTable[][3] = {
     { 0.33724f, 0.36051f, -116.45f}
 };
 
-static const float deviceWhite[3] = {1.0, 1.0, 1.0};
-
 // Different Color Adaptation Matrices
 static const double bradford[3][3] = {
     {0.8951,  0.2664, -0.1614},
@@ -276,349 +283,6 @@ static const double CATMatrix[3][3] = {
     { -0.0028137154424595,  0.00463991165243123,   0.91649468506889    }
 };
 
+static const float deviceWhite[3] = {1.0, 1.0, 1.0};
 
-double invertD(double val) {
-    assert (val != 0.0);
-    
-    return 1.0/val;
-}
-
-// Non-class functions
-// For print valarray data purpose
-template<class T>
-void printValarray (const valarray<T>&va, string s, int num)
-{
-    assert (num <= va.size());
-    printf("%s:", s.c_str());
-    for (int i=0; i<num; i++) {
-        printf("%f ", va[i]);
-    }
-    printf(";\n");
-    return;
-}
-
-template <typename T>
-const vector <T> repmat(const T* data[], int row, int col) {
-    vector < vector <T> > vect(row, vector<T>(col));
-    FORI(row) {
-        FORJ(col) {
-            vect[i][j] = data[i][j];
-        }
-    }
-    
-    const vector < T > cvect(vect);
-    return cvect;
-}
-
-template <typename T>
-const vector <T> repmat1d(const T data[], int row, int col) {
-    vector <T> vect(row*col);
-    FORI(row) {
-        FORJ(col) {
-            vect[i*col + j] = data[i];
-        }
-    }
-    
-    const vector < T > cvect(vect);
-    return cvect;
-}
-
-template <typename T>
-const vector < vector <T> > repmat2dr(const T data[], int row, int col) {
-    vector < vector <T> > vect(row, vector<T>(col));
-    FORI(row) {
-        FORJ(col) {
-            vect[i][j] = data[i];
-        }
-    }
-    
-    const vector < vector <T> > cvect(vect);
-    return cvect;
-}
-
-template <typename T>
-const vector < vector <T> > repmat2dc(const T data[], int row, int col) {
-    vector < vector <T> > vect(row, vector<T>(col));
-    FORI(row) {
-        FORJ(col) {
-            vect[i][j] = data[j];
-        }
-    }
-    
-    const vector < vector <T> > cvect(vect);
-    return cvect;
-}
-
-template <typename T>
-vector< vector<T> > invertVM3(const vector< vector<T> > &vMtx)
-{
-    assert(vMtx.size() == 3 &&
-           (vMtx[0]).size() == 3);
-    
-    vector <T> mtx(9);
-    FORI(3)
-        FORJ(3)
-            mtx[i*3+j] = vMtx[i][j];
-    
-    T CinvMtx[] = {
-        0.0 - mtx[5] * mtx[7] + mtx[4] * mtx[8],
-        0.0 + mtx[2] * mtx[7] - mtx[1] * mtx[8],
-        0.0 - mtx[2] * mtx[4] + mtx[1] * mtx[5],
-        0.0 + mtx[5] * mtx[6] - mtx[3] * mtx[8],
-        0.0 - mtx[2] * mtx[6] + mtx[0] * mtx[8],
-        0.0 + mtx[2] * mtx[3] - mtx[0] * mtx[5],
-        0.0 - mtx[4] * mtx[6] + mtx[3] * mtx[7],
-        0.0 + mtx[1] * mtx[6] - mtx[0] * mtx[7],
-        0.0 - mtx[1] * mtx[3] + mtx[0] * mtx[4]
-    };
-    
-    vector<T> invMtx(CinvMtx, CinvMtx+sizeof(CinvMtx) / sizeof(T));
-    T det = mtx[0] * invMtx[0] + mtx[1] * invMtx[3] + mtx[2] * invMtx[6];
-    
-    // pay attention to this
-    assert (det != 0);
-    FORI(9)
-        invMtx[i] /= det;
-    
-    vector< vector<T> > vMtxR(3, vector<T>(3));
-    FORI(3)
-        FORJ(3)
-            vMtxR[i][j] = invMtx[3*i+j];
-    
-    return vMtxR;
-}
-
-template <typename T>
-vector < vector<T> > diagVM(const vector<T>& vct)
-{
-    assert(vct.size() != 0);
-    vector < vector<T> > vctdiag(vct.size(), vector<T>(vct.size(), 0.0));
-    
-    FORI(vct.size())
-        vctdiag[i][i] = vct[i];
-    
-    return vctdiag;
-}
-
-template <typename T>
-void transpose(T* mtx[], int row, int col)
-{
-    assert (row != 0 && col != 0);
-    
-    FORI(row) {
-        FORJ(col) {
-            mtx[i][j] ^= mtx[j][i];
-            mtx[i][j] ^= (mtx[j][i] ^= mtx[i][j]);
-        }
-    }
-    
-    return;
-}
-
-template <typename T>
-vector< vector<T> > transposeVec(const vector< vector<T> > vMtx)
-{
-    assert(vMtx.size() != 0
-           && vMtx[0].size() != 0);
-    
-    int row = vMtx.size();
-    int col = vMtx[0].size();
-    
-    assert (row != 0 && col != 0);
-    vector< vector<T> > vTran(col, vector<T>(row));
-    
-    FORI(row) {
-        FORJ(col) {
-            vTran[j][i] = vMtx[i][j];
-        }
-    }
-    
-    return vTran;
-}
-
-
-
-template <typename T>
-float sumVector(const vector<T>& vct)
-{
-    return accumulate(vct.begin(), vct.end(), static_cast<T>(0));
-}
-
-template <typename T>
-vector<T> subVectors(const vector<T>& vct1, const vector<T>& vct2)
-{
-    assert(vct1.size() == vct2.size());
-
-    vector<T> vct3(vct1.size(), 1.0);
-    transform(vct1.begin(), vct1.end(),
-              vct2.begin(), vct3.begin(),
-              minus<T>());
-
-    return vct3;
-}
-
-template <typename T>
-void scaleVector(vector<T>& vct, const T scale)
-{
-    transform(vct.begin(),
-              vct.end(),
-              vct.begin(),
-              bind1st(multiplies<T>(), scale));
-    
-    return;
-}
-
-template <typename T>
-void scaleVectorD(vector<T>& vct){
-    T max = *max_element(vct.begin(), vct.end());
-    
-    transform(vct.begin(), vct.end(), vct.begin(), invertD);
-    transform(vct.begin(), vct.end(), vct.begin(),
-              bind1st(multiplies<T>(), max));
-    
-    return;
-}
-
-template <typename T>
-void minusVector(vector<T>& vct, T sub)
-{
-    transform(vct.begin(),
-              vct.end(),
-              vct.begin(),
-              bind1st(minus<T>(), sub));
-    return;
-}
-
-template <typename T>
-vector<T> mulVectorElement(const vector<T>& vct1, const vector<T>& vct2)
-{
-    assert(vct1.size() == vct2.size());
-    
-    vector<T> vct3Element(vct1.size(), 1.0);
-    transform(vct1.begin(), vct1.end(),
-              vct2.begin(), vct3Element.begin(),
-              multiplies<T>());
-    
-    return vct3Element;
-}
-
-
-template <typename T>
-vector<T> divVectorElement(const vector<T>& vct1, const vector<T>& vct2)
-{
-    assert(vct1.size() == vct2.size());
-    
-    vector<T> vct3Element(vct1.size(), 1.0);
-    transform(vct1.begin(), vct1.end(),
-              vct2.begin(), vct3Element.begin(),
-              divides<T>());
-    
-    return vct3Element;
-}
-
-template <typename T>
-vector < vector<T> > mulVector(const vector< vector<T> >& vct1,
-                               const vector< vector<T> >& vct2)
-{
-    assert(vct1.size() != 0
-           && vct2.size() != 0);
-    
-    vector< vector<T> > vct3(vct1.size(), vector<T>(vct2.size()));
-    
-    FORI(vct1.size()) {
-        FORJ(vct2.size()) {
-            vct3[i][j] = (sumVector(mulVectorElement(vct1[i], vct2[j])));
-        }
-    }
-    
-    return vct3;
-}
-
-template <typename T>
-vector < T > mulVector(const vector< vector<T> >& vct1,
-                       const vector<T>& vct2)
-{
-    assert(vct1.size() != 0 &&
-           (vct1[0]).size() == vct2.size());
-    
-    vector< T > vct3(vct1.size(), 1.0);
-
-    FORI(vct1.size())
-        vct3[i] = (sumVector(mulVectorElement(vct1[i], vct2)));
-    
-    return vct3;
-}
-
-template <typename T>
-vector < T > mulVector(const vector<T>& vct1,
-                       const vector< vector<T> >& vct2)
-{
-    return mulVector(vct2, vct1);
-}
-
-template <typename T>
-T calSSE(vector<T>& tcp, vector<T>& src)
-{
-    assert(tcp.size() == src.size());
-    vector<T> tmp(src.size());
-    
-    FORI(tcp.size())
-        tmp[i] = tcp[i]-src[i];
-    
-    float result = accumulate(tmp.begin(), tmp.end(), 0.0f, square<T>());
-    
-    return result;
-}
-
-template<typename T>
-vector < vector<T> > solveVM(const vector< vector<T> >& vct1, const vector< vector<T> >& vct2)
-{
-    return mulVector(invertVM3(vct1), vct2);
-}
-
-cameraDataPath& cameraPathsFinder() {
-    static cameraDataPath cdp;
-    static bool firstTime = 1;
-    
-    if(firstTime)
-    {
-        vector <string>& cPaths = cdp.paths;
-        
-        string path;
-        const char* env = getenv("RAWTOACES_CAMERASEN_PATH");
-        if (env)
-            path = env;
-        
-        if (path == "") {
-#if defined (WIN32) || defined (WIN64)
-            path = ".";
-            cdp.os = "WIN";
-#else
-            path = ".:/usr/local/lib/RAWTOACES:/usr/local" PACKAGE "-" VERSION "/lib/RAWTOACES";
-            cdp.os = "UNIX";
 #endif
-        }
-        
-        size_t pos = 0;
-        while (pos < path.size()){
-#if defined (WIN32) || defined (WIN64)
-            size_t end = path.find(';', pos);
-#else
-            size_t end = path.find(':', pos);
-#endif
-            
-            if (end == string::npos)
-                end = path.size();
-            
-            string pathItem = path.substr(pos, end-pos);
-            
-            if(find(cPaths.begin(), cPaths.end(), pathItem) == cPaths.end())
-                cPaths.push_back(pathItem);
-            
-            pos = end + 1;
-        }
-    }
-    return cdp;
-}
-
-

@@ -52,9 +52,9 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
-#include "cat.h"
+#include "rta.h"
 
-namespace cat {
+namespace rta {
     Spst::Spst() {
         _brand = null_ptr;
         _model = null_ptr;
@@ -197,7 +197,6 @@ namespace cat {
         
 //        FORI(81) printf("%f ", colMax[i]);
 
-//        printf("%f", sumVector(mulVectorElement(_illuminate.data, colMax)));
         scaleVector(_illuminate.data,
                     1.0/sumVector(mulVectorElement(_illuminate.data, colMax)));
     }
@@ -330,8 +329,6 @@ namespace cat {
         }
         
 //        cout << "Type: " << string(_illuminate.type) << "; " << "Inc: " << int(_illuminate.inc) << "; "<< "Data: " << "\n";
-//        for (int i = 0; i < _illuminate.data.size(); i++)
-//            cout << double(_illuminate.data[i]) << "," << endl;
        
         fin.close();
         
@@ -551,12 +548,12 @@ namespace cat {
         FORI(RGB.size())
             RGB[i] = mulVectorElement(b, RGB[i]);
         
-        FORI(190) {
-            FORJ(3) {
-                printf("%f, ", RGB[i][j]);
-            }
-            printf("\n");
-        }
+//        FORI(190) {
+//            FORJ(3) {
+//                printf("%f, ", RGB[i][j]);
+//            }
+//            printf("\n");
+//        }
 
         return RGB;
     }
@@ -602,8 +599,13 @@ namespace cat {
     {
         
         Problem problem;
+        vector < vector <double> > M(3, vector<double>(3));
+        FORI(3)
+            FORJ(3)
+                M[i][j] = acesrgb_XYZ_3[i][j];
+        
         CostFunction* cost_function =
-                new NumericDiffCostFunction<Objfun, CENTRAL, 1, 6>(new Objfun(RGB, XYZ),
+                new NumericDiffCostFunction<Objfun, CENTRAL, 1, 6>(new Objfun(RGB, XYZ, M),
                                                                    TAKE_OWNERSHIP);
         problem.AddResidualBlock(cost_function,
                                  new CauchyLoss(0.5),
@@ -614,8 +616,8 @@ namespace cat {
         options.minimizer_progress_to_stdout = true;
         Solver::Summary summary;
         Solve(options, &problem, &summary);
-        std::cout << summary.BriefReport() << "\n";
-//        std::cout << summary.FullReport() << "\n";
+//        std::cout << summary.BriefReport() << "\n";
+        std::cout << summary.FullReport() << "\n";
         
         _CAT[0][0] = B[0];
         _CAT[0][1] = B[1];
@@ -627,9 +629,12 @@ namespace cat {
         _CAT[2][1] = B[5];
         _CAT[2][2] = 1.0 - B[4] - B[5];
         
-        FORI(3)
-            FORJ(3)
+        FORI(3) {
+            FORJ(3) {
                 printf("%f ", _CAT[i][j]);
+            }
+            printf("\n");
+        }
         
         return;
     }
@@ -642,11 +647,6 @@ namespace cat {
         
         double BStart[6] = {1.0, 0.0, 0.0, 1.0, 0.0, 0.0};
         vector< vector<double> > TI = calTI();
-        
-        vector< vector<double> > RGB = calRGB(TI);
-        vector< vector<double> > XYZ = calXYZ(TI);
-//        vector< vector<double> > outLAB = mulVector(XYZ, repmat2dr(XYZ_w, 3, 3));
-        
         vector < vector<double> > BV(3, vector<double>(3));
         
         BV[0][0] = BStart[0];
@@ -658,25 +658,11 @@ namespace cat {
         BV[2][0] = BStart[4];
         BV[2][1] = BStart[5];
         BV[2][2] = 1.0 - BStart[4] - BStart[5];
-        
-//        vector< vector<double> > outCalcXYZt = transposeVec(mulVector(BV,
-//                                                 transposeVec(transposeVec(calRGB(TI)))));
-        
-//        vector< vector<double> > outCalcXYZt = mulVector(calRGB(TI), BV);
-        
-//        FORI(190) {
-//            FORJ(3){
-//                printf(" %f ", RGB[i][j]);
-//            }
-//            printf(" \n");
-//        }
 
-        curveFit(RGB, XYZ, BStart);
-//        curveFit(calRGB(TI), calXYZ(TI), BStart);
+        curveFit(calRGB(TI), calXYZ(TI), BStart);
 
         return;
     };
-
 }
 
 

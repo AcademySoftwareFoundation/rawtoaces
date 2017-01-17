@@ -208,14 +208,11 @@ install( FILES "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" DESTINATION
   "${INSTALL_CMAKE_DIR}" COMPONENT dev )
 endif( )
 
-## install camera spectrum sensitivities data, etc.
-## under /usr/local/include/RAWTOACES
 if ( APPLE OR UNIX )
 	install (DIRECTORY data DESTINATION include/RAWTOACES)
 endif()
 
 ### to build rawtoaces ###
-
 #if ( IlmBase_FOUND )
   #add_definitions( -DHAVE_IlmBase=1 )
   #include_directories( ${IlmBase_INCLUDE_DIRS} )
@@ -248,7 +245,7 @@ add_executable( rawtoaces
   rawtoaces.cpp
 )
 
-target_link_libraries(rawtoaces rawtoacesCAT)
+target_link_libraries(rawtoaces rawtoacesIDT)
 
 if ( IlmBase_FOUND )
  target_link_libraries( rawtoaces ${IlmBase_LIBRARIES} )

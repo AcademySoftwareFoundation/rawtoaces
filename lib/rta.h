@@ -52,6 +52,8 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
+#ifndef _CAT_h__
+#define _CAT_h__
 
 // # C++ 11:201103L, C++ 97:199711L
 // #define null_ptr (__cplusplus > 201103L ? (nullptr) : 0)
@@ -67,12 +69,12 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#include "define.h"
+#include "mathOps.h"
 
 using namespace std;
 using namespace ceres;
 
-namespace cat {
+namespace rta {
     class Idt;
     class Spst {
         friend class Idt;
@@ -157,37 +159,32 @@ namespace cat {
     class Objfun {
         public:
             Objfun(vector< vector<double> > RGB,
-                   vector< vector<double> > XYZ): _RGB(RGB), _XYZ(XYZ) { }
+                   vector< vector<double> > XYZ,
+                   vector< vector<double> > M): _RGB(RGB), _XYZ(XYZ), _M(M) { }
         
-            vector< vector<double> > calLAB(const vector < vector<double> > RGB,
-                                            const vector < vector<double> > B) const
+            vector< vector<double> > XYZtoLAB(const vector < vector<double> >& XYZ) const
             {
-                assert(RGB.size() == 190);
+                assert(XYZ.size() == 190);
                 double add = 16.0/116.0;
                 
-                vector< vector<double> > outCalcXYZt = transposeVec(mulVector(B,
-                                                                    transposeVec(transposeVec(RGB))));
-//                vector< vector<double> > outCalcXYZt = mulVector(RGB, B);
-
+                vector< vector<double> > tmpXYZ(190, vector<double>(3, 1.0));
                 FORI(190) {
                     FORJ(3)
                     {
-//                        printf("%f ", outCalcXYZt[i][j]);
-                        outCalcXYZt[i][j] = outCalcXYZt[i][j] / XYZ_w[j];
-                        if (outCalcXYZt[i][j] > e)
-                            outCalcXYZt[i][j] = std::pow(outCalcXYZt[i][j], 1.0/3.0);
+                        tmpXYZ[i][j] = XYZ[i][j] / XYZ_w[j];
+                        if (tmpXYZ[i][j] > e)
+                            tmpXYZ[i][j] = std::pow(tmpXYZ[i][j], 1.0/3.0);
                         else
-                            outCalcXYZt[i][j] = k * outCalcXYZt[i][j] + add;
+                            tmpXYZ[i][j] = k * tmpXYZ[i][j] + add;
                     }
-//                    printf("\n");
                 }
             
                 vector< vector<double> > outCalcLab(190, vector<double>(3, 1.0));
                 FORI(190)
                 {
-                    outCalcLab[i][0] = 116.0 * outCalcXYZt[i][1]  - 16.0;
-                    outCalcLab[i][1] = 500.0 * (outCalcXYZt[i][0] - outCalcXYZt[i][1]);
-                    outCalcLab[i][2] = 200.0 * (outCalcXYZt[i][1] - outCalcXYZt[i][2]);
+                    outCalcLab[i][0] = 116.0 * tmpXYZ[i][1]  - 16.0;
+                    outCalcLab[i][1] = 500.0 * (tmpXYZ[i][0] - tmpXYZ[i][1]);
+                    outCalcLab[i][2] = 200.0 * (tmpXYZ[i][1] - tmpXYZ[i][2]);
                 }
             
                 return outCalcLab;
@@ -212,29 +209,28 @@ namespace cat {
                 BV[2][1] = B[5];
                 BV[2][2] = 1.0 - B[4] - B[5];
                 
-                vector< vector<double> > outLAB = mulVector(XYZ, repmat2dr(XYZ_w, 3, 3));
-                vector< vector<double> > outCalcLAB = calLAB(RGB, BV);
+                vector< vector<double> > outCalcXYZt = transposeVec(mulVector(mulVector(_M, BV),
+                                                                              transposeVec(transposeVec(RGB))));
+                vector< vector<double> > outCalcLAB = XYZtoLAB(outCalcXYZt);
+                vector< vector<double> > outLAB = XYZtoLAB(XYZ);
 
                 double dist = 0.0;
                 FORI(190) {
                     FORJ(3){
 //                        printf("%f ", outLAB[i][j]);
                         dist += std::pow((outLAB[i][j] - outCalcLAB[i][j]), 2.0);
-//                        dist += outLAB[i][j] - outCalcLAB[i][j];
                     }
 //                    printf("\n");
                 }
                 
 //                cout << dist << endl;
-                return std::pow(dist, 1.0/2.0);
-//                return dist;
+//                return std::pow(dist, 1.0/2.0);
+                return dist;
                 
             }
         
             bool operator()(const double* const B,
                             double* residual) const {
-                
-//                std::cout << double(B[0]) << ", " << double(B[5]) << ", " << "\n";
                 residual[0] = findDistance(_RGB, _XYZ, B);
                 
                 return true;
@@ -243,6 +239,7 @@ namespace cat {
         private:
             const vector< vector<double> > _RGB;
             const vector< vector<double> > _XYZ;
+            const vector< vector<double> > _M;
         };
 }
-
+#endif

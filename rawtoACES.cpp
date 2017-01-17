@@ -29,9 +29,9 @@ it under the terms of the one of three licenses as you choose:
 #endif
 
 #include <libraw/libraw.h>
-#include "lib/cat.h"
+#include "lib/rta.h"
 
-using namespace cat;
+using namespace rta;
 
 // Beginning -- For DNG chromatic adoption matrix calculations /
 valarray<float> matrixBradford( )

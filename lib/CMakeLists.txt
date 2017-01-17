@@ -4,14 +4,14 @@ if(UNIX AND NOT APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
 endif()
 
-add_library( rawtoacesCAT SHARED
-   cat.cpp 
+add_library( rawtoacesIDT SHARED
+    rta.cpp 
 )
 
 if ( ceres_FOUND )
-  target_link_libraries( rawtoacesCAT ${CERES_LIBRARIES} )
-  target_link_libraries( rawtoacesCAT ${CERES_LDFLAGS_OTHER} )
+  target_link_libraries( rawtoacesIDT ${CERES_LIBRARIES} )
+  target_link_libraries( rawtoacesIDT ${CERES_LDFLAGS_OTHER} )
 endif()
 
-install( TARGETS rawtoacesCAT DESTINATION lib )
+install( TARGETS rawtoacesIDT DESTINATION lib )
 

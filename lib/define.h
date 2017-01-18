@@ -285,4 +285,26 @@ static const double CATMatrix[3][3] = {
 
 static const float deviceWhite[3] = {1.0, 1.0, 1.0};
 
+// Function to Open Directories
+vector<string> openDir(string path = ".") {
+    
+    DIR *    dir;
+    dirent * pDir;
+    struct stat fStat;
+    vector<string> fPaths;
+    
+    dir = opendir(path.c_str());
+    
+    while ((pDir = readdir(dir))) {
+        string fPath = path + "/" + pDir->d_name;
+        if (stat(fPath.c_str(), &fStat))
+            continue;
+        if (S_ISDIR( fStat.st_mode ))
+            continue;
+        fPaths.push_back(fPath);
+    }
+    
+    return fPaths;
+};
+
 #endif

@@ -140,9 +140,9 @@ namespace rta {
             vector< vector<double> > calRGB( vector< vector<double> > TI ) const;
             vector< vector<double> > calXYZ( vector< vector<double> > TI ) const;
         
-            void curveFit(vector< vector<double> > RGB,
-                                  vector< vector<double> > XYZ,
-                                  double * BStart);
+            bool curveFit(vector< vector<double> > RGB,
+                          vector< vector<double> > XYZ,
+                          double * BStart);
             void getIdt();
         
         private:
@@ -192,10 +192,10 @@ namespace rta {
         
         
             double findDistance(const vector < vector<double> > RGB,
-                                const vector < vector<double> > XYZ,
+                                const vector < vector<double> > outLAB,
                                 const double * const B) const
             {
-                assert(RGB.size() == XYZ.size() && XYZ.size() == 190);
+                assert(RGB.size() == 190);
                 
                 vector < vector<double> > BV(3, vector<double>(3));
                 
@@ -212,26 +212,21 @@ namespace rta {
                 vector< vector<double> > outCalcXYZt = transposeVec(mulVector(mulVector(_M, BV),
                                                                               transposeVec(transposeVec(RGB))));
                 vector< vector<double> > outCalcLAB = XYZtoLAB(outCalcXYZt);
-                vector< vector<double> > outLAB = XYZtoLAB(XYZ);
 
                 double dist = 0.0;
-                FORI(190) {
-                    FORJ(3){
-//                        printf("%f ", outLAB[i][j]);
+                FORI(190)
+                    FORJ(3)
                         dist += std::pow((outLAB[i][j] - outCalcLAB[i][j]), 2.0);
-                    }
-//                    printf("\n");
-                }
                 
-//                cout << dist << endl;
-//                return std::pow(dist, 1.0/2.0);
+                
                 return dist;
                 
             }
         
             bool operator()(const double* const B,
-                            double* residual) const {
-                residual[0] = findDistance(_RGB, _XYZ, B);
+                            double* residual) const
+            {
+                residual[0] = findDistance(_RGB, XYZtoLAB(_XYZ), B);
                 
                 return true;
             }

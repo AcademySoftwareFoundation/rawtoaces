@@ -260,7 +260,6 @@ namespace rta {
                 if(tmp_sen.BSen > max[2])
                     max[2] = tmp_sen.BSen;
                 
-//                cout << "R:" << double(tmp_sen.RSen) << "; " << "G: " << double(tmp_sen.GSen) << "; " << "B: " << double(tmp_sen.BSen) << "\n";
                 rgbsen.push_back(tmp_sen);
             }
             line++;
@@ -327,9 +326,7 @@ namespace rta {
             
             line += 1;
         }
-        
-//        cout << "Type: " << string(_illuminate.type) << "; " << "Inc: " << int(_illuminate.inc) << "; "<< "Data: " << "\n";
-       
+
         fin.close();
         
         return;
@@ -441,16 +438,6 @@ namespace rta {
         return static_cast<const illum>(_illuminate);
     }
     
-//    void Idt::scaleDaylight(vector<double>& mul){
-//        double max = *max_element(mul.begin(), mul.end());
-//        
-//        transform(mul.begin(), mul.end(), mul.begin(), invertD);
-//        transform(mul.begin(), mul.end(), mul.begin(),
-//                  bind1st(multiplies<double>(), max));
-//        
-//        return;
-//    }
-    
     vector<double> Idt::calCM() {
         vector<RGBSen> rgbsen = _cameraSpst.getSensitivity();
         vector< vector<double> > rgbsenV(3, vector<double>(rgbsen.size(), 1.0));
@@ -519,10 +506,6 @@ namespace rta {
         vector< double > wDES = mulVector(des, vect);
         vector< vector<double> > vkm = solveVM(vect, diagVM(divVectorElement(wDES,wSRC)));
         vkm = mulVector(vkm, transposeVec(vect));
-        
-//        FORI(3)
-//            FORJ(3)
-//                printf("%f, ", vkm[i][j]);
         
         return vkm;
     }
@@ -593,11 +576,10 @@ namespace rta {
         return XYZ;
     }
     
-    void Idt::curveFit(vector< vector<double> > RGB,
+    bool Idt::curveFit(vector< vector<double> > RGB,
                                 vector< vector<double> > XYZ,
                                 double * B)
     {
-        
         Problem problem;
         vector < vector <double> > M(3, vector<double>(3));
         FORI(3)
@@ -613,30 +595,42 @@ namespace rta {
         
         Solver::Options options;
         options.linear_solver_type = ceres::DENSE_QR;
-        options.minimizer_progress_to_stdout = true;
+        options.minimizer_progress_to_stdout = false;
+        options.parameter_tolerance = 1e-17;
+//        options.gradient_tolerance = 1e-17;
+        options.function_tolerance = 1e-17;
+        options.max_num_iterations = 100;
+//        options.minimizer_type = LINE_SEARCH;
+        
         Solver::Summary summary;
         Solve(options, &problem, &summary);
 //        std::cout << summary.BriefReport() << "\n";
         std::cout << summary.FullReport() << "\n";
         
-        _CAT[0][0] = B[0];
-        _CAT[0][1] = B[1];
-        _CAT[0][2] = 1.0 - B[0] - B[1];
-        _CAT[1][0] = B[2];
-        _CAT[1][1] = B[3];
-        _CAT[1][2] = 1.0 - B[2] - B[3];
-        _CAT[2][0] = B[4];
-        _CAT[2][1] = B[5];
-        _CAT[2][2] = 1.0 - B[4] - B[5];
         
-        FORI(3) {
-            FORJ(3) {
-                printf("%f ", _CAT[i][j]);
+        if (summary.num_successful_steps) {
+        
+            _CAT[0][0] = B[0];
+            _CAT[0][1] = B[1];
+            _CAT[0][2] = 1.0 - B[0] - B[1];
+            _CAT[1][0] = B[2];
+            _CAT[1][1] = B[3];
+            _CAT[1][2] = 1.0 - B[2] - B[3];
+            _CAT[2][0] = B[4];
+            _CAT[2][1] = B[5];
+            _CAT[2][2] = 1.0 - B[4] - B[5];
+        
+            FORI(3) {
+                FORJ(3) {
+                    printf("%f ", _CAT[i][j]);
+                }
+                printf("\n");
             }
-            printf("\n");
+            
+            return 1;
         }
         
-        return;
+        return 0;
     }
     
     void Idt::getIdt() {

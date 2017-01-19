@@ -137,6 +137,8 @@ valarray<float>  neutralRGBDNG         = valarray<float>(1.0f, 3);
 valarray<float>  cameraXYZWhitePoint   = valarray<float>(1.0f, 3);
 valarray<float>  calibrateIllum        = valarray<float>(1.0f, 2);
 
+struct stat st;
+
 struct CIEXYZ {
     double Xt;
     double Yt;
@@ -189,6 +191,19 @@ struct square
     {
         return (val1 + val2*val2);
     }
+};
+
+static const double neutral3[3][3] = {
+    {1.0, 0.0, 0.0},
+    {0.0, 1.0, 0.0},
+    {0.0, 0.0, 1.0}
+};
+
+static const double neutral4[4][4] = {
+    {1.0, 0.0, 0.0, 0.0},
+    {0.0, 1.0, 0.0, 0.0},
+    {0.0, 0.0, 1.0, 0.0},
+    {0.0, 0.0, 0.0, 1.0},
 };
 
 static const double XYZ_acesrgb_3[3][3] = {
@@ -305,6 +320,11 @@ vector<string> openDir(string path = ".") {
     }
     
     return fPaths;
+};
+
+template<typename T>
+void clearVM(vector<T> vct){
+    vector< T >().swap(vct);
 };
 
 #endif

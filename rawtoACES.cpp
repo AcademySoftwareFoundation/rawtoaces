@@ -366,7 +366,59 @@ valarray <float> matrixChromaticAdaptation (const valarray <float> &whiteFrom,
 // End -- For DNG chromatic adoption matrix calculations //
 
 
-float * convert_to_aces_NonDNG(libraw_processed_image_t *image)
+void apply_IDT(float * pixel,
+               vector< vector<double> > idt,
+               int channel,
+               uint32_t total)
+{
+    if(!pixel) {
+        fprintf(stderr, "The pixel code value may not exist. \n");
+        exit(EXIT_FAILURE);
+    }
+    else {
+        if(channel == 3){
+            for(uint32_t i = 0; i < total; i+=3 ){
+                pixel[i] = idt[0][0]*(pixel[i]) + idt[0][1]*(pixel[i+1])
+                + idt[0][2]*(pixel[i+2]);
+                pixel[i+1] = idt[1][0]*(pixel[i]) + idt[1][1]*(pixel[i+1])
+                + idt[1][2]*(pixel[i+2]);
+                pixel[i+2] = idt[2][0]*(pixel[i]) + idt[2][1]*(pixel[i+1])
+                + idt[2][2]*(pixel[i+2]);
+            }
+        }
+        else if (channel == 4){
+            idt.resize(4);
+            FORI(4)
+                idt[i].resize(4);
+            
+            idt[0][3] = 0.0;
+            idt[1][3] = 0.0;
+            idt[2][3] = 0.0;
+            idt[3][0] = 0.0;
+            idt[3][1] = 0.0;
+            idt[3][2] = 0.0;
+            idt[3][3] = 1.0;
+
+            for(uint32 i = 0; i < total; i+=4 ){
+                pixel[i] = idt[0][0]*pixel[i] + idt[0][1]*pixel[i+1]
+                + idt[0][2]*pixel[i+2] + idt[0][3]*pixel[i+3];
+                pixel[i+1] = idt[1][0]*pixel[i] + idt[1][1]*pixel[i+1]
+                + idt[1][2]*pixel[i+2] + idt[1][3]*pixel[i+3];
+                pixel[i+2] = idt[2][0]*pixel[i] + idt[2][1]*pixel[i+1]
+                + idt[2][2]*pixel[i+2] + idt[2][3]*pixel[i+3];
+                pixel[i+3] = idt[3][0]*pixel[i] + idt[3][1]*pixel[i+1]
+                + idt[3][2]*pixel[i+2] + idt[3][3]*pixel[i+3];
+            }
+        }
+        else {
+            fprintf(stderr, "Currenly support 3 channels and 4 channels. \n");
+            exit(EXIT_FAILURE);
+        }
+    }
+}
+
+float * convert_to_aces_NonDNG(libraw_processed_image_t *image,
+                               vector< vector<double> > idt)
 {
     uchar * pixel = image->data;
     uint32_t total = image->width*image->height*image->colors;
@@ -376,6 +428,8 @@ float * convert_to_aces_NonDNG(libraw_processed_image_t *image)
         aces[i] = static_cast<float>(pixel[i]);
     }
     
+    apply_IDT(aces, idt, image->colors, total);
+    
     if(!aces) {
         fprintf(stderr, "The pixel code value may not exist. \n");
         return 0;
@@ -383,24 +437,24 @@ float * convert_to_aces_NonDNG(libraw_processed_image_t *image)
     else {
         if(image->colors == 3){
             for(uint32_t i = 0; i < total; i+=3 ){
-                aces[i] = XYZ_acesrgb_3[0][0]*(pixel[i]) + XYZ_acesrgb_3[0][1]*(pixel[i+1])
-                + XYZ_acesrgb_3[0][2]*(pixel[i+2]);
-                aces[i+1] = XYZ_acesrgb_3[1][0]*(pixel[i]) + XYZ_acesrgb_3[1][1]*(pixel[i+1])
-                + XYZ_acesrgb_3[1][2]*(pixel[i+2]);
-                aces[i+2] = XYZ_acesrgb_3[2][0]*(pixel[i]) + XYZ_acesrgb_3[2][1]*(pixel[i+1])
-                + XYZ_acesrgb_3[2][2]*(pixel[i+2]);
+                aces[i] = XYZ_acesrgb_3[0][0]*(aces[i]) + XYZ_acesrgb_3[0][1]*(aces[i+1])
+                + XYZ_acesrgb_3[0][2]*(aces[i+2]);
+                aces[i+1] = XYZ_acesrgb_3[1][0]*(aces[i]) + XYZ_acesrgb_3[1][1]*(aces[i+1])
+                + XYZ_acesrgb_3[1][2]*(aces[i+2]);
+                aces[i+2] = XYZ_acesrgb_3[2][0]*(aces[i]) + XYZ_acesrgb_3[2][1]*(aces[i+1])
+                + XYZ_acesrgb_3[2][2]*(aces[i+2]);
             }
         }
         else if (image->colors == 4){
             for(uint32 i = 0; i < total; i+=4 ){
-                aces[i] = XYZ_acesrgb_4[0][0]*pixel[i] + XYZ_acesrgb_4[0][1]*pixel[i+1]
-                + XYZ_acesrgb_4[0][2]*pixel[i+2] + XYZ_acesrgb_4[0][3]*pixel[i+3];
-                aces[i+1] = XYZ_acesrgb_4[1][0]*pixel[i] + XYZ_acesrgb_4[1][1]*pixel[i+1]
-                + XYZ_acesrgb_4[1][2]*pixel[i+2] + XYZ_acesrgb_4[1][3]*pixel[i+3];
-                aces[i+2] = XYZ_acesrgb_4[2][0]*pixel[i] + XYZ_acesrgb_4[2][1]*pixel[i+1]
-                + XYZ_acesrgb_4[2][2]*pixel[i+2] + XYZ_acesrgb_4[2][3]*pixel[i+3];
-                aces[i+3] = XYZ_acesrgb_4[3][0]*pixel[i] + XYZ_acesrgb_4[3][1]*pixel[i+1]
-                + XYZ_acesrgb_4[3][2]*pixel[i+2] + XYZ_acesrgb_4[3][3]*pixel[i+3];
+                aces[i] = XYZ_acesrgb_4[0][0]*aces[i] + XYZ_acesrgb_4[0][1]*aces[i+1]
+                + XYZ_acesrgb_4[0][2]*aces[i+2] + XYZ_acesrgb_4[0][3]*aces[i+3];
+                aces[i+1] = XYZ_acesrgb_4[1][0]*aces[i] + XYZ_acesrgb_4[1][1]*aces[i+1]
+                + XYZ_acesrgb_4[1][2]*aces[i+2] + XYZ_acesrgb_4[1][3]*aces[i+3];
+                aces[i+2] = XYZ_acesrgb_4[2][0]*aces[i] + XYZ_acesrgb_4[2][1]*aces[i+1]
+                + XYZ_acesrgb_4[2][2]*aces[i+2] + XYZ_acesrgb_4[2][3]*aces[i+3];
+                aces[i+3] = XYZ_acesrgb_4[3][0]*aces[i] + XYZ_acesrgb_4[3][1]*aces[i+1]
+                + XYZ_acesrgb_4[3][2]*aces[i+2] + XYZ_acesrgb_4[3][3]*aces[i+3];
             }
         }
         else {
@@ -411,54 +465,6 @@ float * convert_to_aces_NonDNG(libraw_processed_image_t *image)
     
     return aces;
  }
-
-float * convert_to_aces_NonDNG_IDT(libraw_processed_image_t *image,
-                                   const float* idt[3])
-{
-    uchar * pixel = image->data;
-    uint32_t total = image->width*image->height*image->colors;
-    float * aces = new (std::nothrow) float[total];
-    
-    for(uint32_t i = 0; i < total; i++ ){
-        aces[i] = static_cast<float>(pixel[i]);
-    }
-    
-    if(!aces) {
-        fprintf(stderr, "The pixel code value may not exist. \n");
-        return 0;
-    }
-    else {
-        if(image->colors == 3){
-            for(uint32_t i = 0; i < total; i+=3 ){
-                aces[i] = idt[0][0]*(pixel[i]) + idt[0][1]*(pixel[i+1])
-                + idt[0][2]*(pixel[i+2]);
-                aces[i+1] = idt[1][0]*(pixel[i]) + idt[1][1]*(pixel[i+1])
-                + idt[1][2]*(pixel[i+2]);
-                aces[i+2] = idt[2][0]*(pixel[i]) + idt[2][1]*(pixel[i+1])
-                + idt[2][2]*(pixel[i+2]);
-            }
-        }
-//        else if (image->colors == 4){
-//            for(uint32 i = 0; i < total; i+=4 ){
-//                aces[i] = XYZ_acesrgb_4[0][0]*pixel[i] + XYZ_acesrgb_4[0][1]*pixel[i+1]
-//                + XYZ_acesrgb_4[0][2]*pixel[i+2] + XYZ_acesrgb_4[0][3]*pixel[i+3];
-//                aces[i+1] = XYZ_acesrgb_4[1][0]*pixel[i] + XYZ_acesrgb_4[1][1]*pixel[i+1]
-//                + XYZ_acesrgb_4[1][2]*pixel[i+2] + XYZ_acesrgb_4[1][3]*pixel[i+3];
-//                aces[i+2] = XYZ_acesrgb_4[2][0]*pixel[i] + XYZ_acesrgb_4[2][1]*pixel[i+1]
-//                + XYZ_acesrgb_4[2][2]*pixel[i+2] + XYZ_acesrgb_4[2][3]*pixel[i+3];
-//                aces[i+3] = XYZ_acesrgb_4[3][0]*pixel[i] + XYZ_acesrgb_4[3][1]*pixel[i+1]
-//                + XYZ_acesrgb_4[3][2]*pixel[i+2] + XYZ_acesrgb_4[3][3]*pixel[i+3];
-//            }
-//        }
-        else {
-            fprintf(stderr, "Currenly support 3 channels and 4 channels. \n");
-            return 0;
-        }
-    }
-    
-    return aces;
-}
-
 
 float * convert_to_aces_DNG(
 //                            libraw_rawdata_t R,
@@ -552,23 +558,14 @@ float * convert_to_aces_DNG(
     return aces;
 }
 
-float * prepareAcesData_NonDNG(libraw_processed_image_t *image)
+float * prepareAcesData_NonDNG(libraw_processed_image_t *image,
+                               vector< vector<double> > idt )
 {
     float * pixels = 0;
-    pixels = convert_to_aces_NonDNG(image);
+    pixels = convert_to_aces_NonDNG(image, idt);
     
     return pixels;
 
-}
-
-float * prepareAcesData_NonDNG_IDT(libraw_processed_image_t *image,
-                                   const float* idt[3])
-{
-    float * pixels = 0;
-    pixels = convert_to_aces_NonDNG_IDT(image, idt);
-    
-    return pixels;
-    
 }
 
 float * prepareAcesData_DNG(libraw_rawdata_t R,
@@ -738,6 +735,70 @@ void aces_write(const char * name,
     x.saveImageObject ( );
 }
 
+vector< vector<double> > prepareIDT(const char * cameraSenPath,
+                                    const char * illumType,
+                                    const char * make,
+                                    const char * model,
+                                    float * pre_mul)
+{
+    //  Idt * idt = new Idt();
+    Idt idt;
+    
+    if (cameraSenPath) {
+        if (stat(static_cast<const char *>(cameraSenPath), &st)) {
+            fprintf(stderr,"The camera sensitivity file does not seem to exist.\n");
+            exit(EXIT_FAILURE);
+        }
+        
+        idt.loadCameraSpst(cameraSenPath,
+                           static_cast<const char *>(make),
+                           static_cast<const char *>(model));
+    }
+    else {
+        if(!stat(FILEPATH, &st)) {
+            vector<string> cFiles = openDir(static_cast<string>(FILEPATH)
+                                            +"/camera");
+            
+            for(vector<string>::iterator file = cFiles.begin(); file != cFiles.end(); ++file){
+                string fn(*file);
+                if(fn.find("_380_780") !=std::string::npos)
+                    idt.loadCameraSpst(fn,
+                                       static_cast<const char *>(make),
+                                       static_cast<const char *>(model));
+            }
+        }
+    }
+    
+    idt.loadTrainingData(static_cast<string>(FILEPATH)+"/training/training_spectral");
+    idt.loadCMF(static_cast<string>(FILEPATH)+"/cmf/cmf_193");
+    
+    map< string, vector<double> > illuCM;
+    if(!stat(FILEPATH, &st)) {
+        vector<string> iFiles = openDir(static_cast<string>(FILEPATH)
+                                        +"illuminate");
+        for(vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file){
+            string fn(*file);
+            if (illumType)
+                idt.loadIlluminate(fn, static_cast<const char *>(illumType));
+            else {
+                if(fn.find("_380_780") != std::string::npos){
+                    idt.loadIlluminate(fn);
+                    illuCM[static_cast<string>(*file)] = idt.calCM();
+                }
+            }
+        }
+    }
+    
+    vector<double> pre_mulV(3, 1.0);
+    FORI(3) pre_mulV[i] = (double)(pre_mul[i]);
+    
+    idt.chooseIlluminate(illuCM, pre_mulV);
+    idt.calIDT();
+
+    return idt.getIDT();
+
+}
+
 void usage(const char *prog)
 {
     printf("rawtoACES\n");
@@ -843,8 +904,7 @@ int main(int argc, char *argv[])
     char opm,opt,*cp,*sp,*path,*cameraSenPath, *illumType;
     int use_bigfile=0, use_timing=0;
     float scale = 1.0;
-    bool checkMul = 0, userCameraSen = 0, userIllum = 0;
-    struct stat st;
+    bool checkMul = 0;
     
 #ifndef WIN32
     int msize = 0,use_mmap=0;
@@ -922,11 +982,9 @@ int main(int argc, char *argv[])
               case 'd':  use_timing            = 1;  break;
               case 'M':  scale                 = atof(argv[arg++]); break;
               case 'Q':
-                      userCameraSen = 1;
                       cameraSenPath = (char *)(argv[arg++]);
                       break;
               case 'T':
-                      userIllum = 1;
                       illumType = (char *)(argv[arg++]);
                       break;
                       
@@ -1028,7 +1086,7 @@ int main(int argc, char *argv[])
                 timerprint("LibRaw::unpack()",argv[arg]);
             
             OUT.use_camera_matrix  = 0;
-            OUT.output_color       = 5;
+            OUT.output_color       = 0;
             OUT.highlight          = 0;
             OUT.use_camera_wb      = 1;
             OUT.gamm[0]            = 1.0;
@@ -1082,84 +1140,19 @@ int main(int argc, char *argv[])
             else if(verbosity)
                 printf("Writing file %s\n",outfn);
             
-//            FORI(4){
-//                printf("%f, ", pre_mulV[i]);
-//                cout << "day light" << " " << i << ": " << float(C.pre_mul[i]) << endl;
-//            }
-            
-            libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
-            if(use_timing)
-                timerprint("LibRaw::dcraw_make_mem_image()",argv[arg]);
-            
-            
             if (P1.dng_version == 0) {
-                if (userCameraSen) {
-                    
-                    // Beginning of IDT work
-                    //  Idt * idt = new Idt();
-                    Idt idt;
-                    if (cameraSenPath) {
-                        if (stat(static_cast<const char *>(cameraSenPath), &st)) {
-                            fprintf(stderr,"The camera sensitivity file does not seem to exist.\n");
-                            exit(EXIT_FAILURE);
-                        }
-                        
-                        idt.loadCameraSpst(cameraSenPath,
-                                           static_cast<const char *>(P1.make),
-                                           static_cast<const char *>(P1.model));
-                    }
-                    else {
-                        if(!stat(FILEPATH, &st)) {
-                            vector<string> cFiles = openDir(static_cast<string>(FILEPATH)
-                                                            +"/camera");
-                            
-                            for(vector<string>::iterator file = cFiles.begin(); file != cFiles.end(); ++file){
-                                string fn(*file);
-                                if(fn.find("_380_780") !=std::string::npos)
-                                    idt.loadCameraSpst(fn,
-                                                       static_cast<const char *>(P1.make),
-                                                       static_cast<const char *>(P1.model));
-                            }
-                        }
-                    }
-                    
-                    idt.loadTrainingData(static_cast<string>(FILEPATH)+"/training/training_spectral");
-                    idt.loadCMF(static_cast<string>(FILEPATH)+"/cmf/cmf_193");
-                    
-                    map< string, vector<double> > illuCM;
-                    if(!stat(FILEPATH, &st)) {
-                        vector<string> iFiles = openDir(static_cast<string>(FILEPATH)
-                                                        +"illuminate");
-                        for(vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file){
-                            string fn(*file);
-                            if (userIllum)
-                                idt.loadIlluminate(fn, static_cast<const char *>(illumType));
-                            else {
-                                if(fn.find("_380_780") != std::string::npos){
-                                    idt.loadIlluminate(fn);
-                                    illuCM[static_cast<string>(*file)] = idt.calCM();
-                                }
-                            }
-                        }
-                    }
-                    
-                    vector<double> pre_mulV(3, 1.0);
-                    FORI(3) pre_mulV[i] = (double)((C.pre_mul)[i]);
-                    
-                    idt.chooseIlluminate(illuCM, pre_mulV);
-                    idt.getIdt();
-                    
-//                    float * aces = prepareAcesData_NonDNG_IDT(post_image);
-//                    aces_write(outfn,
-//                               post_image->width,
-//                               post_image->height,
-//                               post_image->colors,
-//                               post_image->bits,
-//                               aces,
-//                               scale);
-                }
-                else {
-                    float * aces = prepareAcesData_NonDNG(post_image);
+                    // IDT work
+                    vector< vector<double> > idt = prepareIDT(static_cast<const char *>(cameraSenPath),
+                                                              static_cast<const char *>(illumType),
+                                                              static_cast<const char *>(P1.make),
+                                                              static_cast<const char *>(P1.model),
+                                                              C.pre_mul);
+                
+                    libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
+                    if(use_timing)
+                        timerprint("LibRaw::dcraw_make_mem_image()",argv[arg]);
+                
+                    float * aces = prepareAcesData_NonDNG(post_image, idt);
                     aces_write(outfn,
                                post_image->width,
                                post_image->height,
@@ -1167,7 +1160,8 @@ int main(int argc, char *argv[])
                                post_image->bits,
                                aces,
                                scale);
-                }
+                
+                    clearVM(idt);
             }
             else {
 //                float * aces = prepareAcesData_DNG(R,P1);
@@ -1180,6 +1174,10 @@ int main(int argc, char *argv[])
 //                           aces);
 //                printf("%i,%i,%i\n",post_image->width,post_image->height,post_image->colors);
 //                printf("%i,%i,%i\n",R.sizes.width,R.sizes.height,P1.colors);
+                
+                libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
+                if(use_timing)
+                    timerprint("LibRaw::dcraw_make_mem_image()",argv[arg]);
                 
                 float * aces = prepareAcesData_DNG(R, post_image);
                 aces_write(outfn,

@@ -156,24 +156,31 @@ namespace rta {
     Idt::Idt() {
         _outputEncoding = "ACES";
         _bestIllum = " ";
-//        *_CAT[0] = CATMatrix[0][0];
         
-        for (int i=0; i<81; i++) {
+        FORI(81) {
             _trainingSpec.push_back(trainSpec());
             _cmf.push_back(CMF());
+        }
+        
+        _idt.resize(3);
+        FORI(3) {
+            _idt[i].resize(3);
+            FORJ(3)
+                _idt[i][j] = neutral3[i][j];
         }
     }
     
     Idt::~Idt() {
         vector< CMF >().swap(_cmf);
         vector< trainSpec >().swap(_trainingSpec);
+        vector< vector<double> >().swap(_idt);
         
 //        FORI(3) {
-//            double * currentPtr = _CAT[i];
+//            double * currentPtr = _idt[i];
 //            free(currentPtr);
 //        }
-//        
-//        free(_CAT);
+      
+//        free(_idt);
     }
     
     void Idt::scaleLSC(){
@@ -195,10 +202,10 @@ namespace rta {
                 return;
         }
         
-//        FORI(81) printf("%f ", colMax[i]);
-
         scaleVector(_illuminate.data,
                     1.0/sumVector(mulVectorElement(_illuminate.data, colMax)));
+        
+//        clearVM(colMax);
     }
     
     void Idt::loadCameraSpst(const string & path, const char * maker, const char * model) {
@@ -483,12 +490,13 @@ namespace rta {
 
         vector< vector<double> > TI(81, vector<double>(190));
         
-        vector<double> illumData(_illuminate.data);
+//        vector<double> illumData(_illuminate.data);
 //        scaleVector(illumData, 1.0/_illuminate.index);
         
         FORI(81)
             FORJ(190)
                 TI[i][j] = _illuminate.data[i] * (_trainingSpec[i].data)[j];
+        
         
         return TI;
     }
@@ -507,6 +515,9 @@ namespace rta {
         vector< vector<double> > vkm = solveVM(vect, diagVM(divVectorElement(wDES,wSRC)));
         vkm = mulVector(vkm, transposeVec(vect));
         
+        clearVM(wSRC);
+        clearVM(wDES);
+
         return vkm;
     }
     
@@ -537,6 +548,8 @@ namespace rta {
 //            }
 //            printf("\n");
 //        }
+        
+        clearVM(b);
 
         return RGB;
     }
@@ -573,6 +586,9 @@ namespace rta {
 //            printf("\n");
 //        }
         
+        clearVM(ww);
+        clearVM(w);
+
         return XYZ;
     }
     
@@ -600,29 +616,30 @@ namespace rta {
 //        options.gradient_tolerance = 1e-17;
         options.function_tolerance = 1e-17;
         options.max_num_iterations = 100;
-//        options.minimizer_type = LINE_SEARCH;
+        options.minimizer_type = LINE_SEARCH;
         
         Solver::Summary summary;
         Solve(options, &problem, &summary);
 //        std::cout << summary.BriefReport() << "\n";
         std::cout << summary.FullReport() << "\n";
         
-        
         if (summary.num_successful_steps) {
-        
-            _CAT[0][0] = B[0];
-            _CAT[0][1] = B[1];
-            _CAT[0][2] = 1.0 - B[0] - B[1];
-            _CAT[1][0] = B[2];
-            _CAT[1][1] = B[3];
-            _CAT[1][2] = 1.0 - B[2] - B[3];
-            _CAT[2][0] = B[4];
-            _CAT[2][1] = B[5];
-            _CAT[2][2] = 1.0 - B[4] - B[5];
-        
+            
+            _idt[0][0] = B[0];
+            _idt[0][1] = B[1];
+            _idt[0][2] = 1.0 - B[0] - B[1];
+            _idt[1][0] = B[2];
+            _idt[1][1] = B[3];
+            _idt[1][2] = 1.0 - B[2] - B[3];
+            _idt[2][0] = B[4];
+            _idt[2][1] = B[5];
+            _idt[2][2] = 1.0 - B[4] - B[5];
+            
+//            _idt = mulVector(M, _idt);
+
             FORI(3) {
                 FORJ(3) {
-                    printf("%f ", _CAT[i][j]);
+                    printf("%f ", _idt[i][j]);
                 }
                 printf("\n");
             }
@@ -633,7 +650,7 @@ namespace rta {
         return 0;
     }
     
-    void Idt::getIdt() {
+    void Idt::calIDT() {
         loadIlluminate(_bestIllum);
         scaleLSC();
         
@@ -641,22 +658,14 @@ namespace rta {
         
         double BStart[6] = {1.0, 0.0, 0.0, 1.0, 0.0, 0.0};
         vector< vector<double> > TI = calTI();
-        vector < vector<double> > BV(3, vector<double>(3));
         
-        BV[0][0] = BStart[0];
-        BV[0][1] = BStart[1];
-        BV[0][2] = 1.0 - BStart[0] - BStart[1];
-        BV[1][0] = BStart[2];
-        BV[1][1] = BStart[3];
-        BV[1][2] = 1.0 - BStart[2] - BStart[3];
-        BV[2][0] = BStart[4];
-        BV[2][1] = BStart[5];
-        BV[2][2] = 1.0 - BStart[4] - BStart[5];
-
         curveFit(calRGB(TI), calXYZ(TI), BStart);
-
-        return;
-    };
+        clearVM(TI);
+    }
+    
+    vector< vector<double> > Idt::getIDT() const {
+        return _idt;
+    }
 }
 
 

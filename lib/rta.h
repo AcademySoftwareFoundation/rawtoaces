@@ -52,8 +52,8 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
-#ifndef _CAT_h__
-#define _CAT_h__
+#ifndef _RTA_h__
+#define _RTA_h__
 
 // # C++ 11:201103L, C++ 97:199711L
 // #define null_ptr (__cplusplus > 201103L ? (nullptr) : 0)
@@ -143,8 +143,10 @@ namespace rta {
             bool curveFit(vector< vector<double> > RGB,
                           vector< vector<double> > XYZ,
                           double * BStart);
-            void getIdt();
+            void calIDT();
         
+            vector< vector<double> > getIDT() const;
+
         private:
             string  _outputEncoding;
             string  _bestIllum;
@@ -153,7 +155,7 @@ namespace rta {
         
             vector<CMF> _cmf;
             vector<trainSpec> _trainingSpec;
-            double _CAT[3][3];
+            vector< vector<double> > _idt;
     };
     
     class Objfun {
@@ -186,7 +188,9 @@ namespace rta {
                     outCalcLab[i][1] = 500.0 * (tmpXYZ[i][0] - tmpXYZ[i][1]);
                     outCalcLab[i][2] = 200.0 * (tmpXYZ[i][1] - tmpXYZ[i][2]);
                 }
-            
+                
+                clearVM(tmpXYZ);
+                
                 return outCalcLab;
             }
         
@@ -218,9 +222,11 @@ namespace rta {
                     FORJ(3)
                         dist += std::pow((outLAB[i][j] - outCalcLAB[i][j]), 2.0);
                 
-                
+                clearVM(BV);
+                clearVM(outCalcXYZt);
+                clearVM(outCalcLAB);
+
                 return dist;
-                
             }
         
             bool operator()(const double* const B,

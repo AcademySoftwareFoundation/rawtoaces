@@ -163,8 +163,10 @@ namespace rta {
         }
         
         _idt.resize(3);
+        _wb.resize(3);
         FORI(3) {
             _idt[i].resize(3);
+            _wb[i] = 1.0;
             FORJ(3)
                 _idt[i][j] = neutral3[i][j];
         }
@@ -173,6 +175,7 @@ namespace rta {
     Idt::~Idt() {
         vector< CMF >().swap(_cmf);
         vector< trainSpec >().swap(_trainingSpec);
+        vector< double >().swap(_wb);
         vector< vector<double> >().swap(_idt);
         
 //        FORI(3) {
@@ -209,12 +212,14 @@ namespace rta {
     }
     
     void Idt::loadCameraSpst(const string & path, const char * maker, const char * model) {
+        assert(path.find("_380_780") != std::string::npos);
+
         ifstream fin;
         fin.open(path);
         uint8_t line = 0;
         
         if(!fin.good()) {
-            fprintf(stderr, "The file may not exist.\n");
+            fprintf(stderr, "The Camera Sensitivity data file may not exist.\n");
             exit(EXIT_FAILURE);
         }
         
@@ -284,6 +289,8 @@ namespace rta {
     }
     
     void Idt::loadIlluminate(const string &path, const char * type) {
+        assert(path.find("_380_780") != std::string::npos);
+        
         ifstream fin;
         fin.open(path);
         
@@ -291,7 +298,7 @@ namespace rta {
         int wl = 380;
         
         if(!fin.good()) {
-            fprintf(stderr, "The file may not exist.\n");
+            fprintf(stderr, "The Illuminate Data file may not exist.\n");
             exit(EXIT_FAILURE);
         }
         
@@ -347,7 +354,7 @@ namespace rta {
         uint16_t wl = 380;
         
         if(!fin.good()) {
-            fprintf(stderr, "The file may not exist.\n");
+            fprintf(stderr, "The Training Data file may not exist.\n");
             exit(EXIT_FAILURE);
         }
         
@@ -437,12 +444,49 @@ namespace rta {
         fin.close();
     }
     
-    const Spst Idt::getCameraSpst() const {
-        return static_cast<const Spst>(_cameraSpst);
+    void Idt::calWB(){
+        assert(_cameraSpst._rgbsen.size() > 0);
+        
+        loadIlluminate(_bestIllum);
+        scaleLSC();
+        
+        cout << "The best illuminate is: " << _bestIllum << endl;
+
+        vector< vector<double> > colRGB(3, vector<double>(81, 1.0));
+        
+        FORI(81) {
+            colRGB[0][i] = _cameraSpst._rgbsen[i].RSen;
+            colRGB[1][i] = _cameraSpst._rgbsen[i].GSen;
+            colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
+        }
+        
+        _wb = mulVector(colRGB, _illuminate.data);
+        clearVM(colRGB);
+        
+        FORI(_wb.size()) {
+            _wb[i] = invertD(_wb[i]);
+        }
     }
-    
-    const illum Idt::getIlluminate() const {
-        return static_cast<const illum>(_illuminate);
+  
+    void Idt::chooseIlluminate(map< string, vector<double> >& illuCM,
+                               vector<double>& src) {
+        double sse = numeric_limits<double>::max();
+        
+        for (map< string, vector<double> >::iterator it = illuCM.begin(); it!=illuCM.end(); ++it){
+            double tmp = calSSE(it->second, src);
+            if (sse > tmp) {
+                sse = tmp;
+                _bestIllum = it->first;
+            }
+        }
+        
+        if((_illuminate.data).size() != 0){
+            _illuminate.type = "";
+            _illuminate.inc = 5;
+            _illuminate.data.clear();
+        }
+
+        return;
     }
     
     vector<double> Idt::calCM() {
@@ -462,37 +506,11 @@ namespace rta {
         return CM;
     }
     
-    void Idt::chooseIlluminate(map< string, vector<double> >& illuCM,
-                               vector<double>& src) {
-        double sse = numeric_limits<double>::max();
-//        vector<double> vsrc(src, src+3);
-        
-        for (map< string, vector<double> >::iterator it = illuCM.begin(); it!=illuCM.end(); ++it){
-            double tmp = calSSE(it->second, src);
-            if (sse > tmp) {
-                sse = tmp;
-                _bestIllum = it->first;
-            }
-        }
-        
-        if((_illuminate.data).size() != 0){
-            _illuminate.type = "";
-            _illuminate.inc = 5;
-            _illuminate.data.clear();
-        }
-
-        return;
-    }
-    
     vector< vector<double> > Idt::calTI() const {
         assert(_illuminate.data.size() == 81 &&
                _trainingSpec[0].data.size() == 190);
 
         vector< vector<double> > TI(81, vector<double>(190));
-        
-//        vector<double> illumData(_illuminate.data);
-//        scaleVector(illumData, 1.0/_illuminate.index);
-        
         FORI(81)
             FORJ(190)
                 TI[i][j] = _illuminate.data[i] * (_trainingSpec[i].data)[j];
@@ -519,39 +537,6 @@ namespace rta {
         clearVM(wDES);
 
         return vkm;
-    }
-    
-    vector< vector<double> > Idt::calRGB(vector< vector<double> > TI) const {
-        assert(TI.size() == 81);
-        
-        vector< vector<double> > transTI = transposeVec(TI);
-        vector< vector<double> > colRGB(3, vector<double>(TI.size(), 1.0));
-        
-        FORI(81) {
-            colRGB[0][i] = _cameraSpst._rgbsen[i].RSen;
-            colRGB[1][i] = _cameraSpst._rgbsen[i].GSen;
-            colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
-        }
-
-        vector<double> b = mulVector(colRGB, _illuminate.data);
-        FORI(b.size()) {
-            b[i] = invertD(b[i]);
-        }
-        
-        vector< vector<double> > RGB = transposeVec(mulVector(colRGB, transTI));
-        FORI(RGB.size())
-            RGB[i] = mulVectorElement(b, RGB[i]);
-        
-//        FORI(190) {
-//            FORJ(3) {
-//                printf("%f, ", RGB[i][j]);
-//            }
-//            printf("\n");
-//        }
-        
-        clearVM(b);
-
-        return RGB;
     }
     
     vector< vector<double> > Idt::calXYZ(vector< vector<double> > TI) const {
@@ -590,6 +575,39 @@ namespace rta {
         clearVM(w);
 
         return XYZ;
+    }
+    
+    
+    vector< vector<double> > Idt::calRGB(vector< vector<double> > TI) const {
+        assert(TI.size() == 81);
+        
+        vector< vector<double> > transTI = transposeVec(TI);
+        vector< vector<double> > colRGB(3, vector<double>(TI.size(), 1.0));
+        
+        FORI(81) {
+            colRGB[0][i] = _cameraSpst._rgbsen[i].RSen;
+            colRGB[1][i] = _cameraSpst._rgbsen[i].GSen;
+            colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
+        }
+        
+        vector< vector<double> > RGB = transposeVec(mulVector(colRGB, transTI));
+        FORI(RGB.size())
+        RGB[i] = mulVectorElement(_wb, RGB[i]);
+        
+//        FORI(3) printf("%f, ", _wb[i]);
+//        printf("\n\n");
+        
+//        FORI(190) {
+//            FORJ(3) {
+//                printf("%f, ", RGB[i][j]);
+//            }
+//            printf("\n");
+//        }
+        
+        clearVM(transTI);
+        clearVM(colRGB);
+        
+        return RGB;
     }
     
     bool Idt::curveFit(vector< vector<double> > RGB,
@@ -635,8 +653,6 @@ namespace rta {
             _idt[2][1] = B[5];
             _idt[2][2] = 1.0 - B[4] - B[5];
             
-//            _idt = mulVector(M, _idt);
-
             FORI(3) {
                 FORJ(3) {
                     printf("%f ", _idt[i][j]);
@@ -650,21 +666,31 @@ namespace rta {
         return 0;
     }
     
-    void Idt::calIDT() {
-        loadIlluminate(_bestIllum);
-        scaleLSC();
-        
-        cout << "The best illuminate is: " << _bestIllum << endl;
+    bool Idt::calIDT() {
+//        loadIlluminate(_bestIllum);
+//        scaleLSC();
+        calWB();
         
         double BStart[6] = {1.0, 0.0, 0.0, 1.0, 0.0, 0.0};
         vector< vector<double> > TI = calTI();
         
-        curveFit(calRGB(TI), calXYZ(TI), BStart);
-        clearVM(TI);
+        return curveFit(calRGB(TI), calXYZ(TI), BStart);
     }
     
-    vector< vector<double> > Idt::getIDT() const {
-        return _idt;
+    const Spst Idt::getCameraSpst() const {
+        return static_cast<const Spst>(_cameraSpst);
+    }
+    
+    const illum Idt::getIlluminate() const {
+        return static_cast<const illum>(_illuminate);
+    }
+    
+    const vector< vector<double> > Idt::getIDT() const {
+        return static_cast< vector< vector<double> > >(_idt);
+    }
+    
+    const vector< double > Idt::getWB() const {
+        return static_cast< vector<double> >(_wb);
     }
 }
 

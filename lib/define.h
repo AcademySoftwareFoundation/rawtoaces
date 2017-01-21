@@ -139,6 +139,8 @@ valarray<float>  calibrateIllum        = valarray<float>(1.0f, 2);
 
 struct stat st;
 
+double e_max = 1.0000000;
+
 struct CIEXYZ {
     double Xt;
     double Yt;
@@ -183,6 +185,11 @@ struct cameraDataPath {
 
 const double e = 216.0/24389.0;
 const double k = (24389.0/27.0)/116.0;
+
+double clip (double val, double target)
+{
+    return min(val, target);
+}
 
 template<typename T>
 struct square

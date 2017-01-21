@@ -128,24 +128,27 @@ namespace rta {
             void loadIlluminate(const string &path, const char * type="NA");
             void loadTrainingData(const string &path);
             void loadCMF(const string &path);
-            void scaleLSC();
             void chooseIlluminate(map< string, vector<double> >& illuCM, vector<double>& src);
-        
-            const Spst getCameraSpst() const;
-            const illum getIlluminate() const;
+            void scaleLSC();
+            void calWB();
         
             vector< double > calCM();
             vector< vector<double> > calTI() const;
             vector< vector<double> > calCAT(vector<double> src, vector<double> des) const;
-            vector< vector<double> > calRGB( vector< vector<double> > TI ) const;
             vector< vector<double> > calXYZ( vector< vector<double> > TI ) const;
+            vector< vector<double> > calRGB( vector< vector<double> > TI ) const;
         
             bool curveFit(vector< vector<double> > RGB,
                           vector< vector<double> > XYZ,
                           double * BStart);
-            void calIDT();
+            bool calIDT();
         
-            vector< vector<double> > getIDT() const;
+            const Spst getCameraSpst() const;
+            const illum getIlluminate() const;
+
+            const vector< vector<double> > getIDT() const;
+            const vector< double > getWB() const;
+
 
         private:
             string  _outputEncoding;
@@ -155,6 +158,7 @@ namespace rta {
         
             vector<CMF> _cmf;
             vector<trainSpec> _trainingSpec;
+            vector<double> _wb;
             vector< vector<double> > _idt;
     };
     
@@ -200,7 +204,6 @@ namespace rta {
                                 const double * const B) const
             {
                 assert(RGB.size() == 190);
-                
                 vector < vector<double> > BV(3, vector<double>(3));
                 
                 BV[0][0] = B[0];

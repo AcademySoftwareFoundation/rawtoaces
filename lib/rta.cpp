@@ -211,7 +211,7 @@ namespace rta {
 //        clearVM(colMax);
     }
     
-    void Idt::loadCameraSpst(const string & path, const char * maker, const char * model) {
+    bool Idt::loadCameraSpst(const string & path, const char * maker, const char * model) {
         assert(path.find("_380_780") != std::string::npos);
 
         ifstream fin;
@@ -243,14 +243,14 @@ namespace rta {
             if(line == 0) {
                 if (cmp_str(maker, static_cast<const char *>(token[0]))) {
                     fin.close();
-                    return;
+                    return 0;
                 }
                 _cameraSpst.setBrand(static_cast<const char *>(token[0]));
             }
             else if(line == 1) {
                 if (cmp_str(model, static_cast<const char *>(token[0]))) {
                     fin.close();
-                    return;
+                    return 0;
                 }
                 _cameraSpst.setModel(static_cast<const char *>(token[0]));
             }
@@ -277,15 +277,21 @@ namespace rta {
             line++;
         }
         
-        if(line != 84) {
-            fprintf(stderr, "The increment should be 5nm from 380nm to 780nm.\n");
-            exit(EXIT_FAILURE);
+        fin.close();
+        
+        if(line != 84
+           || rgbsen.size() != 81) {
+            fprintf(stderr, "Please double check the Camera Sensitivity data"
+                            "e.g. the increment should be 5nm from 380nm to 780nm.\n");
+//            exit(EXIT_FAILURE);
+            return 0;
         }
         
         _cameraSpst._spstMaxCol = max_element(max.begin(), max.end()) - max.begin();
         _cameraSpst.setSensitivity(rgbsen);
         
-        fin.close();
+        return 1;
+        
     }
     
     void Idt::loadIlluminate(const string &path, const char * type) {
@@ -430,7 +436,8 @@ namespace rta {
                         _cmf[i].zbar = atof(token[n]);
                     }
                     else {
-                        fprintf(stderr, "The color matching function file may need to be looked at\n");
+                        fprintf(stderr, "The color matching function"
+                                        "file may need to be looked at\n");
                         exit(EXIT_FAILURE);
                     }
                 }
@@ -464,6 +471,7 @@ namespace rta {
         clearVM(colRGB);
         
         FORI(_wb.size()) {
+//            printf("%f,", _wb[i]);
             _wb[i] = invertD(_wb[i]);
         }
     }

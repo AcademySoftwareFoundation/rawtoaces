@@ -76,6 +76,22 @@ void printValarray (const valarray<T>&va, string s, int num)
     return;
 }
 
+template<typename T>
+bool isSquare(const vector< vector<T> > vm){
+    FORI(vm.size()){
+        if (vm[i].size() != vm.size())
+            return 0;
+    }
+    
+    return 1;
+}
+
+template <typename T>
+T cross(const vector <T> &vectorA, const vector <T> &vectorB) {
+    assert (vectorA.size() == 2 && vectorB.size() == 2 );
+    return vectorA[0] * vectorB[1] - vectorA[1] * vectorB[0];
+}
+
 template <typename T>
 const vector <T> repmat(const T* data[], int row, int col) {
     vector < vector <T> > vect(row, vector<T>(col));
@@ -132,7 +148,7 @@ template <typename T>
 vector< vector<T> > invertVM3(const vector< vector<T> > &vMtx)
 {
     assert(vMtx.size() == 3 &&
-           (vMtx[0]).size() == 3);
+           isSquare(vMtx));
     
     vector <T> mtx(9);
     FORI(3)
@@ -331,6 +347,41 @@ vector < T > mulVector(const vector<T>& vct1,
                        const vector< vector<T> >& vct2)
 {
     return mulVector(vct2, vct1);
+}
+
+
+float* mulVectorArray(float * data,
+                      const uint32_t total,
+                      const uint8_t dim,
+                      const  vector< vector<double> > vct)
+{
+    assert(vct.size() == dim
+           && isSquare(vct));
+    
+    if(dim == 3) {
+        for(uint32_t i = 0; i < total; i+=dim ){
+            data[i] = vct[0][0]*(data[i]) + vct[0][1]*(data[i+1])
+                        + vct[0][2]*(data[i+2]);
+            data[i+1] = vct[1][0]*(data[i]) + vct[1][1]*(data[i+1])
+                        + vct[1][2]*(data[i+2]);
+            data[i+2] = vct[2][0]*(data[i]) + vct[2][1]*(data[i+1])
+                        + vct[2][2]*(data[i+2]);
+        }
+    }
+    else if (dim == 4) {
+        for(uint32_t i = 0; i < total; i+=4 ){
+            data[i] = vct[0][0]*data[i] + vct[0][1]*data[i+1]
+                        + vct[0][2]*data[i+2] + vct[0][3]*data[i+3];
+            data[i+1] = vct[1][0]*data[i] + vct[1][1]*data[i+1]
+                        + vct[1][2]*data[i+2] + vct[1][3]*data[i+3];
+            data[i+2] = vct[2][0]*data[i] + vct[2][1]*data[i+1]
+                        + vct[2][2]*data[i+2] + vct[2][3]*data[i+3];
+            data[i+3] = vct[3][0]*data[i] + vct[3][1]*data[i+1]
+                        + vct[3][2]*data[i+2] + vct[3][3]*data[i+3];
+        }
+    }
+
+    return data;
 }
 
 template <typename T>

@@ -242,7 +242,7 @@ endif()
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" "${IlmBase_INCLUDE_DIRS}" "${AcesContainer_INCLUDE_DIRS}" "${libraw_INCLUDE_DIRS}")
 
 add_executable( rawtoaces
-  rawtoaces.cpp
+  main.cpp
 )
 
 target_link_libraries(rawtoaces rawtoacesIDT)

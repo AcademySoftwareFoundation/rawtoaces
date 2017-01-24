@@ -124,19 +124,26 @@ namespace rta {
             Idt();
             ~Idt();
         
-            void loadCameraSpst(const string &path, const char * maker, const char * model);
-            void loadIlluminate(const string &path, const char * type="NA");
+            bool loadCameraSpst(const string &path,
+                                const char * maker,
+                                const char * model);
+            void loadIlluminate(const string &path,
+                                const char * type="NA");
             void loadTrainingData(const string &path);
             void loadCMF(const string &path);
-            void chooseIlluminate(map< string, vector<double> >& illuCM, vector<double>& src);
+        
+            void chooseIlluminate(map< string,
+                                  vector<double> >& illuCM,
+                                  vector<double>& src);
             void scaleLSC();
             void calWB();
         
             vector< double > calCM();
             vector< vector<double> > calTI() const;
-            vector< vector<double> > calCAT(vector<double> src, vector<double> des) const;
-            vector< vector<double> > calXYZ( vector< vector<double> > TI ) const;
-            vector< vector<double> > calRGB( vector< vector<double> > TI ) const;
+            vector< vector<double> > calCAT(vector<double> src,
+                                            vector<double> des) const;
+            vector< vector<double> > calXYZ(vector< vector<double> > TI) const;
+            vector< vector<double> > calRGB(vector< vector<double> > TI) const;
         
             bool curveFit(vector< vector<double> > RGB,
                           vector< vector<double> > XYZ,
@@ -160,6 +167,40 @@ namespace rta {
             vector<trainSpec> _trainingSpec;
             vector<double> _wb;
             vector< vector<double> > _idt;
+    };
+    
+    
+    class DNG {
+        public:
+            DNG();
+            ~DNG();
+        
+            vector<double> xyToXYZ(const vector<double>& xy);
+            vector<double> uvToXYZ(const vector<double>& uv);
+            vector<double> uvToxy(const vector<double>& uv);
+            vector<double> XYZTouv(const vector<double> &XYZ);
+            vector<double> XYZtoCameraWeightedMatrix(const float &mir,
+                                                     const float &mir1,
+                                                     const float &mir2);
+            vector<double> colorTemperatureToXYZ(const double cct) const;
+            vector<double> findXYZtoCameraMtx(const vector<double> neutralRGB) const;
+            vector<double> matrixRGBtoXYZ(const vector< vector<double> > chromaticities) const;
+            vector<double> matrixChromaticAdaptation(const vector<double> &whiteFrom,
+                                                     const vector<double> &whiteTo);
+        
+
+            double ccttoMired(const double cct) const;
+            double robertsonLength(const vector<double> &uv,
+                                   const vector<double>& uvt) const;
+            double lightSourceToColorTemp(const unsigned short tag) const;
+            double XYZToColorTemperature(const vector<double> &XYZ);
+        
+            void prepareMatrices();
+            void getCameraXYZMtxAndWhitePoint(double baseExpo);
+
+        
+        private:
+            vector<double> CAT;
     };
     
     class Objfun {

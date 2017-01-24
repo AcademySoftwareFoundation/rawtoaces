@@ -138,6 +138,8 @@ valarray<float>  cameraXYZWhitePoint   = valarray<float>(1.0f, 3);
 valarray<float>  calibrateIllum        = valarray<float>(1.0f, 2);
 
 struct stat st;
+static int verbosity=0;
+static int cnt=0;
 
 double e_max = 1.0000000;
 

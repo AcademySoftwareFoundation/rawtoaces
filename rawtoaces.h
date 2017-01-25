@@ -75,6 +75,7 @@ bool prepareIDT(const char * cameraSenPath,
     Idt * idt = new Idt();
     bool read = 0;
     
+    
     if (cameraSenPath) {
         if (stat(static_cast<const char *>(cameraSenPath), &st)) {
             fprintf(stderr,"The camera sensitivity file does not seem to exist.\n");
@@ -107,25 +108,27 @@ bool prepareIDT(const char * cameraSenPath,
         return 0;
     }
 
-    
     map< string, vector<double> > illuCM;
     if(!stat(FILEPATH, &st) && read) {
         vector<string> iFiles = openDir(static_cast<string>(FILEPATH)
                                         +"illuminate");
         for(vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file){
             string fn(*file);
-
+            
             if (illumType){
                 if(fn.find(illumType) != std::string::npos) {
-                    idt->loadIlluminate(fn, static_cast<const char *>(illumType));
-                    illuCM[static_cast<string>(*file)] = idt->calCM();
-                    
-                    break;
+                    read = idt->loadIlluminate(fn, static_cast<const char *>(illumType));
+                    if (read)
+                    {
+                        illuCM[static_cast<string>(*file)] = idt->calCM();
+                        break;
+                    }
                 }
             }
             else {
-                idt->loadIlluminate(fn);
-                illuCM[static_cast<string>(*file)] = idt->calCM();
+                read = idt->loadIlluminate(fn, "na");
+                if(read)
+                    illuCM[static_cast<string>(*file)] = idt->calCM();
             }
         }
     }
@@ -141,14 +144,6 @@ bool prepareIDT(const char * cameraSenPath,
         if (idt->calIDT()) {
             idtm = idt->getIDT();
             wbv = idt->getWB();
-        
-//        FORI(3)
-//          FORJ(3)
-//              printf("%f, ", idtm[i][j]);
-//        printf("\n");
-//        
-//        FORI(3)
-//          printf("%f, ", wbv[i]);
         
             return 1;
         }
@@ -181,9 +176,6 @@ void apply_WB(float * pixels,
             pixels[i] = clip(wb[0] * pixels[i] / min_wb, target);
             pixels[i+1] = clip(wb[1] * pixels[i+1] / min_wb, target);
             pixels[i+2] = clip(wb[2] * pixels[i+2] / min_wb, target);
-            
-//            printf("%f, %f, %f ", pixel[i], pixel[i+1], pixel[i+2]);
-//            printf("\n");
         }
     }
 }

@@ -251,8 +251,11 @@ int main(int argc, char *argv[])
             vector< double > wbv(3, 1.0);
 
             if (P1.dng_version == 0) {
+                if(illumType)
+                    illumType = lowerCase(illumType);
+                
                 bool gotIDT = prepareIDT(cameraSenPath,
-                                         lowerCase(illumType),
+                                         illumType,
                                          P1,
                                          C,
                                          idtm,
@@ -260,9 +263,10 @@ int main(int argc, char *argv[])
                 
                 if (gotIDT) {
                     OUT.output_color = 0;
+//                    OUT.use_camera_wb = 0;
                 }
             }
-            
+
             // 1.0 for exposure - the last thing to do.
             // -r option
             if( checkMul && !isnan(OUT.user_mul[0] )){
@@ -311,7 +315,6 @@ int main(int argc, char *argv[])
                     timerprint("LibRaw::dcraw_make_mem_image()",argv[arg]);
                 
                 float * aces = 0;
-                
                 if(!(OUT.output_color))
                     aces = prepareAcesData_NonDNG_IDT(post_image, idtm, wbv);
                 else

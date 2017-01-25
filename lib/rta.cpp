@@ -315,10 +315,11 @@ namespace rta {
     //      const char *: type of light source if user specifies
     //
     //	outputs:
-    //		illum: If successufully parsed, _illuminate will be filled
+    //		boolean: If successufully parsed, _illuminate will be filled and return 1;
+    //               Otherwise, return 0
 
     
-    void Idt::loadIlluminate(const string &path, const char * type) {
+    bool Idt::loadIlluminate(const string &path, const char * type) {
         assert(path.find("_380_780") != std::string::npos);
         
         ifstream fin;
@@ -348,12 +349,17 @@ namespace rta {
             //            assert(token);
             
             if(line == 0) {
-                if (cmp_str(type, "na") &&
-                    cmp_str(type, static_cast<const char *>(token))) {
+                string strType(type);
+                string strToken(token);
+                
+                if (strType.compare(strToken) != 0
+                    && strType.compare("na") != 0)
+                {
                     fin.close();
-                    return;
+                    return 0;
                 }
-                _illuminate.type = static_cast<string>(token);
+                
+                _illuminate.type = strToken;
             }
             else if(line == 1) {
                  _illuminate.inc = atoi(token);
@@ -373,7 +379,13 @@ namespace rta {
 
         fin.close();
         
-        return;
+        if(_illuminate.data.size() != 81) {
+            fprintf(stderr, "Please double check the Illuminate data"
+                    "e.g. the increment should be 5nm from 380nm to 780nm.\n");
+            return 0;
+        }
+        
+        return 1;
     }
     
     //	=====================================================================
@@ -505,10 +517,9 @@ namespace rta {
     void Idt::calWB(){
         assert(_cameraSpst._rgbsen.size() > 0);
         
-        loadIlluminate(_bestIllum);
-        scaleLSC();
-        
         cout << "The best illuminate is: " << _bestIllum << endl;
+        if(loadIlluminate(_bestIllum, "na"))
+            scaleLSC();
 
         vector< vector<double> > colRGB(3, vector<double>(81, 1.0));
         

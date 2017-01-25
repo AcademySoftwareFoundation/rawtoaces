@@ -311,7 +311,6 @@ static const float deviceWhite[3] = {1.0, 1.0, 1.0};
 
 // Function to Open Directories
 vector<string> openDir(string path = ".") {
-    
     DIR *    dir;
     dirent * pDir;
     struct stat fStat;
@@ -334,6 +333,17 @@ vector<string> openDir(string path = ".") {
 template<typename T>
 void clearVM(vector<T> vct){
     vector< T >().swap(vct);
+};
+
+char * lowerCase(char * tex)
+{
+    string tmp(tex);
+    
+    FORI(tmp.size()){
+        tex[i] = tolower(tex[i]);
+    }
+    
+    return tex;
 };
 
 #endif

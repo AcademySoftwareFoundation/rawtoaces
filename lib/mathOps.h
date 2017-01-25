@@ -51,6 +51,7 @@
 // COLOR ENCODING SYSTEM, OR APPLICATIONS THEREOF, HELD BY PARTIES OTHER 
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
+
 #ifndef _MATHOPS_h__
 #define _MATHOPS_h__
 
@@ -93,7 +94,7 @@ T cross(const vector <T> &vectorA, const vector <T> &vectorB) {
 }
 
 template <typename T>
-const vector <T> repmat(const T* data[], int row, int col) {
+const vector < vector <T> > repmat(const T* data[], int row, int col) {
     vector < vector <T> > vect(row, vector<T>(col));
     FORI(row) {
         FORJ(col) {
@@ -101,7 +102,7 @@ const vector <T> repmat(const T* data[], int row, int col) {
         }
     }
     
-    const vector < T > cvect(vect);
+    const vector < vector <T> > cvect(vect);
     return cvect;
 }
 

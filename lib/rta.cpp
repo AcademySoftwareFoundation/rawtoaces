@@ -177,14 +177,16 @@ namespace rta {
         vector< trainSpec >().swap(_trainingSpec);
         vector< double >().swap(_wb);
         vector< vector<double> >().swap(_idt);
-        
-//        FORI(3) {
-//            double * currentPtr = _idt[i];
-//            free(currentPtr);
-//        }
-      
-//        free(_idt);
     }
+    
+    //	=====================================================================
+    //	Scale the Illuminate data using the max element of RGB code values
+    //
+    //	inputs:
+    //		N/A
+    //	
+    //	outputs:
+    //		scaled _illuminate data set
     
     void Idt::scaleLSC(){
         assert(_cameraSpst._spstMaxCol >= 0
@@ -207,11 +209,23 @@ namespace rta {
         
         scaleVector(_illuminate.data,
                     1.0/sumVector(mulVectorElement(_illuminate.data, colMax)));
-        
-//        clearVM(colMax);
     }
     
-    bool Idt::loadCameraSpst(const string & path, const char * maker, const char * model) {
+    //	=====================================================================
+    //	Load the Camera Sensitivty data
+    //
+    //	inputs:
+    //		const string: path to the camera sensitivity file
+    //      const char *: camera maker  (from libraw)
+    //      const char *: camera model  (from libraw)
+    //
+    //	outputs:
+    //		boolean: If successufully parsed, _cameraSpst will be filled and return 1;
+    //               Otherwise, return 0
+    
+    bool Idt::loadCameraSpst(const string & path,
+                             const char * maker,
+                             const char * model) {
         assert(path.find("_380_780") != std::string::npos);
 
         ifstream fin;
@@ -291,8 +305,18 @@ namespace rta {
         _cameraSpst.setSensitivity(rgbsen);
         
         return 1;
-        
     }
+    
+    //	=====================================================================
+    //	Load the Illuminate data
+    //
+    //	inputs:
+    //		const string: path to the illuminate data file
+    //      const char *: type of light source if user specifies
+    //
+    //	outputs:
+    //		illum: If successufully parsed, _illuminate will be filled
+
     
     void Idt::loadIlluminate(const string &path, const char * type) {
         assert(path.find("_380_780") != std::string::npos);
@@ -352,6 +376,15 @@ namespace rta {
         return;
     }
     
+    //	=====================================================================
+    //	Load the 190-patch training data
+    //
+    //	inputs:
+    //		path to the 190-patch training data file
+    //
+    //	outputs:
+    //		_trainingSpec: If successufully parsed, _trainingSpec will be filled
+    
     void Idt::loadTrainingData(const string &path) {
         ifstream fin;
         fin.open(path);
@@ -396,6 +429,15 @@ namespace rta {
         
         fin.close();
     }
+    
+    //	=====================================================================
+    //	Load the Color Matching Function data
+    //
+    //	inputs:
+    //		path to the Color Matching Function data file
+    //
+    //	outputs:
+    //		_cmf: If successufully parsed, _cmf will be filled
     
     void Idt::loadCMF(const string &path) {
         ifstream fin;
@@ -451,6 +493,15 @@ namespace rta {
         fin.close();
     }
     
+    //	=====================================================================
+    //	Calculate White Balance based on the best illuminate data
+    //
+    //	inputs:
+    //		N/A
+    //
+    //	outputs:
+    //		vector: _wb(R, G, B)
+    
     void Idt::calWB(){
         assert(_cameraSpst._rgbsen.size() > 0);
         
@@ -476,6 +527,18 @@ namespace rta {
         }
     }
   
+    //	=====================================================================
+    //	Choose the best Illuminate based on White Balance Coefficients from
+    //  the camera read by libraw
+    //
+    //	inputs:
+    //		Map: Key: path to the Illuminate;
+    //           Value: Illuminate x Camera Sensitivity
+    //      Vector: White Balance Coefficients
+    //
+    //	outputs:
+    //		illum: the best _illuminate
+    
     void Idt::chooseIlluminate(map< string, vector<double> >& illuCM,
                                vector<double>& src) {
         double sse = numeric_limits<double>::max();
@@ -536,6 +599,13 @@ namespace rta {
                 vect[i][j] = cat02[i][j];
             }
         }
+        
+//        const double *cat[3];
+//        FORI(3)
+//            cat[i] = cat02[i];
+//        
+//        vect = repmat(cat, 3, 3);
+        
         vector< double > wSRC = mulVector(src, vect);
         vector< double > wDES = mulVector(des, vect);
         vector< vector<double> > vkm = solveVM(vect, diagVM(divVectorElement(wDES,wSRC)));

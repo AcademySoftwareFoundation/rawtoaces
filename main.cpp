@@ -83,7 +83,6 @@ int main(int argc, char *argv[])
 //            if ((cp = strchr (sp=(char*)"cnbrkStqmHABCgi", opt))!=0)
             if ((cp = strchr (sp=(char*)"cnbrkStqmHABCi", opt))!=0)
                 for (i=0; i < "111411111142"[cp-sp]-'0'; i++)
-//                    printf("argv[arg+i][0]: %c, %i\n", opt,(isdigit(argv[arg+i][0])));
                     if (!isdigit(argv[arg+i][0]))
                         {
                             fprintf (stderr,"Non-numeric argument to \"-%c\"\n", opt);
@@ -263,7 +262,11 @@ int main(int argc, char *argv[])
                 
                 if (gotIDT) {
                     OUT.output_color = 0;
-//                    OUT.use_camera_wb = 0;
+                    OUT.use_camera_wb = 0;
+                    
+                    FORI(3)
+//                        OUT.user_mul[i] = wbv[i];
+                        OUT.user_mul[i] = 1.0;
                 }
             }
 

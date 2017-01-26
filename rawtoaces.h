@@ -221,7 +221,7 @@ float * convert_to_aces_NonDNG_IDT(libraw_processed_image_t *image,
         aces[i] = static_cast<float>(pixel[i]);
     }
     
-//    apply_WB(aces, image->bits, total, wb);
+    apply_WB(aces, image->bits, total, wb);
     apply_IDT(aces, image->colors, total, idt);
     
     return aces;

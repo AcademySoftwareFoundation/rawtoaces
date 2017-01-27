@@ -65,86 +65,124 @@
 
 using namespace rta;
 
-bool prepareIDT(const char * cameraSenPath,
+bool readCameraSenPath(  const char * cameraSenPath,
+                       libraw_iparams_t P,
+                       Idt * idt )
+{
+    bool readC = 0;
+    
+    if ( cameraSenPath )  {
+        if ( stat( static_cast<const char *> ( cameraSenPath ), &st ) )  {
+            fprintf ( stderr,"The camera sensitivity file does not seem to exist.\n" );
+            exit (  EXIT_FAILURE );
+        }
+        
+        readC = idt->loadCameraSpst( cameraSenPath,
+                                     static_cast<const char *> ( P.make ),
+                                     static_cast<const char *> ( P.model ));
+    }
+    else  {
+        if ( !stat(  FILEPATH, &st ) )  {
+            vector<string> cFiles = openDir ( static_cast<string>(  FILEPATH )
+                                              +"/camera" );
+            
+            for(  vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
+                string fn( *file );
+                readC = idt->loadCameraSpst( fn,
+                                             static_cast<const char *>( P.make ),
+                                             static_cast<const char *>( P.model ) );
+                if ( readC ) return 1;
+            }
+        }
+    }
+    
+    return readC;
+}
+
+
+bool readIlluminate( const char * illumType,
+                     map< string, vector<double> >& illuCM,
+                     Idt * idt )
+{
+    bool readI = 0;
+    
+    if( !stat( FILEPATH, &st ) ) {
+        vector<string> iFiles = openDir( static_cast<string>( FILEPATH )
+                                         +"illuminate" );
+        
+        for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
+            string fn( *file );
+            string strType(illumType);
+            
+            if ( strType.compare("unknown") != 0 ) {
+                if( fn.find( illumType ) == std::string::npos )  {
+                    continue;
+                }
+                
+                readI = idt->loadIlluminate( fn, static_cast<const char *>( illumType ) );
+                if ( readI )
+                {
+                    illuCM[static_cast<string>( *file )] = idt->calCM();
+                    return 1;
+                }
+            }
+            else {
+                readI = idt->loadIlluminate( fn, static_cast<const char *>( illumType ) );
+                if ( readI )
+                    illuCM[static_cast<string>( *file )] = idt->calCM();
+            }
+        }
+    }
+    
+    return readI;
+}
+
+
+bool prepareIDT( const char * cameraSenPath,
                 const char * illumType,
                 libraw_iparams_t P,
                 libraw_colordata_t C,
                 vector< vector<double> > &idtm,
-                vector<double> &wbv)
+                vector<double> &wbv )
 {
-    Idt * idt = new Idt();
-    bool read = 0;
+    Idt * idt = new Idt(  );
+    bool read = readCameraSenPath( cameraSenPath, P, idt );
     
+    string strType(illumType);
     
-    if (cameraSenPath) {
-        if (stat(static_cast<const char *>(cameraSenPath), &st)) {
-            fprintf(stderr,"The camera sensitivity file does not seem to exist.\n");
-            exit(EXIT_FAILURE);
-        }
-        
-        read = idt->loadCameraSpst(cameraSenPath,
-                                   static_cast<const char *>(P.make),
-                                   static_cast<const char *>(P.model));
+    if (!read ) {
+        fprintf( stderr,"No matching cameras found.\n" );
+        return 0;
     }
-    else {
-        if(!stat(FILEPATH, &st)) {
-            vector<string> cFiles = openDir(static_cast<string>(FILEPATH)
-                                            +"/camera");
-            
-            for(vector<string>::iterator file = cFiles.begin(); file != cFiles.end(); ++file){
-                string fn(*file);
-                read = idt->loadCameraSpst(fn,
-                                           static_cast<const char *>(P.make),
-                                           static_cast<const char *>(P.model));
-                if(read) break;
-            }
-        }
-    }
-    
-    if(illumType && !read){
-        fprintf(stderr,"The Illuminate should be accompanied "
-                "by a matching Camera Sensitivity data. \n");
+    else if ( strType.compare("unknown") != 0  && !read ) {
+        fprintf( stderr,"The Illuminate should be accompanied "
+                "by a matching Camera Sensitivity data. \n" );
         
         return 0;
     }
-
+    
+    if (!illumType)
+        illumType = "unknown";
+    
     map< string, vector<double> > illuCM;
-    if(!stat(FILEPATH, &st) && read) {
-        vector<string> iFiles = openDir(static_cast<string>(FILEPATH)
-                                        +"illuminate");
-        for(vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file){
-            string fn(*file);
-            
-            if (illumType){
-                if(fn.find(illumType) != std::string::npos) {
-                    read = idt->loadIlluminate(fn, static_cast<const char *>(illumType));
-                    if (read)
-                    {
-                        illuCM[static_cast<string>(*file)] = idt->calCM();
-                        break;
-                    }
-                }
-            }
-            else {
-                read = idt->loadIlluminate(fn, "na");
-                if(read)
-                    illuCM[static_cast<string>(*file)] = idt->calCM();
-            }
-        }
-    }
+    read = readIlluminate( illumType, illuCM, idt );
     
-    if(read){
-        idt->loadTrainingData(static_cast<string>(FILEPATH)+"/training/training_spectral");
-        idt->loadCMF(static_cast<string>(FILEPATH)+"/cmf/cmf_193");
+    if( read ) {
+        idt->loadTrainingData ( static_cast<string>( FILEPATH )
+                               +"/training/training_spectral" );
+        idt->loadCMF ( static_cast<string>( FILEPATH )
+                      +"/cmf/cmf_193" );
         
-        vector<double> pre_mulV(3, 1.0);
-        FORI(3) pre_mulV[i] = (double)(C.pre_mul[i]);
-        idt->chooseIlluminate(illuCM, pre_mulV);
-    
-        if (idt->calIDT()) {
+        vector<double> pre_mulV( 3, 1.0 );
+        FORI( 3 ) pre_mulV[i] = ( double )( C.pre_mul[i] );
+        idt->chooseIlluminate( illuCM, pre_mulV );
+        
+        idt->calWB(illumType);
+        
+        if ( idt->calIDT() )  {
             idtm = idt->getIDT();
             wbv = idt->getWB();
-        
+            
             return 1;
         }
     }

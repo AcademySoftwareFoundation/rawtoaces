@@ -61,9 +61,8 @@ int main(int argc, char *argv[])
     LibRaw RawProcessor;
     int i,arg,c,ret;
     char opm,opt,*cp,*sp,*path,*cameraSenPath, *illumType;
-    int use_bigfile=0, use_timing=0;
+    int use_bigfile=0, use_timing=0, use_camera_path=0, use_Mul=0;
     float scale = 1.0;
-    bool checkMul = 0;
     
 #ifndef WIN32
     int msize = 0,use_mmap=0;
@@ -79,18 +78,30 @@ int main(int argc, char *argv[])
     argv[argc] = (char*)"";
     for (arg=1; (((opm = argv[arg][0]) - 2) | 2) == '+'; )
         {
-            opt = argv[arg++][1];
-//            if ((cp = strchr (sp=(char*)"cnbrkStqmHABCgi", opt))!=0)
-            if ((cp = strchr (sp=(char*)"cnbrkStqmHABCi", opt))!=0)
-                for (i=0; i < "111411111142"[cp-sp]-'0'; i++)
-                    if (!isdigit(argv[arg+i][0]))
-                        {
-                            fprintf (stderr,"Non-numeric argument to \"-%c\"\n", opt);
-                            return 1;
-                        }
-
-          switch (opt) 
-              {
+          opt = argv[arg++][1];
+//        if ((cp = strchr (sp=(char*)"TMgcnbrkStqmHABC", opt))!=0)
+          if ((cp = strchr (sp=(char*)"MgcnbrkStqmHABC", opt))!=0) {
+            for (i=0; i < "111411111142"[cp-sp]-'0'; i++) {
+                if (!isdigit(argv[arg+i][0]))
+                {
+                    fprintf (stderr,"Non-numeric argument to \"-%c\"\n", opt);
+                    return 1;
+                }
+            }
+          }
+          else if ((cp = strchr (sp=(char*)"T", opt))!=0) {
+            for (i=0; i < "111411111142"[cp-sp]-'0'; i++) {
+                if (!isalnum(argv[arg+i][0]))
+                {
+                    fprintf (stderr,"Non-numeric and/or Non-compatible"
+                                    " argument to \"-%c\"\n", opt);
+                    return 1;
+                }
+             }
+          }
+            
+          switch (opt)
+            {
               case 'v':  verbosity++;  break;
               // Adobe Coefficients
               case 'D':  OUT.use_camera_matrix = 1; break;
@@ -105,11 +116,11 @@ int main(int argc, char *argv[])
               case 'P':  OUT.bad_pixels  = argv[arg++];        break;
               case 'K':  OUT.dark_frame  = argv[arg++];        break;
               case 'r':{
-                      checkMul = 1.0;
-                      for(c=0;c<4;c++)
-                          OUT.user_mul[c] = (float)atof(argv[arg++]);
-                  }
-                  break;
+                        use_Mul = 1;
+                        for(c=0;c<4;c++)
+                            OUT.user_mul[c] = (float)atof(argv[arg++]);
+                        }
+                       break;
               case 'C':  
                   OUT.aber[0] = 1 / atof(argv[arg++]);
                   OUT.aber[2] = 1 / atof(argv[arg++]);  
@@ -140,7 +151,9 @@ int main(int argc, char *argv[])
               case 'd':  use_timing            = 1;  break;
               case 'T':  illumType = (char *)(argv[arg++]); break;
               case 'M':  scale = atof(argv[arg++]); break;
-              case 'Q':  cameraSenPath = (char *)(argv[arg++]); break;
+              case 'Q':  use_camera_path = 1;
+                         cameraSenPath = (char *)(argv[arg++]);
+                      break;
               
 #ifndef WIN32
               case 'E':  use_mmap              = 1;  break;
@@ -162,81 +175,95 @@ int main(int argc, char *argv[])
 #define T RawProcessor.imgdata.thumbnail
 #define P2 RawProcessor.imgdata.other
 
-  if(verbosity>1)
-          RawProcessor.set_progress_handler(my_progress_callback,(void*)"Sample data passed");
+    if( use_camera_path ) {
+        string cameraSenPathS( cameraSenPath );
+        if ( cameraSenPathS.find("_380_780") == std::string::npos ) {
+            fprintf( stderr,"Cannot locate camera sensitivity data in the file.\n" );
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+  if( verbosity>1 )
+      RawProcessor.set_progress_handler( my_progress_callback,
+                                            (void*)"Sample data passed" );
 #ifdef LIBRAW_USE_OPENMP
-  if(verbosity)
-          printf ("Using %d threads\n", omp_get_max_threads());
+  if( verbosity )
+          printf ( "Using %d threads\n", omp_get_max_threads() );
 #endif
 
     for ( ; arg < argc; arg++)
         {
             char outfn[1024];
-
-            if(verbosity) printf("Processing file %s\n",argv[arg]);
+            if( verbosity )
+                printf( "Processing file %s\n",argv[arg] );
             
             timerstart_timeval();
             
 #ifndef WIN32
             if(use_mmap)
+            {
+                int file = open( argv[arg],O_RDONLY );
+                
+                if( file<0 )
                 {
-                    int file = open(argv[arg],O_RDONLY);
-                    if(file<0)
-                        {
-                            fprintf(stderr,"Cannot open %s: %s\n",argv[arg],strerror(errno));
-                            continue;
-                        }
-                    if(fstat(file,&st))
-                        {
-                            fprintf(stderr,"Cannot stat %s: %s\n",argv[arg],strerror(errno));
-                            close(file);
-                            continue;
-                        }
-                    int pgsz = getpagesize();
-                    msize = ((st.st_size+pgsz-1)/pgsz)*pgsz;
-                    iobuffer = mmap(NULL,msize,PROT_READ,MAP_PRIVATE,file,0);
-                    if(!iobuffer)
-                        {
-                            fprintf(stderr,"Cannot mmap %s: %s\n",argv[arg],strerror(errno));
-                            close(file);
-                            continue;
-                        }
-                    close(file);
-                    if( (ret = RawProcessor.open_buffer(iobuffer,st.st_size) != LIBRAW_SUCCESS))
-                        {
-                            fprintf(stderr,"Cannot open_buffer %s: %s\n",argv[arg],libraw_strerror(ret));
-                            continue; // no recycle b/c open file will recycle itself
-                        }
-
+                    fprintf( stderr,"Cannot open %s: %s\n",argv[arg],strerror(errno) );
+                    continue;
                 }
+                
+                if( fstat( file,&st ) )
+                {
+                    fprintf( stderr,"Cannot stat %s: %s\n",argv[arg],strerror( errno ) );
+                    close( file );
+                    continue;
+                }
+                
+                int pgsz = getpagesize();
+                msize = ( ( st.st_size+pgsz-1 ) / pgsz ) * pgsz;
+                iobuffer = mmap( NULL, msize,PROT_READ, MAP_PRIVATE, file, 0 );
+                if( !iobuffer )
+                {
+                    fprintf( stderr, "Cannot mmap %s: %s\n", argv[arg], strerror( errno ) );
+                    close( file );
+                    continue;
+                }
+                
+                close( file );
+                if( (ret = RawProcessor.open_buffer( iobuffer,st.st_size ) != LIBRAW_SUCCESS ) )
+                {
+                    fprintf( stderr, "Cannot open_buffer %s: %s\n", argv[arg], libraw_strerror( ret ) );
+                    continue; // no recycle b/c open file will recycle itself
+                }
+
+            }
             else
 #endif
-                {
-                if(use_bigfile)
+            {
+                if( use_bigfile )
                         // force open_file switch to bigfile processing
-                        ret = RawProcessor.open_file(argv[arg],1);
-                    else
-                        ret = RawProcessor.open_file(argv[arg]);
+                    ret = RawProcessor.open_file( argv[arg],1 );
+                else
+                    ret = RawProcessor.open_file( argv[arg] );
                         
-                    if( ret  != LIBRAW_SUCCESS)
-                        {
-                            fprintf(stderr,"Cannot open %s: %s\n",argv[arg],libraw_strerror(ret));
-                            continue; // no recycle b/c open_file will recycle itself
-                        }
+                if( ret  != LIBRAW_SUCCESS)
+                {
+                    fprintf( stderr,"Cannot open %s: %s\n", argv[arg], libraw_strerror( ret ) );
+                    continue; // no recycle b/c open_file will recycle itself
                 }
+            }
 
-            if(use_timing)
-                timerprint("LibRaw::open_file()",argv[arg]);
+
+            if( use_timing )
+                timerprint( "LibRaw::open_file()", argv[arg] );
 
             timerstart_timeval();
-            if( (ret = RawProcessor.unpack() ) != LIBRAW_SUCCESS)
+            if( (ret = RawProcessor.unpack() ) != LIBRAW_SUCCESS )
                 {
-                    fprintf(stderr,"Cannot unpack %s: %s\n",argv[arg],libraw_strerror(ret));
+                    fprintf( stderr,"Cannot unpack %s: %s\n", argv[arg], libraw_strerror( ret ) );
                     continue;
                 }
             
             if(use_timing)
-                timerprint("LibRaw::unpack()",argv[arg]);
+                timerprint( "LibRaw::unpack()", argv[arg] );
             
             OUT.use_camera_matrix  = 0;
             OUT.output_color       = 5;
@@ -246,37 +273,36 @@ int main(int argc, char *argv[])
             OUT.gamm[1]            = 1.0;
             OUT.no_auto_bright     = 1;
             
-            vector< vector<double> > idtm(3, vector<double>(3, 1.0));
-            vector< double > wbv(3, 1.0);
+            vector < vector<double> > idtm( 3, vector<double>( 3, 1.0 ) );
+            vector < double > wbv( 3, 1.0 );
 
-            if (P1.dng_version == 0) {
-                if(illumType)
-                    illumType = lowerCase(illumType);
+            if ( P1.dng_version == 0 ) {
+                if ( illumType )
+                    illumType = lowerCase( illumType );
                 
-                bool gotIDT = prepareIDT(cameraSenPath,
-                                         illumType,
-                                         P1,
-                                         C,
-                                         idtm,
-                                         wbv);
+                bool gotIDT = prepareIDT( cameraSenPath,
+                                          illumType,
+                                          P1,
+                                          C,
+                                          idtm,
+                                          wbv );
                 
-                if (gotIDT) {
-                    OUT.output_color = 0;
-                    OUT.use_camera_wb = 0;
+                if ( gotIDT ) {
+                     OUT.output_color = 0;
+                     OUT.use_camera_wb = 0;
                     
-                    FORI(3)
-//                        OUT.user_mul[i] = wbv[i];
+                     FORI( 3 )
                         OUT.user_mul[i] = 1.0;
                 }
             }
 
             // 1.0 for exposure - the last thing to do.
             // -r option
-            if( checkMul && !isnan(OUT.user_mul[0] )){
+            if( use_Mul && !isnan( OUT.user_mul[0] )){
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
                 
-                float sc = numeric_limits<float>::max();
+                double sc = numeric_limits<double>::max();
                 for(c=0; c<P1.colors; c++){
                     if (OUT.user_mul[c] <= sc)
                         sc = OUT.user_mul[c];

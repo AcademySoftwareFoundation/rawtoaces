@@ -108,7 +108,7 @@ namespace rta {
         
             void setBrand(const char * brand);
             void setModel(const char * model);
-            void setWLIncrement(uint8_t inc);
+            void setWLIncrement(const uint8_t inc);
             void setSensitivity(const vector<RGBSen> rgbsen);
         
         private:
@@ -128,7 +128,7 @@ namespace rta {
                                 const char * maker,
                                 const char * model);
             bool loadIlluminate(const string &path,
-                                const char * type="na");
+                                const char * type="unknown");
             void loadTrainingData(const string &path);
             void loadCMF(const string &path);
         
@@ -136,7 +136,7 @@ namespace rta {
                                   vector<double> >& illuCM,
                                   vector<double>& src);
             void scaleLSC();
-            void calWB();
+            void calWB(const char * illumType);
         
             vector< double > calCM();
             vector< vector<double> > calTI() const;
@@ -159,14 +159,16 @@ namespace rta {
 
         private:
             string  _outputEncoding;
+//            string  _illumType;
+//            string  _cameraPath;
             string  _bestIllum;
             Spst    _cameraSpst;
             illum   _illuminate;
         
-            vector<CMF> _cmf;
-            vector<trainSpec> _trainingSpec;
-            vector<double> _wb;
-            vector< vector<double> > _idt;
+            vector< CMF > _cmf;
+            vector< trainSpec > _trainingSpec;
+            vector< double > _wb;
+            vector< vector< double > > _idt;
     };
     
     
@@ -209,7 +211,7 @@ namespace rta {
                    vector< vector<double> > XYZ,
                    vector< vector<double> > M): _RGB(RGB), _XYZ(XYZ), _M(M) { }
         
-            vector< vector<double> > XYZtoLAB(const vector < vector<double> >& XYZ) const
+            vector < vector<double> > XYZtoLAB( const vector < vector<double> >& XYZ ) const
             {
                 assert(XYZ.size() == 190);
                 double add = 16.0/116.0;
@@ -239,6 +241,27 @@ namespace rta {
                 return outCalcLab;
             }
         
+            vector< vector<double> > getCalcXYZt(const vector < vector<double> > RGB,
+                                                 const double * const B) const
+            {
+                assert(RGB.size() == 190);
+                vector < vector<double> > BV( 3, vector< double >(3) );
+            
+                BV[0][0] = B[0];
+                BV[0][1] = B[1];
+                BV[0][2] = 1.0 - B[0] - B[1];
+                BV[1][0] = B[2];
+                BV[1][1] = B[3];
+                BV[1][2] = 1.0 - B[2] - B[3];
+                BV[2][0] = B[4];
+                BV[2][1] = B[5];
+                BV[2][2] = 1.0 - B[4] - B[5];
+            
+                vector< vector<double> > outCalcXYZt = transposeVec(mulVector(mulVector(_M, BV),
+                                                                    transposeVec(transposeVec(RGB))));
+                clearVM(BV);
+                return outCalcXYZt;
+            }
         
             double findDistance(const vector < vector<double> > RGB,
                                 const vector < vector<double> > outLAB,
@@ -262,10 +285,23 @@ namespace rta {
                 vector< vector<double> > outCalcLAB = XYZtoLAB(outCalcXYZt);
 
                 double dist = 0.0;
-                FORI(190)
-                    FORJ(3)
-                        dist += std::pow((outLAB[i][j] - outCalcLAB[i][j]), 2.0);
+                double maxD = numeric_limits<double>::min();
                 
+                FORI(190) {
+                    double deltaE = 0.0;
+                    FORJ(3) {
+                        deltaE += std::pow((outLAB[i][j] - outCalcLAB[i][j]), 2.0);
+                    }
+                    
+                    if (maxD < std::pow(deltaE, 1.0/2.0))
+                        maxD = std::pow(deltaE, 1.0/2.0);
+                    
+                    dist += std::pow(deltaE, 1.0/2.0);
+                }
+                
+//                printf("Max: %f, \n", maxD);
+//                printf("Mean: %f, \n", dist/190.0);
+
                 clearVM(BV);
                 clearVM(outCalcXYZt);
                 clearVM(outCalcLAB);
@@ -276,7 +312,19 @@ namespace rta {
             bool operator()(const double* const B,
                             double* residual) const
             {
-                residual[0] = findDistance(_RGB, XYZtoLAB(_XYZ), B);
+//                residual[0] = findDistance(_RGB, XYZtoLAB(_XYZ), B);
+                
+                vector < vector<double> > outLAB = XYZtoLAB(_XYZ);
+                vector < vector<double> > outCalcLAB = XYZtoLAB(getCalcXYZt(_RGB, B));
+
+                FORI(190) {
+                    residual[i] = 0.0;
+                    FORJ(3) {
+                        residual[i] += std::pow((outLAB[i][j] - outCalcLAB[i][j]), 2.0);
+//                        residual[i*3+j] = outLAB[i][j] - outCalcLAB[i][j];
+                    }
+                    residual[i] = std::pow(residual[i], 1.0/4.0);
+                }
                 
                 return true;
             }

@@ -73,37 +73,121 @@ namespace rta {
         vector< RGBSen >().swap(_rgbsen);
     }
     
+    //	=====================================================================
+    //	Fetch the brand of camera
+    //
+    //	inputs:
+    //      N/A
+    //
+    //	outputs:
+    //		const char *: the name of camera brand
+    
     const char * Spst::getBrand() const {
         return _brand;
     }
+    
+    //	=====================================================================
+    //	Fetch the model of the camera
+    //
+    //	inputs:
+    //      N/A
+    //
+    //	outputs:
+    //		const char *: the model of the camera
     
     const char * Spst::getModel() const {
         return _model;
     }
     
+    //	=====================================================================
+    //	Fetch wavelength increment value of the camera sensitivity
+    //
+    //	inputs:
+    //      N/A
+    //
+    //	outputs:
+    //		const uint8_t: Wavelength increment value (e.g., 5nm, 10nm) of
+    //                     the camera sensitivity
+    
     const uint8_t Spst::getWLIncrement() const {
         return _increment;
     }
+    
+    //	=====================================================================
+    //	Fetch the sensitivity data of the camera (reading from the file)
+    //
+    //	inputs:
+    //      N/A
+    //
+    //	outputs:
+    //		const vector <RGBSen>: the sensitivity (in vector) of the camera
     
     const vector <RGBSen> & Spst::getSensitivity() const {
         return _rgbsen;
     }
     
+    //	=====================================================================
+    //	Fetch the brand of camera
+    //
+    //	inputs:
+    //      N/A
+    //
+    //	outputs:
+    //		char *: the name of camera brand
+
     char * Spst::getBrand() {
         return _brand;
     }
     
+    //	=====================================================================
+    //	Fetch the model of the camera
+    //
+    //	inputs:
+    //      N/A
+    //
+    //	outputs:
+    //	    char *: the model of the camera
+
     char * Spst::getModel() {
         return _model;
     }
     
+    //	=====================================================================
+    //	Fetch the wavelength increment value of the camera sensitivity
+    //
+    //	inputs:
+    //      N/A
+    //
+    //	outputs:
+    //	    uint8_t: Wavelength increment value (e.g., 5nm, 10nm) of the
+    //               camera's sensitivity
+
     uint8_t Spst::getWLIncrement() {
         return _increment;
     }
     
+    //	=====================================================================
+    //	Fetch the sensitivity data of the camera (reading from the file)
+    //
+    //	inputs:
+    //      N/A
+    //
+    //	outputs:
+    //		vector <RGBSen>: the sensitivity (in vector) of the camera
+    
     vector <RGBSen> & Spst::getSensitivity() {
         return _rgbsen;
     }
+    
+    //	=====================================================================
+    //	Set the brand of camera
+    //
+    //	inputs:
+    //      const char *: brand (read from the file or
+    //                    the meta-data from libraw)
+    //
+    //	outputs:
+    //		void: _brand (private member)
     
     void Spst::setBrand(const char * brand) {
         assert(brand != null_ptr);
@@ -122,6 +206,16 @@ namespace rta {
         return;
     }
     
+    //	=====================================================================
+    //	Set the model of camera
+    //
+    //	inputs:
+    //      const char *: brand (read from the file or
+    //                    the meta-data from libraw)
+    //
+    //	outputs:
+    //		void: _brand (private member)
+    
     void Spst::setModel(const char * model) {
         assert(model != null_ptr);
         uint8_t len = strlen(model);
@@ -139,12 +233,30 @@ namespace rta {
         return;
     }
     
-    void Spst::setWLIncrement(uint8_t inc){
+    //	=====================================================================
+    //	Set the wavelength increment value of the camera sensitivity
+    //
+    //	inputs:
+    //      uint8_t: inc (read from the file)
+    //
+    //	outputs:
+    //		void: _increment (private member)
+    
+    void Spst::setWLIncrement(const uint8_t inc){
         _increment = inc;
         
         return;
     }
     
+    //	=====================================================================
+    //	Set the sensitivity data of the camera (reading from the file)
+    //
+    //	inputs:
+    //      const vector<RGBSen>: rgbsen (read from the file)
+    //
+    //	outputs:
+    //		void: _rgbsen (private member)
+
     void Spst::setSensitivity(const vector<RGBSen> rgbsen){
         FORI(rgbsen.size()){
             _rgbsen[i] = rgbsen[i];
@@ -353,7 +465,7 @@ namespace rta {
                 string strToken(token);
                 
                 if (strType.compare(strToken) != 0
-                    && strType.compare("na") != 0)
+                    && strType.compare("unknown") != 0)
                 {
                     fin.close();
                     return 0;
@@ -496,8 +608,6 @@ namespace rta {
                     }
                 }
                 
-//                cout << "WL: " << _cmf[i].wl << " X:" << double(_cmf[i].xbar) << "; " << "Y: " << double(_cmf[i].ybar) << "; " << "Z: " << double(_cmf[i].zbar) << "\n";
-
                 i += 1;
             }
         }
@@ -509,16 +619,16 @@ namespace rta {
     //	Calculate White Balance based on the best illuminate data
     //
     //	inputs:
-    //		N/A
+    //		const char *: illumType
     //
     //	outputs:
     //		vector: _wb(R, G, B)
     
-    void Idt::calWB(){
+    void Idt::calWB( const char * illumType ){
         assert(_cameraSpst._rgbsen.size() > 0);
         
         cout << "The best illuminate is: " << _bestIllum << endl;
-        if(loadIlluminate(_bestIllum, "na"))
+        if(loadIlluminate(_bestIllum, illumType))
             scaleLSC();
 
         vector< vector<double> > colRGB(3, vector<double>(81, 1.0));
@@ -533,7 +643,6 @@ namespace rta {
         clearVM(colRGB);
         
         FORI(_wb.size()) {
-//            printf("%f,", _wb[i]);
             _wb[i] = invertD(_wb[i]);
         }
     }
@@ -571,6 +680,16 @@ namespace rta {
         return;
     }
     
+    //	=====================================================================
+    //	Calculate the middle product based on the camera sensitivity data
+    //  and illuminate/light source data
+    //
+    //	inputs:
+    //		N/A
+    //
+    //	outputs:
+    //		vector < double >: scaled vector by its maximum value
+
     vector<double> Idt::calCM() {
         vector<RGBSen> rgbsen = _cameraSpst.getSensitivity();
         vector< vector<double> > rgbsenV(3, vector<double>(rgbsen.size(), 1.0));
@@ -588,6 +707,16 @@ namespace rta {
         return CM;
     }
     
+    //	=====================================================================
+    //	Calculate the middle product based on the 190 patch / training data
+    //  and illuminate/light source data
+    //
+    //	inputs:
+    //		N/A
+    //
+    //	outputs:
+    //		vector < vector<double> >: 2D vector (81 x 190)
+    
     vector< vector<double> > Idt::calTI() const {
         assert(_illuminate.data.size() == 81 &&
                _trainingSpec[0].data.size() == 190);
@@ -600,6 +729,18 @@ namespace rta {
         
         return TI;
     }
+    
+    //	=====================================================================
+    //	Calculate the CAT matrix to compensate for difference between scene
+    //  adopted white chromaticity and ACES neutral chromaticity (either
+    //  CAT02 or bradford is used)
+    //
+    //	inputs:
+    //		vector<double> source
+    //      vector<double> destination
+    //
+    //	outputs:
+    //		vector < vector<double> >: 2D vector (3 x 3)
     
     vector< vector<double> > Idt::calCAT(vector<double> src, vector<double> des) const {
         assert(src.size() == des.size());
@@ -628,6 +769,17 @@ namespace rta {
         return vkm;
     }
     
+    //	=====================================================================
+    //	Calculate CIE XYZ tristimulus values of scene adopted white
+    //  based on training color spectral radiances from CalTI() and color
+    //  adaptation matrix from CalCAT()
+    //
+    //	inputs:
+    //		vector< vector<double> > outcome of CalTI()
+    //
+    //	outputs:
+    //		vector < vector<double> >: 2D vector (190 x 3)
+    
     vector< vector<double> > Idt::calXYZ(vector< vector<double> > TI) const {
         assert(TI.size() == 81);
         
@@ -653,19 +805,22 @@ namespace rta {
 
         XYZ = mulVector(XYZ, calCAT(ww, w));
         
-//        FORI(190) {
-//            FORJ(3) {
-//                printf("%f, ", XYZ[i][j]);
-//            }
-//            printf("\n");
-//        }
-        
         clearVM(ww);
         clearVM(w);
 
         return XYZ;
     }
     
+    //	=====================================================================
+    //	Calculate white-balanced linearized camera system response (in RGB)
+    //  based on training color spectral radiances from CalTI() and white
+    //  balance factors from CalWB()
+    //
+    //	inputs:
+    //		vector< vector<double> > outcome of CalTI()
+    //
+    //	outputs:
+    //		vector < vector<double> >: 2D vector (190 x 3)
     
     vector< vector<double> > Idt::calRGB(vector< vector<double> > TI) const {
         assert(TI.size() == 81);
@@ -683,25 +838,29 @@ namespace rta {
         FORI(RGB.size())
         RGB[i] = mulVectorElement(_wb, RGB[i]);
         
-//        FORI(3) printf("%f, ", _wb[i]);
-//        printf("\n\n");
-        
-//        FORI(190) {
-//            FORJ(3) {
-//                printf("%f, ", RGB[i][j]);
-//            }
-//            printf("\n");
-//        }
-        
         clearVM(transTI);
         clearVM(colRGB);
         
         return RGB;
     }
     
+    //	=====================================================================
+    //	Process cureve fit between XYZ and RGB data with initial set of B
+    //  values.
+    //
+    //	inputs:
+    //		vector< vector<double> >: RGB
+    //      vector< vector<double> >: XYZ
+    //      double * :                B (6 elements)
+    //
+    //	outputs:
+    //      boolean: if succeed, _idt should be filled with values
+    //               that minimize the distance between RGB and XYZ
+    //               through updated B.
+    
     bool Idt::curveFit(vector< vector<double> > RGB,
-                                vector< vector<double> > XYZ,
-                                double * B)
+                               vector< vector<double> > XYZ,
+                               double * B)
     {
         Problem problem;
         vector < vector <double> > M(3, vector<double>(3));
@@ -710,7 +869,7 @@ namespace rta {
                 M[i][j] = acesrgb_XYZ_3[i][j];
         
         CostFunction* cost_function =
-                new NumericDiffCostFunction<Objfun, CENTRAL, 1, 6>(new Objfun(RGB, XYZ, M),
+                new NumericDiffCostFunction<Objfun, CENTRAL, 190, 6>(new Objfun(RGB, XYZ, M),
                                                                    TAKE_OWNERSHIP);
         problem.AddResidualBlock(cost_function,
                                  new CauchyLoss(0.5),
@@ -720,10 +879,10 @@ namespace rta {
         options.linear_solver_type = ceres::DENSE_QR;
         options.minimizer_progress_to_stdout = false;
         options.parameter_tolerance = 1e-17;
-//        options.gradient_tolerance = 1e-17;
+        options.gradient_tolerance = 1e-17;
         options.function_tolerance = 1e-17;
         options.max_num_iterations = 100;
-        options.minimizer_type = LINE_SEARCH;
+//        options.minimizer_type = LINE_SEARCH;
         
         Solver::Summary summary;
         Solve(options, &problem, &summary);
@@ -755,10 +914,21 @@ namespace rta {
         return 0;
     }
     
+    //	=====================================================================
+    //	Calculate IDT matrix by calling curveFit(...)
+    //
+    //	inputs:
+    //         N/A
+    //
+    //	outputs: through curveFit(...)
+    //      boolean: if succeed, _idt should be filled with values
+    //               that minimize the distance between RGB and XYZ
+    //               through updated B.
+
     bool Idt::calIDT() {
 //        loadIlluminate(_bestIllum);
 //        scaleLSC();
-        calWB();
+//        calWB();
         
         double BStart[6] = {1.0, 0.0, 0.0, 1.0, 0.0, 0.0};
         vector< vector<double> > TI = calTI();
@@ -766,17 +936,54 @@ namespace rta {
         return curveFit(calRGB(TI), calXYZ(TI), BStart);
     }
     
+    //	=====================================================================
+    //  Get camera sensitivity data that was loaded from the file
+    //
+    //	inputs:
+    //         N/A
+    //
+    //	outputs:
+    //      const Spst: camera sensitivity data that was loaded from the file
+    
     const Spst Idt::getCameraSpst() const {
         return static_cast<const Spst>(_cameraSpst);
     }
     
+    //	=====================================================================
+    //  Get illuminate data / light source that was loaded from the file
+    //
+    //	inputs:
+    //         N/A
+    //
+    //	outputs:
+    //      const illum: illuminate data that was loaded from the file
+
     const illum Idt::getIlluminate() const {
         return static_cast<const illum>(_illuminate);
     }
     
+    //	=====================================================================
+    //  Get Idt matrix if CalIDT() succeeds
+    //
+    //	inputs:
+    //         N/A
+    //
+    //	outputs:
+    //      const vector< vector < double > >: _idt matrix (3 x 3)
+
+    
     const vector< vector<double> > Idt::getIDT() const {
         return static_cast< vector< vector<double> > >(_idt);
     }
+    
+    //	=====================================================================
+    //  Get white balanced if CalWB(...) succeeds
+    //
+    //	inputs:
+    //         N/A
+    //
+    //	outputs:
+    //      const vector< double >: _wb vector (1 x 3)
     
     const vector< double > Idt::getWB() const {
         return static_cast< vector<double> >(_wb);

@@ -10,8 +10,14 @@ add_library( rawtoacesIDT SHARED
 
 if ( ceres_FOUND )
   target_link_libraries( rawtoacesIDT ${CERES_LIBRARIES} )
-  target_link_libraries( rawtoacesIDT ${CERES_LDFLAGS_OTHER} )
+#  target_link_libraries( rawtoacesIDT ${CERES_LDFLAGS_OTHER} )
 endif()
+
+install(  FILES
+	 define.h
+	 mathOps.h
+         rta.h	
+ DESTINATION include/RAWTOACES )
 
 install( TARGETS rawtoacesIDT DESTINATION lib )
 

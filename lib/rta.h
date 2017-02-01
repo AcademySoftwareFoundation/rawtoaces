@@ -145,6 +145,9 @@ namespace rta {
             vector< vector<double> > calXYZ(vector< vector<double> > TI) const;
             vector< vector<double> > calRGB(vector< vector<double> > TI) const;
         
+            vector< vector<double> > XYZtoLAB(const vector < vector<double> >& XYZ) const;
+            vector< vector<double> > getCalcXYZt(const vector < vector<double> > RGB,
+                                                 const double * const B) const;
             bool curveFit(vector< vector<double> > RGB,
                           vector< vector<double> > XYZ,
                           double * BStart);
@@ -209,7 +212,8 @@ namespace rta {
         public:
             Objfun(vector< vector<double> > RGB,
                    vector< vector<double> > XYZ,
-                   vector< vector<double> > M): _RGB(RGB), _XYZ(XYZ), _M(M) { }
+                   vector< vector<double> > M,
+                   int row): _RGB(RGB), _XYZ(XYZ), _M(M), _row(row){ }
         
             vector < vector<double> > XYZtoLAB( const vector < vector<double> >& XYZ ) const
             {
@@ -263,67 +267,14 @@ namespace rta {
                 return outCalcXYZt;
             }
         
-            double findDistance(const vector < vector<double> > RGB,
-                                const vector < vector<double> > outLAB,
-                                const double * const B) const
-            {
-                assert(RGB.size() == 190);
-                vector < vector<double> > BV(3, vector<double>(3));
-                
-                BV[0][0] = B[0];
-                BV[0][1] = B[1];
-                BV[0][2] = 1.0 - B[0] - B[1];
-                BV[1][0] = B[2];
-                BV[1][1] = B[3];
-                BV[1][2] = 1.0 - B[2] - B[3];
-                BV[2][0] = B[4];
-                BV[2][1] = B[5];
-                BV[2][2] = 1.0 - B[4] - B[5];
-                
-                vector< vector<double> > outCalcXYZt = transposeVec(mulVector(mulVector(_M, BV),
-                                                                              transposeVec(transposeVec(RGB))));
-                vector< vector<double> > outCalcLAB = XYZtoLAB(outCalcXYZt);
-
-                double dist = 0.0;
-                double maxD = numeric_limits<double>::min();
-                
-                FORI(190) {
-                    double deltaE = 0.0;
-                    FORJ(3) {
-                        deltaE += std::pow((outLAB[i][j] - outCalcLAB[i][j]), 2.0);
-                    }
-                    
-                    if (maxD < std::pow(deltaE, 1.0/2.0))
-                        maxD = std::pow(deltaE, 1.0/2.0);
-                    
-                    dist += std::pow(deltaE, 1.0/2.0);
-                }
-                
-//                printf("Max: %f, \n", maxD);
-//                printf("Mean: %f, \n", dist/190.0);
-
-                clearVM(BV);
-                clearVM(outCalcXYZt);
-                clearVM(outCalcLAB);
-
-                return dist;
-            }
-        
             bool operator()(const double* const B,
                             double* residual) const
             {
-//                residual[0] = findDistance(_RGB, XYZtoLAB(_XYZ), B);
-                
                 vector < vector<double> > outLAB = XYZtoLAB(_XYZ);
                 vector < vector<double> > outCalcLAB = XYZtoLAB(getCalcXYZt(_RGB, B));
 
-                FORI(190) {
-                    residual[i] = 0.0;
-                    FORJ(3) {
-                        residual[i] += std::pow((outLAB[i][j] - outCalcLAB[i][j]), 2.0);
-//                        residual[i*3+j] = outLAB[i][j] - outCalcLAB[i][j];
-                    }
-                    residual[i] = std::pow(residual[i], 1.0/4.0);
+                FORJ(3) {
+                    residual[j] = outLAB[_row][j] - outCalcLAB[_row][j];
                 }
                 
                 return true;
@@ -333,6 +284,7 @@ namespace rta {
             const vector< vector<double> > _RGB;
             const vector< vector<double> > _XYZ;
             const vector< vector<double> > _M;
+            const int _row;
         };
 }
 #endif

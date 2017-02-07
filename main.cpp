@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     LibRaw RawProcessor;
     int i,arg,c,ret;
     char opm,opt,*cp,*sp,*path,*cameraSenPath, *illumType;
-    int use_bigfile=0, use_timing=0, use_camera_path=0, use_Mul=0;
+    int use_bigfile=0, use_timing=0, use_camera_path=0, use_illum=0, use_Mul=0;
     float scale = 1.0;
     
 #ifndef WIN32
@@ -98,6 +98,8 @@ int main(int argc, char *argv[])
                     return 1;
                 }
              }
+              
+              use_illum = 1;
           }
             
           switch (opt)
@@ -153,8 +155,7 @@ int main(int argc, char *argv[])
               case 'M':  scale = atof(argv[arg++]); break;
               case 'Q':  use_camera_path = 1;
                          cameraSenPath = (char *)(argv[arg++]);
-                      break;
-              
+                         break;
 #ifndef WIN32
               case 'E':  use_mmap              = 1;  break;
 #endif
@@ -277,7 +278,7 @@ int main(int argc, char *argv[])
             vector < double > wbv( 3, 1.0 );
 
             if ( P1.dng_version == 0 ) {
-                if ( illumType )
+                if ( use_illum )
                     illumType = lowerCase( illumType );
                 
                 bool gotIDT = prepareIDT( cameraSenPath,

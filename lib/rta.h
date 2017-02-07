@@ -145,9 +145,6 @@ namespace rta {
             vector< vector<double> > calXYZ(vector< vector<double> > TI) const;
             vector< vector<double> > calRGB(vector< vector<double> > TI) const;
         
-            vector< vector<double> > XYZtoLAB(const vector < vector<double> >& XYZ) const;
-            vector< vector<double> > getCalcXYZt(const vector < vector<double> > RGB,
-                                                 const double * const B) const;
             bool curveFit(vector< vector<double> > RGB,
                           vector< vector<double> > XYZ,
                           double * BStart);
@@ -162,8 +159,6 @@ namespace rta {
 
         private:
             string  _outputEncoding;
-//            string  _illumType;
-//            string  _cameraPath;
             string  _bestIllum;
             Spst    _cameraSpst;
             illum   _illuminate;
@@ -202,89 +197,39 @@ namespace rta {
         
             void prepareMatrices();
             void getCameraXYZMtxAndWhitePoint(double baseExpo);
-
         
         private:
             vector<double> CAT;
     };
     
-    class Objfun {
-        public:
+    struct Objfun {
+//        public:
             Objfun(vector< vector<double> > RGB,
-                   vector< vector<double> > XYZ,
-                   vector< vector<double> > M,
-                   int row): _RGB(RGB), _XYZ(XYZ), _M(M), _row(row){ }
+                   vector< vector<double> > outLAB): _RGB(RGB), _outLAB(outLAB) { }
         
-            vector < vector<double> > XYZtoLAB( const vector < vector<double> >& XYZ ) const
+            template<typename T>
+            bool operator() (const T* B,
+                             T * residuals) const
             {
-                assert(XYZ.size() == 190);
-                double add = 16.0/116.0;
-                
-                vector< vector<double> > tmpXYZ(190, vector<double>(3, 1.0));
-                FORI(190) {
+                vector < vector <T> > RGBJet(190, vector< T >(3));
+                FORI(190)
                     FORJ(3)
-                    {
-                        tmpXYZ[i][j] = XYZ[i][j] / XYZ_w[j];
-                        if (tmpXYZ[i][j] > e)
-                            tmpXYZ[i][j] = std::pow(tmpXYZ[i][j], 1.0/3.0);
-                        else
-                            tmpXYZ[i][j] = k * tmpXYZ[i][j] + add;
+                        RGBJet[i][j] = T(_RGB[i][j]);
+            
+                vector < vector <T> > outCalcLAB = XYZtoLAB(getCalcXYZt(RGBJet, B));
+            
+                FORI(190) {
+                    FORJ(3) {
+                        residuals[i * 3 + j] = _outLAB[i][j] - outCalcLAB[i][j];
                     }
                 }
             
-                vector< vector<double> > outCalcLab(190, vector<double>(3, 1.0));
-                FORI(190)
-                {
-                    outCalcLab[i][0] = 116.0 * tmpXYZ[i][1]  - 16.0;
-                    outCalcLab[i][1] = 500.0 * (tmpXYZ[i][0] - tmpXYZ[i][1]);
-                    outCalcLab[i][2] = 200.0 * (tmpXYZ[i][1] - tmpXYZ[i][2]);
-                }
-                
-                clearVM(tmpXYZ);
-                
-                return outCalcLab;
-            }
+            return true;
+        }
         
-            vector< vector<double> > getCalcXYZt(const vector < vector<double> > RGB,
-                                                 const double * const B) const
-            {
-                assert(RGB.size() == 190);
-                vector < vector<double> > BV( 3, vector< double >(3) );
-            
-                BV[0][0] = B[0];
-                BV[0][1] = B[1];
-                BV[0][2] = 1.0 - B[0] - B[1];
-                BV[1][0] = B[2];
-                BV[1][1] = B[3];
-                BV[1][2] = 1.0 - B[2] - B[3];
-                BV[2][0] = B[4];
-                BV[2][1] = B[5];
-                BV[2][2] = 1.0 - B[4] - B[5];
-            
-                vector< vector<double> > outCalcXYZt = transposeVec(mulVector(mulVector(_M, BV),
-                                                                    transposeVec(transposeVec(RGB))));
-                clearVM(BV);
-                return outCalcXYZt;
-            }
-        
-            bool operator()(const double* const B,
-                            double* residual) const
-            {
-                vector < vector<double> > outLAB = XYZtoLAB(_XYZ);
-                vector < vector<double> > outCalcLAB = XYZtoLAB(getCalcXYZt(_RGB, B));
-
-                FORJ(3) {
-                    residual[j] = outLAB[_row][j] - outCalcLAB[_row][j];
-                }
-                
-                return true;
-            }
-        
-        private:
+//        private:
             const vector< vector<double> > _RGB;
-            const vector< vector<double> > _XYZ;
-            const vector< vector<double> > _M;
-            const int _row;
+            const vector< vector<double> > _outLAB;
         };
 }
 #endif

@@ -65,9 +65,9 @@
 
 using namespace rta;
 
-bool readCameraSenPath(  const char * cameraSenPath,
-                       libraw_iparams_t P,
-                       Idt * idt )
+bool readCameraSenPath( const char * cameraSenPath,
+                        libraw_iparams_t P,
+                        Idt * idt )
 {
     bool readC = 0;
     
@@ -139,39 +139,42 @@ bool readIlluminate( const char * illumType,
 
 
 bool prepareIDT( const char * cameraSenPath,
-                const char * illumType,
-                libraw_iparams_t P,
-                libraw_colordata_t C,
-                vector< vector<double> > &idtm,
-                vector<double> &wbv )
+                 const char * illumType,
+                 libraw_iparams_t P,
+                 libraw_colordata_t C,
+                 vector< vector<double> > &idtm,
+                 vector<double> &wbv )
 {
     Idt * idt = new Idt(  );
     bool read = readCameraSenPath( cameraSenPath, P, idt );
     
-    string strType(illumType);
-    
     if (!read ) {
-        fprintf( stderr,"No matching cameras found.\n" );
-        return 0;
-    }
-    else if ( strType.compare("unknown") != 0  && !read ) {
-        fprintf( stderr,"The Illuminate should be accompanied "
-                "by a matching Camera Sensitivity data. \n" );
+        fprintf( stderr,"No matching cameras found.\n");
+        
+        if (illumType) {
+            fprintf( stderr,"The Illuminate should be accompanied "
+                            "by a matching Camera Sensitivity data.\n" );
+        }
         
         return 0;
     }
-    
+
     if (!illumType)
         illumType = "unknown";
     
     map< string, vector<double> > illuCM;
     read = readIlluminate( illumType, illuCM, idt );
     
-    if( read ) {
+    if( !read ) {
+        fprintf( stderr,"No matching light source. "
+                        "Will use the default settings.\n" );
+    }
+    else
+    {
         idt->loadTrainingData ( static_cast<string>( FILEPATH )
-                               +"/training/training_spectral" );
+                                +"/training/training_spectral" );
         idt->loadCMF ( static_cast<string>( FILEPATH )
-                      +"/cmf/cmf_193" );
+                       +"/cmf/cmf_193" );
         
         vector<double> pre_mulV( 3, 1.0 );
         FORI( 3 ) pre_mulV[i] = ( double )( C.pre_mul[i] );

@@ -836,72 +836,13 @@ namespace rta {
         
         vector< vector<double> > RGB = transposeVec(mulVector(colRGB, transTI));
         FORI(RGB.size())
-        RGB[i] = mulVectorElement(_wb, RGB[i]);
+            RGB[i] = mulVectorElement(_wb, RGB[i]);
         
         clearVM(transTI);
         clearVM(colRGB);
         
         return RGB;
     }
-    
-    vector < vector<double> > Idt::XYZtoLAB( const vector < vector<double> >& XYZ ) const
-    {
-        assert(XYZ.size() == 190);
-        double add = 16.0/116.0;
-        
-        vector< vector<double> > tmpXYZ(190, vector<double>(3, 1.0));
-        FORI(190) {
-            FORJ(3)
-            {
-                tmpXYZ[i][j] = XYZ[i][j] / XYZ_w[j];
-                if (tmpXYZ[i][j] > e)
-                    tmpXYZ[i][j] = std::pow(tmpXYZ[i][j], 1.0/3.0);
-                else
-                    tmpXYZ[i][j] = k * tmpXYZ[i][j] + add;
-            }
-        }
-        
-        vector< vector<double> > outCalcLab(190, vector<double>(3, 1.0));
-        FORI(190)
-        {
-            outCalcLab[i][0] = 116.0 * tmpXYZ[i][1]  - 16.0;
-            outCalcLab[i][1] = 500.0 * (tmpXYZ[i][0] - tmpXYZ[i][1]);
-            outCalcLab[i][2] = 200.0 * (tmpXYZ[i][1] - tmpXYZ[i][2]);
-        }
-        
-        clearVM(tmpXYZ);
-        
-        return outCalcLab;
-    }
-    
-    vector< vector<double> > Idt::getCalcXYZt(const vector < vector<double> > RGB,
-                                              const double * const B) const
-    {
-        assert(RGB.size() == 190);
-        vector < vector<double> > BV( 3, vector< double >(3) );
-        
-        BV[0][0] = B[0];
-        BV[0][1] = B[1];
-        BV[0][2] = 1.0 - B[0] - B[1];
-        BV[1][0] = B[2];
-        BV[1][1] = B[3];
-        BV[1][2] = 1.0 - B[2] - B[3];
-        BV[2][0] = B[4];
-        BV[2][1] = B[5];
-        BV[2][2] = 1.0 - B[4] - B[5];
-        
-        vector < vector <double> > M(3, vector<double>(3));
-        FORI(3)
-            FORJ(3)
-                M[i][j] = acesrgb_XYZ_3[i][j];
-        
-        vector< vector<double> > outCalcXYZt = transposeVec(mulVector(mulVector(M, BV),
-                                                                      transposeVec(transposeVec(RGB))));
-        clearVM(BV);
-        
-        return outCalcXYZt;
-    }
-
     
     //	=====================================================================
     //	Process cureve fit between XYZ and RGB data with initial set of B
@@ -922,31 +863,36 @@ namespace rta {
                                double * B)
     {
         Problem problem;
-        vector < vector <double> > M(3, vector<double>(3));
-        FORI(3)
-            FORJ(3)
-                M[i][j] = acesrgb_XYZ_3[i][j];
+        vector < vector <double> > outLAB = XYZtoLAB(XYZ);
         
-        FORI(190) {
-            CostFunction* cost_function =
-                new NumericDiffCostFunction<Objfun, CENTRAL, 3, 6>(new Objfun(RGB, XYZ, M, i),
-                                                                   TAKE_OWNERSHIP);
-            problem.AddResidualBlock(cost_function,
-                                     new CauchyLoss(0.5),
-                                     B);
-        }
+//        CostFunction* cost_function =
+//                new NumericDiffCostFunction<Objfun, CENTRAL, 190, 6>(new Objfun(RGB, XYZ, M),
+//                                                                     TAKE_OWNERSHIP);
         
-        Solver::Options options;
+//          CostFunction* cost_function =
+//                  new NumericDiffCostFunction<Objfun, CENTRAL, DYNAMIC, 6>(new Objfun(RGB, outLAB),
+//                                                                             TAKE_OWNERSHIP,
+//                                                                             570);
+        
+        CostFunction* cost_function =
+            new AutoDiffCostFunction<Objfun, DYNAMIC, 6>(new Objfun(RGB, outLAB), RGB.size()*(RGB[0].size()));
+        
+        problem.AddResidualBlock(cost_function,
+                                 new CauchyLoss(0.5),
+//                                 NULL,
+                                 B);
+        
+        ceres::Solver::Options options;
         options.linear_solver_type = ceres::DENSE_QR;
         options.minimizer_progress_to_stdout = false;
         options.parameter_tolerance = 1e-17;
         options.gradient_tolerance = 1e-17;
         options.function_tolerance = 1e-17;
-        options.max_num_iterations = 100;
+        options.max_num_iterations = 300;
 //        options.minimizer_type = LINE_SEARCH;
         
-        Solver::Summary summary;
-        Solve(options, &problem, &summary);
+        ceres::Solver::Summary summary;
+        ceres::Solve(options, &problem, &summary);
 //        std::cout << summary.BriefReport() << "\n";
         std::cout << summary.FullReport() << "\n";
         
@@ -987,10 +933,7 @@ namespace rta {
     //               through updated B.
 
     bool Idt::calIDT() {
-//        loadIlluminate(_bestIllum);
-//        scaleLSC();
-//        calWB();
-        
+
         double BStart[6] = {1.0, 0.0, 0.0, 1.0, 0.0, 0.0};
         vector< vector<double> > TI = calTI();
         

@@ -233,9 +233,15 @@ vector< vector<T> > transposeVec(const vector< vector<T> > vMtx)
 }
 
 template <typename T>
-float sumVector(const vector<T>& vct)
+T sumVector(const vector<T>& vct)
 {
-    return accumulate(vct.begin(), vct.end(), static_cast<T>(0));
+    T sum = T(0.0);
+    FORI(vct.size())
+        sum += vct[i];
+    
+//    return accumulate(vct.begin(), vct.end(), static_cast<T>(0));
+    
+    return sum;
 }
 
 template <typename T>
@@ -288,10 +294,13 @@ vector<T> mulVectorElement(const vector<T>& vct1, const vector<T>& vct2)
 {
     assert(vct1.size() == vct2.size());
     
-    vector<T> vct3Element(vct1.size(), 1.0);
-    transform(vct1.begin(), vct1.end(),
-              vct2.begin(), vct3Element.begin(),
-              multiplies<T>());
+    vector<T> vct3Element(vct1.size(), T(1.0));
+//    transform(vct1.begin(), vct1.end(),
+//              vct2.begin(), vct3Element.begin(),
+//              multiplies<T>());
+    
+    FORI(vct1.size())
+        vct3Element[i] = vct1[i] * vct2[i];
     
     return vct3Element;
 }
@@ -403,6 +412,66 @@ template<typename T>
 vector < vector<T> > solveVM(const vector< vector<T> >& vct1, const vector< vector<T> >& vct2)
 {
     return mulVector(invertVM3(vct1), vct2);
+}
+
+template<typename T>
+vector < vector<T> > XYZtoLAB( const vector < vector<T> >& XYZ )
+{
+    assert(XYZ.size() == 190);
+    T add = T(16.0/116.0);
+    
+    vector< vector<T> > tmpXYZ(190, vector<T>(3, T(1.0)));
+    FORI(190) {
+        FORJ(3)
+        {
+            tmpXYZ[i][j] = XYZ[i][j] / XYZ_w[j];
+            if (tmpXYZ[i][j] > T(e))
+                tmpXYZ[i][j] = ceres::pow(tmpXYZ[i][j], 1.0/3.0);
+            else
+                tmpXYZ[i][j] = T(k) * tmpXYZ[i][j] + add;
+        }
+    }
+    
+    vector< vector<T> > outCalcLab(190, vector<T>(3));
+    FORI(190)
+    {
+        outCalcLab[i][0] = T(116.0) * tmpXYZ[i][1]  - T(16.0);
+        outCalcLab[i][1] = T(500.0) * (tmpXYZ[i][0] - tmpXYZ[i][1]);
+        outCalcLab[i][2] = T(200.0) * (tmpXYZ[i][1] - tmpXYZ[i][2]);
+    }
+    
+    clearVM(tmpXYZ);
+    
+    return outCalcLab;
+}
+
+template<typename T>
+vector< vector<T> > getCalcXYZt (const vector < vector<T> > RGB,
+                                 const T *  B)
+{
+    assert(RGB.size() == 190);
+    vector < vector<T> > BV( 3, vector < T >(3) );
+    
+    vector < vector <T> > M(3, vector < T >(3));
+    FORI(3)
+    FORJ(3)
+    M[i][j] = T(acesrgb_XYZ_3[i][j]);
+    
+    BV[0][0] = B[0];
+    BV[0][1] = B[1];
+    BV[0][2] = 1.0 - B[0] - B[1];
+    BV[1][0] = B[2];
+    BV[1][1] = B[3];
+    BV[1][2] = 1.0 - B[2] - B[3];
+    BV[2][0] = B[4];
+    BV[2][1] = B[5];
+    BV[2][2] = 1.0 - B[4] - B[5];
+    
+    vector< vector<T> > outCalcXYZt = transposeVec(mulVector(mulVector(M, BV),
+                                                             transposeVec(transposeVec(RGB))));
+    
+    clearVM(BV);
+    return outCalcXYZt;
 }
 
 cameraDataPath& cameraPathsFinder() {

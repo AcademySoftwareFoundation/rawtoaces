@@ -203,7 +203,6 @@ namespace rta {
     };
     
     struct Objfun {
-//        public:
             Objfun(vector< vector<double> > RGB,
                    vector< vector<double> > outLAB): _RGB(RGB), _outLAB(outLAB) { }
         
@@ -224,10 +223,9 @@ namespace rta {
                     }
                 }
             
-            return true;
-        }
+                return true;
+           }
         
-//        private:
             const vector< vector<double> > _RGB;
             const vector< vector<double> > _outLAB;
         };

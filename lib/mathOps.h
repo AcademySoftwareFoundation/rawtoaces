@@ -467,11 +467,13 @@ vector< vector<T> > getCalcXYZt (const vector < vector<T> > RGB,
     BV[2][1] = B[5];
     BV[2][2] = 1.0 - B[4] - B[5];
     
-    vector< vector<T> > outCalcXYZt = transposeVec(mulVector(mulVector(M, BV),
-                                                             transposeVec(transposeVec(RGB))));
+    //    vector< vector<T> > outCalcXYZt = transposeVec(mulVector(BV, RGB));
+    
+    vector< vector<T> > outCalcXYZt = mulVector(mulVector(RGB, BV), M);
     
     clearVM(BV);
     return outCalcXYZt;
+
 }
 
 cameraDataPath& cameraPathsFinder() {

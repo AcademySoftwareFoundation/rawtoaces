@@ -834,7 +834,9 @@ namespace rta {
             colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
         }
         
-        vector< vector<double> > RGB = transposeVec(mulVector(colRGB, transTI));
+//        vector< vector<double> > RGB = transposeVec(mulVector(colRGB, transTI));
+        vector< vector<double> > RGB = mulVector(transTI, colRGB);
+
         FORI(RGB.size())
             RGB[i] = mulVectorElement(_wb, RGB[i]);
         
@@ -878,16 +880,17 @@ namespace rta {
             new AutoDiffCostFunction<Objfun, DYNAMIC, 6>(new Objfun(RGB, outLAB), RGB.size()*(RGB[0].size()));
         
         problem.AddResidualBlock(cost_function,
-                                 new CauchyLoss(0.5),
-//                                 NULL,
+//                                 new CauchyLoss(0.5),
+                                 NULL,
                                  B);
         
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::DENSE_QR;
-        options.minimizer_progress_to_stdout = false;
+        options.minimizer_progress_to_stdout = true;
         options.parameter_tolerance = 1e-17;
         options.gradient_tolerance = 1e-17;
         options.function_tolerance = 1e-17;
+        options.min_line_search_step_size = 1e-17;
         options.max_num_iterations = 300;
 //        options.minimizer_type = LINE_SEARCH;
         

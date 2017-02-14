@@ -52,7 +52,7 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
-#include "usage.h"
+#include "rawtoaces/usage.h"
 
 int main(int argc, char *argv[])
 {
@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
                 iobuffer = mmap( NULL, msize,PROT_READ, MAP_PRIVATE, file, 0 );
                 if( !iobuffer )
                 {
-                    fprintf( stderr, "Cannot mmap %s: %s\n", argv[arg], strerror( errno ) );
+                    fprintf ( stderr, "Cannot mmap %s: %s\n", argv[arg], strerror( errno ) );
                     close( file );
                     continue;
                 }
@@ -231,7 +231,8 @@ int main(int argc, char *argv[])
                 close( file );
                 if( (ret = RawProcessor.open_buffer( iobuffer,st.st_size ) != LIBRAW_SUCCESS ) )
                 {
-                    fprintf( stderr, "Cannot open_buffer %s: %s\n", argv[arg], libraw_strerror( ret ) );
+                    fprintf ( stderr, "Cannot open_buffer %s: %s\n", argv[arg],
+                             libraw_strerror( ret ) );
                     continue; // no recycle b/c open file will recycle itself
                 }
 
@@ -257,13 +258,13 @@ int main(int argc, char *argv[])
                 timerprint( "LibRaw::open_file()", argv[arg] );
 
             timerstart_timeval();
-            if( (ret = RawProcessor.unpack() ) != LIBRAW_SUCCESS )
+            if( ( ret = RawProcessor.unpack() ) != LIBRAW_SUCCESS )
                 {
                     fprintf( stderr,"Cannot unpack %s: %s\n", argv[arg], libraw_strerror( ret ) );
                     continue;
                 }
             
-            if(use_timing)
+            if ( use_timing )
                 timerprint( "LibRaw::unpack()", argv[arg] );
             
             OUT.use_camera_matrix  = 0;
@@ -288,7 +289,8 @@ int main(int argc, char *argv[])
                                           idtm,
                                           wbv );
                 
-                if ( gotIDT ) {
+                // pay attention to half size
+                if ( gotIDT && !OUT.half_size) {
                      OUT.output_color = 0;
                      OUT.use_camera_wb = 0;
                     
@@ -297,66 +299,66 @@ int main(int argc, char *argv[])
                 }
             }
 
-            // 1.0 for exposure - the last thing to do.
             // -r option
-            if( use_Mul && !isnan( OUT.user_mul[0] )){
+            if( use_Mul && !isnan( OUT.user_mul[0] ) ){
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
                 
                 double sc = numeric_limits<double>::max();
-                for(c=0; c<P1.colors; c++){
-                    if (OUT.user_mul[c] <= sc)
-                        sc = OUT.user_mul[c];
+                FORI( P1.colors ){
+                    if ( OUT.user_mul[i] <= sc )
+                        sc = OUT.user_mul[i];
                 }
                 
-                if (sc != 1.0) {
-                    fprintf (stderr, "Warning: The smallest channel multiplier is not 1.0.\n");
+                if ( sc != 1.0 ) {
+                    fprintf ( stderr, "Warning: The smallest channel multiplier is not 1.0.\n" );
                 }
             }
             
-            if(OUT.use_auto_wb == 1) {
+            if ( OUT.use_auto_wb == 1 ) {
                 OUT.use_camera_wb = 0;
             }
             
             timerstart_timeval();
             
-            if (LIBRAW_SUCCESS != (ret = RawProcessor.dcraw_process()))
+            if ( LIBRAW_SUCCESS != ( ret = RawProcessor.dcraw_process() ) )
                 {
-                    fprintf(stderr,"Cannot do postpocessing on %s: %s\n",argv[arg],libraw_strerror(ret));
-                    if(LIBRAW_FATAL_ERROR(ret))
+                    fprintf ( stderr,"Cannot do postpocessing on %s: %s\n",
+                              argv[arg],libraw_strerror(ret));
+                    if ( LIBRAW_FATAL_ERROR( ret ) )
                         continue; 
                 }
-            if(use_timing)
-                timerprint("LibRaw::dcraw_process()",argv[arg]);
+            if ( use_timing )
+                timerprint ( "LibRaw::dcraw_process()", argv[arg] );
             
-            if ((cp = strrchr (argv[arg], '.'))) *cp = 0;
-            snprintf(outfn,sizeof(outfn),
-                     "%s%s",
-                     argv[arg], "_aces.exr");
+            if ( ( cp = strrchr ( argv[arg], '.' ) ) ) *cp = 0;
+            snprintf( outfn,sizeof(outfn),
+                      "%s%s",
+                      argv[arg], "_aces.exr" );
             
-            if(verbosity>=2) // verbosity set by repeat -v switches
-                printf("Converting to aces RGB\n");
+            if (verbosity>=2) // verbosity set by repeat -v switches
+                printf ("Converting to aces RGB\n" );
             else if(verbosity)
-                printf("Writing file %s\n",outfn);
+                printf ("Writing file %s\n", outfn );
             
-            if (P1.dng_version == 0) {
+            if ( P1.dng_version == 0 ) {
                 libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
-                if(use_timing)
+                if ( use_timing )
                     timerprint("LibRaw::dcraw_make_mem_image()",argv[arg]);
                 
                 float * aces = 0;
-                if(!(OUT.output_color))
-                    aces = prepareAcesData_NonDNG_IDT(post_image, idtm, wbv);
+                if ( !(OUT.output_color) )
+                    aces = prepareAcesData_NonDNG_IDT( post_image, idtm, wbv );
                 else
-                    aces = prepareAcesData_NonDNG(post_image);
+                    aces = prepareAcesData_NonDNG( post_image );
                 
-                aces_write(outfn,
-                           post_image->width,
-                           post_image->height,
-                           post_image->colors,
-                           post_image->bits,
-                           aces,
-                           scale);
+                aces_write( outfn,
+                            post_image->width,
+                            post_image->height,
+                            post_image->colors,
+                            post_image->bits,
+                            aces,
+                            scale );
             }
 //            else {
 //                OUT.use_camera_wb = 0;

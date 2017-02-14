@@ -61,7 +61,7 @@
 #endif
 
 #include <libraw/libraw.h>
-#include "lib/rta.h"
+#include "../lib/rta.h"
 
 using namespace rta;
 
@@ -72,7 +72,7 @@ bool readCameraSenPath( const char * cameraSenPath,
     bool readC = 0;
     
     if ( cameraSenPath )  {
-        if ( stat( static_cast<const char *> ( cameraSenPath ), &st ) )  {
+        if ( stat( static_cast<const char *>( cameraSenPath ), &st ) )  {
             fprintf ( stderr,"The camera sensitivity file does not seem to exist.\n" );
             exit (  EXIT_FAILURE );
         }
@@ -138,22 +138,23 @@ bool readIlluminate( const char * illumType,
 }
 
 
-bool prepareIDT( const char * cameraSenPath,
-                 const char * illumType,
-                 libraw_iparams_t P,
-                 libraw_colordata_t C,
-                 vector< vector<double> > &idtm,
-                 vector<double> &wbv )
+bool prepareIDT ( const char * cameraSenPath,
+                  const char * illumType,
+                  libraw_iparams_t P,
+                  libraw_colordata_t C,
+                  vector < vector < double > > &idtm,
+                  vector < double > &wbv )
 {
     Idt * idt = new Idt(  );
     bool read = readCameraSenPath( cameraSenPath, P, idt );
     
     if (!read ) {
-        fprintf( stderr,"No matching cameras found.\n");
+        fprintf( stderr,"No matching cameras found. "
+                        "Will go with the default method. \n");
         
         if (illumType) {
             fprintf( stderr,"The Illuminate should be accompanied "
-                            "by a matching Camera Sensitivity data.\n" );
+                            "by a matching camera sensitivity data.\n" );
         }
         
         return 0;
@@ -177,7 +178,7 @@ bool prepareIDT( const char * cameraSenPath,
                        +"/cmf/cmf_193" );
         
         vector<double> pre_mulV( 3, 1.0 );
-        FORI( 3 ) pre_mulV[i] = ( double )( C.pre_mul[i] );
+        FORI(3) pre_mulV[i] = ( double )( C.pre_mul[i] );
         idt->chooseIlluminate( illuCM, pre_mulV );
         
         idt->calWB(illumType);
@@ -193,45 +194,44 @@ bool prepareIDT( const char * cameraSenPath,
     return 0;
 }
 
-void apply_WB(float * pixels,
-              uint8_t bits,
-              uint32_t total,
-              vector<double> wb)
+void apply_WB ( float * pixels,
+                uint8_t bits,
+                uint32_t total,
+                vector<double> wb )
 {
-    double min_wb = *min_element(wb.begin(), wb.end());
+    double min_wb = * min_element ( wb.begin(), wb.end() );
     double target = 1.0;
     
-    if (bits == 8) {
+    if ( bits == 8 ) {
         target /= INV_255;
     }
-    else if (bits == 16){
+    else if ( bits == 16 ){
         target /= INV_65535;
     }
     
-    if(!pixels) {
-        fprintf(stderr, "The pixel code value may not exist. \n");
-        exit(EXIT_FAILURE);
+    if ( !pixels ) {
+        fprintf ( stderr, "The pixel code value may not exist. \n" );
+        exit (EXIT_FAILURE);
     }
     else {
-        for(uint32_t i = 0; i < total; i+=3 ){
-            pixels[i] = clip(wb[0] * pixels[i] / min_wb, target);
-            pixels[i+1] = clip(wb[1] * pixels[i+1] / min_wb, target);
-            pixels[i+2] = clip(wb[2] * pixels[i+2] / min_wb, target);
+        for ( uint32_t i = 0; i < total; i+=3 ){
+            pixels[i]   = clip (wb[0] * pixels[i] / min_wb, target);
+            pixels[i+1] = clip (wb[1] * pixels[i+1] / min_wb, target);
+            pixels[i+2] = clip (wb[2] * pixels[i+2] / min_wb, target);
         }
     }
 }
 
-void apply_IDT(float * pixels,
-               uint8_t channel,
-               uint32_t total,
-               vector< vector<double> > idt)
+void apply_IDT ( float * pixels,
+                 uint8_t channel,
+                 uint32_t total,
+                 vector < vector < double > > idt)
 {
     assert(pixels);
     
-    if (channel == 4){
+    if ( channel == 4 ){
         idt.resize(4);
-        FORI(4)
-            idt[i].resize(4);
+        FORI(4) idt[i].resize(4);
         
         idt[0][3] = 0.0;
         idt[1][3] = 0.0;
@@ -242,33 +242,31 @@ void apply_IDT(float * pixels,
         idt[3][3] = 1.0;
     }
     
-    if (channel != 3 && channel != 4) {
-        fprintf(stderr, "Currenly support 3 channels and 4 channels. \n");
-        exit(EXIT_FAILURE);
+    if ( channel != 3 && channel != 4 ) {
+        fprintf (stderr, "Currenly support 3 channels and 4 channels. \n");
+        exit (EXIT_FAILURE);
     }
     
     pixels = mulVectorArray(pixels, total, channel, idt);
 }
 
-float * convert_to_aces_NonDNG_IDT(libraw_processed_image_t *image,
-                                   vector< vector<double> > idt,
-                                   vector<double> wb)
+float * convert_to_aces_NonDNG_IDT ( libraw_processed_image_t *image,
+                                     vector < vector < double > > idt,
+                                     vector <double> wb )
 {
-    uchar * pixel = image->data;
-    uint32_t total = image->width*image->height*image->colors;
+    uchar * pixels = image->data;
+    uint32_t total = image->width * image->height * image->colors;
     float * aces = new (std::nothrow) float[total];
     
-    FORI(total){
-        aces[i] = static_cast<float>(pixel[i]);
-    }
+    FORI(total) aces[i] = static_cast<float>(pixels[i]);
     
-    apply_WB(aces, image->bits, total, wb);
-    apply_IDT(aces, image->colors, total, idt);
+    apply_WB ( aces, image->bits, total, wb );
+    apply_IDT ( aces, image->colors, total, idt );
     
     return aces;
  }
 
-float * convert_to_aces_NonDNG(libraw_processed_image_t *image)
+float * convert_to_aces_NonDNG ( libraw_processed_image_t *image )
 {
     uchar * pixel = image->data;
     uint32_t total = image->width*image->height*image->colors;
@@ -284,33 +282,35 @@ float * convert_to_aces_NonDNG(libraw_processed_image_t *image)
         FORI(3)
             FORJ(3)
                 XYZ_acesrgb[i][j] = XYZ_acesrgb_3[i][j];
+        
         return mulVectorArray(aces, total, 3, XYZ_acesrgb);
     }
     else if(image->colors == 4){
         FORI(4)
             FORJ(4)
                 XYZ_acesrgb[i][j] = XYZ_acesrgb_4[i][j];
+        
         return mulVectorArray(aces, total, 4, XYZ_acesrgb);
     }
     else {
-        fprintf(stderr, "Currenly support 3 channels and 4 channels. \n");
-        exit(EXIT_FAILURE);
+        fprintf (stderr, "Currenly support 3 channels and 4 channels. \n");
+        exit (EXIT_FAILURE);
     }
     
     return aces;
 }
 
-float * convert_to_aces_DNG(libraw_processed_image_t *image,
-                            valarray<float> cameraToDisplayMtx)
+float * convert_to_aces_DNG ( libraw_processed_image_t *image,
+                              valarray<float> cameraToDisplayMtx )
 {
-    uchar * pixel = image->data;
-    uint32_t total = image->width*image->height*image->colors;
-    vector < vector< double> > CAT(image->colors,
-                                   vector< double >(image->colors));
+    uchar * pixels = image->data;
+    uint32_t total = image->width * image->height * image->colors;
+    vector < vector< double> > CAT( image->colors,
+                                    vector< double >(image->colors));
 
     float * aces = new (std::nothrow) float[total];
     FORI(total){
-        aces[i] = static_cast<float>(pixel[i]);
+        aces[i] = static_cast<float>(pixels[i]);
     }
     
     FORI(3)
@@ -339,24 +339,16 @@ float * convert_to_aces_DNG(libraw_processed_image_t *image,
     return aces;
 }
 
-float * prepareAcesData_NonDNG(libraw_processed_image_t *image)
+float * prepareAcesData_NonDNG ( libraw_processed_image_t *image )
 {
-    float * pixels = 0;
-    pixels = convert_to_aces_NonDNG(image);
-    
-    return pixels;
-
+    return convert_to_aces_NonDNG ( image );
 }
 
-float * prepareAcesData_NonDNG_IDT(libraw_processed_image_t *image,
-                                   vector< vector<double> > idtm,
-                                   vector<double> wbv)
+float * prepareAcesData_NonDNG_IDT ( libraw_processed_image_t *image,
+                                     vector < vector < double > > idtm,
+                                     vector < double > wbv)
 {
-    float * pixels = 0;
-    pixels = convert_to_aces_NonDNG_IDT(image, idtm, wbv);
-    
-    return pixels;
-    
+    return convert_to_aces_NonDNG_IDT( image, idtm, wbv );
 }
 
 //float * prepareAcesData_DNG(libraw_rawdata_t R,
@@ -414,16 +406,22 @@ float * prepareAcesData_NonDNG_IDT(libraw_processed_image_t *image,
 //    return pixels;
 //}
 
-void aces_write(const char * name,
-                uint16_t width,
-                uint16_t height,
-                uint8_t  channels,
-                uint8_t  bits,
-                float *  pixels,
-                float    scale = 1.0)
+void aces_write( const char * name,
+                 uint16_t width,
+                 uint16_t height,
+                 uint8_t  channels,
+                 uint8_t  bits,
+                 float *  pixels,
+                 float    scale = 1.0 )
 {
-    halfBytes *in = new (std::nothrow) halfBytes[channels*width*height];
-//    for (uint32_t i=0; i<channels*width*height; i++)
+    halfBytes *in = new (std::nothrow) halfBytes[channels * width * height];
+//    if (bits == 8) {
+//        cout << "8" << endl;
+//    }
+//    else if (bits == 16){
+//        cout << "16" << endl;
+//    }
+    
     FORI(channels*width*height){
         if (bits == 8) {
             pixels[i] = (double)pixels[i] * INV_255 * scale;
@@ -431,8 +429,6 @@ void aces_write(const char * name,
         else if (bits == 16){
             pixels[i] = (double)pixels[i] * INV_65535 * scale;
         }
-
-//        pixels[i] = (double)pixels[i] * scale;
         
         half tmpV(pixels[i]/1.0f);
         in[i] = tmpV.bits();
@@ -453,7 +449,7 @@ void aces_write(const char * name,
     
     writeParams.hi = x.getDefaultHeaderInfo();
     writeParams.hi.originalImageFlag	= 1;
-    writeParams.hi.software				= "rawtoACES";
+    writeParams.hi.software				= "rawtoaces v0.1";
     
     writeParams.hi.channels.clear();
     switch (channels)
@@ -503,12 +499,12 @@ void aces_write(const char * name,
     dynamicMeta.imageIndex = 0;
     dynamicMeta.imageCounter = 0;
     
-    x.configure(writeParams);
-    x.newImageObject(dynamicMeta);
+    x.configure ( writeParams );
+    x.newImageObject ( dynamicMeta );
     
-    for(uint32_t row = 0; row < height; row++){
-        halfBytes *rgbData = in + width*channels*row;
-        x.storeHalfRow (rgbData, row);
+    FORI( height ){
+        halfBytes *rgbData = in + width * channels * i;
+        x.storeHalfRow (rgbData, i);
     }
     
 #if 0

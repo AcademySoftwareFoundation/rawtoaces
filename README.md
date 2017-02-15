@@ -114,6 +114,24 @@ As the outcome is in the OpenEXR image file format, you should download OpenEXR.
 	```sh
 	$ brew install openexr
 	```
+	
+###### Aces Container 
+
+Aces Container is the reference implementation for a file writer intended to be used with the Academy Color Encoding System (ACES). `rawtoaces` relies on it to produce images that comply with the ACES container specification (SMPTE S2065-4). LibRaw can be downloaded from [https://github.com/ampas/aces_container]() or installed using one of the commands below.
+
+* Ubuntu / Redhat / OS X
+	
+	Install aces-container
+	
+	```sh
+	git clone git@github.com:miaoqi/aces_container.git
+	git checkout windowBuildSupport
+
+	mkdir build && cd build
+	cmake ..
+	make
+	sudo make install	
+	```
 
 ###### LibRaw
 
@@ -188,7 +206,7 @@ Ceres Solver is an open source library for solving Non-linear Least Squares prob
 	cmake ../ceres-solver-version#
 	make -j3
 	make test
-	make install
+	sudo make install
 	```
 
 * OS X

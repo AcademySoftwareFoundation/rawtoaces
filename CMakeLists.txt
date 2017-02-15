@@ -142,22 +142,22 @@ if ( NOT libraw_FOUND )
 
   if (WIN32)
     STRING(REGEX REPLACE "\\\\" "/" libraw_EXTERNAL_BUILD ${libraw_EXTERNAL_BUILD})
- 	ExternalProject_Add( project_libraw
+ 	  ExternalProject_Add( project_libraw
     	GIT_REPOSITORY https://github.com/LibRaw/LibRaw.git
     	GIT_TAG "origin/0.17-stable"
 
     	SOURCE_DIR "${libraw_EXTERNAL_BUILD}"
-  		)
-  	   set (libraw_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_libraw-prefix/src/project_libraw-build/lib/.libs") 
-       set (libraw_INCLUDE_DIRS "${libraw_EXTERNAL_BUILD}")
+  	)
+  	set (libraw_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_libraw-prefix/src/project_libraw-build/lib/.libs") 
+    set (libraw_INCLUDE_DIRS "${libraw_EXTERNAL_BUILD}")
   else ()
    	ExternalProject_Add( project_libraw
     	GIT_REPOSITORY https://github.com/LibRaw/LibRaw.git
     	GIT_TAG "0.17-stable"
 
-      	SOURCE_DIR "${libraw_EXTERNAL_BUILD}"
-      	CONFIGURE_COMMAND cd "${libraw_EXTERNAL_BUILD}" && "${libraw_EXTERNAL_BUILD}/mkdist.sh"
-      	BUILD_COMMAND "${libraw_EXTERNAL_BUILD}/configure" && make -s "${libraw_EXTERNAL_BUILD}"
+      SOURCE_DIR "${libraw_EXTERNAL_BUILD}"
+      CONFIGURE_COMMAND cd "${libraw_EXTERNAL_BUILD}" && "${libraw_EXTERNAL_BUILD}/mkdist.sh"
+      BUILD_COMMAND "${libraw_EXTERNAL_BUILD}/configure" && make -s "${libraw_EXTERNAL_BUILD}"
     )
 
   endif()
@@ -166,15 +166,14 @@ if ( NOT libraw_FOUND )
 
 endif()
 
-if ( NOT ceres_FOUND )
-  set (ceres_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/ceres")
-  set (ceres_FOUND TRUE)
-endif()
+#if ( NOT Ceres_FOUND )
+#  set (Ceres_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/ceres")
+#  set (Ceres_FOUND TRUE)
+#endif()
 
 # generated config files end up in binary dir so to find them, need
 # to add to include path
 include_directories( "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" )
-# implement find library stuff...
 
 add_definitions( -DPACKAGE="RAWTOACES" -DVERSION="${RAWTOACES_VERSION}" )
 add_subdirectory(lib)
@@ -216,28 +215,22 @@ endif()
 #if ( IlmBase_FOUND )
   #add_definitions( -DHAVE_IlmBase=1 )
   #include_directories( ${IlmBase_INCLUDE_DIRS} )
-  #link_directories( {$IlmBase_LIBRARY_DIRS} )
 #endif()
 
 if ( AcesContainer_FOUND )
   add_definitions( -DHAVE_ACESFILE=1 )
   include_directories( ${AcesContainer_INCLUDE_DIRS} )
-#  link_directories( ${AcesContainer_LIBRARY_DIRS} )
 endif()
 
 if ( libraw_FOUND )
   add_definitions (-DHAVE_LIBRAW=1 )
   include_directories( ${libraw_INCLUDE_DIRS} )
-  link_directories( ${libraw_LIBRARY_DIRS} )
 endif() 
 
-if ( ceres_FOUND )
+if ( Ceres_FOUND )
   add_definitions( -DHAVE_Ceres=1 )
   include_directories( ${CERES_INCLUDE_DIRS} )
-#  link_directories( ${CERES_LIBRARY_DIRS} )
 endif()
-
-# include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" "${IlmBase_INCLUDE_DIRS}" "${AcesContainer_INCLUDE_DIRS}" "${libraw_INCLUDE_DIRS}" "${CERES_INCLUDE_DIRS}")
 
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" "${IlmBase_INCLUDE_DIRS}" "${AcesContainer_INCLUDE_DIRS}" "${libraw_INCLUDE_DIRS}")
 
@@ -261,11 +254,6 @@ if ( libraw_FOUND )
   target_link_libraries( rawtoaces ${libraw_LIBRARIES} )
   target_link_libraries( rawtoaces ${libraw_LDFLAGS_OTHER} )
 endif()
-
-#if ( ceres_FOUND )
-#  target_link_libraries( rawtoaces ${CERES_LIBRARIES} )
-#  target_link_libraries( rawtoaces ${CERES_LDFLAGS_OTHER} )
-#endif()
 
 install( TARGETS rawtoaces DESTINATION bin )
 

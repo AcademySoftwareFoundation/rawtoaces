@@ -886,7 +886,7 @@ namespace rta {
         
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::DENSE_QR;
-        options.minimizer_progress_to_stdout = true;
+        options.minimizer_progress_to_stdout = false;
         options.parameter_tolerance = 1e-17;
         options.gradient_tolerance = 1e-17;
         options.function_tolerance = 1e-17;

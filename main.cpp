@@ -278,7 +278,8 @@ int main(int argc, char *argv[])
             vector < vector<double> > idtm( 3, vector<double>( 3, 1.0 ) );
             vector < double > wbv( 3, 1.0 );
 
-            if ( P1.dng_version == 0 ) {
+            // pay attention to half size
+            if ( !P1.dng_version && !OUT.half_size ) {
                 if ( use_illum )
                     illumType = lowerCase( illumType );
                 
@@ -289,18 +290,17 @@ int main(int argc, char *argv[])
                                           idtm,
                                           wbv );
                 
-                // pay attention to half size
-                if ( gotIDT && !OUT.half_size) {
+                if ( gotIDT ) {
                      OUT.output_color = 0;
                      OUT.use_camera_wb = 0;
                     
-                     FORI( 3 )
+                     FORI ( 3 )
                         OUT.user_mul[i] = 1.0;
                 }
             }
 
             // -r option
-            if( use_Mul && !isnan( OUT.user_mul[0] ) ){
+            if ( use_Mul && !isnan( OUT.user_mul[0] ) ){
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
                 

@@ -177,7 +177,7 @@ bool prepareIDT ( const char * cameraSenPath,
         idt->loadCMF ( static_cast<string>( FILEPATH )
                        +"/cmf/cmf_193" );
         
-        vector<double> pre_mulV( 3, 1.0 );
+        vector < double > pre_mulV( 3, 1.0 );
         FORI(3) pre_mulV[i] = ( double )( C.pre_mul[i] );
         idt->chooseIlluminate( illuCM, pre_mulV );
         
@@ -266,40 +266,6 @@ float * convert_to_aces_NonDNG_IDT ( libraw_processed_image_t *image,
     return aces;
  }
 
-float * convert_to_aces_NonDNG ( libraw_processed_image_t *image )
-{
-    uchar * pixel = image->data;
-    uint32_t total = image->width*image->height*image->colors;
-    float * aces = new (std::nothrow) float[total];
-    
-    for(uint32_t i = 0; i < total; i++ ){
-        aces[i] = static_cast<float>(pixel[i]);
-    }
-    
-    vector < vector< double> > XYZ_acesrgb(image->colors,
-                                           vector< double >(image->colors));
-    if(image->colors == 3) {
-        FORI(3)
-            FORJ(3)
-                XYZ_acesrgb[i][j] = XYZ_acesrgb_3[i][j];
-        
-        return mulVectorArray(aces, total, 3, XYZ_acesrgb);
-    }
-    else if(image->colors == 4){
-        FORI(4)
-            FORJ(4)
-                XYZ_acesrgb[i][j] = XYZ_acesrgb_4[i][j];
-        
-        return mulVectorArray(aces, total, 4, XYZ_acesrgb);
-    }
-    else {
-        fprintf (stderr, "Currenly support 3 channels and 4 channels. \n");
-        exit (EXIT_FAILURE);
-    }
-    
-    return aces;
-}
-
 float * convert_to_aces_DNG ( libraw_processed_image_t *image,
                               valarray<float> cameraToDisplayMtx )
 {
@@ -341,14 +307,56 @@ float * convert_to_aces_DNG ( libraw_processed_image_t *image,
 
 float * prepareAcesData_NonDNG ( libraw_processed_image_t *image )
 {
-    return convert_to_aces_NonDNG ( image );
+    uchar * pixel = image->data;
+    uint32_t total = image->width*image->height*image->colors;
+    float * aces = new (std::nothrow) float[total];
+    
+    for(uint32_t i = 0; i < total; i++ ){
+        aces[i] = static_cast<float>(pixel[i]);
+    }
+    
+    vector < vector< double> > XYZ_acesrgb(image->colors,
+                                           vector< double >(image->colors));
+    if(image->colors == 3) {
+        FORI(3)
+        FORJ(3)
+        XYZ_acesrgb[i][j] = XYZ_acesrgb_3[i][j];
+        
+        return mulVectorArray(aces, total, 3, XYZ_acesrgb);
+    }
+    else if(image->colors == 4){
+        FORI(4)
+            FORJ(4)
+                XYZ_acesrgb[i][j] = XYZ_acesrgb_4[i][j];
+        
+        return mulVectorArray(aces, total, 4, XYZ_acesrgb);
+    }
+    else {
+        fprintf (stderr, "Currenly support 3 channels and 4 channels. \n");
+        exit (EXIT_FAILURE);
+    }
+    
+    return aces;
+
 }
 
 float * prepareAcesData_NonDNG_IDT ( libraw_processed_image_t *image,
                                      vector < vector < double > > idtm,
                                      vector < double > wbv)
 {
-    return convert_to_aces_NonDNG_IDT( image, idtm, wbv );
+//    return convert_to_aces_NonDNG_IDT( image, idtm, wbv );
+    
+    uchar * pixels = image->data;
+    uint32_t total = image->width * image->height * image->colors;
+    float * aces = new (std::nothrow) float[total];
+    
+    FORI(total) aces[i] = static_cast<float>(pixels[i]);
+    
+    apply_WB ( aces, image->bits, total, wbv );
+    apply_IDT ( aces, image->colors, total, idtm );
+    
+    return aces;
+
 }
 
 //float * prepareAcesData_DNG(libraw_rawdata_t R,
@@ -415,22 +423,16 @@ void aces_write( const char * name,
                  float    scale = 1.0 )
 {
     halfBytes *in = new (std::nothrow) halfBytes[channels * width * height];
-//    if (bits == 8) {
-//        cout << "8" << endl;
-//    }
-//    else if (bits == 16){
-//        cout << "16" << endl;
-//    }
     
-    FORI(channels*width*height){
-        if (bits == 8) {
-            pixels[i] = (double)pixels[i] * INV_255 * scale;
+    FORI ( channels * width * height ){
+        if ( bits == 8 ) {
+            pixels[i] = (double) pixels[i] * INV_255 * scale;
         }
-        else if (bits == 16){
-            pixels[i] = (double)pixels[i] * INV_65535 * scale;
+        else if ( bits == 16 ){
+            pixels[i] = (double) pixels[i] * INV_65535 * scale;
         }
         
-        half tmpV(pixels[i]/1.0f);
+        half tmpV( pixels[i] / 1.0f );
         in[i] = tmpV.bits();
     }
     

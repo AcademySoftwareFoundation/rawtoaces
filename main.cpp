@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
           }
             
           switch (opt)
-            {
+          {
               case 'v':  verbosity++;  break;
               // Adobe Coefficients
               case 'D':  OUT.use_camera_matrix = 1; break;
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
               case 'H':  OUT.highlight   = atoi(argv[arg++]);  break;
               case 's':  OUT.shot_select = abs(atoi(argv[arg++])); break;
               case 'h':  OUT.half_size         = 1;
-                  // no break:  "-h" implies "-f" 
+                  // no break:  "-h" implies "-f"
               case 'f':  
                   OUT.four_color_rgb    = 1;  
                   break;
@@ -348,7 +348,7 @@ int main(int argc, char *argv[])
                     timerprint("LibRaw::dcraw_make_mem_image()",argv[arg]);
                 
                 float * aces = 0;
-                if ( !(OUT.output_color) )
+                if ( !OUT.output_color )
                     aces = prepareAcesData_NonDNG_IDT( post_image, idtm, wbv );
                 else
                     aces = prepareAcesData_NonDNG( post_image );

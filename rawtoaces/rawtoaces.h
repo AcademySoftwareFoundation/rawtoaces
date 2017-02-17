@@ -79,7 +79,7 @@ bool readCameraSenPath( const char * cameraSenPath,
         
         readC = idt->loadCameraSpst( cameraSenPath,
                                      static_cast<const char *> ( P.make ),
-                                     static_cast<const char *> ( P.model ));
+                                     static_cast<const char *> ( P.model ) );
     }
     else  {
         if ( !stat(  FILEPATH, &st ) )  {
@@ -101,14 +101,14 @@ bool readCameraSenPath( const char * cameraSenPath,
 
 
 bool readIlluminate( const char * illumType,
-                     map< string, vector<double> >& illuCM,
+                     map< string, vector < double > >& illuCM,
                      Idt * idt )
 {
     bool readI = 0;
     
     if( !stat( FILEPATH, &st ) ) {
         vector<string> iFiles = openDir( static_cast<string>( FILEPATH )
-                                         +"illuminate" );
+                                         + "illuminate" );
         
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string fn( *file );
@@ -145,12 +145,12 @@ bool prepareIDT ( const char * cameraSenPath,
                   vector < vector < double > > &idtm,
                   vector < double > &wbv )
 {
-    Idt * idt = new Idt(  );
+    Idt * idt = new Idt();
     bool read = readCameraSenPath( cameraSenPath, P, idt );
     
     if (!read ) {
         fprintf( stderr,"No matching cameras found. "
-                        "Will go with the default method. \n");
+                        "Will go with the default process. \n");
         
         if (illumType) {
             fprintf( stderr,"The Illuminate should be accompanied "
@@ -250,21 +250,6 @@ void apply_IDT ( float * pixels,
     pixels = mulVectorArray(pixels, total, channel, idt);
 }
 
-float * convert_to_aces_NonDNG_IDT ( libraw_processed_image_t *image,
-                                     vector < vector < double > > idt,
-                                     vector <double> wb )
-{
-    uchar * pixels = image->data;
-    uint32_t total = image->width * image->height * image->colors;
-    float * aces = new (std::nothrow) float[total];
-    
-    FORI(total) aces[i] = static_cast<float>(pixels[i]);
-    
-    apply_WB ( aces, image->bits, total, wb );
-    apply_IDT ( aces, image->colors, total, idt );
-    
-    return aces;
- }
 
 float * convert_to_aces_DNG ( libraw_processed_image_t *image,
                               valarray<float> cameraToDisplayMtx )
@@ -316,7 +301,7 @@ float * prepareAcesData_NonDNG ( libraw_processed_image_t *image )
     }
     
     vector < vector< double> > XYZ_acesrgb(image->colors,
-                                           vector< double >(image->colors));
+                                           vector < double > (image->colors));
     if(image->colors == 3) {
         FORI(3)
         FORJ(3)
@@ -332,31 +317,27 @@ float * prepareAcesData_NonDNG ( libraw_processed_image_t *image )
         return mulVectorArray(aces, total, 4, XYZ_acesrgb);
     }
     else {
-        fprintf (stderr, "Currenly support 3 channels and 4 channels. \n");
+        fprintf ( stderr, "Currenly support 3 channels and 4 channels. \n" );
         exit (EXIT_FAILURE);
     }
     
     return aces;
-
 }
 
 float * prepareAcesData_NonDNG_IDT ( libraw_processed_image_t *image,
                                      vector < vector < double > > idtm,
                                      vector < double > wbv)
 {
-//    return convert_to_aces_NonDNG_IDT( image, idtm, wbv );
-    
     uchar * pixels = image->data;
     uint32_t total = image->width * image->height * image->colors;
     float * aces = new (std::nothrow) float[total];
     
-    FORI(total) aces[i] = static_cast<float>(pixels[i]);
+    FORI(total) aces[i] = static_cast<float> (pixels[i]);
     
     apply_WB ( aces, image->bits, total, wbv );
     apply_IDT ( aces, image->colors, total, idtm );
     
     return aces;
-
 }
 
 //float * prepareAcesData_DNG(libraw_rawdata_t R,
@@ -454,6 +435,7 @@ void aces_write( const char * name,
     writeParams.hi.software				= "rawtoaces v0.1";
     
     writeParams.hi.channels.clear();
+    
     switch (channels)
     {
         case 3:

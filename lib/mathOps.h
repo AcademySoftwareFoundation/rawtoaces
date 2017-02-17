@@ -403,9 +403,10 @@ T calSSE(vector<T>& tcp, vector<T>& src)
     FORI(tcp.size())
         tmp[i] = tcp[i]-src[i];
     
-    float result = accumulate(tmp.begin(), tmp.end(), 0.0f, square<T>());
-    
-    return result;
+    return accumulate(tmp.begin(),
+                      tmp.end(),
+                      0.0f,
+                      square<T>());
 }
 
 template<typename T>

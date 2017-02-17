@@ -627,11 +627,11 @@ namespace rta {
     void Idt::calWB( const char * illumType ){
         assert(_cameraSpst._rgbsen.size() > 0);
         
-        cout << "The best illuminate is: " << _bestIllum << endl;
+        cout << "The best light source is: " << _bestIllum << endl;
         if(loadIlluminate(_bestIllum, illumType))
             scaleLSC();
 
-        vector< vector<double> > colRGB(3, vector<double>(81, 1.0));
+        vector < vector < double > > colRGB(3, vector <double> (81, 1.0));
         
         FORI(81) {
             colRGB[0][i] = _cameraSpst._rgbsen[i].RSen;
@@ -648,12 +648,12 @@ namespace rta {
     }
   
     //	=====================================================================
-    //	Choose the best Illuminate based on White Balance Coefficients from
+    //	Choose the best Light Source based on White Balance Coefficients from
     //  the camera read by libraw
     //
     //	inputs:
-    //		Map: Key: path to the Illuminate;
-    //           Value: Illuminate x Camera Sensitivity
+    //		Map: Key: path to the Light Source data;
+    //           Value: Light Source x Camera Sensitivity
     //      Vector: White Balance Coefficients
     //
     //	outputs:
@@ -663,8 +663,9 @@ namespace rta {
                                vector<double>& src) {
         double sse = numeric_limits<double>::max();
         
-        for (map< string, vector<double> >::iterator it = illuCM.begin(); it!=illuCM.end(); ++it){
+        for ( map< string, vector<double> >::iterator it = illuCM.begin(); it != illuCM.end(); ++it ){
             double tmp = calSSE(it->second, src);
+            
             if (sse > tmp) {
                 sse = tmp;
                 _bestIllum = it->first;
@@ -871,16 +872,10 @@ namespace rta {
 //                new NumericDiffCostFunction<Objfun, CENTRAL, 190, 6>(new Objfun(RGB, XYZ, M),
 //                                                                     TAKE_OWNERSHIP);
         
-//          CostFunction* cost_function =
-//                  new NumericDiffCostFunction<Objfun, CENTRAL, DYNAMIC, 6>(new Objfun(RGB, outLAB),
-//                                                                             TAKE_OWNERSHIP,
-//                                                                             570);
-        
         CostFunction* cost_function =
             new AutoDiffCostFunction<Objfun, DYNAMIC, 6>(new Objfun(RGB, outLAB), RGB.size()*(RGB[0].size()));
         
         problem.AddResidualBlock(cost_function,
-//                                 new CauchyLoss(0.5),
                                  NULL,
                                  B);
         
@@ -892,7 +887,6 @@ namespace rta {
         options.function_tolerance = 1e-17;
         options.min_line_search_step_size = 1e-17;
         options.max_num_iterations = 300;
-//        options.minimizer_type = LINE_SEARCH;
         
         ceres::Solver::Summary summary;
         ceres::Solve(options, &problem, &summary);
@@ -900,7 +894,6 @@ namespace rta {
         std::cout << summary.FullReport() << "\n";
         
         if (summary.num_successful_steps) {
-            
             _idt[0][0] = B[0];
             _idt[0][1] = B[1];
             _idt[0][2] = 1.0 - B[0] - B[1];
@@ -911,6 +904,8 @@ namespace rta {
             _idt[2][1] = B[5];
             _idt[2][2] = 1.0 - B[4] - B[5];
             
+            printf("The Final IDT Matrix is: \n\n");
+
             FORI(3) {
                 FORJ(3) {
                     printf("%f ", _idt[i][j]);

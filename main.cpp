@@ -56,7 +56,7 @@
 
 int main(int argc, char *argv[])
 {
-    if(argc==1) usage(argv[0]);
+    if ( argc==1 ) usage( argv[0] );
     
     LibRaw RawProcessor;
     int i,arg,c,ret;
@@ -79,7 +79,6 @@ int main(int argc, char *argv[])
     for (arg=1; (((opm = argv[arg][0]) - 2) | 2) == '+'; )
         {
           opt = argv[arg++][1];
-//        if ((cp = strchr (sp=(char*)"TMgcnbrkStqmHABC", opt))!=0)
           if ((cp = strchr (sp=(char*)"MgcnbrkStqmHABC", opt))!=0) {
             for (i=0; i < "111411111142"[cp-sp]-'0'; i++) {
                 if (!isdigit(argv[arg+i][0]))
@@ -165,9 +164,9 @@ int main(int argc, char *argv[])
               }
       }
 #ifndef WIN32
-  putenv ((char*)"TZ=UTC"); // dcraw compatibility, affects TIFF datestamp field
+  putenv ((char*)"TZ=UTC");
 #else
-  _putenv ((char*)"TZ=UTC"); // dcraw compatibility, affects TIFF datestamp field
+  _putenv ((char*)"TZ=UTC");
 #endif
 #define P1 RawProcessor.imgdata.idata
 #define S RawProcessor.imgdata.sizes
@@ -241,7 +240,6 @@ int main(int argc, char *argv[])
 #endif
             {
                 if( use_bigfile )
-                        // force open_file switch to bigfile processing
                     ret = RawProcessor.open_file( argv[arg],1 );
                 else
                     ret = RawProcessor.open_file( argv[arg] );
@@ -249,7 +247,7 @@ int main(int argc, char *argv[])
                 if( ret  != LIBRAW_SUCCESS)
                 {
                     fprintf( stderr,"Cannot open %s: %s\n", argv[arg], libraw_strerror( ret ) );
-                    continue; // no recycle b/c open_file will recycle itself
+                    continue;
                 }
             }
 
@@ -278,8 +276,8 @@ int main(int argc, char *argv[])
             vector < vector<double> > idtm( 3, vector<double>( 3, 1.0 ) );
             vector < double > wbv( 3, 1.0 );
 
-            // pay attention to half size
-            if ( !P1.dng_version && !OUT.half_size ) {
+            // pay attention to half_size
+            if ( !P1.dng_version ) {
                 if ( use_illum )
                     illumType = lowerCase( illumType );
                 
@@ -294,6 +292,9 @@ int main(int argc, char *argv[])
                      OUT.output_color = 0;
                      OUT.use_camera_wb = 0;
                     
+                    if (OUT.half_size == 1)
+                        OUT.four_color_rgb = 0;
+
                      FORI ( 3 )
                         OUT.user_mul[i] = 1.0;
                 }
@@ -369,24 +370,24 @@ int main(int argc, char *argv[])
 //                    timerprint("LibRaw::dcraw_make_mem_image()",argv[arg]);
 //                
 //                float * aces = prepareAcesData_DNG(R, post_image);
-//                aces_write(outfn,
-//                           post_image->width,
-//                           post_image->height,
-//                           post_image->colors,
-//                           post_image->bits,
-//                           aces,
-//                           scale);
+//                aces_write (outfn,
+//                            post_image->width,
+//                            post_image->height,
+//                            post_image->colors,
+//                            post_image->bits,
+//                            aces,
+//                            scale );
 //            }
             
 #ifndef WIN32
-            if(use_mmap && iobuffer)
+            if ( use_mmap && iobuffer )
                 {
-                    munmap(iobuffer,msize);
-                    iobuffer=0;
+                    munmap ( iobuffer, msize );
+                    iobuffer = 0;
                 }
 #endif
             
-            RawProcessor.recycle(); // just for show this call
+            RawProcessor.recycle();
         }
     return 0;
 }

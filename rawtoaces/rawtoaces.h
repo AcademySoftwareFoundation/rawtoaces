@@ -86,7 +86,7 @@ bool readCameraSenPath( const char * cameraSenPath,
             vector<string> cFiles = openDir ( static_cast<string>(  FILEPATH )
                                               +"/camera" );
             
-            for(  vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
+            for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
                 string fn( *file );
                 readC = idt->loadCameraSpst( fn,
                                              static_cast<const char *>( P.make ),
@@ -115,14 +115,17 @@ bool readIlluminate( const char * illumType,
             string strType(illumType);
             
             if ( strType.compare("unknown") != 0 ) {
-                if( fn.find( illumType ) == std::string::npos )  {
-                    continue;
-                }
+                
+// Pay attention to this, some old library may not process it correctly
+                
+//                if( fn.find( illumType ) == std::string::npos )  {
+//                    continue;
+//                }
                 
                 readI = idt->loadIlluminate( fn, static_cast<const char *>( illumType ) );
                 if ( readI )
                 {
-                    illuCM[static_cast<string>( *file )] = idt->calCM();
+                    illuCM[static_cast<string> ( *file )] = idt->calCM();
                     return 1;
                 }
             }
@@ -163,7 +166,7 @@ bool prepareIDT ( const char * cameraSenPath,
     if (!illumType)
         illumType = "unknown";
     
-    map< string, vector<double> > illuCM;
+    map < string, vector<double> > illuCM;
     read = readIlluminate( illumType, illuCM, idt );
     
     if( !read ) {

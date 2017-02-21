@@ -52,7 +52,7 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
-#include "rawtoaces/usage.h"
+#include "src/usage.h"
 
 int main(int argc, char *argv[])
 {

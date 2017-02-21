@@ -177,6 +177,10 @@ include_directories( "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" )
 
 add_definitions( -DPACKAGE="RAWTOACES" -DVERSION="${RAWTOACES_VERSION}" )
 add_subdirectory(lib)
+# add_subdirectory(src)
+
+# enable_testing()
+# add_subdirectory(unittest)
 
 # Add all targets to the build-tree export set
 # if ( WIN32 AND NOT CYGWIN )
@@ -212,11 +216,11 @@ if ( APPLE OR UNIX )
 endif()
 
 ### to build rawtoaces ###
-#if ( IlmBase_FOUND )
-  #add_definitions( -DHAVE_IlmBase=1 )
-  #include_directories( ${IlmBase_INCLUDE_DIRS} )
-  #link_directories( {$IlmBase_LIBRARY_DIRS} ) 
-#endif()
+if ( IlmBase_FOUND )
+  add_definitions( -DHAVE_IlmBase=1 )
+  include_directories( ${IlmBase_INCLUDE_DIRS} )
+#  link_directories( {$IlmBase_LIBRARY_DIRS} ) 
+endif()
 
 if ( AcesContainer_FOUND )
   add_definitions( -DHAVE_ACESFILE=1 )
@@ -236,7 +240,7 @@ if ( Ceres_FOUND )
   link_directories( ${CERES_LIBRARY_DIRS} ) 
 endif()
 
-include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" "${IlmBase_INCLUDE_DIRS}" "${AcesContainer_INCLUDE_DIRS}" "${libraw_INCLUDE_DIRS}")
+# include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" "${IlmBase_INCLUDE_DIRS}" "${AcesContainer_INCLUDE_DIRS}" "${libraw_INCLUDE_DIRS}")
 
 add_executable( rawtoaces
   main.cpp

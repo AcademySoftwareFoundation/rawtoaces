@@ -217,12 +217,14 @@ Ceres Solver is an open source library for solving Non-linear Least Squares prob
 	$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
 	```
 	
-	Install OpenEXR
+	Install `Ceres`
 	
 	```sh
 	$ brew install ceres-solver --HEAD
 	```
+If there are errors with regard to version mis-match of *Eigen* library, please consider brew-installing required libraries first and then buiding Ceres from source (see above).
 
+	
 ### Installation
 
 * OS X

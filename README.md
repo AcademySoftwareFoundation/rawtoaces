@@ -1,12 +1,12 @@
 # RAW to ACES Utility
 
 ## Table of Contents
-1. [Introduction](#Introduction)
-2. [Package Contents](#Package-Contents)
-3. [Prerequisites](#Prerequisites)
-4. [Installation](#Installation)
-5. [Usage](#Usage)
-6. [License](#License)
+1. [Introduction](#introduction)
+2. [Package Contents](#package-contents)
+3. [Prerequisites](#prerequisites)
+4. [Installation](#installation)
+5. [Usage](#usage)
+6. [License](#license)
 
 
 

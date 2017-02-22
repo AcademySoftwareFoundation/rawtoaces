@@ -1,15 +1,14 @@
 #LICENSES
 
-1. [RAW TO ACES LICENSE](#RAW-TO-ACES-LICENSE)
-2. [ACES CONTAINER LICENSE](#ACES-CONTAINER-LICENSE)
-3. [LIBRAW LICENSES](#LIBRAW-LICENSES)
-4. [CERES SOLVER LICENSE](#CERES-SOLVER-LICENSE)
-5. [ILMBASE and OPENEXR LICENSES](#ILMBASE-AND-OPENEXR-LICENSES)
+1. [RAW TO ACES LICENSE](#raw-to-aces-license)
+2. [ACES CONTAINER LICENSE](#aces-container-license)
+3. [LIBRAW LICENSES](#libraw-licenses)
+4. [CERES SOLVER LICENSE](#ceres-solver-license)
+5. [ILMBASE and OPENEXR LICENSES](#ilmbase-and-openexr-licenses)
 
 
 
 ##RAW TO ACES LICENSE
-===
 
 The Raw to ACES Utility Reference Implementation is provided by the Academy under the following terms and conditions:
 
@@ -32,7 +31,6 @@ Disclaimer of Warranty: THIS SOFTWARE IS PROVIDED BY A.M.P.A.S. AND CONTRIBUTORS
 WITHOUT LIMITING THE GENERALITY OF THE FOREGOING, THE ACADEMY SPECIFICALLY DISCLAIMS ANY REPRESENTATIONS OR WARRANTIES WHATSOEVER RELATED TO PATENT OR OTHER INTELLECTUAL PROPERTY RIGHTS IN THE RAW TO ACES UTILITY REFERENCE IMPLEMENTATION, OR APPLICATIONS THEREOF, HELD BY PARTIES OTHER THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 
 ##ACES CONTAINER LICENSE
-===
 
 The ACES Container Reference Implementation is provided by the Academy under the
 following terms and conditions:
@@ -163,7 +161,6 @@ and/or software.
 
 
 ##LIBRAW LICENSES
-=====
 
 ####GNU LESSER GENERAL PUBLIC LICENSE
 Version 2.1, February 1999
@@ -964,8 +961,7 @@ venue lying in Santa Clara County, California.
 
 ----------------------------------------------------------------
 
-##CERES SOLVER
-===
+##CERES SOLVER LICENSE
 
 Ceres Solver is licensed under the New BSD license, whose terms are as follows.
 
@@ -982,7 +978,6 @@ Neither the name of Google Inc., nor the names of its contributors may be used t
 This software is provided by the copyright holders and contributors “AS IS” and any express or implied warranties, including, but not limited to, the implied warranties of merchantability and fitness for a particular purpose are disclaimed. In no event shall Google Inc. be liable for any direct, indirect, incidental, special, exemplary, or consequential damages (including, but not limited to, procurement of substitute goods or services; loss of use, data, or profits; or business interruption) however caused and on any theory of liability, whether in contract, strict liability, or tort (including negligence or otherwise) arising in any way out of the use of this software, even if advised of the possibility of such damage.
 
 ##ILMBASE AND OPENEXR LICENSES
-===
 
 Modified BSD License:
 

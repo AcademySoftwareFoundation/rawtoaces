@@ -57,10 +57,85 @@
 #include <boost/test/floating_point_comparison.hpp>
 
 #include "../lib/mathOps.h"
+#include "../lib/rta.h"
 
-BOOST_AUTO_TEST_CASE( TestFloatingPoint ) {
-    double dnum = 2.00001;
-    BOOST_CHECK_CLOSE (dnum, 2.0000, 1e-3);
+using namespace std;
+using namespace rta;
+
+//BOOST_AUTO_TEST_CASE ( TestFloatingPoint ) {
+//    double dnum = 2.00001;
+//    BOOST_CHECK_CLOSE (dnum, 2.0000, 1e-3);
+//}
+
+BOOST_AUTO_TEST_CASE ( TestSpstObject ) {
+//    Spst spstobject;
+    
+    char * brand;
+    char * model;
+    uint8_t increment = 5;
+    uint8_t len = 4;
+    
+    brand = (char *) malloc(len+1);
+    memset(brand, 0x0, len);
+    memcpy(brand, "test", len);
+    brand[len] = '\0';
+    
+    model = (char *) malloc(len+1);
+    memset(model, 0x0, len);
+    memcpy(model, "test", len);
+    model[len] = '\0';
+    
+    vector < RGBSen > rgbsen;
+    for (int i=0; i<81; i++) {
+        rgbsen.push_back( RGBSen(1.0, 1.0, 1.0) );
+    }
+    
+    // Default Constructor
+    Spst spstobject1;
+    
+    spstobject1.setBrand(brand);
+    spstobject1.setModel(model);
+    spstobject1.setWLIncrement(5);
+    spstobject1.setSensitivity(rgbsen);
+    
+    BOOST_CHECK_EQUAL( std::strcmp( spstobject1.getBrand(), "test" ), 0 );
+    BOOST_CHECK_EQUAL( std::strcmp( spstobject1.getModel(), "test" ), 0 );
+    BOOST_CHECK_EQUAL( int( spstobject1.getWLIncrement() ), 5 );
+    BOOST_CHECK_EQUAL( int( spstobject1.getSensitivity().size() ), 81 );
+    
+    vector < RGBSen > rgbsen_cp = spstobject1.getSensitivity();
+    
+    FORI (81) {
+        BOOST_CHECK_EQUAL( rgbsen_cp[i].RSen, 1.0 );
+        BOOST_CHECK_EQUAL( rgbsen_cp[i].GSen, 1.0 );
+        BOOST_CHECK_EQUAL( rgbsen_cp[i].BSen, 1.0 );
+    }
+
+    
+    // Constructor 2
+    Spst spstobject2 (brand, model, increment, rgbsen);
+    
+    BOOST_CHECK_EQUAL( std::strcmp( spstobject2.getBrand(), "test" ), 0 );
+    BOOST_CHECK_EQUAL( std::strcmp( spstobject2.getModel(), "test" ), 0 );
+    BOOST_CHECK_EQUAL( int( spstobject2.getWLIncrement() ), 5 );
+    BOOST_CHECK_EQUAL( int( spstobject2.getSensitivity().size() ), 81 );
+    
+    rgbsen_cp.clear();
+    
+    rgbsen_cp = spstobject2.getSensitivity();
+    
+    FORI (81) {
+        BOOST_CHECK_EQUAL( rgbsen_cp[i].RSen, 1.0 );
+        BOOST_CHECK_EQUAL( rgbsen_cp[i].GSen, 1.0 );
+        BOOST_CHECK_EQUAL( rgbsen_cp[i].BSen, 1.0 );
+    }
+    
+    Spst spstobject3 (spstobject1);
+    
+    BOOST_CHECK_EQUAL( std::strcmp( spstobject3.getBrand(), "test" ), 0 );
+    BOOST_CHECK_EQUAL( std::strcmp( spstobject3.getModel(), "test" ), 0 );
+    BOOST_CHECK_EQUAL( int( spstobject3.getWLIncrement() ), 5 );
+    BOOST_CHECK_EQUAL( int( spstobject3.getSensitivity().size() ), 81 );
 }
 
 

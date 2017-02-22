@@ -68,6 +68,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <dirent.h>
+#include <half.h>
 
 #include <ceres/ceres.h>
 #include <glog/logging.h>
@@ -147,6 +148,11 @@ struct CIEXYZ {
     double Xt;
     double Yt;
     double Zt;
+    
+    CIEXYZ() {};
+    CIEXYZ( double X, double Y, double Z ) : Xt(X),
+                                             Yt(Y),
+                                             Zt(Z){ };
 };
 
 struct trainSpec {
@@ -165,6 +171,11 @@ struct RGBSen {
     double RSen;
     double GSen;
     double BSen;
+    
+    RGBSen() {};
+    RGBSen( double r, double g, double b ) : RSen(r),
+                                             GSen(g),
+                                             BSen(b){ };
 };
 
 struct light {

@@ -62,15 +62,46 @@ namespace rta {
         _spstMaxCol = -1;
         
         for (int i=0; i<81; i++) {
-            _rgbsen.push_back(RGBSen());
+            _rgbsen.push_back( RGBSen() );
         }
+    }
+    
+    Spst::Spst(const Spst& spstobject) {
+        assert ( spstobject._brand != null_ptr
+                && spstobject._model != null_ptr );
+        
+        uint8_t lenb = strlen(spstobject._brand);
+        assert(lenb < 64);
+        
+        if(lenb > 64)
+            lenb = 64;
+        
+        _brand = (char *) malloc(lenb+1);
+        memset(_brand, 0x0, lenb);
+        memcpy(_brand, spstobject._brand, lenb);
+        _brand[lenb] = '\0';
+        
+        uint8_t lenm = strlen(spstobject._model);
+        assert(lenm < 64);
+        
+        if(lenm > 64)
+            lenm = 64;
+        
+        _model = (char *) malloc(lenm+1);
+        memset(_model, 0x0, lenm);
+        memcpy(_model, spstobject._model, lenm);
+        _model[lenm] = '\0';
+        
+        _increment = spstobject._increment;
+        _spstMaxCol = spstobject._spstMaxCol;
+        _rgbsen = spstobject._rgbsen;
     }
     
     Spst::~Spst() {
         delete _brand;
         delete _model;
         
-        vector< RGBSen >().swap(_rgbsen);
+        vector< RGBSen >().swap( _rgbsen );
     }
     
     //	=====================================================================
@@ -198,7 +229,7 @@ namespace rta {
         if(len > 64)
             len = 64;
         
-        _brand = (char *)malloc(len+1);
+        _brand = (char *) malloc(len+1);
         memset(_brand, 0x0, len);
         memcpy(_brand, brand, len);
         _brand[len] = '\0';

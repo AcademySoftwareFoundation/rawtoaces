@@ -81,11 +81,9 @@ namespace rta {
         
         public:
             Spst();
-            Spst(const Spst& spstobject) : _brand(spstobject._brand),
-                                           _model(spstobject._model),
-                                           _increment(spstobject._increment),
-                                           _rgbsen(spstobject._rgbsen){ };
         
+            Spst(const Spst& spstobject);
+
             Spst(char * brand,
                  char * model,
                  uint8_t increment,
@@ -99,24 +97,24 @@ namespace rta {
             const char * getBrand() const;
             const char * getModel() const;
             const uint8_t getWLIncrement() const;
-            const vector <RGBSen> & getSensitivity() const;
+            const vector < RGBSen > & getSensitivity() const;
         
             char * getBrand();
             char * getModel();
             uint8_t getWLIncrement();
             vector<RGBSen> & getSensitivity();
         
-            void setBrand(const char * brand);
-            void setModel(const char * model);
-            void setWLIncrement(const uint8_t inc);
-            void setSensitivity(const vector<RGBSen> rgbsen);
+            void setBrand ( const char * brand );
+            void setModel ( const char * model );
+            void setWLIncrement ( const uint8_t inc );
+            void setSensitivity ( const vector < RGBSen > rgbsen );
         
         private:
             char * _brand;
             char * _model;
             uint8_t _increment;
             uint8_t _spstMaxCol;
-            vector<RGBSen> _rgbsen;
+            vector < RGBSen > _rgbsen;
     };
 
     class Idt {

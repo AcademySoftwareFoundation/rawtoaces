@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     LibRaw RawProcessor;
     int i,arg,c,ret;
     char opm,opt,*cp,*sp,*path,*cameraSenPath, *illumType;
-    int use_bigfile=0, use_timing=0, use_camera_path=0, use_illum=0, use_Mul=0;
+    int use_bigfile=0, use_timing=0, use_camera_path=0, use_illum=0, use_Mul=0, use_default=0;
     float scale = 1.0;
     
 #ifndef WIN32
@@ -150,6 +150,10 @@ int main(int argc, char *argv[])
               case 'W':  OUT.no_auto_bright    = 1;  break;
               case 'F':  use_bigfile           = 1;  break;
               case 'd':  use_timing            = 1;  break;
+              case 'z':  use_default           = 1;
+                         printf ("Will rely on camera metadata extracted from RAW"
+                                 "and/or libraw default method.\n");
+                         break;
               case 'T':  illumType = (char *)(argv[arg++]); break;
               case 'M':  scale = atof(argv[arg++]); break;
               case 'Q':  use_camera_path = 1;
@@ -277,7 +281,7 @@ int main(int argc, char *argv[])
             vector < double > wbv( 3, 1.0 );
 
             // pay attention to half_size
-            if ( !P1.dng_version ) {
+            if ( !P1.dng_version && !use_default) {
                 if ( use_illum )
                     illumType = lowerCase( illumType );
                 

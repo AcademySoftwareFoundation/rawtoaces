@@ -7,7 +7,7 @@ find_package( PkgConfig QUIET )
 
 find_package( IlmBase COMPONENTS Half QUIET )
 if(IlmBase_FOUND)
-  message( STATUS "found IlmBase, version ${IlmBase_VERSION}" )
+  message( STATUS "Found IlmBase, version ${IlmBase_VERSION}" )
   include_directories( ${IlmBase_INCLUDE_DIRS} )
   link_directories( ${IlmBase_LIBRARY_DIRS} )
   set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${IlmBase_CFLAGS}" )

@@ -90,8 +90,9 @@ void usage(const char *prog)
              "-Q        Specify the path to camera sensitivity data\n"
              "-M        Set the value for scaling\n"
              "-T        Set the desired color temperature (e.g., D60)\n"
+             "-z        Use camera metadata method and/or libraw method\n"
     #ifndef WIN32
-            "-E        Use mmap()-ed buffer instead of plain FILE I/O\n"
+             "-E        Use mmap()-ed buffer instead of plain FILE I/O\n"
     #endif
             );
     exit(1);

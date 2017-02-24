@@ -152,12 +152,15 @@ bool prepareIDT ( const char * cameraSenPath,
     bool read = readCameraSenPath( cameraSenPath, P, idt );
     
     if (!read ) {
-        fprintf( stderr,"No matching cameras found. "
-                        "Will go with the default process. \n");
+        fprintf( stderr, "No matching cameras found. "
+                         "Will rely on camera metadata extracted from RAW"
+                         "and/or libraw default method. \n");
         
         if (illumType) {
-            fprintf( stderr,"The Illuminate should be accompanied "
-                            "by a matching camera sensitivity data.\n" );
+            fprintf( stderr, "The Illuminate should be accompanied "
+                             "by a matching camera sensitivity data.\n"
+                             "Will rely on camera metadata extracted from RAW"
+                             "and/or libraw default method. \n");
         }
         
         return 0;
@@ -170,11 +173,13 @@ bool prepareIDT ( const char * cameraSenPath,
     read = readIlluminate( illumType, illuCM, idt );
     
     if( !read ) {
-        fprintf( stderr,"No matching light source. "
-                        "Will use the default settings.\n" );
+        fprintf( stderr, "No matching light source. "
+                         "Will rely on camera metadata extracted from RAW"
+                         "and/or libraw default method. \n");
     }
     else
     {
+        printf ( "The matching camera is: %s %s\n", P.make, P.model );
         idt->loadTrainingData ( static_cast<string>( FILEPATH )
                                 +"/training/training_spectral" );
         idt->loadCMF ( static_cast<string>( FILEPATH )
@@ -186,6 +191,7 @@ bool prepareIDT ( const char * cameraSenPath,
         
         idt->calWB(illumType);
         
+        printf ( "Calculating IDT Matrix ...\n" );
         if ( idt->calIDT() )  {
             idtm = idt->getIDT();
             wbv = idt->getWB();

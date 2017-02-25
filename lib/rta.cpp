@@ -462,7 +462,7 @@ namespace rta {
     //               Otherwise, return 0
 
     
-    bool Idt::loadIlluminate(const string &path, const char * type) {
+    bool Idt::loadIlluminate(const string &path, const string type) {
         assert(path.find("_380_780") != std::string::npos);
         
         ifstream fin;
@@ -492,11 +492,10 @@ namespace rta {
             //            assert(token);
             
             if(line == 0) {
-                string strType(type);
                 string strToken(token);
                 
-                if (strType.compare(strToken) != 0
-                    && strType.compare("unknown") != 0)
+                if (type.compare(strToken) != 0
+                    && type.compare("unknown") != 0)
                 {
                     fin.close();
                     return 0;
@@ -650,19 +649,19 @@ namespace rta {
     //	Calculate White Balance based on the best illuminate data
     //
     //	inputs:
+    //      const string: filePath
     //		const char *: illumType
     //
     //	outputs:
-    //		vector: _wb(R, G, B)
+    //		vector: wb(R, G, B)
     
-    void Idt::calWB( const char * illumType ){
-        assert(_cameraSpst._rgbsen.size() > 0);
+    vector < double > Idt::calWB(){
+        assert( _illuminate.data.size() == 81
+                && _cameraSpst._rgbsen.size() > 0 );
         
-        cout << "The best light source is: " << _bestIllum << endl;
-        if(loadIlluminate(_bestIllum, illumType))
-            scaleLSC();
+        scaleLSC();
 
-        vector < vector < double > > colRGB(3, vector <double> (81, 1.0));
+        vector < vector < double > > colRGB (3, vector <double> (81, 1.0));
         
         FORI(81) {
             colRGB[0][i] = _cameraSpst._rgbsen[i].RSen;
@@ -670,12 +669,14 @@ namespace rta {
             colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
         }
         
-        _wb = mulVector(colRGB, _illuminate.data);
+        vector< double > wb = mulVector ( colRGB, _illuminate.data );
         clearVM(colRGB);
         
-        FORI(_wb.size()) {
-            _wb[i] = invertD(_wb[i]);
+        FORI(wb.size()) {
+            wb[i] = invertD(wb[i]);
         }
+        
+        return wb;
     }
   
     //	=====================================================================
@@ -686,20 +687,35 @@ namespace rta {
     //		Map: Key: path to the Light Source data;
     //           Value: Light Source x Camera Sensitivity
     //      Vector: White Balance Coefficients
+    //      String: Light Source Name
     //
     //	outputs:
     //		illum: the best _illuminate
     
     void Idt::chooseIlluminate(map< string, vector<double> >& illuCM,
-                               vector<double>& src) {
-        double sse = numeric_limits<double>::max();
+                               vector<double>& src,
+                               const string type) {
+        double sse = dmax;
+        
+//        FORI(src.size()) {
+//            printf ("%f ", src[i]);
+//        }
+//        printf ("\n");
         
         for ( map< string, vector<double> >::iterator it = illuCM.begin(); it != illuCM.end(); ++it ){
             double tmp = calSSE(it->second, src);
             
+//            printf( "%s: wb (",
+//                    (it->first).c_str());
+//            FORI(it->second.size()) {
+//                printf ("%f, ", (it->second)[i]);
+//            }
+//            printf( " ) sse ( %f )\n", tmp );
+            
             if (sse > tmp) {
                 sse = tmp;
                 _bestIllum = it->first;
+                _wb = it->second;
             }
         }
         
@@ -708,7 +724,12 @@ namespace rta {
             _illuminate.inc = 5;
             _illuminate.data.clear();
         }
+        
+        cout << "The best light source is: " << _bestIllum << endl;
 
+        if(loadIlluminate(_bestIllum, type))
+            scaleLSC();
+        
         return;
     }
     
@@ -723,8 +744,8 @@ namespace rta {
     //		vector < double >: scaled vector by its maximum value
 
     vector<double> Idt::calCM() {
-        vector<RGBSen> rgbsen = _cameraSpst.getSensitivity();
-        vector< vector<double> > rgbsenV(3, vector<double>(rgbsen.size(), 1.0));
+        vector < RGBSen > rgbsen = _cameraSpst.getSensitivity();
+        vector< vector < double > > rgbsenV (3, vector < double > ( rgbsen.size(), 1.0));
         
         FORI(rgbsen.size()){
             rgbsenV[0][i] = rgbsen[i].RSen;
@@ -774,7 +795,7 @@ namespace rta {
     //	outputs:
     //		vector < vector<double> >: 2D vector (3 x 3)
     
-    vector< vector<double> > Idt::calCAT(vector<double> src, vector<double> des) const {
+    vector< vector<double> > Idt::calCAT( vector<double> src, vector<double> des ) const {
         assert(src.size() == des.size());
         
         vector < vector <double> > vect(3, vector<double>(3));
@@ -846,7 +867,7 @@ namespace rta {
     //	=====================================================================
     //	Calculate white-balanced linearized camera system response (in RGB)
     //  based on training color spectral radiances from CalTI() and white
-    //  balance factors from CalWB()
+    //  balance factors from calWB()
     //
     //	inputs:
     //		vector< vector<double> > outcome of CalTI()
@@ -996,6 +1017,32 @@ namespace rta {
     }
     
     //	=====================================================================
+    //  Get camera sensitivity data that was loaded from the file
+    //
+    //	inputs:
+    //         N/A
+    //
+    //	outputs:
+    //         Spst: camera sensitivity data that was loaded from the file
+    
+    Spst Idt::getCameraSpst() {
+        return _cameraSpst;
+    }
+    
+    //	=====================================================================
+    //  Get illuminate data / light source that was loaded from the file
+    //
+    //	inputs:
+    //         N/A
+    //
+    //	outputs:
+    //         illum: illuminate data that was loaded from the file
+    
+    illum Idt::getIlluminate() {
+        return _illuminate;
+    }
+
+    //	=====================================================================
     //  Get Idt matrix if CalIDT() succeeds
     //
     //	inputs:
@@ -1010,7 +1057,7 @@ namespace rta {
     }
     
     //	=====================================================================
-    //  Get white balanced if CalWB(...) succeeds
+    //  Get white balanced if calWB(...) succeeds
     //
     //	inputs:
     //         N/A

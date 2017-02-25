@@ -295,12 +295,14 @@ int main(int argc, char *argv[])
                 if ( gotIDT ) {
                      OUT.output_color = 0;
                      OUT.use_camera_wb = 0;
+                     use_Mul = 1;
                     
                     if (OUT.half_size == 1)
                         OUT.four_color_rgb = 0;
 
-                     FORI ( 3 )
-                        OUT.user_mul[i] = 1.0;
+                    FORI ( 3 ) {
+                        OUT.user_mul[i] = wbv[i];
+                    }
                 }
             }
 

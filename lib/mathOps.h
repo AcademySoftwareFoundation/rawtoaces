@@ -400,13 +400,18 @@ T calSSE(vector<T>& tcp, vector<T>& src)
     assert(tcp.size() == src.size());
     vector<T> tmp(src.size());
     
-    FORI(tcp.size())
-        tmp[i] = tcp[i]-src[i];
+    T sum = 0.0;
     
-    return accumulate(tmp.begin(),
-                      tmp.end(),
-                      0.0f,
-                      square<T>());
+    FORI(tcp.size())
+//        tmp[i] = tcp[i]-src[i];
+        sum += (tcp[i]-src[i]) * (tcp[i]-src[i]);
+    
+//    return accumulate(tmp.begin(),
+//                      tmp.end(),
+//                      0.0f,
+//                      square<T>());
+    
+    return sum;
 }
 
 template<typename T>

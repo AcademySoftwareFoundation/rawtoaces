@@ -185,6 +185,7 @@ struct light {
 };
 
 struct illum {
+    string path;
     string type;
     uint8_t inc;
     double index;
@@ -198,6 +199,8 @@ struct cameraDataPath {
 
 const double e = 216.0/24389.0;
 const double k = (24389.0/27.0)/116.0;
+const double dmin = numeric_limits<double>::min();
+const double dmax = numeric_limits<double>::max();
 
 double clip (double val, double target)
 {

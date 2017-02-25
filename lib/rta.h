@@ -102,7 +102,7 @@ namespace rta {
             char * getBrand();
             char * getModel();
             uint8_t getWLIncrement();
-            vector<RGBSen> & getSensitivity();
+            vector < RGBSen > & getSensitivity();
         
             void setBrand ( const char * brand );
             void setModel ( const char * model );
@@ -126,16 +126,17 @@ namespace rta {
                                 const char * maker,
                                 const char * model);
             bool loadIlluminate(const string &path,
-                                const char * type="unknown");
+                                const string type="unknown");
             void loadTrainingData(const string &path);
             void loadCMF(const string &path);
         
             void chooseIlluminate(map< string,
                                   vector<double> >& illuCM,
-                                  vector<double>& src);
+                                  vector<double>& src,
+                                  const string type);
             void scaleLSC();
-            void calWB(const char * illumType);
         
+            vector< double > calWB();
             vector< double > calCM();
             vector< vector<double> > calTI() const;
             vector< vector<double> > calCAT(vector<double> src,
@@ -150,6 +151,9 @@ namespace rta {
         
             const Spst getCameraSpst() const;
             const illum getIlluminate() const;
+        
+            Spst getCameraSpst();
+            illum getIlluminate();
 
             const vector< vector<double> > getIDT() const;
             const vector< double > getWB() const;
@@ -157,9 +161,9 @@ namespace rta {
 
         private:
             string  _outputEncoding;
-            string  _bestIllum;
             Spst    _cameraSpst;
             illum   _illuminate;
+            string  _bestIllum;
         
             vector< CMF > _cmf;
             vector< trainSpec > _trainingSpec;

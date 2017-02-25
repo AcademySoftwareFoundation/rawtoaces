@@ -114,25 +114,27 @@ bool readIlluminate( const char * illumType,
             string fn( *file );
             string strType(illumType);
             
+            const char * illumC = static_cast<const char *>( illumType );
+
             if ( strType.compare("unknown") != 0 ) {
                 
 // Pay attention to this, some old library may not process it correctly
-                
 //                if( fn.find( illumType ) == std::string::npos )  {
 //                    continue;
 //                }
                 
-                readI = idt->loadIlluminate( fn, static_cast<const char *>( illumType ) );
+                readI = idt->loadIlluminate( fn, illumC );
                 if ( readI )
                 {
-                    illuCM[static_cast<string> ( *file )] = idt->calCM();
+                    illuCM[fn] = idt->calWB();
+
                     return 1;
                 }
             }
             else {
-                readI = idt->loadIlluminate( fn, static_cast<const char *>( illumType ) );
+                readI = idt->loadIlluminate( fn, illumC );
                 if ( readI )
-                    illuCM[static_cast<string>( *file )] = idt->calCM();
+                    illuCM[fn] = idt->calWB();
             }
         }
     }
@@ -187,9 +189,7 @@ bool prepareIDT ( const char * cameraSenPath,
         
         vector < double > pre_mulV( 3, 1.0 );
         FORI(3) pre_mulV[i] = ( double )( C.pre_mul[i] );
-        idt->chooseIlluminate( illuCM, pre_mulV );
-        
-        idt->calWB(illumType);
+        idt->chooseIlluminate( illuCM, pre_mulV, illumType );
         
         printf ( "Calculating IDT Matrix ...\n" );
         if ( idt->calIDT() )  {
@@ -234,7 +234,7 @@ void apply_WB ( float * pixels,
 void apply_IDT ( float * pixels,
                  uint8_t channel,
                  uint32_t total,
-                 vector < vector < double > > idt)
+                 vector < vector < double > > idt )
 {
     assert(pixels);
     
@@ -252,7 +252,7 @@ void apply_IDT ( float * pixels,
     }
     
     if ( channel != 3 && channel != 4 ) {
-        fprintf (stderr, "Currenly support 3 channels and 4 channels. \n");
+        fprintf ( stderr, "Currenly support 3 channels and 4 channels. \n" );
         exit (EXIT_FAILURE);
     }
     
@@ -342,8 +342,12 @@ float * prepareAcesData_NonDNG_IDT ( libraw_processed_image_t *image,
     float * aces = new (std::nothrow) float[total];
     
     FORI(total) aces[i] = static_cast<float> (pixels[i]);
+
+//   Calculated White Balance should be applied prior to Demosaic
+//   We don't use "apply_WB (...)" at this stage of processing
+//    apply_WB ( aces, image->bits, total, wbv );
     
-    apply_WB ( aces, image->bits, total, wbv );
+    printf ( "Applying Calculated IDT Matrix ...\n" );
     apply_IDT ( aces, image->colors, total, idtm );
     
     return aces;

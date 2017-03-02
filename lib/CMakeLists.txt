@@ -19,7 +19,7 @@ install(FILES
 	 mathOps.h
          rta.h	
     	
- 	DESTINATION include/RAWTOACES
+ 	DESTINATION include/rawtoaces
        )
 
 install( TARGETS rawtoacesIDT DESTINATION lib )

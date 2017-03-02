@@ -54,49 +54,6 @@
 
 #include "rawtoaces.h"
 
-//void usage(const char *prog)
-//{
-//    printf ( "rawtoaces\n" );
-//    printf ( "Usage:  %s [FILE]...\n", prog );
-//    printf ( "OR Usage:  %s [OPTION]... [FILE]...\n", prog );
-//    printf ( "-c float-num       Set adjust maximum threshold (default 0.75)\n"
-//             "-v        Verbose: print progress messages (repeated -v will add verbosity)\n"
-//             "-a        Average the whole image for white balance\n"\
-//             "-A <x y w h> Average a grey box for white balance\n"
-//             "-r <r g b g> Set custom white balance\n"
-//             "-C <r b>  Correct chromatic aberration\n"
-//             "-P <file> Fix the dead pixels listed in this file\n"
-//             "-K <file> Subtract dark frame (16-bit raw PGM)\n"
-//             "-k <num>  Set the darkness level\n"
-//             "-S <num>  Set the saturation level\n"
-//             "-n <num>  Set threshold for wavelet denoising\n"
-//             "-H [0-9]  Highlight mode (0=clip, 1=unclip, 2=blend, 3+=rebuild)\n"
-//             "-t [0-7]  Flip image (0=none, 3=180, 5=90CCW, 6=90CW)\n"
-//             "-j        Don't stretch or rotate raw pixels\n"
-//             "-W        Don't automatically brighten the image\n"
-//             "-b <num>  Adjust brightness (default = 1.0)\n"
-//             "-q [0-3]  Set the interpolation quality\n"
-//             "-h        Half-size color image (twice as fast as \"-q 0\")\n"
-//             "-f        Interpolate RGGB as four colors\n"
-//             "-m <num>  Apply a 3x3 median filter to R-G and B-G\n"
-//             "-s [0..N-1] Select one raw image from input file\n"
-//             "-g pow ts Set gamma curve to gamma pow and toe slope ts (default = 2.222 4.5)\n"
-//             "-G        Use green_matching() filter\n"
-//             "-B <x y w h> use cropbox\n"
-//             "-F        Use FILE I/O instead of streambuf API\n"
-//             "-d        Detailed timing report\n"
-//             "-r        User supplied channel multipliers, at least one of them should be 1.0\n"
-//             "-D        Using the coeff matrix from Adobe\n"
-//             "-Q        Specify the path to camera sensitivity data\n"
-//             "-M        Set the value for scaling\n"
-//             "-T        Set the desired color temperature (e.g., D60)\n"
-//             "-z        Use camera metadata method and/or libraw method\n"
-//    #ifndef WIN32
-//             "-E        Use mmap()-ed buffer instead of plain FILE I/O\n"
-//    #endif
-//            );
-//}
-
 void usage(const char *prog)
 {
     printf ( "%s - convert RAW digital camera files to ACES\n", prog);
@@ -124,6 +81,7 @@ void usage(const char *prog)
             // Future feature ? "      3=Use custom matrix <m1r m1g m1b m2r m2g m2b m3r m3g m3b>\n"
             "                          (default = 0)\n"
             "  --ss-path <path>      Specify the path to camera sensitivity data\n"
+            "				(default = /usr/local/include/RAWTOACES/data/camera)\n"
             "  --exp-comp float      Set exposure compensation factor (default = 1.0)\n"
             "  --adopt-white         Set the desired color temperature (e.g., D60)\n"
             "\n"
@@ -133,6 +91,7 @@ void usage(const char *prog)
             "  -P <file>             Fix the dead pixels listed in this file\n"
             "  -K <file>             Subtract dark frame (16-bit raw PGM)\n"
             "  -k <num>              Set the darkness level\n"
+            "  -S <num>	             Set the saturation level\n"
             "  -n <num>              Set threshold for wavelet denoising\n"
             "  -H [0-9]              Highlight mode (0=clip, 1=unclip, 2=blend, 3+=rebuild)\n"
             "  -t [0-7]              Flip image (0=none, 3=180, 5=90CCW, 6=90CW)\n"
@@ -156,6 +115,41 @@ void usage(const char *prog)
 #endif
             );
     exit(1);
+}
+
+map < const string, char > create_key() {
+    keys["--help"] = 'I';
+    keys["--version"] = 'V';
+    keys["--wb-method"] = 'R';
+    keys["--mat-method"] = 'p';
+    keys["--ss-path"] = 'Q';
+    keys["--exp-comp"] = 'M';
+    keys["--adopt-white"] = 'T';
+    keys["-c"] = 'c';
+    keys["-C"] = 'C';
+    keys["-P"] = 'P';
+    keys["-K"] = 'K';
+    keys["-k"] = 'k';
+    keys["-S"] = 'S';
+    keys["-n"] = 'n';
+    keys["-H"] = 'H';
+    keys["-t"] = 't';
+    keys["-j"] = 'j';
+    keys["-W"] = 'W';
+    keys["-b"] = 'b';
+    keys["-q"] = 'q';
+    keys["-h"] = 'h';
+    keys["-f"] = 'f';
+    keys["-m"] = 'm';
+    keys["-s"] = 's';
+    keys["-G"] = 'G';
+    keys["-B"] = 'B';
+    keys["-v"] = 'v';
+    keys["-F"] = 'F';
+    keys["-d"] = 'd';
+    keys["-E"] = 'E';
+
+    return keys;
 }
 
 int my_progress_callback ( void *d,

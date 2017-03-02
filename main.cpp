@@ -56,13 +56,18 @@
 
 int main(int argc, char *argv[])
 {
+    // print out help menu
     if ( argc==1 ) usage( argv[0] );
     
     LibRaw RawProcessor;
-    int i,arg,c,ret;
+    int c,ret,arg;
     char opm,opt,*cp,*sp,*path,*cameraSenPath, *illumType;
-    int use_bigfile=0, use_timing=0, use_camera_path=0, use_illum=0, use_Mul=0, use_default=0;
+    int use_bigfile = 0, use_timing = 0, use_camera_path = 0, use_illum = 0, use_Mul = 0, use_mat = -1, use_wb = -1;
     float scale = 1.0;
+    
+    vector < vector < double > > idtm( 3, vector < double > ( 3, 1.0 ) );
+    vector < double > wbv( 3, 1.0 );
+
     
 #ifndef WIN32
     int msize = 0,use_mmap=0;
@@ -75,61 +80,59 @@ int main(int argc, char *argv[])
 
 #define OUT RawProcessor.imgdata.params
     
+    create_key();
     argv[argc] = (char*)"";
-    for (arg=1; (((opm = argv[arg][0]) - 2) | 2) == '+'; )
-        {
-          opt = argv[arg++][1];
-          if ((cp = strchr (sp=(char*)"MgcnbrkStqmHABC", opt))!=0) {
-            for (i=0; i < "111411111142"[cp-sp]-'0'; i++) {
+    
+    for ( arg = 1; arg < argc; )
+    {
+          string key(argv[arg]);
+            
+          if ( key[0] != '-' ) {
+              break;
+          }
+          
+          arg++;
+          opt = keys[key];
+          if (( cp = strchr ( sp = (char*)"RpMgcnbksStqmHBC", opt )) != 0 ) {
+            for (int i=0; i < "111411111142"[cp-sp]-'0'; i++) {
                 if (!isdigit(argv[arg+i][0]))
                 {
+                    if ( opt == 'R' || opt == 'p')
+                    {
+                        fprintf (stderr,"Non-numeric argument to \"%s\"\n", key.c_str());
+                        return 1;
+                    }
                     fprintf (stderr,"Non-numeric argument to \"-%c\"\n", opt);
                     return 1;
                 }
             }
           }
-          else if ((cp = strchr (sp=(char*)"T", opt))!=0) {
-            for (i=0; i < "111411111142"[cp-sp]-'0'; i++) {
-                if (!isalnum(argv[arg+i][0]))
+          else if ((cp = strchr ( sp = (char*)"T", opt )) != 0) {
+            for (int i=0; i < "111411111142"[cp-sp]-'0'; i++) {
+                if ( !isalnum(argv[arg+i][0] ) )
                 {
                     fprintf (stderr,"Non-numeric and/or Non-compatible"
                                     " argument to \"-%c\"\n", opt);
                     return 1;
                 }
              }
-              
-              use_illum = 1;
           }
-            
-          switch (opt)
+        
+         // The camera information can be found from libraw_types.h
+          switch ( opt )
           {
+              case 'I':  usage( argv[0] );  break;
+              case 'V':  printf ( "%s\n", VERSION );  break;
               case 'v':  verbosity++;  break;
-              // Adobe Coefficients
-              case 'D':  OUT.use_camera_matrix = 1; break;
               case 'G':  OUT.green_matching = 1; break;
               case 'c':  OUT.adjust_maximum_thr   = (float)atof(argv[arg++]);  break;
-              // #define LIBRAW_DEFAULT_AUTO_BRIGHTNESS_THRESHOLD 0.01
-              // case 'R':  OUT.auto_bright_thr   = (float)atof(argv[arg++]);  break;
-              // The camera information can be found from libraw_types.h
-//              case 'i':  OUT.identify_only = 1; break;
               case 'n':  OUT.threshold   = (float)atof(argv[arg++]);  break;
               case 'b':  OUT.bright      = (float)atof(argv[arg++]);  break;
               case 'P':  OUT.bad_pixels  = argv[arg++];        break;
               case 'K':  OUT.dark_frame  = argv[arg++];        break;
-              case 'r':{
-                        use_Mul = 1;
-                        for(c=0;c<4;c++)
-                            OUT.user_mul[c] = (float)atof(argv[arg++]);
-                        }
-                       break;
-              case 'C':  
-                  OUT.aber[0] = 1 / atof(argv[arg++]);
-                  OUT.aber[2] = 1 / atof(argv[arg++]);  
-                  break;
-              case 'g':  
-                  OUT.gamm[0] = 1 / atof(argv[arg++]);
-                  OUT.gamm[1] =     atof(argv[arg++]);
-                  if (OUT.gamm[0])  OUT.gamm[0] = 1/OUT.gamm[0];
+              case 'C':
+                  OUT.aber[0] = 1.0 / atof(argv[arg++]);
+                  OUT.aber[2] = 1.0 / atof(argv[arg++]);
                   break;
               case 'k':  OUT.user_black  = atoi(argv[arg++]);  break;
               case 'S':  OUT.user_sat    = atoi(argv[arg++]);  break;
@@ -137,41 +140,68 @@ int main(int argc, char *argv[])
               case 'q':  OUT.user_qual   = atoi(argv[arg++]);  break;
               case 'm':  OUT.med_passes  = atoi(argv[arg++]);  break;
               case 'H':  OUT.highlight   = atoi(argv[arg++]);  break;
-              case 's':  OUT.shot_select = abs(atoi(argv[arg++])); break;
               case 'h':  OUT.half_size         = 1;
                   // no break:  "-h" implies "-f"
               case 'f':  
                   OUT.four_color_rgb    = 1;  
                   break;
-              case 'A':  for(c=0; c<4;c++) OUT.greybox[c]  = atoi(argv[arg++]); break;
-              case 'B':  for(c=0; c<4;c++) OUT.cropbox[c]  = atoi(argv[arg++]); break;
-              case 'a':  OUT.use_auto_wb       = 1;  break;
+              case 'B':  FORI(4) OUT.cropbox[i]  = atoi(argv[arg++]); break;
               case 'j':  OUT.use_fuji_rotate   = 0;  break;
               case 'W':  OUT.no_auto_bright    = 1;  break;
               case 'F':  use_bigfile           = 1;  break;
               case 'd':  use_timing            = 1;  break;
-              case 'z':  use_default           = 1;
-                         printf ("Will rely on camera metadata extracted from RAW"
-                                 "and/or libraw default method.\n");
-                         break;
-              case 'T':  illumType = (char *)(argv[arg++]); break;
+              case 'R':
+                  use_wb = atoi(argv[arg++]);
+                  if ( use_wb == 3 ) {
+                      FORI(4) {
+                          if (!isdigit(argv[arg][0]))
+                          {
+                              fprintf (stderr,"Non-numeric argument to \"%s\" 3\n", key.c_str());
+                              return 1;
+                          }
+                          OUT.greybox[i] = (float)atof(argv[arg++]);
+                      }
+                  }
+                  else if ( use_wb == 4 ) {
+                      use_Mul = 1;
+                      FORI(4) {
+                          if (!isdigit(argv[arg][0]))
+                          {
+                              fprintf (stderr,"Non-numeric argument to \"%s\" 4\n", key.c_str());
+                              return 1;
+                          }
+                          OUT.user_mul[i] = (float)atof(argv[arg++]);
+                      }
+                  }
+                  break;
+              case 'p':
+                  use_mat = atoi(argv[arg++]);
+                  break;
+              case 'Q':
+                  use_camera_path = 1;
+                  use_wb = 0;
+                  cameraSenPath = (char *)(argv[arg++]);
+                  break;
+              case 'T':
+                  use_illum = 1;
+                  illumType = (char *)(argv[arg++]);
+                  break;
               case 'M':  scale = atof(argv[arg++]); break;
-              case 'Q':  use_camera_path = 1;
-                         cameraSenPath = (char *)(argv[arg++]);
-                         break;
 #ifndef WIN32
               case 'E':  use_mmap              = 1;  break;
 #endif
               default:
-                  fprintf (stderr,"Unknown option \"-%c\".\n", opt);
+                  fprintf (stderr,"Unknown option \"-%s\".\n", key.c_str());
                   return 1;
               }
-      }
+       }
+    
 #ifndef WIN32
   putenv ((char*)"TZ=UTC");
 #else
   _putenv ((char*)"TZ=UTC");
 #endif
+    
 #define P1 RawProcessor.imgdata.idata
 #define S RawProcessor.imgdata.sizes
 #define C RawProcessor.imgdata.color
@@ -179,29 +209,29 @@ int main(int argc, char *argv[])
 #define T RawProcessor.imgdata.thumbnail
 #define P2 RawProcessor.imgdata.other
 
-    if( use_camera_path ) {
-        string cameraSenPathS( cameraSenPath );
-        if ( cameraSenPathS.find("_380_780") == std::string::npos ) {
-            fprintf( stderr,"Cannot locate camera sensitivity data in the file.\n" );
-            exit(EXIT_FAILURE);
-        }
-    }
+  if( use_camera_path ) {
+      string cameraSenPathS( cameraSenPath );
+      if ( cameraSenPathS.find("_380_780") == std::string::npos ) {
+          fprintf( stderr,"Cannot locate camera sensitivity data in the file.\n" );
+          exit(1);
+      }
+  }
     
   if( verbosity>1 )
       RawProcessor.set_progress_handler( my_progress_callback,
-                                            (void*)"Sample data passed" );
+                                         ( void * )"Sample data passed" );
 #ifdef LIBRAW_USE_OPENMP
   if( verbosity )
           printf ( "Using %d threads\n", omp_get_max_threads() );
 #endif
-
-    for ( ; arg < argc; arg++)
-        {
-            char outfn[1024];
-            if( verbosity )
-                printf( "Processing file %s\n",argv[arg] );
-            
-            timerstart_timeval();
+    
+    for ( ; arg < argc; arg++ )
+    {
+        char outfn[1024];
+        if( verbosity )
+            printf( "Processing file %s\n",argv[arg] );
+        
+        timerstart_timeval();
             
 #ifndef WIN32
             if(use_mmap)
@@ -210,23 +240,23 @@ int main(int argc, char *argv[])
                 
                 if( file<0 )
                 {
-                    fprintf( stderr,"Cannot open %s: %s\n",argv[arg],strerror(errno) );
+                    fprintf( stderr,"Error: Cannot open %s: %s\n", argv[arg], strerror(errno) );
                     continue;
                 }
                 
                 if( fstat( file,&st ) )
                 {
-                    fprintf( stderr,"Cannot stat %s: %s\n",argv[arg],strerror( errno ) );
+                    fprintf( stderr,"Error: Cannot stat %s: %s\n", argv[arg], strerror(errno) );
                     close( file );
                     continue;
                 }
                 
                 int pgsz = getpagesize();
                 msize = ( ( st.st_size+pgsz-1 ) / pgsz ) * pgsz;
-                iobuffer = mmap( NULL, msize,PROT_READ, MAP_PRIVATE, file, 0 );
+                iobuffer = mmap( NULL, msize, PROT_READ, MAP_PRIVATE, file, 0 );
                 if( !iobuffer )
                 {
-                    fprintf ( stderr, "Cannot mmap %s: %s\n", argv[arg], strerror( errno ) );
+                    fprintf ( stderr, "Error: Cannot mmap %s: %s\n", argv[arg], strerror(errno) );
                     close( file );
                     continue;
                 }
@@ -234,8 +264,9 @@ int main(int argc, char *argv[])
                 close( file );
                 if( (ret = RawProcessor.open_buffer( iobuffer,st.st_size ) != LIBRAW_SUCCESS ) )
                 {
-                    fprintf ( stderr, "Cannot open_buffer %s: %s\n", argv[arg],
-                             libraw_strerror( ret ) );
+                    fprintf ( stderr, "Error: Cannot open_buffer %s: %s\n",
+                              argv[arg],
+                              libraw_strerror(ret) );
                     continue; // no recycle b/c open file will recycle itself
                 }
 
@@ -243,112 +274,145 @@ int main(int argc, char *argv[])
             else
 #endif
             {
-                if( use_bigfile )
-                    ret = RawProcessor.open_file( argv[arg],1 );
-                else
-                    ret = RawProcessor.open_file( argv[arg] );
+               if( use_bigfile )
+                   ret = RawProcessor.open_file( argv[arg],1 );
+               else
+                   ret = RawProcessor.open_file( argv[arg] );
                         
-                if( ret  != LIBRAW_SUCCESS)
-                {
-                    fprintf( stderr,"Cannot open %s: %s\n", argv[arg], libraw_strerror( ret ) );
-                    continue;
-                }
+               if( ret  != LIBRAW_SUCCESS)
+               {
+                   fprintf( stderr,"Error: Cannot open %s: %s\n", argv[arg], libraw_strerror(ret) );
+                   continue;
+               }
             }
 
-
-            if( use_timing )
+            if ( use_timing )
                 timerprint( "LibRaw::open_file()", argv[arg] );
 
             timerstart_timeval();
-            if( ( ret = RawProcessor.unpack() ) != LIBRAW_SUCCESS )
-                {
-                    fprintf( stderr,"Cannot unpack %s: %s\n", argv[arg], libraw_strerror( ret ) );
-                    continue;
-                }
+            if (( ret = RawProcessor.unpack() ) != LIBRAW_SUCCESS )
+            {
+                fprintf( stderr, "Error: Cannot unpack %s: %s\n", argv[arg], libraw_strerror(ret) );
+                continue;
+            }
             
             if ( use_timing )
                 timerprint( "LibRaw::unpack()", argv[arg] );
-            
-            OUT.use_camera_matrix  = 0;
-            OUT.output_color       = 5;
-            OUT.highlight          = 0;
-            OUT.use_camera_wb      = 1;
-            OUT.gamm[0]            = 1.0;
-            OUT.gamm[1]            = 1.0;
-            OUT.no_auto_bright     = 1;
-            
-            vector < vector<double> > idtm( 3, vector<double>( 3, 1.0 ) );
-            vector < double > wbv( 3, 1.0 );
-
-            // pay attention to half_size
-            if ( !P1.dng_version && !use_default) {
-                if ( use_illum )
-                    illumType = lowerCase( illumType );
+        
+            if ( use_illum && illumType ) {
+                if( use_wb || use_mat)
+                    fprintf( stderr,"Warning: --wb-method and --mat-method will be "
+                                    "changed to 0 to support --adopt-white \n" );
+                use_wb = 0;
+                use_mat = 0;
                 
+                illumType = lowerCase ( illumType );
+            }
+        
+        // --mat-method condition. Default of libraw is to use adobe_coeffs
+            if ( use_mat == 0 ) {
+                if ( use_wb ) {
+                    fprintf( stderr,"Error: --wb-method should be 0 in this case. Stopping now\n" );
+                    exit(1);
+                }
+                OUT.use_camera_matrix = 0;
                 bool gotIDT = prepareIDT( cameraSenPath,
                                           illumType,
                                           P1,
                                           C,
                                           idtm,
                                           wbv );
-                
-                if ( gotIDT ) {
-                     OUT.output_color = 0;
-                     OUT.use_camera_wb = 0;
-                     use_Mul = 1;
                     
-                    if (OUT.half_size == 1)
+                if ( !gotIDT && C.profile )
+                    use_wb = 1;
+                else if ( !gotIDT && !C.profile )
+                    use_wb = 2;
+                else if ( gotIDT ) {
+                    OUT.output_color = 0;
+                    use_Mul = 1;
+                    
+                    if ( OUT.half_size == 1 )
                         OUT.four_color_rgb = 0;
-
-                    FORI ( 3 ) {
-                        OUT.user_mul[i] = wbv[i];
-                    }
+                    
+                    FORI(3) OUT.user_mul[i] = wbv[i];
                 }
             }
+            else if ( use_mat == 1 && C.profile )
+                OUT.use_camera_matrix = 3;
+            else if ( use_mat == 1 && !C.profile ) {
+                fprintf( stderr,"Warning: Cannot find color profile from the RAW, "
+                                "will use the default process from libraw\n" );
+                OUT.use_camera_matrix = 1;
+            }
+            else if ( use_mat > 0 && !use_wb ) {
+                fprintf( stderr,"Error: --wb-method should not be 0 in this case. Stopping now\n" );
+                exit(1);
+            }
+        
+            OUT.output_color      = 5;
+            OUT.highlight         = 0;
+            OUT.gamm[0]           = 1.0;
+            OUT.gamm[1]           = 1.0;
+            OUT.no_auto_bright    = 1;
 
-            // -r option
-            if ( use_Mul && !isnan( OUT.user_mul[0] ) ){
+            // --wb-method condition
+            if ( use_wb == 0 ) {
+                if ( use_mat ) {
+                    fprintf( stderr,"Error: --mat-method should be 0 in this case. Stopping now\n" );
+                    exit(1);
+                }
+                OUT.use_camera_wb = 0;
+                OUT.use_auto_wb = 0;
+            }
+            else if ( use_wb == 1 && C.profile ) {
+                OUT.use_camera_wb = 1;
+                OUT.use_auto_wb = 0;
+            }
+            else if ( use_wb == 2 ||
+                     (use_wb == 1 && !C.profile) ) {
+                OUT.use_camera_wb = 0;
+                OUT.use_auto_wb = 1;
+            }
+        
+            // For --wb-method 4
+            if ( use_Mul && !isnan ( OUT.user_mul[0] ) ){
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
                 
-                double sc = numeric_limits<double>::max();
+                double sc = dmax;
                 FORI( P1.colors ){
                     if ( OUT.user_mul[i] <= sc )
                         sc = OUT.user_mul[i];
                 }
                 
                 if ( sc != 1.0 ) {
-                    fprintf ( stderr, "Warning: The smallest channel multiplier is not 1.0.\n" );
+                    fprintf ( stderr, "Warning: The smallest channel multiplier should be 1.0.\n" );
                 }
             }
-            
-            if ( OUT.use_auto_wb == 1 ) {
-                OUT.use_camera_wb = 0;
-            }
-            
+        
             timerstart_timeval();
-            
             if ( LIBRAW_SUCCESS != ( ret = RawProcessor.dcraw_process() ) )
                 {
-                    fprintf ( stderr,"Cannot do postpocessing on %s: %s\n",
-                              argv[arg],libraw_strerror(ret));
+                    fprintf ( stderr,"Error: Cannot do postpocessing on %s: %s\n",
+                              argv[arg],libraw_strerror(ret) );
                     if ( LIBRAW_FATAL_ERROR( ret ) )
                         continue; 
                 }
+        
             if ( use_timing )
                 timerprint ( "LibRaw::dcraw_process()", argv[arg] );
             
-            if ( ( cp = strrchr ( argv[arg], '.' ) ) ) *cp = 0;
-            snprintf( outfn,sizeof(outfn),
+            if (( cp = strrchr ( argv[arg], '.' ))) *cp = 0;
+            snprintf( outfn, sizeof(outfn),
                       "%s%s",
                       argv[arg], "_aces.exr" );
             
-            if (verbosity>=2) // verbosity set by repeat -v switches
+            if ( verbosity >= 2 ) // verbosity set by repeat -v switches
                 printf ("Converting to aces RGB\n" );
-            else if(verbosity)
+            else if ( verbosity )
                 printf ("Writing file %s\n", outfn );
             
-            if ( P1.dng_version == 0 ) {
+            if ( !P1.dng_version ) {
                 libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
                 if ( use_timing )
                     timerprint("LibRaw::dcraw_make_mem_image()",argv[arg]);
@@ -368,9 +432,11 @@ int main(int argc, char *argv[])
                             scale );
             }
 //            else {
+////              DNG files always use the embedded color profile
 //                OUT.use_camera_wb = 0;
 //                OUT.use_auto_wb = 0;
-//                
+//                OUT.use_camera_matrix = 1;
+//
 //                libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&ret);
 //                if(use_timing)
 //                    timerprint("LibRaw::dcraw_make_mem_image()",argv[arg]);
@@ -387,12 +453,11 @@ int main(int argc, char *argv[])
             
 #ifndef WIN32
             if ( use_mmap && iobuffer )
-                {
-                    munmap ( iobuffer, msize );
-                    iobuffer = 0;
-                }
+            {
+                munmap ( iobuffer, msize );
+                iobuffer = 0;
+            }
 #endif
-            
             RawProcessor.recycle();
         }
     return 0;

@@ -83,7 +83,7 @@
 
 #define INV_255 (1.0/(double) 255.0)
 #define INV_65535 (1.0/(double) 65535.0)
-#define FILEPATH ("/usr/local/include/RAWTOACES/data/")
+#define FILEPATH ("/usr/local/include/rawtoaces/data/")
 
 #ifdef WIN32
 // suppress sprintf-related warning. sprintf() is permitted in sample code
@@ -141,6 +141,7 @@ valarray<float>  calibrateIllum        = valarray<float>(1.0f, 2);
 struct stat st;
 static int verbosity=0;
 static int cnt=0;
+static map < const string, char > keys;
 
 double e_max = 1.0000000;
 

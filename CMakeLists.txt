@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project( RAWTOACES )
 
-set( RAWTOACES_MAJOR_VERSION 1 )
-set( RAWTOACES_MINOR_VERSION 0 )
+set( RAWTOACES_MAJOR_VERSION 0 )
+set( RAWTOACES_MINOR_VERSION 1 )
 set( RAWTOACES_PATCH_VERSION 0 )
 set( RAWTOACES_VERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${RAWTOACES_PATCH_VERSION} )
 
@@ -212,7 +212,7 @@ install( FILES "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" DESTINATION
 endif( )
 
 if ( APPLE OR UNIX )
-	install (DIRECTORY data DESTINATION include/RAWTOACES)
+	install (DIRECTORY data DESTINATION include/rawtoaces)
 endif()
 
 ### to build rawtoaces ###

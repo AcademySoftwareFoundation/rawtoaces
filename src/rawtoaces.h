@@ -73,7 +73,8 @@ bool readCameraSenPath( const char * cameraSenPath,
     
     if ( cameraSenPath )  {
         if ( stat( static_cast<const char *>( cameraSenPath ), &st ) )  {
-            fprintf ( stderr,"The camera sensitivity file does not seem to exist.\n" );
+            fprintf ( stderr, "The camera sensitivity file does "
+                              "not seem to exist.\n" );
             exit (  EXIT_FAILURE );
         }
         
@@ -118,7 +119,7 @@ bool readIlluminate( const char * illumType,
 
             if ( strType.compare("unknown") != 0 ) {
                 
-// Pay attention to this, some old library may not process it correctly
+// Some outdated library on Mac may not process it correctly
 //                if( fn.find( illumType ) == std::string::npos )  {
 //                    continue;
 //                }
@@ -142,7 +143,6 @@ bool readIlluminate( const char * illumType,
     return readI;
 }
 
-
 bool prepareIDT ( const char * cameraSenPath,
                   const char * illumType,
                   libraw_iparams_t P,
@@ -155,13 +155,13 @@ bool prepareIDT ( const char * cameraSenPath,
     
     if (!read ) {
         fprintf( stderr, "No matching cameras found. "
-                         "Will rely on camera metadata extracted from RAW"
+                         "Will rely on camera metadata extracted from RAW "
                          "and/or libraw default method. \n");
         
         if (illumType) {
             fprintf( stderr, "The Illuminate should be accompanied "
                              "by a matching camera sensitivity data.\n"
-                             "Will rely on camera metadata extracted from RAW"
+                             "Will rely on camera metadata extracted from RAW "
                              "and/or libraw default method. \n");
         }
         
@@ -176,20 +176,21 @@ bool prepareIDT ( const char * cameraSenPath,
     
     if( !read ) {
         fprintf( stderr, "No matching light source. "
-                         "Will rely on camera metadata extracted from RAW"
+                         "Will rely on camera metadata extracted from RAW "
                          "and/or libraw default method. \n");
     }
     else
     {
         printf ( "The matching camera is: %s %s\n", P.make, P.model );
+        
+        //or cam_mul
+        FORI(3) mulV[i] = ( double )( C.pre_mul[i] / C.pre_mul[1]);
+        
         idt->loadTrainingData ( static_cast<string>( FILEPATH )
                                 +"/training/training_spectral" );
         idt->loadCMF ( static_cast<string>( FILEPATH )
                        +"/cmf/cmf_193" );
-        
-        vector < double > pre_mulV( 3, 1.0 );
-        FORI(3) pre_mulV[i] = ( double )( C.pre_mul[i] );
-        idt->chooseIlluminate( illuCM, pre_mulV, illumType );
+        idt->chooseIlluminate( illuCM, mulV, illumType );
         
         printf ( "Calculating IDT Matrix ...\n" );
         if ( idt->calIDT() )  {

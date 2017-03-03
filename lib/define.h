@@ -138,12 +138,24 @@ valarray<float>  neutralRGBDNG         = valarray<float>(1.0f, 3);
 valarray<float>  cameraXYZWhitePoint   = valarray<float>(1.0f, 3);
 valarray<float>  calibrateIllum        = valarray<float>(1.0f, 2);
 
-struct stat st;
-static int verbosity=0;
-static int cnt=0;
-static map < const string, char > keys;
-
-double e_max = 1.0000000;
+struct options {
+    int ret;
+    int use_bigfile;
+    int use_timing;
+    int use_camera_path;
+    int use_illum;
+    int use_Mul;
+    int use_mat;
+    int use_wb;
+    int use_mmap;
+    int msize;
+    int verbosity;
+    
+    char * cameraSenPath;
+    char * illumType;
+    
+    float scale;
+};
 
 struct CIEXYZ {
     double Xt;
@@ -198,10 +210,19 @@ struct cameraDataPath {
     vector <string> paths;
 };
 
+
+struct stat st;
+static int cnt=0;
+static map < const string, char > keys;
+static options opts;
+
+double e_max = 1.0000000;
 const double e = 216.0/24389.0;
 const double k = (24389.0/27.0)/116.0;
 const double dmin = numeric_limits<double>::min();
 const double dmax = numeric_limits<double>::max();
+
+vector < double > mulV( 3, 1.0 );
 
 double clip (double val, double target)
 {
@@ -345,6 +366,51 @@ vector<string> openDir(string path = ".") {
     return fPaths;
 };
 
+cameraDataPath& cameraPathsFinder() {
+    static cameraDataPath cdp;
+    static bool firstTime = 1;
+    
+    if(firstTime)
+    {
+        vector <string>& cPaths = cdp.paths;
+        
+        string path;
+        const char* env = getenv("RAWTOACES_CAMERASEN_PATH");
+        if (env)
+            path = env;
+        
+        if (path == "") {
+#if defined (WIN32) || defined (WIN64)
+            path = ".";
+            cdp.os = "WIN";
+#else
+            path = ".:/usr/local/lib/RAWTOACES:/usr/local" PACKAGE "-" VERSION "/lib/RAWTOACES";
+            cdp.os = "UNIX";
+#endif
+        }
+        
+        size_t pos = 0;
+        while (pos < path.size()){
+#if defined (WIN32) || defined (WIN64)
+            size_t end = path.find(';', pos);
+#else
+            size_t end = path.find(':', pos);
+#endif
+            
+            if (end == string::npos)
+                end = path.size();
+            
+            string pathItem = path.substr(pos, end-pos);
+            
+            if(find(cPaths.begin(), cPaths.end(), pathItem) == cPaths.end())
+                cPaths.push_back(pathItem);
+            
+            pos = end + 1;
+        }
+    }
+    return cdp;
+};
+
 template<typename T>
 void clearVM(vector<T> vct){
     vector< T >().swap(vct);
@@ -360,5 +426,8 @@ char * lowerCase(char * tex)
     
     return tex;
 };
+
+
+
 
 #endif

@@ -479,52 +479,6 @@ vector< vector<T> > getCalcXYZt (const vector < vector<T> > RGB,
     
     clearVM(BV);
     return outCalcXYZt;
-
-}
-
-cameraDataPath& cameraPathsFinder() {
-    static cameraDataPath cdp;
-    static bool firstTime = 1;
-    
-    if(firstTime)
-    {
-        vector <string>& cPaths = cdp.paths;
-        
-        string path;
-        const char* env = getenv("RAWTOACES_CAMERASEN_PATH");
-        if (env)
-            path = env;
-        
-        if (path == "") {
-#if defined (WIN32) || defined (WIN64)
-            path = ".";
-            cdp.os = "WIN";
-#else
-            path = ".:/usr/local/lib/RAWTOACES:/usr/local" PACKAGE "-" VERSION "/lib/RAWTOACES";
-            cdp.os = "UNIX";
-#endif
-        }
-        
-        size_t pos = 0;
-        while (pos < path.size()){
-#if defined (WIN32) || defined (WIN64)
-            size_t end = path.find(';', pos);
-#else
-            size_t end = path.find(':', pos);
-#endif
-            
-            if (end == string::npos)
-                end = path.size();
-            
-            string pathItem = path.substr(pos, end-pos);
-            
-            if(find(cPaths.begin(), cPaths.end(), pathItem) == cPaths.end())
-                cPaths.push_back(pathItem);
-            
-            pos = end + 1;
-        }
-    }
-    return cdp;
 }
 #endif
 

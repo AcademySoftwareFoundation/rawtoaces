@@ -115,9 +115,10 @@ void usage(const char *prog)
 #endif
             );
     exit(1);
-}
+};
 
-map < const string, char > create_key() {
+void create_key()
+{
     keys["--help"] = 'I';
     keys["--version"] = 'V';
     keys["--wb-method"] = 'R';
@@ -148,25 +149,177 @@ map < const string, char > create_key() {
     keys["-F"] = 'F';
     keys["-d"] = 'd';
     keys["-E"] = 'E';
+};
 
-    return keys;
-}
+void initialize()
+{
+    opts.use_bigfile = 0;
+    opts.use_timing = 0;
+    opts.use_camera_path = 0;
+    opts.use_illum = 0;
+    opts.use_Mul = 0;
+    opts.verbosity = 0;
+    opts.use_mat = -1;
+    opts.use_wb = -1;
+    opts.scale  = 1.0;
+    
+#ifndef WIN32
+    opts.msize = 0;
+    opts.use_mmap=0;
+#endif
+};
+
+int checkConditions (int argc, char * argv[], libraw_output_params_t &OUT, options &opts)
+{
+    create_key();
+    initialize();
+    
+    argv[argc] = (char *)"";
+    
+    char *cp, *sp;
+    int arg;
+    
+    for ( arg = 1; arg < argc; )
+    {
+        string key(argv[arg]);
+        
+        if ( key[0] != '-' ) {
+            break;
+        }
+        
+        arg++;
+        char opt = keys[key];
+        if (( cp = strchr ( sp = (char*)"RpMgcnbksStqmHBC", opt )) != 0 ) {
+            for (int i=0; i < "111411111142"[cp-sp]-'0'; i++) {
+                if (!isdigit(argv[arg+i][0]))
+                {
+                    if ( opt == 'R' || opt == 'p')
+                    {
+                        fprintf ( stderr, "Non-numeric argument to \"%s\"\n", key.c_str() );
+                        exit(1);
+                    }
+                    fprintf ( stderr, "Non-numeric argument to \"-%c\"\n", opt );
+                    exit(1);
+                }
+            }
+        }
+        else if ((cp = strchr ( sp = (char*)"T", opt )) != 0) {
+            for (int i=0; i < "111411111142"[cp-sp]-'0'; i++) {
+                if ( !isalnum(argv[arg+i][0] ) )
+                {
+                    fprintf (stderr,"Non-numeric and/or Non-compatible"
+                             " argument to \"-%c\"\n", opt);
+                    exit(1);
+                }
+            }
+        }
+        
+        // Please refer to libraw_types.h for more information
+        switch ( opt )
+        {
+            case 'I':  usage( argv[0] );  break;
+            case 'V':  printf ( "%s\n", VERSION );  break;
+            case 'v':  opts.verbosity++;  break;
+            case 'G':  OUT.green_matching = 1; break;
+            case 'c':  OUT.adjust_maximum_thr   = (float)atof(argv[arg++]);  break;
+            case 'n':  OUT.threshold   = (float)atof(argv[arg++]);  break;
+            case 'b':  OUT.bright      = (float)atof(argv[arg++]);  break;
+            case 'P':  OUT.bad_pixels  = argv[arg++];        break;
+            case 'K':  OUT.dark_frame  = argv[arg++];        break;
+            case 'C':
+                OUT.aber[0] = 1.0 / atof(argv[arg++]);
+                OUT.aber[2] = 1.0 / atof(argv[arg++]);
+                break;
+            case 'k':  OUT.user_black  = atoi(argv[arg++]);  break;
+            case 'S':  OUT.user_sat    = atoi(argv[arg++]);  break;
+            case 't':  OUT.user_flip   = atoi(argv[arg++]);  break;
+            case 'q':  OUT.user_qual   = atoi(argv[arg++]);  break;
+            case 'm':  OUT.med_passes  = atoi(argv[arg++]);  break;
+            case 'H':  OUT.highlight   = atoi(argv[arg++]);  break;
+            case 'h':  OUT.half_size         = 1;
+                // no break:  "-h" implies "-f"
+            case 'f':  OUT.four_color_rgb      = 1;            break;
+            case 'B':  FORI(4) OUT.cropbox[i]  = atoi(argv[arg++]); break;
+            case 'j':  OUT.use_fuji_rotate     = 0;  break;
+            case 'W':  OUT.no_auto_bright      = 1;  break;
+            case 'F':  opts.use_bigfile             = 1;  break;
+            case 'd':  opts.use_timing              = 1;  break;
+            case 'p':
+                opts.use_mat = atoi(argv[arg++]);
+                if ( opts.use_mat > 2 || opts.use_mat < -1) {
+                    fprintf (stderr, "Invalid argument to "
+                             "\"%s\" \n", key.c_str());
+                    exit(1);
+                }
+                break;
+            case 'Q':
+                opts.use_wb = 0;
+                opts.use_camera_path = 1;
+                opts.cameraSenPath = (char *)(argv[arg++]);
+                break;
+            case 'T':
+                opts.use_illum = 1;
+                opts.illumType = (char *)(argv[arg++]);
+                break;
+            case 'M':  opts.scale = atof(argv[arg++]); break;
+            case 'R':
+                opts.use_wb = atoi(argv[arg++]);
+                if ( opts.use_wb == 3 ) {
+                    FORI(4) {
+                        if ( !isdigit(argv[arg][0]) )
+                        {
+                            fprintf (stderr, "Non-numeric argument to "
+                                     "\"%s\" \n", key.c_str());
+                            exit(1);
+                        }
+                        OUT.greybox[i] = (float)atof(argv[arg++]);
+                    }
+                }
+                else if ( opts.use_wb == 4 ) {
+                    opts.use_Mul = 1;
+                    FORI(4) {
+                        if ( !isdigit(argv[arg][0]) )
+                        {
+                            fprintf (stderr, "Non-numeric argument to "
+                                     "\"%s\" \n", key.c_str());
+                            exit(1);
+                        }
+                        OUT.user_mul[i] = (float)atof(argv[arg++]);
+                    }
+                }
+                else if ( opts.use_wb > 4 || opts.use_wb < -1) {
+                    fprintf (stderr, "Invalid argument to "
+                             "\"%s\" \n", key.c_str());
+                    exit(1);
+                }
+                break;
+#ifndef WIN32
+            case 'E':  opts.use_mmap = 1;  break;
+#endif
+            default:
+                fprintf ( stderr, "Unknown option \"%s\".\n", key.c_str() );
+                exit(1);
+        }
+    }
+    
+    return arg;
+};
 
 int my_progress_callback ( void *d,
                            enum LibRaw_progress p,
-                           int iteration, int expected )
+                           int iteration,
+                           int expected
+                          )
 {
     char * passed  = ( char* ) (d ? d:"default string");
     
-    if ( verbosity > 2 )
-    {
-        printf ("CB: %s  pass %d of %d (data passed=%s)\n",
-                 libraw_strprogress(p),
-                 iteration,
-                 expected,
-                 passed );
-    }
-    else if ( iteration == 0 )
+    printf ("CB: %s  pass %d of %d (data passed=%s)\n",
+            libraw_strprogress(p),
+            iteration,
+            expected,
+            passed );
+    
+    if ( iteration == 0 )
         printf ( "start_timevaling %s (expecting %d iterations)\n",
                  libraw_strprogress(p),
                  expected );
@@ -177,7 +330,7 @@ int my_progress_callback ( void *d,
     ///    if(++cnt>10) return 1;
     
     return 0;
-}
+};
 
 // timer
 #ifndef WIN32
@@ -215,7 +368,6 @@ void timerprint (const char * msg, const char * filename)
     msec /= (float) unit.QuadPart / 1000.0f;
     printf ( "Timing: %s/%s: %6.3f msec\n",
              filename,msg,msec );
-}
-
+};
 #endif
 

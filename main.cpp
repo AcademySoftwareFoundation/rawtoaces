@@ -71,13 +71,6 @@ int main(int argc, char *argv[])
 #endif
 
 #define OUT RawProcessor.imgdata.params
-
-#ifndef WIN32
-  putenv ((char*)"TZ=UTC");
-#else
-  _putenv ((char*)"TZ=UTC");
-#endif
-    
 #define P1 RawProcessor.imgdata.idata
 #define S RawProcessor.imgdata.sizes
 #define C RawProcessor.imgdata.color
@@ -85,7 +78,13 @@ int main(int argc, char *argv[])
 #define T RawProcessor.imgdata.thumbnail
 #define P2 RawProcessor.imgdata.other
 
-  int arg = checkConditions(argc, argv, OUT, opts);
+#ifndef WIN32
+  putenv ((char*)"TZ=UTC");
+#else
+  _putenv ((char*)"TZ=UTC");
+#endif
+
+  int arg = fetchCondition (argc, argv, opts, OUT);
 
   if ( opts.use_camera_path ) {
       string cameraSenPathS( opts.cameraSenPath );
@@ -106,8 +105,9 @@ int main(int argc, char *argv[])
     for ( ; arg < argc; arg++ )
     {
         char outfn[1024];
+        
         if( opts.verbosity )
-            printf( "Processing file %s\n",argv[arg] );
+            printf( "Processing file %s\n", argv[arg] );
         
         timerstart_timeval();
             
@@ -185,11 +185,11 @@ int main(int argc, char *argv[])
             if ( opts.use_illum ) {
                 if( opts.use_wb || opts.use_mat)
                     fprintf( stderr, "Warning: \"--wb-method\" and \"--mat-method\" "
-                                     "will be forced to change to 0 to support "
-                                     "\"--adopt-white\" feature \n" );
+                            "will be forced to change to 0 to support "
+                            "\"--adopt-white\" feature \n" );
                 opts.use_wb = 0;
                 opts.use_mat = 0;
-                
+            
                 opts.illumType = lowerCase ( opts.illumType );
             }
         
@@ -202,8 +202,7 @@ int main(int argc, char *argv[])
                 }
                 OUT.use_camera_matrix = 0;
                 
-                bool gotIDT = prepareIDT( opts.cameraSenPath,
-                                          opts.illumType,
+                bool gotIDT = prepareIDT( opts,
                                           P1,
                                           C,
                                           idtm,
@@ -292,16 +291,17 @@ int main(int argc, char *argv[])
             if ( opts.use_timing )
                 timerprint ( "LibRaw::dcraw_process()", argv[arg] );
             
-//            if (( cp = strrchr ( argv[arg], '.' ))) *cp = 0;
-            snprintf( outfn, sizeof(outfn),
-                      "%s%s",
-                      argv[arg], "_aces.exr" );
-            
             if ( opts.verbosity >= 2 ) // verbosity set by repeat -v switches
                 printf ("Converting to aces RGB\n" );
             else if ( opts.verbosity )
                 printf ("Writing file %s\n", outfn );
-            
+        
+            char * cp;
+            if (( cp = strrchr ( argv[arg], '.' ))) *cp = 0;
+            snprintf( outfn, sizeof(outfn),
+                     "%s%s",
+                     argv[arg], "_aces.exr" );
+        
             if ( !P1.dng_version ) {
                 libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&opts.ret);
                 if ( opts.use_timing )

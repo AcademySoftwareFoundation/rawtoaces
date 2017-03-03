@@ -169,7 +169,9 @@ void initialize()
 #endif
 };
 
-int checkConditions (int argc, char * argv[], libraw_output_params_t &OUT, options &opts)
+int fetchCondition (int argc, char * argv[],
+                    option &opts,
+                    libraw_output_params_t &OUT)
 {
     create_key();
     initialize();

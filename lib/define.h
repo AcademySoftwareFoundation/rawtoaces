@@ -138,7 +138,7 @@ valarray<float>  neutralRGBDNG         = valarray<float>(1.0f, 3);
 valarray<float>  cameraXYZWhitePoint   = valarray<float>(1.0f, 3);
 valarray<float>  calibrateIllum        = valarray<float>(1.0f, 2);
 
-struct options {
+struct option {
     int ret;
     int use_bigfile;
     int use_timing;
@@ -212,9 +212,9 @@ struct cameraDataPath {
 
 
 struct stat st;
+static option opts;
 static int cnt=0;
 static map < const string, char > keys;
-static options opts;
 
 double e_max = 1.0000000;
 const double e = 216.0/24389.0;

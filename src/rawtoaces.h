@@ -143,14 +143,16 @@ bool readIlluminate( const char * illumType,
     return readI;
 }
 
-bool prepareIDT ( const char * cameraSenPath,
-                  const char * illumType,
+bool prepareIDT ( option opts,
                   libraw_iparams_t P,
                   libraw_colordata_t C,
                   vector < vector < double > > &idtm,
                   vector < double > &wbv )
 {
     Idt * idt = new Idt();
+    const char * cameraSenPath = static_cast <const char *> (opts.cameraSenPath);
+    const char * illumType = static_cast <const char *> (opts.illumType);
+
     bool read = readCameraSenPath( cameraSenPath, P, idt );
     
     if (!read ) {

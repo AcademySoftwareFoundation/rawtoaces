@@ -159,8 +159,8 @@ void initialize()
     opts.use_illum = 0;
     opts.use_Mul = 0;
     opts.verbosity = 0;
-    opts.use_mat = -1;
-    opts.use_wb = -1;
+    opts.use_mat = 0;
+    opts.use_wb = 0;
     opts.scale  = 1.0;
     
 #ifndef WIN32
@@ -200,7 +200,7 @@ int fetchCondition (int argc, char * argv[],
                         fprintf ( stderr, "Non-numeric argument to \"%s\"\n", key.c_str() );
                         exit(1);
                     }
-                    fprintf ( stderr, "Non-numeric argument to \"-%c\"\n", opt );
+                    fprintf ( stderr, "Non-numeric argument to \"%s\"\n", key.c_str() );
                     exit(1);
                 }
             }
@@ -210,7 +210,7 @@ int fetchCondition (int argc, char * argv[],
                 if ( !isalnum(argv[arg+i][0] ) )
                 {
                     fprintf (stderr,"Non-numeric and/or Non-compatible"
-                             " argument to \"-%c\"\n", opt);
+                             " argument to \"%s\"\n", key.c_str());
                     exit(1);
                 }
             }
@@ -255,7 +255,6 @@ int fetchCondition (int argc, char * argv[],
                 }
                 break;
             case 'Q':
-                opts.use_wb = 0;
                 opts.use_camera_path = 1;
                 opts.cameraSenPath = (char *)(argv[arg++]);
                 break;
@@ -304,6 +303,29 @@ int fetchCondition (int argc, char * argv[],
         }
     }
     
+    if ( !opts.use_mat && opts.use_wb ) {
+        fprintf( stderr, "Error: --mat-method should not be 0 when "
+                "--wb-method is not set to 0. Stopping now\n" );
+        exit(1);
+    }
+    else if ( opts.use_mat && !opts.use_wb ) {
+        fprintf( stderr, "Error: --wb-method should not be 0 when "
+                "--mat-method is not set to 0. Stopping now\n" );
+        exit(1);
+    }
+    
+    if ( opts.use_illum || opts.use_camera_path) {
+        if( opts.use_wb || opts.use_mat)
+            fprintf( stderr, "Warning: \"--wb-method\" and \"--mat-method\" "
+                    "will be forced to change to 0 to support \"--adopt-white\" "
+                    "and/or \"--ss-path\" feature \n\n" );
+        opts.use_wb = 0;
+        opts.use_mat = 0;
+        
+        if ( opts.use_illum )
+            opts.illumType = lowerCase( opts.illumType );
+    }
+    
     return arg;
 };
 
@@ -345,7 +367,8 @@ void timerstart_timeval (void)
 void timerprint ( const char *msg, const char *filename )
 {
     gettimeofday ( &end_timeval,NULL );
-    float msec = ( end_timeval.tv_sec - start_timeval.tv_sec)*1000.0f + (end_timeval.tv_usec - start_timeval.tv_usec )/1000.0f;
+    float msec = ( end_timeval.tv_sec - start_timeval.tv_sec)*1000.0f
+                   + (end_timeval.tv_usec - start_timeval.tv_usec ) / 1000.0f;
     
     printf( "Timing: %s/%s: %6.3f msec\n",
             filename,

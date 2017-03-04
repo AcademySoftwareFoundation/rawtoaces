@@ -182,19 +182,8 @@ int main(int argc, char *argv[])
             if ( opts.use_timing )
                 timerprint( "LibRaw::unpack()", argv[arg] );
         
-            if ( opts.use_illum ) {
-                if( opts.use_wb || opts.use_mat)
-                    fprintf( stderr, "Warning: \"--wb-method\" and \"--mat-method\" "
-                            "will be forced to change to 0 to support "
-                            "\"--adopt-white\" feature \n" );
-                opts.use_wb = 0;
-                opts.use_mat = 0;
-            
-                opts.illumType = lowerCase ( opts.illumType );
-            }
-        
         // --mat-method condition. Default of libraw is to use adobe_coeffs
-            if ( !opts.use_mat ) {
+            if ( !opts.use_mat &&  !opts.use_wb) {
                 if ( opts.use_wb ) {
                     fprintf( stderr, "Error: --wb-method should be 0 "
                                      "in this case. Stopping now\n" );
@@ -230,11 +219,6 @@ int main(int argc, char *argv[])
             else if ( opts.use_mat == 1 && C.profile ) {
                 OUT.use_camera_matrix = 3;
             }
-            else if ( opts.use_mat > 0 && !opts.use_wb ) {
-                fprintf( stderr, "Error: --wb-method should not be 0 when "
-                                 "--mat-method is not set to 0. Stopping now\n" );
-                exit(1);
-            }
         
             OUT.output_color      = 5;
             OUT.highlight         = 0;
@@ -243,12 +227,7 @@ int main(int argc, char *argv[])
             OUT.no_auto_bright    = 1;
 
             // --wb-method condition
-            if ( !opts.use_wb ) {
-                if ( opts.use_mat ) {
-                    fprintf( stderr, "Error: --mat-method should be 0 in "
-                                     "this case. Stopping now\n" );
-                    exit(1);
-                }
+            if ( !opts.use_wb && !opts.use_mat  ) {
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
             }

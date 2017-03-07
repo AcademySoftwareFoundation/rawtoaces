@@ -271,9 +271,9 @@ If there are errors with regard to version mis-match of *Eigen* library, please 
 2. Camera file metadata
 3. Camera data included in the `libraw` software
 
-The preferred, and most accurate, method of converting RAW image files to ACES is to use  camera spectral sensitivities and illuminant spectral power distributions, if available.  If spectral sensitivity data is available for the camera `rawtoaces` uses the method described in Academy document [P-2013-001](http://j.mp/P-2013-001).
+The preferred, and most accurate, method of converting RAW image files to ACES is to use camera spectral sensitivities and illuminant spectral power distributions, if available.  If spectral sensitivity data is available for the camera, `rawtoaces` uses the method described in Academy document [P-2013-001](http://j.mp/P-2013-001).
 
-If no camera spectral sensitivity data is available then options to use metadata embeded in the camera file, or camera data included in `libraw` exist.
+While preferred, camera spectral sensitivity data is not commonly known by a general user. When that is the case, `rawtoaces` can use either the metadata embedded in the camera file or camera data included in `libraw` to approximate a conversion to ACES.
 
 ### Help message
 
@@ -337,7 +337,7 @@ The help message with a description of all command line options can be obtained 
 	  
 ### RAW conversion options
 
-In most cases the default values for all "Raw conversion options" should be suffienct.  Please see the help menu for details of the Raw conversion options.
+In most cases the default values for all "RAW conversion options" should be sufficient.  Please see the help menu for details of the RAW conversion options.
 
 ### Conversion using spectral sensitivities
 
@@ -345,13 +345,13 @@ If spectral sensitivity data for your camera is included with `rawtoaces` then t
 
 	$ rawtoaces input.raw
 	
-This command is equivilent to :
+This command is equivalent to :
 	
 	$ rawtoaces --wb-method 0 --mat-method 0 input.raw
 	
-This is the preferred method as camera white balance gain factors and the RGB to ACES conversion matrix will be calculated with the spectral sensitivitiy data from your camera and provides the most accruate conversion to ACES possible. 
+This is the preferred method as camera white balance gain factors and the RGB to ACES conversion matrix will be calculated using the spectral sensitivity data from your camera. This provides the most accurate conversion to ACES. 
 
-By default, `rawtoaces` will determine the adopted white by finding the set of white balance gain factors calculated from spectral sensitivities closest to the "As Shot" (aka Camera Multipler) white balance gain factors included in the RAW file metadata.  This default behavior can be overridden by including the desired adopted white name after white balance method.  The following example will use the white balance gain factors calculated from spectral sensitivities for D55. 
+By default, `rawtoaces` will determine the adopted white by finding the set of white balance gain factors calculated from spectral sensitivities closest to the "As Shot" (aka Camera Multiplier) white balance gain factors included in the RAW file metadata.  This default behavior can be overridden by including the desired adopted white name after white balance method.  The following example will use the white balance gain factors calculated from spectral sensitivities for D55. 
 
 	$ rawtoaces --wb-method 0 D55 --mat-method 0 input.raw
 
@@ -367,7 +367,7 @@ Include basic information on the data format here
 
 ### Conversion using camera file metadata
 
-If available, camera metadata can be used to convert RAW files to ACES.  This includes the camera multiplier white balance gains and any RGB to XYZ matrix included.  The RGB to XYZ matrix included in metadata will be used to calculate the final RGB to ACES matrix used for conversion.  
+In lieu of spectral sensitivity data, camera metadata can be used to convert RAW files to ACES.  This includes the camera multiplier white balance gains and any RGB to XYZ matrix included.  The RGB to XYZ matrix included in metadata will be used to calculate the final RGB to ACES matrix used for conversion.  The accuracy of this method is dependent on the camera manufacturer building writing correct metadata into their RAW files.
 
 The following commands will convert RAW to ACES using the camera file metadata for both white balance and the RGB to XYZ matrix.
 
@@ -375,18 +375,18 @@ The following commands will convert RAW to ACES using the camera file metadata f
 	
 ### Conversion using camera data included in libraw
 
-`libraw' includes information and options which may be useful to aid in the conversion of RAW data to ACES.  In particular, the software includes matrices for a wide range of cameras which may provide a resonable basis for conversion from RGB to ACES.  These matrices were calculated by Adobe and are often referred to as the Adobe coeffiencents. To use the these built in matrices the following command may be used.
+`libraw` includes matrices for a wide range of cameras which may provide a reasonable basis for conversion from RGB to ACES.  These matrices were calculated by Adobe and are often referred to as the Adobe coefficients. To use these built in matrices the following command may be used.
 
 	$ rawtoaces --mat-method 2
 	
-`libraw` provides a number of methods of calculating white balance including averaging the entire image, averaging a specified box within the image, or simply specifying the white balance gain factors to be used.  These options can be utilized by using `--wb-method` 2-4 as desired.
+`libraw` also provides a few other methods for calculating white balance, including averaging the entire image, averaging a specified box within the image, or explicitly specifying the white balance gain factors to be used.  These options can be utilized by using `--wb-method [2-4]` as desired.
 
 
 ## License
 
 __For 3rd party license details see [LICENSES.md](LICENSES.md)__
 
-The Raw to ACES Utility Reference Implementation is provided by the Academy under the following terms and conditions:
+The RAW to ACES Utility Reference Implementation is provided by the Academy under the following terms and conditions:
 
 Copyright © 2017 Academy of Motion Picture Arts and Sciences ("A.M.P.A.S."). Portions contributed by others as indicated. All rights reserved.
 

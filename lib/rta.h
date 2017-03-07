@@ -134,6 +134,7 @@ namespace rta {
                                   vector<double> >& illuCM,
                                   vector<double>& src,
                                   const string type);
+            void setVerbosity(int verbosity);
             void scaleLSC();
         
             vector< double > calWB();
@@ -154,6 +155,7 @@ namespace rta {
         
             Spst getCameraSpst();
             illum getIlluminate();
+            int getVerbosity();
 
             const vector< vector<double> > getIDT() const;
             const vector< double > getWB() const;
@@ -164,6 +166,7 @@ namespace rta {
             Spst    _cameraSpst;
             illum   _illuminate;
             string  _bestIllum;
+            int     _verbosity;
         
             vector< CMF > _cmf;
             vector< trainSpec > _trainingSpec;

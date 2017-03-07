@@ -83,13 +83,21 @@ int main(int argc, char *argv[])
 #else
   _putenv ((char*)"TZ=UTC");
 #endif
+    
+    // general set-up
+    OUT.output_color      = 5;
+    OUT.highlight         = 0;
+    OUT.gamm[0]           = 1.0;
+    OUT.gamm[1]           = 1.0;
+    OUT.no_auto_bright    = 1;
 
   int arg = fetchCondition (argc, argv, opts, OUT);
 
   if ( opts.use_camera_path ) {
       string cameraSenPathS( opts.cameraSenPath );
       if ( cameraSenPathS.find("_380_780") == std::string::npos ) {
-          fprintf( stderr,"Cannot locate camera sensitivity data in the file.\n" );
+          fprintf( stderr,"\nError: Cannot locate camera "
+                          "sensitivity data in the file.\n" );
           exit(1);
       }
   }
@@ -118,14 +126,14 @@ int main(int argc, char *argv[])
                 
                 if( file<0 )
                 {
-                    fprintf( stderr, "Error: Cannot open %s: %s\n",
+                    fprintf( stderr, "\nError: Cannot open %s: %s\n",
                              argv[arg], strerror(errno) );
                     continue;
                 }
                 
                 if( fstat( file,&st ) )
                 {
-                    fprintf( stderr, "Error: Cannot stat %s: %s\n",
+                    fprintf( stderr, "\nError: Cannot stat %s: %s\n",
                              argv[arg], strerror(errno) );
                     close( file );
                     continue;
@@ -136,7 +144,7 @@ int main(int argc, char *argv[])
                 iobuffer = mmap( NULL, opts.msize, PROT_READ, MAP_PRIVATE, file, 0 );
                 if( !iobuffer )
                 {
-                    fprintf ( stderr, "Error: Cannot mmap %s: %s\n",
+                    fprintf ( stderr, "\nError: Cannot mmap %s: %s\n",
                               argv[arg], strerror(errno) );
                     close( file );
                     continue;
@@ -145,7 +153,7 @@ int main(int argc, char *argv[])
                 close( file );
                 if( (opts.ret = RawProcessor.open_buffer( iobuffer,st.st_size ) != LIBRAW_SUCCESS ) )
                 {
-                    fprintf ( stderr, "Error: Cannot open_buffer %s: %s\n",
+                    fprintf ( stderr, "\nError: Cannot open_buffer %s: %s\n",
                               argv[arg],
                               libraw_strerror(opts.ret) );
                     continue; // no recycle b/c open file will recycle itself
@@ -162,7 +170,7 @@ int main(int argc, char *argv[])
                         
                if( opts.ret  != LIBRAW_SUCCESS)
                {
-                   fprintf( stderr, "Error: Cannot open %s: %s\n",
+                   fprintf( stderr, "\nError: Cannot open %s: %s\n",
                                     argv[arg], libraw_strerror(opts.ret) );
                    continue;
                }
@@ -174,7 +182,7 @@ int main(int argc, char *argv[])
             timerstart_timeval();
             if (( opts.ret = RawProcessor.unpack() ) != LIBRAW_SUCCESS )
             {
-                fprintf( stderr, "Error: Cannot unpack %s: %s\n",
+                fprintf( stderr, "\nError: Cannot unpack %s: %s\n",
                                   argv[arg], libraw_strerror(opts.ret) );
                 continue;
             }
@@ -182,13 +190,7 @@ int main(int argc, char *argv[])
             if ( opts.use_timing )
                 timerprint( "LibRaw::unpack()", argv[arg] );
         
-        // --mat-method condition. Default of libraw is to use adobe_coeffs
-            if ( !opts.use_mat &&  !opts.use_wb) {
-                if ( opts.use_wb ) {
-                    fprintf( stderr, "Error: --wb-method should be 0 "
-                                     "in this case. Stopping now\n" );
-                    exit(1);
-                }
+            if ( !opts.use_mat || !opts.use_wb ) {
                 OUT.use_camera_matrix = 0;
                 
                 bool gotIDT = prepareIDT( opts,
@@ -203,40 +205,46 @@ int main(int argc, char *argv[])
                     opts.use_wb = 2;
                 else if ( gotIDT ) {
                     OUT.output_color = 0;
-                    opts.use_Mul = 1;
                     
                     if ( OUT.half_size == 1 )
                         OUT.four_color_rgb = 0;
                     
-                    FORI(3) OUT.user_mul[i] = wbv[i];
+                    if (opts.use_wb == 1) {
+                        opts.use_Mul = 1;
+                        FORI(3) OUT.user_mul[i] = wbv[i];
+                    }
                 }
             }
             else if ( opts.use_mat == 1 && !C.profile ) {
-                fprintf( stderr, "Warning: Cannot find color profile from the RAW, "
-                                 "will use the default process from libraw\n" );
+                fprintf( stderr, "\nWarning: Cannot find color profile from the RAW, "
+                                 "will use the default matrix from libraw\n" );
                 OUT.use_camera_matrix = 1;
             }
             else if ( opts.use_mat == 1 && C.profile ) {
                 OUT.use_camera_matrix = 3;
             }
         
-            OUT.output_color      = 5;
-            OUT.highlight         = 0;
-            OUT.gamm[0]           = 1.0;
-            OUT.gamm[1]           = 1.0;
-            OUT.no_auto_bright    = 1;
-
             // --wb-method condition
             if ( !opts.use_wb && !opts.use_mat  ) {
+                if ( C.profile ) {
+                    OUT.use_camera_wb = 1;
+                    OUT.use_auto_wb = 0;
+                }
+                else {
+                    OUT.use_camera_wb = 0;
+                    OUT.use_auto_wb = 1;
+                }
+            }
+            else if ( !opts.use_wb && opts.use_mat == 1 ) {
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
             }
-            else if ( opts.use_wb == 1 && C.profile ) {
+            else if ( opts.use_wb == 2 && C.profile ) {
                 OUT.use_camera_wb = 1;
                 OUT.use_auto_wb = 0;
             }
-            else if ( opts.use_wb == 2 ||
-                     (opts.use_wb == 1 && !C.profile) ) {
+            else if ( opts.use_wb == 3 ||
+                     (opts.use_wb == 2 && !C.profile) ) {
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 1;
             }
@@ -281,16 +289,20 @@ int main(int argc, char *argv[])
                      "%s%s",
                      argv[arg], "_aces.exr" );
         
-            if ( !P1.dng_version ) {
+            if ( P1.dng_version == 0 ) {
                 libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&opts.ret);
                 if ( opts.use_timing )
                     timerprint("LibRaw::dcraw_make_mem_image()",argv[arg]);
                 
                 float * aces = 0;
-                if ( !OUT.output_color )
+                if ( !OUT.output_color ) {
+                    cout << int(OUT.output_color) << endl;
                     aces = prepareAcesData_NonDNG_IDT( post_image, idtm, wbv );
-                else
+                }
+                else {
+                    cout << int(OUT.output_color) << endl;
                     aces = prepareAcesData_NonDNG( post_image );
+                }
                 
                 aces_write( outfn,
                             post_image->width,
@@ -320,7 +332,7 @@ int main(int argc, char *argv[])
 //                            aces,
 //                            scale );
 //            }
-            
+        
 #ifndef WIN32
             if ( opts.use_mmap && iobuffer )
             {

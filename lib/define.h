@@ -210,19 +210,21 @@ struct cameraDataPath {
     vector <string> paths;
 };
 
-
 struct stat st;
 static option opts;
 static int cnt=0;
 static map < const string, char > keys;
+vector < double > mulV( 3, 1.0 );
 
 double e_max = 1.0000000;
 const double e = 216.0/24389.0;
 const double k = (24389.0/27.0)/116.0;
 const double dmin = numeric_limits<double>::min();
 const double dmax = numeric_limits<double>::max();
-
-vector < double > mulV( 3, 1.0 );
+const char *lightS[12] = { "3200k", "cie15-a", "cie15-c",
+                           "cie15-d50", "cie15-d55", "cie15-d65",
+                           "cie15-d75", "d40", "d45",
+                           "d50", "d60", "iso7589" };
 
 double clip (double val, double target)
 {
@@ -412,11 +414,19 @@ cameraDataPath& cameraPathsFinder() {
 };
 
 template<typename T>
-void clearVM(vector<T> vct){
+void clearVM (vector<T> vct){
     vector< T >().swap(vct);
 };
 
-char * lowerCase(char * tex)
+void printVS (const vector <string> vs) {
+    assert (vs.size() > 0);
+    printf("\nThe following options are available:\n\n");
+    
+    FORI ( vs.size() ) printf("%s\n", vs[i].c_str());
+    printf ("\n");
+};
+
+char * lowerCase (char * tex)
 {
     string tmp(tex);
     

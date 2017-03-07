@@ -83,7 +83,8 @@ void usage(const char *prog)
             "  --ss-path <path>      Specify the path to camera sensitivity data\n"
             "				(default = /usr/local/include/RAWTOACES/data/camera)\n"
             "  --exp-comp float      Set exposure compensation factor (default = 1.0)\n"
-            "  --adopt-white         Set the desired color temperature (e.g., D60)\n"
+//            "  --adopt-white         Set the desired color temperature (e.g., D60)\n"
+            "  --valid-illum         Report back the list of valid options for light source (e.g., D50)\n"
             "\n"
             "Raw conversion options:\n"
             "  -c float              Set adjust maximum threshold (default 0.75)\n"
@@ -126,6 +127,7 @@ void create_key()
     keys["--ss-path"] = 'Q';
     keys["--exp-comp"] = 'M';
     keys["--adopt-white"] = 'T';
+    keys["--valid-illum"] = 'z';
     keys["-c"] = 'c';
     keys["-C"] = 'C';
     keys["-P"] = 'P';
@@ -167,6 +169,7 @@ void initialize()
     opts.msize = 0;
     opts.use_mmap=0;
 #endif
+    
 };
 
 int fetchCondition (int argc, char * argv[],
@@ -176,6 +179,9 @@ int fetchCondition (int argc, char * argv[],
     create_key();
     initialize();
     
+    vector < string > vls (lightS, lightS + sizeof(lightS) / sizeof(char *));
+//    printf ("%i\n", int(vls.size()));
+
     argv[argc] = (char *)"";
     
     char *cp, *sp;
@@ -197,10 +203,10 @@ int fetchCondition (int argc, char * argv[],
                 {
                     if ( opt == 'R' || opt == 'p')
                     {
-                        fprintf ( stderr, "Non-numeric argument to \"%s\"\n", key.c_str() );
+                        fprintf ( stderr, "\nError: Non-numeric argument to \"%s\"\n", key.c_str() );
                         exit(1);
                     }
-                    fprintf ( stderr, "Non-numeric argument to \"%s\"\n", key.c_str() );
+                    fprintf ( stderr, "\nError: Non-numeric argument to \"%s\"\n", key.c_str() );
                     exit(1);
                 }
             }
@@ -209,8 +215,8 @@ int fetchCondition (int argc, char * argv[],
             for (int i=0; i < "111411111142"[cp-sp]-'0'; i++) {
                 if ( !isalnum(argv[arg+i][0] ) )
                 {
-                    fprintf (stderr,"Non-numeric and/or Non-compatible"
-                             " argument to \"%s\"\n", key.c_str());
+                    fprintf (stderr,"\nNon-numeric and/or Non-compatible "
+                                    "argument to \"%s\"\n", key.c_str());
                     exit(1);
                 }
             }
@@ -244,13 +250,14 @@ int fetchCondition (int argc, char * argv[],
             case 'B':  FORI(4) OUT.cropbox[i]  = atoi(argv[arg++]); break;
             case 'j':  OUT.use_fuji_rotate     = 0;  break;
             case 'W':  OUT.no_auto_bright      = 1;  break;
-            case 'F':  opts.use_bigfile             = 1;  break;
-            case 'd':  opts.use_timing              = 1;  break;
+            case 'F':  opts.use_bigfile        = 1;  break;
+            case 'd':  opts.use_timing         = 1;  break;
+            case 'z':  printVS(vls);                 break;
             case 'p':
                 opts.use_mat = atoi(argv[arg++]);
                 if ( opts.use_mat > 2 || opts.use_mat < -1) {
-                    fprintf (stderr, "Invalid argument to "
-                             "\"%s\" \n", key.c_str());
+                    fprintf (stderr, "\nError: Invalid argument to "
+                                     "\"%s\" \n", key.c_str());
                     exit(1);
                 }
                 break;
@@ -265,12 +272,19 @@ int fetchCondition (int argc, char * argv[],
             case 'M':  opts.scale = atof(argv[arg++]); break;
             case 'R':
                 opts.use_wb = atoi(argv[arg++]);
+                if ( opts.use_wb == 0 ) {
+                    if ( isalnum(argv[arg][0]) )
+                    {
+                        opts.use_illum = 1;
+                        opts.illumType = (char *)(argv[arg++]);
+                    }
+                }
                 if ( opts.use_wb == 3 ) {
                     FORI(4) {
                         if ( !isdigit(argv[arg][0]) )
                         {
-                            fprintf (stderr, "Non-numeric argument to "
-                                     "\"%s\" \n", key.c_str());
+                            fprintf (stderr, "\nError: Non-numeric argument to "
+                                             "\"%s %i\" \n", key.c_str(), opts.use_wb);
                             exit(1);
                         }
                         OUT.greybox[i] = (float)atof(argv[arg++]);
@@ -281,16 +295,16 @@ int fetchCondition (int argc, char * argv[],
                     FORI(4) {
                         if ( !isdigit(argv[arg][0]) )
                         {
-                            fprintf (stderr, "Non-numeric argument to "
-                                     "\"%s\" \n", key.c_str());
+                            fprintf (stderr, "\nError: Non-numeric argument to "
+                                             "\"%s %i\" \n", key.c_str(), opts.use_wb);
                             exit(1);
                         }
                         OUT.user_mul[i] = (float)atof(argv[arg++]);
                     }
                 }
                 else if ( opts.use_wb > 4 || opts.use_wb < -1) {
-                    fprintf (stderr, "Invalid argument to "
-                             "\"%s\" \n", key.c_str());
+                    fprintf (stderr, "\nError: Invalid argument to "
+                                     "\"%s\" \n", key.c_str());
                     exit(1);
                 }
                 break;
@@ -298,32 +312,39 @@ int fetchCondition (int argc, char * argv[],
             case 'E':  opts.use_mmap = 1;  break;
 #endif
             default:
-                fprintf ( stderr, "Unknown option \"%s\".\n", key.c_str() );
+                fprintf ( stderr, "\nError: Unknown option \"%s\".\n", key.c_str() );
                 exit(1);
         }
     }
     
-    if ( !opts.use_mat && opts.use_wb ) {
-        fprintf( stderr, "Error: --mat-method should not be 0 when "
-                "--wb-method is not set to 0. Stopping now\n" );
-        exit(1);
-    }
-    else if ( opts.use_mat && !opts.use_wb ) {
-        fprintf( stderr, "Error: --wb-method should not be 0 when "
-                "--mat-method is not set to 0. Stopping now\n" );
-        exit(1);
+    if ( opts.use_illum ) {
+        opts.illumType = lowerCase ( opts.illumType );
+        bool illumCmp = 0;
+        string strIllm (opts.illumType);
+        FORI ( vls.size() ) {
+            if ( strIllm.compare(vls[i]) == 0 ) {
+                illumCmp = 1;
+                break;
+            }
+        }
+        
+        if ( !illumCmp ) {
+            fprintf ( stderr, "\nError: Unknown light source - %s.\n"
+                     "Please use \"--valid-illum\" to see a "
+                     "list of available light sources.\n",
+                     strIllm.c_str());
+            exit(1);
+        }
     }
     
-    if ( opts.use_illum || opts.use_camera_path) {
-        if( opts.use_wb || opts.use_mat)
-            fprintf( stderr, "Warning: \"--wb-method\" and \"--mat-method\" "
-                    "will be forced to change to 0 to support \"--adopt-white\" "
-                    "and/or \"--ss-path\" feature \n\n" );
+    if ( opts.use_camera_path
+        && (opts.use_wb || opts.use_mat)) {
+        fprintf ( stderr, "\n\"Warning: --wb-method\" and/or \"--mat-method\" "
+                          "will be forced be 0 when the external "
+                          "camera spectral data is used.\n\n");
+        
         opts.use_wb = 0;
         opts.use_mat = 0;
-        
-        if ( opts.use_illum )
-            opts.illumType = lowerCase( opts.illumType );
     }
     
     return arg;

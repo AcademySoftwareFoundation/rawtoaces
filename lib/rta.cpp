@@ -299,6 +299,7 @@ namespace rta {
     Idt::Idt() {
         _outputEncoding = "ACES";
         _bestIllum = " ";
+        _verbosity = 0;
         
         FORI(81) {
             _trainingSpec.push_back(trainSpec());
@@ -646,6 +647,19 @@ namespace rta {
     }
     
     //	=====================================================================
+    //	Set Verbosity value for the length of IDT generation status message
+    //
+    //	inputs:
+    //      int: verbosity
+    //
+    //	outputs:
+    //		int: _verbosity
+    
+    void Idt::setVerbosity(int verbosity){
+        _verbosity = verbosity;
+    }
+    
+    //	=====================================================================
     //	Calculate White Balance based on the best illuminate data
     //
     //	inputs:
@@ -942,8 +956,9 @@ namespace rta {
         
         ceres::Solver::Summary summary;
         ceres::Solve(options, &problem, &summary);
-//        std::cout << summary.BriefReport() << "\n";
-        std::cout << summary.FullReport() << "\n";
+
+        if (_verbosity)
+            std::cout << summary.FullReport() << "\n";
         
         if (summary.num_successful_steps) {
             _idt[0][0] = B[0];
@@ -956,13 +971,15 @@ namespace rta {
             _idt[2][1] = B[5];
             _idt[2][2] = 1.0 - B[4] - B[5];
             
-            printf("The Final IDT Matrix is: \n\n");
+            if (_verbosity) {
+                printf("The Final IDT Matrix is: \n\n");
 
-            FORI(3) {
-                FORJ(3) {
-                    printf("%f ", _idt[i][j]);
-                }
+                FORI(3) {
+                    FORJ(3) {
+                        printf("%f ", _idt[i][j]);
+                    }
                 printf("\n");
+                }
             }
             
             return 1;
@@ -1040,6 +1057,19 @@ namespace rta {
     
     illum Idt::getIlluminate() {
         return _illuminate;
+    }
+    
+    //	=====================================================================
+    //	Get Verbosity value for the length of IDT generation status message
+    //
+    //	inputs:
+    //      N/A
+    //
+    //	outputs:
+    //		int: _verbosity
+    
+    int Idt::getVerbosity() {
+        return _verbosity;
     }
 
     //	=====================================================================

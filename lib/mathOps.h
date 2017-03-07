@@ -214,8 +214,8 @@ void transpose(T* mtx[], int row, int col)
 template <typename T>
 vector< vector<T> > transposeVec(const vector< vector<T> > vMtx)
 {
-    assert(vMtx.size() != 0
-           && vMtx[0].size() != 0);
+    assert( vMtx.size() != 0
+            && vMtx[0].size() != 0 );
     
     int row = vMtx.size();
     int col = vMtx[0].size();
@@ -236,11 +236,9 @@ template <typename T>
 T sumVector(const vector<T>& vct)
 {
     T sum = T(0.0);
-    FORI(vct.size())
-        sum += vct[i];
+    FORI(vct.size()) sum += vct[i];
     
 //    return accumulate(vct.begin(), vct.end(), static_cast<T>(0));
-    
     return sum;
 }
 
@@ -264,6 +262,16 @@ void scaleVector(vector<T>& vct, const T scale)
               vct.end(),
               vct.begin(),
               bind1st(multiplies<T>(), scale));
+    
+    return;
+}
+
+template <typename T>
+void scaleVector(vector<T>& vct){
+    T max = *max_element(vct.begin(), vct.end());
+    
+    transform(vct.begin(), vct.end(), vct.begin(),
+              bind1st(multiplies<T>(), 1.0/max));
     
     return;
 }

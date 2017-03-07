@@ -74,13 +74,17 @@ bool readCameraSenPath( const char * cameraSenPath,
     if ( cameraSenPath )  {
         if ( stat( static_cast<const char *>( cameraSenPath ), &st ) )  {
             fprintf ( stderr, "The camera sensitivity file does "
-                              "not seem to exist.\n" );
-            exit (  EXIT_FAILURE );
+                              "not seem to exist. Please use other"
+                              "options for \"mat-method\".\n" );
+            exit (1);
         }
         
+//        readC = idt->loadCameraSpst( cameraSenPath,
+//                                     static_cast<const char *> ( P.make ),
+//                                     static_cast<const char *> ( P.model ) );
         readC = idt->loadCameraSpst( cameraSenPath,
-                                     static_cast<const char *> ( P.make ),
-                                     static_cast<const char *> ( P.model ) );
+                                     P.make,
+                                     P.model );
     }
     else  {
         if ( !stat(  FILEPATH, &st ) )  {
@@ -89,9 +93,10 @@ bool readCameraSenPath( const char * cameraSenPath,
             
             for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
                 string fn( *file );
+
                 readC = idt->loadCameraSpst( fn,
-                                             static_cast<const char *>( P.make ),
-                                             static_cast<const char *>( P.model ) );
+                                             P.make,
+                                             P.model );
                 if ( readC ) return 1;
             }
         }
@@ -119,7 +124,7 @@ bool readIlluminate( const char * illumType,
 
             if ( strType.compare("unknown") != 0 ) {
                 
-// Some outdated library on Mac may not process it correctly
+// Some outdated library may not process this correctly
 //                if( fn.find( illumType ) == std::string::npos )  {
 //                    continue;
 //                }
@@ -156,18 +161,19 @@ bool prepareIDT ( option opts,
     bool read = readCameraSenPath( cameraSenPath, P, idt );
     
     if (!read ) {
-        fprintf( stderr, "No matching cameras found. "
-                         "Will rely on camera metadata extracted from RAW "
-                         "and/or libraw default method. \n");
+        fprintf( stderr, "\nError: No matching cameras found. "
+                         "Please use other options for "
+                         "\"mat-method\" or \"wb-method\".\n");
+        exit (1);
         
-        if (illumType) {
-            fprintf( stderr, "The Illuminate should be accompanied "
-                             "by a matching camera sensitivity data.\n"
-                             "Will rely on camera metadata extracted from RAW "
-                             "and/or libraw default method. \n");
-        }
-        
-        return 0;
+//        if (illumType) {
+//            fprintf( stderr, "The Illuminate should be accompanied "
+//                             "by a matching camera sensitivity data.\n"
+//                             "Will rely on camera metadata extracted from RAW "
+//                             "and/or libraw default method. \n");
+//        }
+//        
+//        return 0;
     }
 
     if (!illumType)
@@ -177,16 +183,17 @@ bool prepareIDT ( option opts,
     read = readIlluminate( illumType, illuCM, idt );
     
     if( !read ) {
-        fprintf( stderr, "No matching light source. "
-                         "Will rely on camera metadata extracted from RAW "
-                         "and/or libraw default method. \n");
+        fprintf( stderr, "\nError: No matching light source. "
+                         "Please use other options for "
+                         "\"mat-method\" or \"wb-method\".\n");
+        exit (1);
     }
     else
     {
-        printf ( "The matching camera is: %s %s\n", P.make, P.model );
+        printf ( "\nThe matching camera is: %s %s\n", P.make, P.model );
         
-        //or cam_mul
-        FORI(3) mulV[i] = ( double )( C.pre_mul[i] / C.pre_mul[1]);
+        FORI(3) mulV[i] = ( double )( C.cam_mul[i] );
+        scaleVector (mulV);
         
         idt->loadTrainingData ( static_cast<string>( FILEPATH )
                                 +"/training/training_spectral" );
@@ -194,7 +201,9 @@ bool prepareIDT ( option opts,
                        +"/cmf/cmf_193" );
         idt->chooseIlluminate( illuCM, mulV, illumType );
         
-        printf ( "Calculating IDT Matrix ...\n" );
+        printf ( "\nCalculating IDT Matrix ...\n" );
+        
+        if (opts.use_mat == 0) idt->setVerbosity(1);
         if ( idt->calIDT() )  {
             idtm = idt->getIDT();
             wbv = idt->getWB();
@@ -223,7 +232,7 @@ void apply_WB ( float * pixels,
     
     if ( !pixels ) {
         fprintf ( stderr, "The pixel code value may not exist. \n" );
-        exit (EXIT_FAILURE);
+        exit (1);
     }
     else {
         for ( uint32_t i = 0; i < total; i+=3 ){
@@ -295,8 +304,9 @@ float * convert_to_aces_DNG ( libraw_processed_image_t *image,
         return mulVectorArray(aces, total, 4, CAT);
     }
     else {
-        fprintf(stderr, "Currenly support 3 channels and 4 channels. \n");
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "\nError: Currenly support 3 channels "
+                        "and 4 channels. \n");
+        exit(1);
     }
 
     return aces;
@@ -311,7 +321,7 @@ float * prepareAcesData_NonDNG ( libraw_processed_image_t *image )
     for(uint32_t i = 0; i < total; i++ ){
         aces[i] = static_cast<float>(pixel[i]);
     }
-    
+        
     vector < vector< double> > XYZ_acesrgb(image->colors,
                                            vector < double > (image->colors));
     if(image->colors == 3) {
@@ -329,8 +339,9 @@ float * prepareAcesData_NonDNG ( libraw_processed_image_t *image )
         return mulVectorArray(aces, total, 4, XYZ_acesrgb);
     }
     else {
-        fprintf ( stderr, "Currenly support 3 channels and 4 channels. \n" );
-        exit (EXIT_FAILURE);
+        fprintf ( stderr, "\nError: Currenly support 3 channels "
+                          "and 4 channels. \n" );
+        exit (1);
     }
     
     return aces;
@@ -345,12 +356,13 @@ float * prepareAcesData_NonDNG_IDT ( libraw_processed_image_t *image,
     float * aces = new (std::nothrow) float[total];
     
     FORI(total) aces[i] = static_cast<float> (pixels[i]);
+    
+    printf ( "\nApplying IDT Matrix ...\n" );
 
 //   Calculated White Balance should be applied prior to Demosaic
 //   We don't use "apply_WB (...)" at this stage of processing
 //    apply_WB ( aces, image->bits, total, wbv );
     
-    printf ( "Applying Calculated IDT Matrix ...\n" );
     apply_IDT ( aces, image->colors, total, idtm );
     
     return aces;

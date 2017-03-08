@@ -65,54 +65,53 @@ void usage(const char *prog)
     printf ( "  %s --version\n", prog );
     printf ( "\n");
     printf ( "IDT options:\n"
-            "  --help                Show this screen\n"
-            "  --verison             Show version\n"
-            "  --wb-method [0-4]     White balance factor calculation method\n"
-            "                          0=Calculate white balance from camera spec sens\n"
-            "                          1=Use file metadata for white balance\n"
-            "                          2=Average the whole image for white balance\n"
-            "                          3=Average a grey box for white balance <x y w h>\n"
-            "                          4=Use custom white balance  <r g b g>\n"
-            "                          (default = 0)\n"
-            "  --mat-method [0-2]    IDT matrix calculation method\n"
-            "                          0=Calculate matrix from camera spec sens\n"
-            "                          1=Use file metadata color matrix\n"
-            "                          2=Use adobe coeffs\n"
-            // Future feature ? "      3=Use custom matrix <m1r m1g m1b m2r m2g m2b m3r m3g m3b>\n"
-            "                          (default = 0)\n"
-            "  --ss-path <path>      Specify the path to camera sensitivity data\n"
-            "                          (default = /usr/local/include/RAWTOACES/data/camera)\n"
-            "  --exp-comp float      Set exposure compensation factor (default = 1.0)\n"
-//            "  --adopt-white         Set the desired color temperature (e.g., D60)\n"
-            "  --valid-illum         Report back the list of valid options for light source (e.g., D50)\n"
+            "  --help                  Show this screen\n"
+            "  --verison               Show version\n"
+            "  --wb-method [0-4] [str] White balance factor calculation method\n"
+            "                            0=Calculate white balance from camera spec sens. Optional\n"
+            "	                          string may be included to specify adopted white.\n"
+            "                            1=Use file metadata for white balance\n"
+            "                            2=Average the whole image for white balance\n"
+            "                            3=Average a grey box for white balance <x y w h>\n"
+            "                            4=Use custom white balance  <r g b g>\n"
+            "                            (default = 0)\n"
+            "  --mat-method [0-2]      IDT matrix calculation method\n"
+            "                            0=Calculate matrix from camera spec sens\n"
+            "                            1=Use file metadata color matrix\n"
+            "                            2=Use adobe coeffs\n"
+            // Future feature ? "        3=Use custom matrix <m1r m1g m1b m2r m2g m2b m3r m3g m3b>\n"
+            "                            (default = 0)\n"
+            "  --ss-path <path>        Specify the path to camera sensitivity data\n"
+            "				  (default = /usr/local/include/RAWTOACES/data/camera)\n"
+            "  --exp-comp float        Set exposure compensation factor (default = 1.0)\n"
             "\n"
             "Raw conversion options:\n"
-            "  -c float              Set adjust maximum threshold (default 0.75)\n"
-            "  -C <r b>              Correct chromatic aberration\n"
-            "  -P <file>             Fix the dead pixels listed in this file\n"
-            "  -K <file>             Subtract dark frame (16-bit raw PGM)\n"
-            "  -k <num>              Set the darkness level\n"
-            "  -S <num>              Set the saturation level\n"
-            "  -n <num>              Set threshold for wavelet denoising\n"
-            "  -H [0-9]              Highlight mode (0=clip, 1=unclip, 2=blend, 3+=rebuild)\n"
-            "  -t [0-7]              Flip image (0=none, 3=180, 5=90CCW, 6=90CW)\n"
-            "  -j                    Don't stretch or rotate raw pixels\n"
-            "  -W                    Don't automatically brighten the image\n"
-            "  -b <num>              Adjust brightness (default = 1.0)\n"
-            "  -q [0-3]              Set the interpolation quality\n"
-            "  -h                    Half-size color image (twice as fast as \"-q 0\")\n"
-            "  -f                    Interpolate RGGB as four colors\n"
-            "  -m <num>              Apply a 3x3 median filter to R-G and B-G\n"
-            "  -s [0..N-1]           Select one raw image from input file\n"
-            "  -G                    Use green_matching() filter\n"
-            "  -B <x y w h>          Use cropbox\n"
+            "  -c float                Set adjust maximum threshold (default = 0.75)\n"
+            "  -C <r b>                Correct chromatic aberration\n"
+            "  -P <file>               Fix the dead pixels listed in this file\n"
+            "  -K <file>               Subtract dark frame (16-bit raw PGM)\n"
+            "  -k <num>                Set the darkness level\n"
+            "  -S <num>	               Set the saturation level\n"
+            "  -n <num>                Set threshold for wavelet denoising\n"
+            "  -H [0-9]                Highlight mode (0=clip, 1=unclip, 2=blend, 3+=rebuild) (default = 2)\n"
+            "  -t [0-7]                Flip image (0=none, 3=180, 5=90CCW, 6=90CW)\n"
+            "  -j                      Don't stretch or rotate raw pixels\n"
+            "  -W                      Don't automatically brighten the image\n"
+            "  -b <num>                Adjust brightness (default = 1.0)\n"
+            "  -q [0-3]                Set the interpolation quality\n"
+            "  -h                      Half-size color image (twice as fast as \"-q 0\")\n"
+            "  -f                      Interpolate RGGB as four colors\n"
+            "  -m <num>                Apply a 3x3 median filter to R-G and B-G\n"
+            "  -s [0..N-1]             Select one raw image from input file\n"
+            "  -G                      Use green_matching() filter\n"
+            "  -B <x y w h>            Use cropbox\n"
             "\n"
             "Benchmarking options:\n"
-            "  -v                    Verbose: print progress messages (repeated -v will add verbosity)\n"
-            "  -F                    Use FILE I/O instead of streambuf API\n"
-            "  -d                    Detailed timing report\n"
+            "  -v                      Verbose: print progress messages (repeated -v will add verbosity)\n"
+            "  -F                      Use FILE I/O instead of streambuf API\n"
+            "  -d                      Detailed timing report\n"
 #ifndef WIN32
-            "  -E                    Use mmap()-ed buffer instead of plain FILE I/O\n"
+            "  -E                      Use mmap()-ed buffer instead of plain FILE I/O\n"
 #endif
             );
     exit(1);
@@ -180,7 +179,6 @@ int fetchCondition (int argc, char * argv[],
     initialize();
     
     vector < string > vls (lightS, lightS + sizeof(lightS) / sizeof(char *));
-//    printf ("%i\n", int(vls.size()));
 
     argv[argc] = (char *)"";
     
@@ -314,6 +312,15 @@ int fetchCondition (int argc, char * argv[],
             default:
                 fprintf ( stderr, "\nError: Unknown option \"%s\".\n", key.c_str() );
                 exit(1);
+        }
+    }
+    
+    if ( opts.use_camera_path ) {
+        string cameraSenPathS( opts.cameraSenPath );
+        if ( cameraSenPathS.find("_380_780") == std::string::npos ) {
+            fprintf( stderr,"\nError: Cannot locate camera "
+                    "sensitivity data in the file.\n" );
+            exit(1);
         }
     }
     

@@ -96,11 +96,9 @@ T cross(const vector <T> &vectorA, const vector <T> &vectorB) {
 template <typename T>
 const vector < vector <T> > repmat(const T* data[], int row, int col) {
     vector < vector <T> > vect(row, vector<T>(col));
-    FORI(row) {
-        FORJ(col) {
+    FORI(row)
+        FORJ(col)
             vect[i][j] = data[i][j];
-        }
-    }
     
     const vector < vector <T> > cvect(vect);
     return cvect;
@@ -109,11 +107,9 @@ const vector < vector <T> > repmat(const T* data[], int row, int col) {
 template <typename T>
 const vector <T> repmat1d(const T data[], int row, int col) {
     vector <T> vect(row*col);
-    FORI(row) {
-        FORJ(col) {
+    FORI(row)
+        FORJ(col)
             vect[i*col + j] = data[i];
-        }
-    }
     
     const vector < T > cvect(vect);
     return cvect;
@@ -122,11 +118,9 @@ const vector <T> repmat1d(const T data[], int row, int col) {
 template <typename T>
 const vector < vector <T> > repmat2dr(const T data[], int row, int col) {
     vector < vector <T> > vect(row, vector<T>(col));
-    FORI(row) {
-        FORJ(col) {
+    FORI(row)
+        FORJ(col)
             vect[i][j] = data[i];
-        }
-    }
     
     const vector < vector <T> > cvect(vect);
     return cvect;
@@ -135,11 +129,9 @@ const vector < vector <T> > repmat2dr(const T data[], int row, int col) {
 template <typename T>
 const vector < vector <T> > repmat2dc(const T data[], int row, int col) {
     vector < vector <T> > vect(row, vector<T>(col));
-    FORI(row) {
-        FORJ(col) {
+    FORI(row)
+        FORJ(col)
             vect[i][j] = data[j];
-        }
-    }
     
     const vector < vector <T> > cvect(vect);
     return cvect;
@@ -371,7 +363,7 @@ vector < T > mulVector(const vector<T>& vct1,
 float* mulVectorArray(float * data,
                       const uint32_t total,
                       const uint8_t dim,
-                      const  vector< vector<double> > vct)
+                      const vector< vector < double > > vct)
 {
     assert(vct.size() == dim
            && isSquare(vct));

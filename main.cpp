@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     if ( argc == 1 ) usage( argv[0] );
     
     LibRaw RawProcessor;
-    vector < vector < double > > idtm( 3, vector < double > ( 3, 1.0 ) );
+    vector < vector < double > > idtm( 3, vector < double > (3, 1.0) );
     vector < double > wbv( 3, 1.0 );
 
 #ifndef WIN32
@@ -84,23 +84,16 @@ int main(int argc, char *argv[])
   _putenv ((char*)"TZ=UTC");
 #endif
     
-    // general set-up
+    // General set-up
     OUT.output_color      = 5;
-    OUT.highlight         = 0;
+    OUT.highlight         = 2;
+    OUT.use_camera_matrix = 0;
     OUT.gamm[0]           = 1.0;
     OUT.gamm[1]           = 1.0;
     OUT.no_auto_bright    = 1;
 
+  // Fetch conditions and conduct some pre-processing
   int arg = fetchCondition (argc, argv, opts, OUT);
-
-  if ( opts.use_camera_path ) {
-      string cameraSenPathS( opts.cameraSenPath );
-      if ( cameraSenPathS.find("_380_780") == std::string::npos ) {
-          fprintf( stderr,"\nError: Cannot locate camera "
-                          "sensitivity data in the file.\n" );
-          exit(1);
-      }
-  }
     
   if ( opts.verbosity > 2 )
       RawProcessor.set_progress_handler( my_progress_callback,
@@ -110,6 +103,7 @@ int main(int argc, char *argv[])
       printf ( "Using %d threads\n", omp_get_max_threads() );
 #endif
     
+    // processing actual RAW files
     for ( ; arg < argc; arg++ )
     {
         char outfn[1024];
@@ -140,18 +134,18 @@ int main(int argc, char *argv[])
                 }
                 
                 int pgsz = getpagesize();
-                opts.msize = ( ( st.st_size+pgsz-1 ) / pgsz ) * pgsz;
+                opts.msize = (( st.st_size+pgsz-1 ) / pgsz ) * pgsz;
                 iobuffer = mmap( NULL, opts.msize, PROT_READ, MAP_PRIVATE, file, 0 );
                 if( !iobuffer )
                 {
                     fprintf ( stderr, "\nError: Cannot mmap %s: %s\n",
-                              argv[arg], strerror(errno) );
+                                      argv[arg], strerror(errno) );
                     close( file );
                     continue;
                 }
                 
                 close( file );
-                if( (opts.ret = RawProcessor.open_buffer( iobuffer,st.st_size ) != LIBRAW_SUCCESS ) )
+                if (( opts.ret = RawProcessor.open_buffer( iobuffer,st.st_size ) != LIBRAW_SUCCESS ))
                 {
                     fprintf ( stderr, "\nError: Cannot open_buffer %s: %s\n",
                               argv[arg],
@@ -163,12 +157,12 @@ int main(int argc, char *argv[])
             else
 #endif
             {
-               if( opts.use_bigfile )
+               if ( opts.use_bigfile )
                    opts.ret = RawProcessor.open_file( argv[arg],1 );
                else
                    opts.ret = RawProcessor.open_file( argv[arg] );
                         
-               if( opts.ret  != LIBRAW_SUCCESS)
+               if ( opts.ret  != LIBRAW_SUCCESS)
                {
                    fprintf( stderr, "\nError: Cannot open %s: %s\n",
                                     argv[arg], libraw_strerror(opts.ret) );
@@ -190,26 +184,27 @@ int main(int argc, char *argv[])
             if ( opts.use_timing )
                 timerprint( "LibRaw::unpack()", argv[arg] );
         
-            if ( !opts.use_mat || !opts.use_wb ) {
+            // use_mat 0, 1, 2
+            if ( !opts.use_mat ) {
                 OUT.use_camera_matrix = 0;
                 
-                bool gotIDT = prepareIDT( opts,
+                // get IDT matrix
+                int gotIDT = prepareIDT ( opts,
                                           P1,
                                           C,
                                           idtm,
                                           wbv );
-                    
-                if ( !gotIDT && C.profile )
-                    opts.use_wb = 1;
-                else if ( !gotIDT && !C.profile )
-                    opts.use_wb = 2;
-                else if ( gotIDT ) {
+                if ( gotIDT ) {
                     OUT.output_color = 0;
                     
+                    // set four_color_rgb to 0 if half_size is 1
                     if ( OUT.half_size == 1 )
                         OUT.four_color_rgb = 0;
                     
-                    if (opts.use_wb == 1) {
+                    // --wb-method condition 0
+                    if ( !opts.use_wb ) {
+                        // set use_Mul to 1 to avoid repetitive
+                        // calculation of WB
                         opts.use_Mul = 1;
                         FORI(3) OUT.user_mul[i] = wbv[i];
                     }
@@ -217,39 +212,45 @@ int main(int argc, char *argv[])
             }
             else if ( opts.use_mat == 1 && !C.profile ) {
                 fprintf( stderr, "\nWarning: Cannot find color profile from the RAW, "
-                                 "will use the default matrix from libraw\n" );
+                                 "will use the default camera matrix from libraw\n" );
                 OUT.use_camera_matrix = 1;
             }
             else if ( opts.use_mat == 1 && C.profile ) {
                 OUT.use_camera_matrix = 3;
             }
         
-            // --wb-method condition
-            if ( !opts.use_wb && !opts.use_mat  ) {
-                if ( C.profile ) {
-                    OUT.use_camera_wb = 1;
-                    OUT.use_auto_wb = 0;
-                }
-                else {
-                    OUT.use_camera_wb = 0;
-                    OUT.use_auto_wb = 1;
+            // --wb-method condition 0,1,2
+            if ( !opts.use_wb && !opts.use_Mul) {
+                OUT.use_camera_matrix = 0;
+            
+                // Calculate white balance
+                int gotWB = prepareWB ( opts,
+                                        P1,
+                                        C,
+                                        wbv );
+            
+                if ( !gotWB && C.profile )
+                    opts.use_wb = 1;
+                else if ( !gotWB && !C.profile )
+                    opts.use_wb = 2;
+            
+                if ( gotWB ) {
+                    opts.use_Mul = 1;
+                    FORI(3) OUT.user_mul[i] = wbv[i];
                 }
             }
-            else if ( !opts.use_wb && opts.use_mat == 1 ) {
-                OUT.use_camera_wb = 0;
-                OUT.use_auto_wb = 0;
-            }
-            else if ( opts.use_wb == 2 && C.profile ) {
+        
+            if ( opts.use_wb == 1 ) {
                 OUT.use_camera_wb = 1;
                 OUT.use_auto_wb = 0;
             }
-            else if ( opts.use_wb == 3 ||
-                     (opts.use_wb == 2 && !C.profile) ) {
+            else if ( opts.use_wb == 2 ) {
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 1;
             }
         
-            // For --wb-method 4
+            // For --wb-method 4 or other scenarios in which
+            // white balance is specified by users
             if ( opts.use_Mul ){
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
@@ -266,6 +267,7 @@ int main(int argc, char *argv[])
                 }
             }
         
+            // dcraw process
             timerstart_timeval();
             if ( LIBRAW_SUCCESS != ( opts.ret = RawProcessor.dcraw_process() ) )
                 {
@@ -289,26 +291,20 @@ int main(int argc, char *argv[])
                      "%s%s",
                      argv[arg], "_aces.exr" );
         
-            if ( P1.dng_version == 0 ) {
+            // dng_version indicates if this file is of DNG type of not
+            if ( !P1.dng_version ) {
                 libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&opts.ret);
                 if ( opts.use_timing )
                     timerprint("LibRaw::dcraw_make_mem_image()",argv[arg]);
                 
                 float * aces = 0;
-                if ( !OUT.output_color ) {
-                    cout << int(OUT.output_color) << endl;
+                if ( !OUT.output_color )
                     aces = prepareAcesData_NonDNG_IDT( post_image, idtm, wbv );
-                }
-                else {
-                    cout << int(OUT.output_color) << endl;
-                    aces = prepareAcesData_NonDNG( post_image );
-                }
+                else
+                    aces = prepareAcesData_NonDNG( post_image, opts );
                 
                 aces_write( outfn,
-                            post_image->width,
-                            post_image->height,
-                            post_image->colors,
-                            post_image->bits,
+                            post_image,
                             aces,
                             opts.scale );
             }

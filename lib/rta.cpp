@@ -66,7 +66,7 @@ namespace rta {
         }
     }
     
-    Spst::Spst(const Spst& spstobject) {
+    Spst::Spst ( const Spst& spstobject ) {
         assert ( spstobject._brand != null_ptr
                 && spstobject._model != null_ptr );
         
@@ -220,7 +220,7 @@ namespace rta {
     //	outputs:
     //		void: _brand (private member)
     
-    void Spst::setBrand(const char * brand) {
+    void Spst::setBrand ( const char * brand ) {
         assert(brand != null_ptr);
         uint8_t len = strlen(brand);
         
@@ -247,7 +247,7 @@ namespace rta {
     //	outputs:
     //		void: _brand (private member)
     
-    void Spst::setModel(const char * model) {
+    void Spst::setModel ( const char * model ) {
         assert(model != null_ptr);
         uint8_t len = strlen(model);
         
@@ -273,7 +273,7 @@ namespace rta {
     //	outputs:
     //		void: _increment (private member)
     
-    void Spst::setWLIncrement(const uint8_t inc){
+    void Spst::setWLIncrement ( const uint8_t inc ) {
         _increment = inc;
         
         return;
@@ -288,14 +288,14 @@ namespace rta {
     //	outputs:
     //		void: _rgbsen (private member)
 
-    void Spst::setSensitivity(const vector<RGBSen> rgbsen){
+    void Spst::setSensitivity ( const vector<RGBSen> rgbsen ) {
         FORI(rgbsen.size()){
             _rgbsen[i] = rgbsen[i];
         }
         
         return;
     }
-
+    
     Idt::Idt() {
         _outputEncoding = "ACES";
         _bestIllum = " ";
@@ -332,7 +332,7 @@ namespace rta {
     //	outputs:
     //		scaled _illuminate data set
     
-    void Idt::scaleLSC(){
+    void Idt::scaleLSC() {
         assert(_cameraSpst._spstMaxCol >= 0
                && (_illuminate.data).size() != 0);
         
@@ -367,9 +367,9 @@ namespace rta {
     //		boolean: If successufully parsed, _cameraSpst will be filled and return 1;
     //               Otherwise, return 0
     
-    bool Idt::loadCameraSpst(const string & path,
-                             const char * maker,
-                             const char * model) {
+    int Idt::loadCameraSpst ( const string & path,
+                              const char * maker,
+                              const char * model ) {
         assert(path.find("_380_780") != std::string::npos);
 
         ifstream fin;
@@ -378,7 +378,7 @@ namespace rta {
         
         if(!fin.good()) {
             fprintf(stderr, "The Camera Sensitivity data file may not exist.\n");
-            exit(EXIT_FAILURE);
+            exit(1);
         }
         
         vector <RGBSen> rgbsen;
@@ -463,7 +463,9 @@ namespace rta {
     //               Otherwise, return 0
 
     
-    bool Idt::loadIlluminate(const string &path, const string type) {
+    int Idt::loadIlluminate ( const string &path,
+                              const string type ) {
+        
         assert(path.find("_380_780") != std::string::npos);
         
         ifstream fin;
@@ -540,7 +542,8 @@ namespace rta {
     //	outputs:
     //		_trainingSpec: If successufully parsed, _trainingSpec will be filled
     
-    void Idt::loadTrainingData(const string &path) {
+    void Idt::loadTrainingData ( const string &path ) {
+        
         ifstream fin;
         fin.open(path);
         
@@ -594,7 +597,8 @@ namespace rta {
     //	outputs:
     //		_cmf: If successufully parsed, _cmf will be filled
     
-    void Idt::loadCMF(const string &path) {
+    void Idt::loadCMF ( const string &path ) {
+        
         ifstream fin;
         fin.open(path);
         
@@ -655,7 +659,7 @@ namespace rta {
     //	outputs:
     //		int: _verbosity
     
-    void Idt::setVerbosity(int verbosity){
+    void Idt::setVerbosity ( int verbosity ) {
         _verbosity = verbosity;
     }
     
@@ -669,7 +673,7 @@ namespace rta {
     //	outputs:
     //		vector: wb(R, G, B)
     
-    vector < double > Idt::calWB(){
+    vector < double > Idt::calWB() {
         assert( _illuminate.data.size() == 81
                 && _cameraSpst._rgbsen.size() > 0 );
         
@@ -706,9 +710,10 @@ namespace rta {
     //	outputs:
     //		illum: the best _illuminate
     
-    void Idt::chooseIlluminate(map< string, vector<double> >& illuCM,
-                               vector<double>& src,
-                               const string type) {
+    void Idt::chooseIlluminate ( map< string,
+                                 vector<double> >& illuCM,
+                                 vector<double>& src,
+                                 const string type ) {
         double sse = dmax;
         
 //        FORI(src.size()) {
@@ -761,7 +766,7 @@ namespace rta {
         vector < RGBSen > rgbsen = _cameraSpst.getSensitivity();
         vector< vector < double > > rgbsenV (3, vector < double > ( rgbsen.size(), 1.0));
         
-        FORI(rgbsen.size()){
+        FORI( rgbsen.size() ){
             rgbsenV[0][i] = rgbsen[i].RSen;
             rgbsenV[1][i] = rgbsen[i].GSen;
             rgbsenV[2][i] = rgbsen[i].BSen;
@@ -809,7 +814,8 @@ namespace rta {
     //	outputs:
     //		vector < vector<double> >: 2D vector (3 x 3)
     
-    vector< vector<double> > Idt::calCAT( vector<double> src, vector<double> des ) const {
+    vector< vector<double> > Idt::calCAT ( vector<double> src,
+                                           vector<double> des ) const {
         assert(src.size() == des.size());
         
         vector < vector <double> > vect(3, vector<double>(3));
@@ -818,12 +824,6 @@ namespace rta {
                 vect[i][j] = cat02[i][j];
             }
         }
-        
-//        const double *cat[3];
-//        FORI(3)
-//            cat[i] = cat02[i];
-//        
-//        vect = repmat(cat, 3, 3);
         
         vector< double > wSRC = mulVector(src, vect);
         vector< double > wDES = mulVector(des, vect);
@@ -847,7 +847,7 @@ namespace rta {
     //	outputs:
     //		vector < vector<double> >: 2D vector (190 x 3)
     
-    vector< vector<double> > Idt::calXYZ(vector< vector<double> > TI) const {
+    vector< vector<double> > Idt::calXYZ (vector < vector < double > > TI ) const {
         assert(TI.size() == 81);
         
         vector< vector<double> > transTI = transposeVec(TI);
@@ -889,7 +889,7 @@ namespace rta {
     //	outputs:
     //		vector < vector<double> >: 2D vector (190 x 3)
     
-    vector< vector<double> > Idt::calRGB(vector< vector<double> > TI) const {
+    vector< vector<double> > Idt::calRGB ( vector < vector< double > > TI ) const {
         assert(TI.size() == 81);
         
         vector< vector<double> > transTI = transposeVec(TI);
@@ -927,10 +927,9 @@ namespace rta {
     //               that minimize the distance between RGB and XYZ
     //               through updated B.
     
-    bool Idt::curveFit(vector< vector<double> > RGB,
-                               vector< vector<double> > XYZ,
-                               double * B)
-    {
+    int Idt::curveFit ( vector< vector<double> > RGB,
+                        vector< vector<double> > XYZ,
+                        double * B ) {
         Problem problem;
         vector < vector <double> > outLAB = XYZtoLAB(XYZ);
         
@@ -941,9 +940,9 @@ namespace rta {
         CostFunction* cost_function =
             new AutoDiffCostFunction<Objfun, DYNAMIC, 6>(new Objfun(RGB, outLAB), RGB.size()*(RGB[0].size()));
         
-        problem.AddResidualBlock(cost_function,
-                                 NULL,
-                                 B);
+        problem.AddResidualBlock ( cost_function,
+                                   NULL,
+                                   B );
         
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::DENSE_QR;
@@ -999,10 +998,10 @@ namespace rta {
     //               that minimize the distance between RGB and XYZ
     //               through updated B.
 
-    bool Idt::calIDT() {
-
+    int Idt::calIDT() {
+        
         double BStart[6] = {1.0, 0.0, 0.0, 1.0, 0.0, 0.0};
-        vector< vector<double> > TI = calTI();
+        vector < vector<double> > TI = calTI();
         
         return curveFit(calRGB(TI), calXYZ(TI), BStart);
     }
@@ -1083,7 +1082,7 @@ namespace rta {
 
     
     const vector< vector<double> > Idt::getIDT() const {
-        return static_cast< vector< vector<double> > >(_idt);
+        return static_cast< vector< vector < double > > > (_idt);
     }
     
     //	=====================================================================
@@ -1096,7 +1095,7 @@ namespace rta {
     //      const vector< double >: _wb vector (1 x 3)
     
     const vector< double > Idt::getWB() const {
-        return static_cast< vector<double> >(_wb);
+        return static_cast< vector < double > > (_wb);
     }
 }
 

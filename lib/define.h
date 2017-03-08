@@ -69,7 +69,6 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <half.h>
-
 #include <ceres/ceres.h>
 #include <glog/logging.h>
 
@@ -128,15 +127,15 @@ using ceres::Problem;
 using ceres::Solve;
 using ceres::Solver;
 
-valarray<float>  cameraCalibration1DNG = valarray<float>(1.0f, 9);
-valarray<float>  cameraCalibration2DNG = valarray<float>(1.0f, 9);
-valarray<float>  cameraToXYZMtx        = valarray<float>(1.0f, 9);
-valarray<float>  xyz2rgbMatrix1DNG     = valarray<float>(1.0f, 9);
-valarray<float>  xyz2rgbMatrix2DNG     = valarray<float>(1.0f, 9);
-valarray<float>  analogBalanceDNG      = valarray<float>(1.0f, 3);
-valarray<float>  neutralRGBDNG         = valarray<float>(1.0f, 3);
-valarray<float>  cameraXYZWhitePoint   = valarray<float>(1.0f, 3);
-valarray<float>  calibrateIllum        = valarray<float>(1.0f, 2);
+//valarray<float>  cameraCalibration1DNG = valarray<float>(1.0f, 9);
+//valarray<float>  cameraCalibration2DNG = valarray<float>(1.0f, 9);
+//valarray<float>  cameraToXYZMtx        = valarray<float>(1.0f, 9);
+//valarray<float>  xyz2rgbMatrix1DNG     = valarray<float>(1.0f, 9);
+//valarray<float>  xyz2rgbMatrix2DNG     = valarray<float>(1.0f, 9);
+//valarray<float>  analogBalanceDNG      = valarray<float>(1.0f, 3);
+//valarray<float>  neutralRGBDNG         = valarray<float>(1.0f, 3);
+//valarray<float>  cameraXYZWhitePoint   = valarray<float>(1.0f, 3);
+//valarray<float>  calibrateIllum        = valarray<float>(1.0f, 2);
 
 struct option {
     int ret;
@@ -216,15 +215,18 @@ static int cnt=0;
 static map < const string, char > keys;
 vector < double > mulV( 3, 1.0 );
 
-double e_max = 1.0000000;
 const double e = 216.0/24389.0;
 const double k = (24389.0/27.0)/116.0;
 const double dmin = numeric_limits<double>::min();
 const double dmax = numeric_limits<double>::max();
-const char *lightS[12] = { "3200k", "cie15-a", "cie15-c",
-                           "cie15-d50", "cie15-d55", "cie15-d65",
-                           "cie15-d75", "d40", "d45",
-                           "d50", "d60", "iso7589" };
+
+static const double deviceWhite[3] = {1.0000, 1.0000, 1.0000};
+static const double d50[3] = {0.9642, 1.0000, 0.8250};
+static const double d60[3] = {0.952646074569846, 1.0000, 1.00882518435159};
+static const char *lightS[12] = { "3200k", "cie15-a", "cie15-c",
+                                  "cie15-d50", "cie15-d55", "cie15-d65",
+                                  "cie15-d75", "d40", "d45",
+                                  "d50", "d60", "iso7589" };
 
 double clip (double val, double target)
 {
@@ -344,8 +346,6 @@ static const double CATMatrix[3][3] = {
     { -0.492082784686793,   1.36823709310019,      0.0913444629573544  },
     { -0.0028137154424595,  0.00463991165243123,   0.91649468506889    }
 };
-
-static const float deviceWhite[3] = {1.0, 1.0, 1.0};
 
 // Function to Open Directories
 vector<string> openDir(string path = ".") {

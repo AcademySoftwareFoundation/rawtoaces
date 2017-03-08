@@ -122,10 +122,10 @@ namespace rta {
             Idt();
             ~Idt();
         
-            bool loadCameraSpst(const string &path,
+            int loadCameraSpst(const string &path,
                                 const char * maker,
                                 const char * model);
-            bool loadIlluminate(const string &path,
+            int loadIlluminate(const string &path,
                                 const string type="unknown");
             void loadTrainingData(const string &path);
             void loadCMF(const string &path);
@@ -145,10 +145,10 @@ namespace rta {
             vector< vector<double> > calXYZ(vector< vector<double> > TI) const;
             vector< vector<double> > calRGB(vector< vector<double> > TI) const;
         
-            bool curveFit(vector< vector<double> > RGB,
+            int curveFit(vector< vector<double> > RGB,
                           vector< vector<double> > XYZ,
                           double * BStart);
-            bool calIDT();
+            int calIDT();
         
             const Spst getCameraSpst() const;
             const illum getIlluminate() const;

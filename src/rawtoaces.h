@@ -219,7 +219,8 @@ int prepareIDT (  libraw_iparams_t P,
     {
         printf ( "\nThe matching camera is: %s %s\n", P.make, P.model );
         
-        FORI(3) mulV[i] = static_cast < double > ( C.cam_mul[i] );
+        vector < double > mulV (C.cam_mul, C.cam_mul+3);
+//        FORI(3) mulV[i] = static_cast < double > ( C.cam_mul[i] );
         scaleVectorMax (mulV);
         
         idt->loadTrainingData ( static_cast < string > ( FILEPATH )
@@ -290,7 +291,8 @@ int prepareWB ( libraw_iparams_t P,
     {
         printf ( "\nThe matching camera is: %s %s\n", P.make, P.model );
         
-        FORI(3) mulV[i] = ( double )( C.cam_mul[i] );
+        vector < double > mulV (C.cam_mul, C.cam_mul+3);
+//        FORI(3) mulV[i] = ( double )( C.cam_mul[i] );
         scaleVectorD (mulV);
         
         // loading training data (190 patches)

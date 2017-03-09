@@ -362,7 +362,7 @@ int configureSetting ( int argc,
     }
     
     if ( opts.use_illum ) {
-        opts.illumType = lowerCase ( opts.illumType );
+        lowerCase ( opts.illumType );
         bool illumCmp = 0;
         string strIllm (opts.illumType);
         FORI ( vls.size() ) {

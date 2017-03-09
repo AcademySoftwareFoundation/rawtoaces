@@ -59,7 +59,6 @@
 #include <math.h>
 #include <ctype.h>
 #include <stdexcept>
-#include <valarray>
 #include <vector>
 #include <map>
 #include <numeric>
@@ -104,9 +103,9 @@
 #endif
 
 #define sign(x)		((x) > 0 ? 1 : ( (x) < 0 ? (0-1) : 0))
-#define countSize(a)	(sizeof(a) / sizeof((a)[0]))
 #define FORI(val) for (int i=0; i < val; i++)
 #define FORJ(val) for (int j=0; j < val; j++)
+#define FORIJ(val1, val2) for (int i=0; i < val1; i++) for (int j=0; j < val2; j++)
 
 typedef half   float16_t;
 typedef float  float32_t;
@@ -173,12 +172,6 @@ struct RGBSen {
                                              BSen(b){ };
 };
 
-struct light {
-    CIEXYZ XYZt;
-    string src;
-    string des;
-};
-
 struct illum {
     string path;
     string type;
@@ -187,22 +180,15 @@ struct illum {
     vector <double> data;
 };
 
-struct cameraDataPath {
-    string os;
-    vector <string> paths;
-};
 
 struct stat st;
-static option opts;
-static int cnt=0;
-static map < const string, char > keys;
-
 const double e = 216.0/24389.0;
 const double k = (24389.0/27.0)/116.0;
 const double dmin = numeric_limits<double>::min();
 const double dmax = numeric_limits<double>::max();
 
-static const double deviceWhite[3] = {1.0000, 1.0000, 1.0000};
+static option opts;
+static map < const string, char > keys;
 static const double XYZ_w[3] = {0.952646074569846, 1.0, 1.00882518435159};
 static const double d50[3] = {0.9642, 1.0000, 0.8250};
 static const double d60[3] = {0.952646074569846, 1.0000, 1.00882518435159};
@@ -250,18 +236,12 @@ static const double cat02[3][3] = {
     {0.0030,  0.0136,  0.9834 }
 };
 
-static const double CATMatrix[3][3] = {
-    { 1.0634731317028,      0.00639793641966071,   -0.0157891874506841 },
-    { -0.492082784686793,   1.36823709310019,      0.0913444629573544  },
-    { -0.0028137154424595,  0.00463991165243123,   0.91649468506889    }
-};
-
 // Function to Open Directories
 vector<string> openDir(string path = ".") {
     DIR *    dir;
     dirent * pDir;
     struct stat fStat;
-    vector<string> fPaths;
+    vector <string> fPaths;
     
     dir = opendir(path.c_str());
     
@@ -277,51 +257,6 @@ vector<string> openDir(string path = ".") {
     return fPaths;
 };
 
-cameraDataPath& cameraPathsFinder() {
-    static cameraDataPath cdp;
-    static bool firstTime = 1;
-    
-    if(firstTime)
-    {
-        vector <string>& cPaths = cdp.paths;
-        
-        string path;
-        const char* env = getenv("RAWTOACES_CAMERASEN_PATH");
-        if (env)
-            path = env;
-        
-        if (path == "") {
-#if defined (WIN32) || defined (WIN64)
-            path = ".";
-            cdp.os = "WIN";
-#else
-            path = ".:/usr/local/lib/RAWTOACES:/usr/local" PACKAGE "-" VERSION "/lib/RAWTOACES";
-            cdp.os = "UNIX";
-#endif
-        }
-        
-        size_t pos = 0;
-        while (pos < path.size()){
-#if defined (WIN32) || defined (WIN64)
-            size_t end = path.find(';', pos);
-#else
-            size_t end = path.find(':', pos);
-#endif
-            
-            if (end == string::npos)
-                end = path.size();
-            
-            string pathItem = path.substr(pos, end-pos);
-            
-            if(find(cPaths.begin(), cPaths.end(), pathItem) == cPaths.end())
-                cPaths.push_back(pathItem);
-            
-            pos = end + 1;
-        }
-    }
-    return cdp;
-};
-
 template<typename T>
 void clearVM (vector<T> vct){
     vector< T >().swap(vct);
@@ -335,14 +270,20 @@ void printVS (const vector <string> vs) {
     printf ("\n");
 };
 
-char * lowerCase (char * tex)
+void lowerCase (char * tex)
 {
     string tmp(tex);
     
-    FORI(tmp.size()){
+    FORI(tmp.size())
         tex[i] = tolower(tex[i]);
-    }
-    
-    return tex;
 };
+
+bool isNumeric ( const char * val )
+{
+    string base = "0123456789E-.";
+    string input(val);
+    
+    return (input.find_first_not_of(base.substr(0, base.size())) == string::npos);
+};
+
 #endif

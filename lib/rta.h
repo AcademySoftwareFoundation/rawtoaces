@@ -82,15 +82,15 @@ namespace rta {
         public:
             Spst();
         
-            Spst(const Spst& spstobject);
+            Spst( const Spst& spstobject );
 
-            Spst(char * brand,
-                 char * model,
-                 uint8_t increment,
-                 vector<RGBSen> rgbsen) : _brand(brand),
-                                          _model(model),
-                                          _increment(increment),
-                                          _rgbsen(rgbsen){ };
+            Spst( char * brand,
+                  char * model,
+                  uint8_t increment,
+                  vector<RGBSen> rgbsen ) : _brand(brand),
+                                            _model(model),
+                                            _increment(increment),
+                                            _rgbsen(rgbsen){ };
         
             ~Spst();
         
@@ -122,32 +122,32 @@ namespace rta {
             Idt();
             ~Idt();
         
-            int loadCameraSpst(const string &path,
+            int loadCameraSpst( const string &path,
                                 const char * maker,
                                 const char * model);
-            int loadIlluminate(const string &path,
+            int loadIlluminate( const string &path,
                                 const string type="unknown");
-            void loadTrainingData(const string &path);
-            void loadCMF(const string &path);
+            void loadTrainingData( const string &path );
+            void loadCMF( const string &path );
         
-            void chooseIlluminate(map< string,
-                                  vector<double> >& illuCM,
-                                  vector<double>& src,
-                                  const string type);
-            void setVerbosity(int verbosity);
+            void chooseIlluminate( map< string,
+                                   vector<double> >& illuCM,
+                                   vector<double>& src,
+                                   const string type );
+            void setVerbosity( int verbosity );
             void scaleLSC();
         
             vector< double > calWB();
             vector< double > calCM();
             vector< vector<double> > calTI() const;
-            vector< vector<double> > calCAT(vector<double> src,
-                                            vector<double> des) const;
-            vector< vector<double> > calXYZ(vector< vector<double> > TI) const;
-            vector< vector<double> > calRGB(vector< vector<double> > TI) const;
+            vector< vector<double> > calCAT( vector<double> src,
+                                             vector<double> des ) const;
+            vector< vector<double> > calXYZ( vector< vector<double> > TI ) const;
+            vector< vector<double> > calRGB( vector< vector<double> > TI ) const;
         
-            int curveFit(vector< vector<double> > RGB,
+            int curveFit( vector< vector<double> > RGB,
                           vector< vector<double> > XYZ,
-                          double * BStart);
+                          double * BStart );
             int calIDT();
         
             const Spst getCameraSpst() const;
@@ -180,28 +180,28 @@ namespace rta {
             DNG();
             ~DNG();
         
-            vector<double> xyToXYZ(const vector<double>& xy);
-            vector<double> uvToXYZ(const vector<double>& uv);
-            vector<double> uvToxy(const vector<double>& uv);
-            vector<double> XYZTouv(const vector<double> &XYZ);
-            vector<double> XYZtoCameraWeightedMatrix(const float &mir,
-                                                     const float &mir1,
-                                                     const float &mir2);
-            vector<double> colorTemperatureToXYZ(const double cct) const;
-            vector<double> findXYZtoCameraMtx(const vector<double> neutralRGB) const;
-            vector<double> matrixRGBtoXYZ(const vector< vector<double> > chromaticities) const;
-            vector<double> matrixChromaticAdaptation(const vector<double> &whiteFrom,
-                                                     const vector<double> &whiteTo);
+            vector<double> xyToXYZ( const vector<double>& xy );
+            vector<double> uvToXYZ( const vector<double>& uv );
+            vector<double> uvToxy( const vector<double>& uv );
+            vector<double> XYZTouv( const vector<double> &XYZ) ;
+            vector<double> XYZtoCameraWeightedMatrix( const float &mir,
+                                                      const float &mir1,
+                                                      const float &mir2 );
+            vector<double> colorTemperatureToXYZ( const double cct ) const;
+            vector<double> findXYZtoCameraMtx( const vector<double> neutralRGB ) const;
+            vector<double> matrixRGBtoXYZ( const vector< vector<double> > chromaticities ) const;
+            vector<double> matrixChromaticAdaptation( const vector<double> &whiteFrom,
+                                                      const vector<double> &whiteTo );
         
 
-            double ccttoMired(const double cct) const;
-            double robertsonLength(const vector<double> &uv,
-                                   const vector<double>& uvt) const;
-            double lightSourceToColorTemp(const unsigned short tag) const;
-            double XYZToColorTemperature(const vector<double> &XYZ);
+            double ccttoMired( const double cct ) const;
+            double robertsonLength( const vector<double> &uv,
+                                    const vector<double>& uvt ) const;
+            double lightSourceToColorTemp( const unsigned short tag ) const;
+            double XYZToColorTemperature( const vector<double> &XYZ );
         
             void prepareMatrices();
-            void getCameraXYZMtxAndWhitePoint(double baseExpo);
+            void getCameraXYZMtxAndWhitePoint( double baseExpo );
         
         private:
             vector<double> CAT;
@@ -216,18 +216,11 @@ namespace rta {
                              T * residuals) const
             {
                 vector < vector <T> > RGBJet(190, vector< T >(3));
-                FORI(190)
-                    FORJ(3)
-                        RGBJet[i][j] = T(_RGB[i][j]);
+                FORIJ(190, 3) RGBJet[i][j] = T(_RGB[i][j]);
             
                 vector < vector <T> > outCalcLAB = XYZtoLAB(getCalcXYZt(RGBJet, B));
-            
-                FORI(190) {
-                    FORJ(3) {
-                        residuals[i * 3 + j] = _outLAB[i][j] - outCalcLAB[i][j];
-                    }
-                }
-            
+                FORIJ(190, 3) residuals[i * 3 + j] = _outLAB[i][j] - outCalcLAB[i][j];
+
                 return true;
            }
         

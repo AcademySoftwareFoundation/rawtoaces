@@ -336,8 +336,8 @@ namespace rta {
         assert(_cameraSpst._spstMaxCol >= 0
                && (_illuminate.data).size() != 0);
         
-        vector<double> colMax(81, 1.0);
-        switch(_cameraSpst._spstMaxCol){
+        vector <double> colMax(81, 1.0);
+        switch (_cameraSpst._spstMaxCol){
             case 0:
                 FORI(81) colMax[i] = _cameraSpst._rgbsen[i].RSen;
                 break;
@@ -374,26 +374,23 @@ namespace rta {
 
         ifstream fin;
         fin.open(path);
-        uint8_t line = 0;
+        int line = 0;
         
-        if(!fin.good()) {
+        if (!fin.good()) {
             fprintf(stderr, "The Camera Sensitivity data file may not exist.\n");
             exit(1);
         }
         
         vector <RGBSen> rgbsen;
-        vector<double> max(3, numeric_limits<double>::min());
+        vector <double> max(3, numeric_limits<double>::min());
         
-        while(!fin.eof()){
+        while (!fin.eof()){
             char buffer[512];
             fin.getline(buffer, 512);
             
-            if (!buffer[0]) {
-                continue;
-            }
+            if (!buffer[0]) continue;
             
             RGBSen tmp_sen;
-            
             char* token[3] = {};
             token[0] = strtok(buffer, " ,");
 //            assert(token[0]);
@@ -415,12 +412,15 @@ namespace rta {
             else if(line == 2)
                 _cameraSpst.setWLIncrement(static_cast<uint8_t>(atoi(token[0])));
             else {
-                tmp_sen.RSen = atof(token[0]);
-            
                 token[1] = strtok(null_ptr, " ,");
-                tmp_sen.GSen = atof(token[1]);
-            
                 token[2] = strtok(null_ptr, " ,");
+                
+                assert(isNumeric(token[0])
+                       && isNumeric(token[1])
+                       && isNumeric(token[2]));
+
+                tmp_sen.RSen = atof(token[0]);
+                tmp_sen.GSen = atof(token[1]);
                 tmp_sen.BSen = atof(token[2]);
                 
                 if(tmp_sen.RSen > max[0])
@@ -437,12 +437,11 @@ namespace rta {
         
         fin.close();
         
-        if(line != 84
-           || rgbsen.size() != 81) {
-            fprintf(stderr, "Please double check the Camera Sensitivity data"
-                            "e.g. the increment should be 5nm from 380nm to 780nm.\n");
-//            exit(EXIT_FAILURE);
-            return 0;
+        if (line != 84 || rgbsen.size() != 81) {
+            fprintf(stderr, "Please double check the Camera "
+                            "Sensitivity data (e.g. the increment "
+                            "should be 5nm from 380nm to 780nm).\n");
+            exit(1);
         }
         
         _cameraSpst._spstMaxCol = max_element(max.begin(), max.end()) - max.begin();
@@ -471,30 +470,28 @@ namespace rta {
         ifstream fin;
         fin.open(path);
         
-        uint8_t line = 0;
+        int line = 0;
         int wl = 380;
         
-        if(!fin.good()) {
+        if (!fin.good()) {
             fprintf(stderr, "The Illuminate Data file may not exist.\n");
-            exit(EXIT_FAILURE);
+            exit(1);
         }
         
-        if((_illuminate.data).size() != 0)
+        if ((_illuminate.data).size() != 0)
             (_illuminate.data).clear();
         
-        while((!fin.eof())){
+        while ((!fin.eof())){
             char buffer[128];
             fin.getline(buffer, 128);
             
-            if (!buffer[0]) {
-                continue;
-            }
+            if (!buffer[0]) continue;
             
             char* token;
             token = strtok(buffer, " ");
             //            assert(token);
             
-            if(line == 0) {
+            if (line == 0) {
                 string strToken(token);
                 
                 if (type.compare(strToken) != 0
@@ -506,28 +503,28 @@ namespace rta {
                 
                 _illuminate.type = strToken;
             }
-            else if(line == 1) {
+            else if (line == 1) {
                  _illuminate.inc = atoi(token);
             }
             else {
-                 _illuminate.data.push_back(atof(token));
+                assert(isNumeric(token));
                 
-                if(wl == 550) {
+                _illuminate.data.push_back(atof(token));
+                if(wl == 550)
                     _illuminate.index = atof(token);
-                }
                 
                 wl += _illuminate.inc;
             }
-            
             line += 1;
         }
 
         fin.close();
         
         if(_illuminate.data.size() != 81) {
-            fprintf(stderr, "Please double check the Illuminate data"
-                    "e.g. the increment should be 5nm from 380nm to 780nm.\n");
-            return 0;
+            fprintf(stderr, "Please double check the Light "
+                    "Source data (e.g. the increment "
+                    "should be 5nm from 380nm to 780nm).\n");
+            exit(1);
         }
         
         return 1;
@@ -547,38 +544,38 @@ namespace rta {
         ifstream fin;
         fin.open(path);
         
-        uint8_t i = 0;
-        uint16_t wl = 380;
+        int i = 0;
+        int wl = 380;
         
-        if(!fin.good()) {
+        if (!fin.good()) {
             fprintf(stderr, "The Training Data file may not exist.\n");
-            exit(EXIT_FAILURE);
+            exit(1);
         }
         
-        while((!fin.eof())){
+        while ((!fin.eof())){
             char buffer[4096];
             fin.getline(buffer, 4096);
             
-            if (!buffer[0]) {
-                continue;
-            }
+            if (!buffer[0]) continue;
             
             char* token[190] = {};
             token[0] = strtok(buffer, " ,");
-//            assert(token[0]);
+            assert(isNumeric(token[0]));
             
             _trainingSpec[i].wl = wl;
             _trainingSpec[i].data.push_back(atof(token[0]));
 
             for (uint8_t n = 1; n < 190; n++){
                 token[n] = strtok(null_ptr, " ,");
+                assert(isNumeric(token[n]));
 
                 if(token[n]) {
                     _trainingSpec[i].data.push_back(atof(token[n]));
                 }
                 else {
-                    fprintf(stderr, "The training spectral sensitivity file may need to be looked at\n");
-                    exit(EXIT_FAILURE);
+                    fprintf(stderr, "The training spectral sensitivity file "
+                                    " may need to be looked at\n");
+                    exit(1);
                 }
             }
             i += 1;
@@ -604,22 +601,21 @@ namespace rta {
         
         int i = 0;
         
-        if(!fin.good()) {
+        if (!fin.good()) {
             fprintf(stderr, "The file may not exist.\n");
             exit(EXIT_FAILURE);
         }
         
-        while(!fin.eof()){
+        while (!fin.eof()){
             char buffer[512];
             fin.getline(buffer, 512);
             
-            if (!buffer[0]) {
-                continue;
-            }
+            if (!buffer[0]) continue;
             
             char* token[4] = {};
             token[0] = strtok(buffer, " ,");
-//            assert(token[0]);
+            assert(isNumeric(token[0]));
+
             _cmf[i].wl = (uint16_t)atoi(token[0]);
             
             if (!(_cmf[i].wl % 5)
@@ -627,6 +623,8 @@ namespace rta {
                 && _cmf[i].wl <= 780) {
                 for (int n = 1; n < 4; n++){
                     token[n] = strtok(null_ptr, " ,");
+                    assert(isNumeric(token[n]));
+                    
                     if(token[n] && n == 1) {
                         _cmf[i].xbar = atof(token[n]);
                     }
@@ -639,7 +637,7 @@ namespace rta {
                     else {
                         fprintf(stderr, "The color matching function"
                                         "file may need to be looked at\n");
-                        exit(EXIT_FAILURE);
+                        exit(1);
                     }
                 }
                 
@@ -794,10 +792,8 @@ namespace rta {
                _trainingSpec[0].data.size() == 190);
 
         vector< vector<double> > TI(81, vector<double>(190));
-        FORI(81)
-            FORJ(190)
-                TI[i][j] = _illuminate.data[i] * (_trainingSpec[i].data)[j];
-        
+        FORIJ(81, 190)
+            TI[i][j] = _illuminate.data[i] * (_trainingSpec[i].data)[j];
         
         return TI;
     }
@@ -819,11 +815,7 @@ namespace rta {
         assert(src.size() == des.size());
         
         vector < vector <double> > vect(3, vector<double>(3));
-        FORI(3) {
-            FORJ(3) {
-                vect[i][j] = cat02[i][j];
-            }
-        }
+        FORIJ(3, 3) vect[i][j] = cat02[i][j];
         
         vector< double > wSRC = mulVector(src, vect);
         vector< double > wDES = mulVector(des, vect);
@@ -864,7 +856,7 @@ namespace rta {
         
         FORI(XYZ.size())
             scaleVector(XYZ[i],
-                        1.0/sumVector(mulVectorElement(colXYZ[1],_illuminate.data)));
+                        1.0 / sumVector(mulVectorElement(colXYZ[1],_illuminate.data)));
         
         vector <double> ww = mulVector(colXYZ, _illuminate.data);
         scaleVector(ww, (1.0/ww[1]));

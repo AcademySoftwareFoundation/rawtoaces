@@ -54,6 +54,15 @@
 
 #include "rawtoaces.h"
 
+//	=====================================================================
+//  Print usage / help message
+//
+//	inputs:
+//      const char * : name of the program (i.e., rawtoaces)
+//
+//	outputs:
+//		N/A
+
 void usage(const char *prog)
 {
     printf ( "%s - convert RAW digital camera files to ACES\n", prog);
@@ -117,6 +126,16 @@ void usage(const char *prog)
     exit(1);
 };
 
+
+//	=====================================================================
+//  Prepare the matching between string flags and single character flag
+//
+//	inputs:
+//      N/A
+//
+//	outputs:
+//		N/A : keys should be prepared and loaded
+
 void create_key()
 {
     keys["--help"] = 'I';
@@ -152,6 +171,15 @@ void create_key()
     keys["-E"] = 'E';
 };
 
+//	=====================================================================
+//  Initialize Option structure
+//
+//	inputs:
+//      N/A
+//
+//	outputs:
+//		N/A : opts should be initialized
+
 void initialize()
 {
     opts.use_bigfile = 0;
@@ -171,19 +199,29 @@ void initialize()
     
 };
 
-int fetchCondition (int argc, char * argv[],
-                    option &opts,
-                    libraw_output_params_t &OUT)
+//	=====================================================================
+//  Fetch flags specified by users and configure preliminary settings
+//
+//	inputs:
+//      int    : number of supplied arguments
+//      char * : an array of supplied arguments
+//      libraw_output_params_t : libraw parameters to manage
+//                               dcraw processing
+//	outputs:
+//		ibt    : current position in the argument array
+
+int configureSetting ( int argc,
+                       char * argv[],
+                       libraw_output_params_t &OUT )
 {
     create_key();
     initialize();
     
-    vector < string > vls (lightS, lightS + sizeof(lightS) / sizeof(char *));
-
-    argv[argc] = (char *)"";
-    
     char *cp, *sp;
     int arg;
+    
+    vector < string > vls (lightS, lightS + sizeof(lightS) / sizeof(char *));
+    argv[argc] = (char *)"";
     
     for ( arg = 1; arg < argc; )
     {
@@ -220,7 +258,6 @@ int fetchCondition (int argc, char * argv[],
             }
         }
         
-        // Please refer to libraw_types.h for more information
         switch ( opt )
         {
             case 'I':  usage( argv[0] );  break;

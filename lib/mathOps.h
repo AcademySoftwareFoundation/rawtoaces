@@ -70,15 +70,12 @@ void printValarray (const valarray<T>&va, string s, int num)
 {
     assert (num <= va.size());
     printf("%s:", s.c_str());
-    for (int i=0; i<num; i++) {
-        printf("%f ", va[i]);
-    }
+    FORI(num) printf("%f ", va[i]);
     printf(";\n");
-    return;
 }
 
 template<typename T>
-bool isSquare(const vector< vector<T> > vm){
+int isSquare(const vector< vector<T> > vm){
     FORI(vm.size()){
         if (vm[i].size() != vm.size())
             return 0;
@@ -165,8 +162,7 @@ vector< vector<T> > invertVM3(const vector< vector<T> > &vMtx)
     
     // pay attention to this
     assert (det != 0);
-    FORI(9)
-        invMtx[i] /= det;
+    FORI(9) invMtx[i] /= det;
     
     vector< vector<T> > vMtxR(3, vector<T>(3));
     FORI(3)
@@ -259,7 +255,7 @@ void scaleVector(vector<T>& vct, const T scale)
 }
 
 template <typename T>
-void scaleVector(vector<T>& vct){
+void scaleVectorMax(vector<T>& vct){
     T max = *max_element(vct.begin(), vct.end());
     
     transform(vct.begin(), vct.end(), vct.begin(),
@@ -277,6 +273,14 @@ void scaleVectorD(vector<T>& vct){
               bind1st(multiplies<T>(), max));
     
     return;
+}
+
+template <typename T>
+void scaleArrayMax(T a[], int length){
+    vector <T> tmp (a, a + length);
+    scaleVectorMax(tmp);
+    
+    FORI(length) a[i] = tmp[i];
 }
 
 template <typename T>
@@ -299,8 +303,7 @@ vector<T> mulVectorElement(const vector<T>& vct1, const vector<T>& vct2)
 //              vct2.begin(), vct3Element.begin(),
 //              multiplies<T>());
     
-    FORI(vct1.size())
-        vct3Element[i] = vct1[i] * vct2[i];
+    FORI(vct1.size()) vct3Element[i] = vct1[i] * vct2[i];
     
     return vct3Element;
 }
@@ -456,12 +459,12 @@ vector< vector<T> > getCalcXYZt (const vector < vector<T> > RGB,
                                  const T *  B)
 {
     assert(RGB.size() == 190);
-    vector < vector<T> > BV( 3, vector < T >(3) );
+    vector < vector<T> > BV (3, vector < T >(3) );
     
-    vector < vector <T> > M(3, vector < T >(3));
+    vector < vector <T> > M (3, vector < T >(3));
     FORI(3)
-    FORJ(3)
-    M[i][j] = T(acesrgb_XYZ_3[i][j]);
+        FORJ(3)
+            M[i][j] = T(acesrgb_XYZ_3[i][j]);
     
     BV[0][0] = B[0];
     BV[0][1] = B[1];
@@ -473,7 +476,7 @@ vector< vector<T> > getCalcXYZt (const vector < vector<T> > RGB,
     BV[2][1] = B[5];
     BV[2][2] = 1.0 - B[4] - B[5];
     
-    //    vector< vector<T> > outCalcXYZt = transposeVec(mulVector(BV, RGB));
+    // vector< vector<T> > outCalcXYZt = transposeVec(mulVector(BV, RGB));
     
     vector< vector<T> > outCalcXYZt = mulVector(mulVector(RGB, BV), M);
     
@@ -481,4 +484,10 @@ vector< vector<T> > getCalcXYZt (const vector < vector<T> > RGB,
     return outCalcXYZt;
 }
 #endif
+
+template<typename T>
+T clip (T val, T target)
+{
+    return min(val, target);
+}
 

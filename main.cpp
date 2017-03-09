@@ -86,14 +86,14 @@ int main(int argc, char *argv[])
     
     // General set-up
     OUT.output_color      = 5;
-    OUT.highlight         = 2;
+    OUT.highlight         = 0;
     OUT.use_camera_matrix = 0;
     OUT.gamm[0]           = 1.0;
     OUT.gamm[1]           = 1.0;
     OUT.no_auto_bright    = 1;
 
   // Fetch conditions and conduct some pre-processing
-  int arg = fetchCondition (argc, argv, opts, OUT);
+  int arg = configureSetting (argc, argv, OUT);
     
   if ( opts.verbosity > 2 )
       RawProcessor.set_progress_handler( my_progress_callback,
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
       printf ( "Using %d threads\n", omp_get_max_threads() );
 #endif
     
-    // processing actual RAW files
+    // Process actual RAW files
     for ( ; arg < argc; arg++ )
     {
         char outfn[1024];
@@ -189,11 +189,7 @@ int main(int argc, char *argv[])
                 OUT.use_camera_matrix = 0;
                 
                 // get IDT matrix
-                int gotIDT = prepareIDT ( opts,
-                                          P1,
-                                          C,
-                                          idtm,
-                                          wbv );
+                int gotIDT = prepareIDT ( P1, C, idtm, wbv );
                 if ( gotIDT ) {
                     OUT.output_color = 0;
                     
@@ -203,8 +199,6 @@ int main(int argc, char *argv[])
                     
                     // --wb-method condition 0
                     if ( !opts.use_wb ) {
-                        // set use_Mul to 1 to avoid repetitive
-                        // calculation of WB
                         opts.use_Mul = 1;
                         FORI(3) OUT.user_mul[i] = wbv[i];
                     }
@@ -224,10 +218,7 @@ int main(int argc, char *argv[])
                 OUT.use_camera_matrix = 0;
             
                 // Calculate white balance
-                int gotWB = prepareWB ( opts,
-                                        P1,
-                                        C,
-                                        wbv );
+                int gotWB = prepareWB ( P1, C, wbv );
             
                 if ( !gotWB && C.profile )
                     opts.use_wb = 1;
@@ -256,24 +247,26 @@ int main(int argc, char *argv[])
                 OUT.use_auto_wb = 0;
                 
                 double sc = dmax;
+                
                 FORI( P1.colors ){
                     if ( OUT.user_mul[i] <= sc )
                         sc = OUT.user_mul[i];
                 }
                 
                 if ( sc != 1.0 ) {
-                    fprintf ( stderr, "Warning: The smallest channel multiplier "
-                                      "should be 1.0.\n" );
+                    fprintf ( stderr, "\nWarning: The smallest channel multiplier "
+                                      "should be 1.0. \n" );
+                    // scaleArrayMax (OUT.user_mul, 3);
                 }
             }
         
-            // dcraw process
+            // Start dcraw process
             timerstart_timeval();
             if ( LIBRAW_SUCCESS != ( opts.ret = RawProcessor.dcraw_process() ) )
                 {
-                    fprintf ( stderr,"Error: Cannot do postpocessing on %s: %s\n",
-                              argv[arg],libraw_strerror(opts.ret) );
-                    if ( LIBRAW_FATAL_ERROR(opts.ret) )
+                    fprintf ( stderr, "Error: Cannot do postpocessing on %s: %s\n",
+                                      argv[arg],libraw_strerror(opts.ret) );
+                    if ( LIBRAW_FATAL_ERROR( opts.ret ) )
                         continue; 
                 }
         
@@ -287,11 +280,12 @@ int main(int argc, char *argv[])
         
             char * cp;
             if (( cp = strrchr ( argv[arg], '.' ))) *cp = 0;
-            snprintf( outfn, sizeof(outfn),
-                     "%s%s",
-                     argv[arg], "_aces.exr" );
+            snprintf( outfn,
+                      sizeof(outfn),
+                      "%s%s",
+                      argv[arg],
+                      "_aces.exr" );
         
-            // dng_version indicates if this file is of DNG type of not
             if ( !P1.dng_version ) {
                 libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&opts.ret);
                 if ( opts.use_timing )
@@ -301,33 +295,13 @@ int main(int argc, char *argv[])
                 if ( !OUT.output_color )
                     aces = prepareAcesData_NonDNG_IDT( post_image, idtm, wbv );
                 else
-                    aces = prepareAcesData_NonDNG( post_image, opts );
+                    aces = prepareAcesData_NonDNG( post_image );
                 
-                aces_write( outfn,
-                            post_image,
+                aces_write( post_image,
+                            outfn,
                             aces,
                             opts.scale );
             }
-//            else {
-////              DNG files always use the embedded color profile
-        
-//                OUT.use_camera_wb = 0;
-//                OUT.use_auto_wb = 0;
-//                OUT.use_camera_matrix = 1;
-//
-//                libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&opts.ret);
-//                if(opts.use_timing)
-//                    timerprint("LibRaw::dcraw_make_mem_image()",argv[arg]);
-//                
-//                float * aces = prepareAcesData_DNG(R, post_image);
-//                aces_write (outfn,
-//                            post_image->width,
-//                            post_image->height,
-//                            post_image->colors,
-//                            post_image->bits,
-//                            aces,
-//                            scale );
-//            }
         
 #ifndef WIN32
             if ( opts.use_mmap && iobuffer )

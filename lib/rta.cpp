@@ -241,7 +241,7 @@ namespace rta {
     //	Set the model of camera
     //
     //	inputs:
-    //      const char *: brand (read from the file or
+    //      const char *: model (read from the file or
     //                    the meta-data from libraw)
     //
     //	outputs:

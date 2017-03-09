@@ -196,7 +196,6 @@ struct stat st;
 static option opts;
 static int cnt=0;
 static map < const string, char > keys;
-vector < double > mulV( 3, 1.0 );
 
 const double e = 216.0/24389.0;
 const double k = (24389.0/27.0)/116.0;
@@ -346,8 +345,4 @@ char * lowerCase (char * tex)
     
     return tex;
 };
-
-
-
-
 #endif

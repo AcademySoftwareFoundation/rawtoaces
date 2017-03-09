@@ -64,14 +64,10 @@ double invertD(double val) {
     return 1.0/val;
 }
 
-// For print valarray data purpose
-template<class T>
-void printValarray (const valarray<T>&va, string s, int num)
+template<typename T>
+T clip (T val, T target)
 {
-    assert (num <= va.size());
-    printf("%s:", s.c_str());
-    FORI(num) printf("%f ", va[i]);
-    printf(";\n");
+    return min(val, target);
 }
 
 template<typename T>
@@ -93,9 +89,7 @@ T cross(const vector <T> &vectorA, const vector <T> &vectorB) {
 template <typename T>
 const vector < vector <T> > repmat(const T* data[], int row, int col) {
     vector < vector <T> > vect(row, vector<T>(col));
-    FORI(row)
-        FORJ(col)
-            vect[i][j] = data[i][j];
+    FORIJ(row, col) vect[i][j] = data[i][j];
     
     const vector < vector <T> > cvect(vect);
     return cvect;
@@ -104,9 +98,7 @@ const vector < vector <T> > repmat(const T* data[], int row, int col) {
 template <typename T>
 const vector <T> repmat1d(const T data[], int row, int col) {
     vector <T> vect(row*col);
-    FORI(row)
-        FORJ(col)
-            vect[i*col + j] = data[i];
+    FORIJ(row, col) vect[i*col + j] = data[i];
     
     const vector < T > cvect(vect);
     return cvect;
@@ -115,9 +107,7 @@ const vector <T> repmat1d(const T data[], int row, int col) {
 template <typename T>
 const vector < vector <T> > repmat2dr(const T data[], int row, int col) {
     vector < vector <T> > vect(row, vector<T>(col));
-    FORI(row)
-        FORJ(col)
-            vect[i][j] = data[i];
+    FORIJ(row, col) vect[i][j] = data[i];
     
     const vector < vector <T> > cvect(vect);
     return cvect;
@@ -126,9 +116,7 @@ const vector < vector <T> > repmat2dr(const T data[], int row, int col) {
 template <typename T>
 const vector < vector <T> > repmat2dc(const T data[], int row, int col) {
     vector < vector <T> > vect(row, vector<T>(col));
-    FORI(row)
-        FORJ(col)
-            vect[i][j] = data[j];
+    FORIJ(row, col) vect[i][j] = data[j];
     
     const vector < vector <T> > cvect(vect);
     return cvect;
@@ -141,9 +129,7 @@ vector< vector<T> > invertVM3(const vector< vector<T> > &vMtx)
            isSquare(vMtx));
     
     vector <T> mtx(9);
-    FORI(3)
-        FORJ(3)
-            mtx[i*3+j] = vMtx[i][j];
+    FORIJ(3, 3) mtx[i*3+j] = vMtx[i][j];
     
     T CinvMtx[] = {
         0.0 - mtx[5] * mtx[7] + mtx[4] * mtx[8],
@@ -165,9 +151,7 @@ vector< vector<T> > invertVM3(const vector< vector<T> > &vMtx)
     FORI(9) invMtx[i] /= det;
     
     vector< vector<T> > vMtxR(3, vector<T>(3));
-    FORI(3)
-        FORJ(3)
-            vMtxR[i][j] = invMtx[3*i+j];
+    FORIJ(3, 3) vMtxR[i][j] = invMtx[3*i+j];
     
     return vMtxR;
 }
@@ -178,8 +162,7 @@ vector < vector<T> > diagVM(const vector<T>& vct)
     assert(vct.size() != 0);
     vector < vector<T> > vctdiag(vct.size(), vector<T>(vct.size(), 0.0));
     
-    FORI(vct.size())
-        vctdiag[i][i] = vct[i];
+    FORI(vct.size()) vctdiag[i][i] = vct[i];
     
     return vctdiag;
 }
@@ -189,11 +172,9 @@ void transpose(T* mtx[], int row, int col)
 {
     assert (row != 0 && col != 0);
     
-    FORI(row) {
-        FORJ(col) {
-            mtx[i][j] ^= mtx[j][i];
-            mtx[i][j] ^= (mtx[j][i] ^= mtx[i][j]);
-        }
+    FORIJ(row, col) {
+        mtx[i][j] ^= mtx[j][i];
+        mtx[i][j] ^= (mtx[j][i] ^= mtx[i][j]);
     }
     
     return;
@@ -211,11 +192,7 @@ vector< vector<T> > transposeVec(const vector< vector<T> > vMtx)
     assert (row != 0 && col != 0);
     vector< vector<T> > vTran(col, vector<T>(row));
     
-    FORI(row) {
-        FORJ(col) {
-            vTran[j][i] = vMtx[i][j];
-        }
-    }
+    FORIJ(row, col) vTran[j][i] = vMtx[i][j];
     
     return vTran;
 }
@@ -326,16 +303,12 @@ template <typename T>
 vector < vector<T> > mulVector(const vector< vector<T> >& vct1,
                                const vector< vector<T> >& vct2)
 {
-    assert(vct1.size() != 0
-           && vct2.size() != 0);
-    
+    assert(vct1.size() != 0 && vct2.size() != 0);
+
     vector< vector<T> > vct3(vct1.size(), vector<T>(vct2.size()));
     
-    FORI(vct1.size()) {
-        FORJ(vct2.size()) {
-            vct3[i][j] = (sumVector(mulVectorElement(vct1[i], vct2[j])));
-        }
-    }
+    FORIJ (vct1.size(), vct2.size())
+        vct3[i][j] = (sumVector(mulVectorElement(vct1[i], vct2[j])));
     
     return vct3;
 }
@@ -430,15 +403,13 @@ vector < vector<T> > XYZtoLAB( const vector < vector<T> >& XYZ )
     T add = T(16.0/116.0);
     
     vector< vector<T> > tmpXYZ(190, vector<T>(3, T(1.0)));
-    FORI(190) {
-        FORJ(3)
-        {
-            tmpXYZ[i][j] = XYZ[i][j] / XYZ_w[j];
-            if (tmpXYZ[i][j] > T(e))
-                tmpXYZ[i][j] = ceres::pow(tmpXYZ[i][j], 1.0/3.0);
-            else
-                tmpXYZ[i][j] = T(k) * tmpXYZ[i][j] + add;
-        }
+    FORIJ(190, 3)
+    {
+        tmpXYZ[i][j] = XYZ[i][j] / XYZ_w[j];
+        if (tmpXYZ[i][j] > T(e))
+            tmpXYZ[i][j] = ceres::pow(tmpXYZ[i][j], 1.0/3.0);
+        else
+            tmpXYZ[i][j] = T(k) * tmpXYZ[i][j] + add;
     }
     
     vector< vector<T> > outCalcLab(190, vector<T>(3));
@@ -449,6 +420,7 @@ vector < vector<T> > XYZtoLAB( const vector < vector<T> >& XYZ )
         outCalcLab[i][2] = T(200.0) * (tmpXYZ[i][1] - tmpXYZ[i][2]);
     }
     
+    // It may not be necessary here, but just want to show we clean stuff
     clearVM(tmpXYZ);
     
     return outCalcLab;
@@ -459,12 +431,10 @@ vector< vector<T> > getCalcXYZt (const vector < vector<T> > RGB,
                                  const T *  B)
 {
     assert(RGB.size() == 190);
-    vector < vector<T> > BV (3, vector < T >(3) );
-    
+    vector < vector<T> > BV (3, vector < T >(3));
     vector < vector <T> > M (3, vector < T >(3));
-    FORI(3)
-        FORJ(3)
-            M[i][j] = T(acesrgb_XYZ_3[i][j]);
+    
+    FORIJ(3, 3) M[i][j] = T(acesrgb_XYZ_3[i][j]);
     
     BV[0][0] = B[0];
     BV[0][1] = B[1];
@@ -476,18 +446,12 @@ vector< vector<T> > getCalcXYZt (const vector < vector<T> > RGB,
     BV[2][1] = B[5];
     BV[2][2] = 1.0 - B[4] - B[5];
     
-    // vector< vector<T> > outCalcXYZt = transposeVec(mulVector(BV, RGB));
-    
     vector< vector<T> > outCalcXYZt = mulVector(mulVector(RGB, BV), M);
     
+    // It may not be necessary here, but just want to show we clean stuff
     clearVM(BV);
+    
     return outCalcXYZt;
 }
 #endif
-
-template<typename T>
-T clip (T val, T target)
-{
-    return min(val, target);
-}
 

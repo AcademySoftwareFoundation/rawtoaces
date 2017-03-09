@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
                 
                 double sc = dmax;
                 
-                FORI( P1.colors ){
+                FORI(P1.colors){
                     if ( OUT.user_mul[i] <= sc )
                         sc = OUT.user_mul[i];
                 }

@@ -59,8 +59,8 @@ int main(int argc, char *argv[])
     if ( argc == 1 ) usage( argv[0] );
     
     LibRaw RawProcessor;
-    AcesRender Render;
     option opts;
+    struct stat st;
     
 #ifndef WIN32
     void *iobuffer=0;
@@ -99,11 +99,12 @@ int main(int argc, char *argv[])
       printf ( "Using %d threads\n", omp_get_max_threads() );
 #endif
     
-    Render.setOptions(opts);
     // Process actual RAW files
     for ( ; arg < argc; arg++ )
     {
         char outfn[1024];
+        AcesRender Render;
+        Render.setOptions(opts);
         
         if( opts.verbosity )
             printf( "Processing file %s\n", argv[arg] );
@@ -119,7 +120,7 @@ int main(int argc, char *argv[])
                 {
                     fprintf( stderr, "\nError: Cannot open %s: %s\n\n",
                              argv[arg], strerror(errno) );
-                    exit(1);
+                    break;
                 }
                 
                 if( fstat( file,&st ) )
@@ -128,7 +129,7 @@ int main(int argc, char *argv[])
                              argv[arg], strerror(errno) );
                     close( file );
 
-                    exit(1);
+                    break;
                 }
                 
                 int pgsz = getpagesize();
@@ -140,7 +141,7 @@ int main(int argc, char *argv[])
                                       argv[arg], strerror(errno) );
                     close( file );
 
-                    exit(1);
+                    break;
                 }
                 
                 close( file );
@@ -150,7 +151,7 @@ int main(int argc, char *argv[])
                               argv[arg],
                               libraw_strerror(opts.ret) );
 
-                    exit(1);
+                    break;
                 }
 
             }
@@ -178,7 +179,7 @@ int main(int argc, char *argv[])
             {
                 fprintf( stderr, "\nError: Cannot unpack %s: %s\n\n",
                                   argv[arg], libraw_strerror(opts.ret) );
-                exit(1);
+                break;
             }
         
             if ( opts.use_timing )
@@ -280,9 +281,9 @@ int main(int argc, char *argv[])
                 timerprint ( "LibRaw::dcraw_process()", argv[arg] );
             
             if ( opts.verbosity >= 2 ) // verbosity set by repeat -v switches
-                printf ("Converting to aces RGB\n" );
+                printf ( "Converting to aces RGB\n" );
             else if ( opts.verbosity )
-                printf ("Writing file %s\n", outfn );
+                printf ( "Writing file %s\n", outfn );
         
             char * cp;
             if (( cp = strrchr ( argv[arg], '.' ))) *cp = 0;
@@ -293,17 +294,18 @@ int main(int argc, char *argv[])
                       "_aces.exr" );
         
             if ( !P1.dng_version ) {
-                libraw_processed_image_t *post_image = RawProcessor.dcraw_make_mem_image(&opts.ret);
+                libraw_processed_image_t * post_image = RawProcessor.dcraw_make_mem_image ( &opts.ret );
+                Render.setPixels (post_image);
                 if ( opts.use_timing )
-                    timerprint("LibRaw::dcraw_make_mem_image()",argv[arg]);
+                    timerprint( "LibRaw::dcraw_make_mem_image()", argv[arg]);
                 
                 float * aces = 0;
                 if ( !OUT.output_color )
-                    aces = Render.renderNonDNG_IDT ( post_image );
+                    aces = Render.renderNonDNG_IDT();
                 else
-                    aces = Render.renderNonDNG ( post_image );
+                    aces = Render.renderNonDNG();
 
-                Render.acesWrite ( post_image, outfn, aces );
+                Render.acesWrite ( outfn, aces );
             }
         
 #ifndef WIN32

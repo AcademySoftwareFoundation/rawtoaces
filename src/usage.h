@@ -294,7 +294,8 @@ int configureSetting ( int argc,
             case 'z':  printVS(vls);                 break;
             case 'p':
                 opts.use_mat = atoi(argv[arg++]);
-                if ( opts.use_mat > 2 || opts.use_mat < -1) {
+                if ( opts.use_mat > 2
+                     || opts.use_mat < -1) {
                     fprintf (stderr, "\nError: Invalid argument to "
                                      "\"%s\" \n", key.c_str());
                     exit(1);
@@ -341,7 +342,8 @@ int configureSetting ( int argc,
                         OUT.user_mul[i] = (float)atof(argv[arg++]);
                     }
                 }
-                else if ( opts.use_wb > 4 || opts.use_wb < -1) {
+                else if ( opts.use_wb > 4
+                         || opts.use_wb < -1) {
                     fprintf (stderr, "\nError: Invalid argument to "
                                      "\"%s\" \n", key.c_str());
                     exit(1);

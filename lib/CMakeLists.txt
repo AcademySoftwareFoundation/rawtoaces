@@ -10,9 +10,9 @@ add_library( rawtoacesIDT SHARED
     	     rta.cpp 
            )
 
-if ( Ceres_FOUND )
+# if ( Ceres_FOUND )
   target_link_libraries( rawtoacesIDT ${CERES_LIBRARIES} )
-endif()
+# endif()
 
 install(FILES
 	 define.h

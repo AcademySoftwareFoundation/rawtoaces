@@ -79,24 +79,23 @@ class AcesRender {
                          libraw_colordata_t C );
     
         void setOptions (option opts);
+        void setPixels (libraw_processed_image_t * image);
         void updateOptions (option opts);
-        void applyWB ( float * pixels, int bits, uint32_t total ) const;
+        void applyWB  ( float * pixels, int bits, uint32_t total ) const;
         void applyIDT ( float * pixels, int bits, uint32_t total );
         void applyCAT ( float * pixels, int channel, uint32_t total ) const;
-        void acesWrite( libraw_processed_image_t * image,
-                        const char * name,
-                        float *  aces ) const;
+        void acesWrite( const char * name, float *  aces ) const;
     
-        float * renderDNG ( libraw_processed_image_t * image,
-                            vector < float > cameraToDisplayMtx ) const;
-        float * renderNonDNG ( libraw_processed_image_t * image ) const;
-        float * renderNonDNG_IDT ( libraw_processed_image_t * image );
+        float * renderDNG ( vector < float > cameraToDisplayMtx ) const;
+        float * renderNonDNG () const;
+        float * renderNonDNG_IDT ();
     
         const vector< vector < double > > getIDTMatrix () const;
         const vector< double > getWB () const;
     
     private:
         Idt * _idt;
+        libraw_processed_image_t * _image;
         vector < vector < double > > _idtm;
         vector < double > _wbv;
         option _opts;

@@ -56,6 +56,7 @@
 
 AcesRender::AcesRender(){
     _idt = new Idt();
+    
     _idtm.resize(3);
     _wbv.resize(3);
     
@@ -68,6 +69,7 @@ AcesRender::AcesRender(){
 }
 
 AcesRender::~AcesRender(){
+    delete _idt;
     vector < vector<double> >().swap(_idtm);
     vector < double >().swap(_wbv);
 }
@@ -85,6 +87,20 @@ void AcesRender::setOptions (option opts) {
     _opts = opts;
 }
 
+
+//	=====================================================================
+//	Set processed image buffer from libraw
+//
+//	inputs:
+//      libraw_processed_image_t     : processed RAW through libraw
+//
+//	outputs:
+//      N/A        : _image will point to the address of image
+
+void AcesRender::setPixels (libraw_processed_image_t * image) {
+    assert(image);
+    _image = image;
+}
 
 //	=====================================================================
 //	Update option list
@@ -118,6 +134,7 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
                                    libraw_iparams_t P )
 {
     int readC = 0;
+    struct stat st;
     
     if ( cameraSenPath )  {
         if ( stat( static_cast <const char *> ( cameraSenPath ), &st ) )  {
@@ -171,6 +188,7 @@ int AcesRender::readIlluminate( const char * illumType,
                                 map < string, vector < double > > & illuCM )
 {
     int readI = 0;
+    struct stat st;
     
     if( !stat( FILEPATH, &st ) ) {
         vector <string> iFiles = openDir( static_cast < string >( FILEPATH )
@@ -456,19 +474,18 @@ void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total ) const
 //  Convert DNG RAW to aces file
 //
 //	inputs:
-//      libraw_processed_image_t *   : result set of pixels from libraw
 //      vector < float > : camera to display matrix
 //
 //	outputs:
 //		float * : an array of converted aces values
 
-float * AcesRender::renderDNG ( libraw_processed_image_t *image,
-                                vector < float > cameraToDisplayMtx ) const
+float * AcesRender::renderDNG ( vector < float > cameraToDisplayMtx ) const
 {
-    uchar * pixels = image->data;
-    uint32_t total = image->width * image->height * image->colors;
-    vector < vector< double> > CMT( image->colors,
-                                    vector< double >(image->colors));
+    assert(_image);
+    uchar * pixels = _image->data;
+    uint32_t total = _image->width * _image->height * _image->colors;
+    vector < vector< double> > CMT( _image->colors,
+                                    vector< double >(_image->colors));
 
     float * aces = new  (std::nothrow) float[total];
     FORI (total)
@@ -477,13 +494,13 @@ float * AcesRender::renderDNG ( libraw_processed_image_t *image,
     FORIJ(3, 3)
         CMT[i][j] = static_cast < double > (cameraToDisplayMtx[i*3+j]);
    
-    if(image->colors == 3) {
+    if(_image->colors == 3) {
         aces = mulVectorArray( aces,
                                total,
                                3,
                                CMT);
     }
-    else if(image->colors == 4){
+    else if(_image->colors == 4){
         CMT[0][3]=0.0;
         CMT[1][3]=0.0;
         CMT[2][3]=0.0;
@@ -510,30 +527,30 @@ float * AcesRender::renderDNG ( libraw_processed_image_t *image,
 //	=====================================================================
 //  Convert Non-DNG RAW to aces file (no IDT involved)
 //
-//	inputs:
-//      libraw_processed_image_t * : result set of pixels from
-//                                   dcraw_make_mem_image() functions
+//	inputs:  N/A
 //
 //	outputs:
 //		float *                    : an array of converted aces values
 
-float * AcesRender::renderNonDNG ( libraw_processed_image_t *image ) const
+float * AcesRender::renderNonDNG () const
 {
-    uchar * pixel = image->data;
-    uint32_t total = image->width * image->height * image->colors;
+    assert(_image);
+
+    uchar * pixel = _image->data;
+    uint32_t total = _image->width * _image->height * _image->colors;
     float * aces = new (std::nothrow) float[total];
     
     FORI(total) aces[i] = static_cast <float> (pixel[i]);
     
-    if(_opts.use_mat == 2) applyCAT(aces, image->colors, total);
+    if(_opts.use_mat == 2) applyCAT(aces, _image->colors, total);
         
-    vector < vector< double> > XYZ_acesrgb( image->colors,
-                                            vector < double > (image->colors));
-    if (image->colors == 3) {
+    vector < vector< double> > XYZ_acesrgb( _image->colors,
+                                            vector < double > (_image->colors));
+    if (_image->colors == 3) {
         FORIJ(3, 3) XYZ_acesrgb[i][j] = XYZ_acesrgb_3[i][j];
         aces = mulVectorArray(aces, total, 3, XYZ_acesrgb);
     }
-    else if (image->colors == 4){
+    else if (_image->colors == 4){
         FORIJ(4, 4) XYZ_acesrgb[i][j] = XYZ_acesrgb_4[i][j];
         aces = mulVectorArray(aces, total, 4, XYZ_acesrgb);
     }
@@ -550,22 +567,23 @@ float * AcesRender::renderNonDNG ( libraw_processed_image_t *image ) const
 //  Convert Non-DNG RAW to aces file through IDT
 //
 //	inputs:
-//      libraw_processed_image_t *   : result set of pixels from libraw
 //
 //	outputs:
 //		float * : an array of aces values for each pixel
 
-float * AcesRender::renderNonDNG_IDT ( libraw_processed_image_t *image )
+float * AcesRender::renderNonDNG_IDT ()
 {
-    uchar * pixels = image->data;
-    uint32_t total = image->width * image->height * image->colors;
+    assert(_image);
+
+    uchar * pixels = _image->data;
+    uint32_t total = _image->width * _image->height * _image->colors;
     float * aces = new (std::nothrow) float[total];
     
     FORI(total) aces[i] = static_cast <float> (pixels[i]);
     
     printf ( "\nApplying IDT Matrix ...\n\n" );
     
-    applyIDT ( aces, image->colors, total );
+    applyIDT ( aces, _image->colors, total );
     
     return aces;
 };
@@ -575,7 +593,6 @@ float * AcesRender::renderNonDNG_IDT ( libraw_processed_image_t *image )
 //  Write processed image file to an aces-compliant openexr file
 //
 //	inputs:
-//      libraw_processed_image_t * : result set of pixels from libraw
 //      const char *               : the name of output file
 //      float *                    : an array of converted aces values
 //
@@ -583,14 +600,14 @@ float * AcesRender::renderNonDNG_IDT ( libraw_processed_image_t *image )
 //		N/A                        : an aces file should be generated in
 //                                   the same folder
 
-void AcesRender::acesWrite (  libraw_processed_image_t * post_image,
-                              const char * name,
-                              float *  aces ) const
+void AcesRender::acesWrite ( const char * name, float *  aces ) const
 {
-    uint16_t width     = post_image->width;
-    uint16_t height    = post_image->height;
-    uint8_t  channels  = post_image->colors;
-    uint8_t  bits      = post_image->bits;
+    assert(_image);
+
+    uint16_t width     = _image->width;
+    uint16_t height    = _image->height;
+    uint8_t  channels  = _image->colors;
+    uint8_t  bits      = _image->bits;
     
     halfBytes *halfIn = new (std::nothrow) halfBytes[channels * width * height];
     

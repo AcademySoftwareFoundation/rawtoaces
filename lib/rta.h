@@ -225,6 +225,6 @@ namespace rta {
         
             const vector< vector<double> > _RGB;
             const vector< vector<double> > _outLAB;
-        };
+   };
 }
 #endif

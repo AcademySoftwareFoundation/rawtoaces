@@ -180,7 +180,6 @@ struct illum {
     vector <double> data;
 };
 
-struct stat st;
 const double e = 216.0/24389.0;
 const double k = (24389.0/27.0)/116.0;
 const double dmin = numeric_limits<double>::min();
@@ -221,13 +220,14 @@ static const double acesrgb_XYZ_3[3][3] = {
     { 0.0,                             0.0,        1.00882518435159   }
 };
 
-// Different Color Adaptation Matrices
+//  Color Adaptation Matrices - Bradford
 static const double bradford[3][3] = {
     {0.8951,  0.2664, -0.1614},
     {-0.7502, 1.7135,  0.0367},
     {0.0389,  -0.0685, 1.0296}
 };
 
+//  Color Adaptation Matrices - Cat02 (default)
 static const double cat02[3][3] = {
     {0.7328,  0.4296,  -0.1624},
     {-0.7036, 1.6975,  0.0061 },
@@ -255,11 +255,13 @@ vector<string> openDir(string path = ".") {
     return fPaths;
 };
 
+// Function to clear the memories occupied by vectors
 template<typename T>
 void clearVM (vector<T> vct){
     vector< T >().swap(vct);
 };
 
+// Function to print out the version number
 void printVS (const vector <string> vs) {
     assert (vs.size() > 0);
     printf("\nThe following options are available:\n\n");
@@ -268,6 +270,7 @@ void printVS (const vector <string> vs) {
     printf ("\n");
 };
 
+// Function to covert upper-case to lower-case
 void lowerCase (char * tex)
 {
     string tmp(tex);
@@ -276,6 +279,7 @@ void lowerCase (char * tex)
         tex[i] = tolower(tex[i]);
 };
 
+// Function to check if a value is numeric
 bool isNumeric ( const char * val )
 {
     string base = "0123456789E-.";

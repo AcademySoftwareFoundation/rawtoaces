@@ -52,140 +52,186 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
-#ifndef NO_ACESCONTAINER
 #include <aces/aces_Writer.h>
-#endif
-
-#ifndef NO_OPENEXR
-#include <OpenEXR/half.h>
-#endif
-
 #include <libraw/libraw.h>
 #include "../lib/rta.h"
 
+//	=====================================================================
+//	rawtoaces will become its own class once DNG-related functions
+//  are incorporated
+
 using namespace rta;
 
-bool readCameraSenPath( const char * cameraSenPath,
-                        libraw_iparams_t P,
-                        Idt * idt )
+
+//	=====================================================================
+//	Read camera spectral sensitivity data from path
+//
+//	inputs:
+//      const char *     : camera spectral sensitivity path
+//                         (either in "/usr/local/include/rawtoaces/data/camera"
+//                         or specified by user)
+//      libraw_iparams_t : main parameters read from RAW
+//      Idt: idt
+//
+//	outputs:
+//		int              : "1" means loading/injecting camera spectral
+//                         sensitivity data successfully;
+//                         "0" means error in reading/injecting data
+
+int readCameraSenPath( const char * cameraSenPath,
+                       libraw_iparams_t P,
+                       Idt * idt )
 {
-    bool readC = 0;
+    int readC = 0;
     
     if ( cameraSenPath )  {
-        if ( stat( static_cast<const char *>( cameraSenPath ), &st ) )  {
-            fprintf ( stderr,"The camera sensitivity file does not seem to exist.\n" );
-            exit (  EXIT_FAILURE );
+        if ( stat( static_cast <const char *> ( cameraSenPath ), &st ) )  {
+            fprintf ( stderr, "The camera sensitivity file does "
+                              "not seem to exist. Please use other"
+                              "options for \"mat-method\".\n" );
+            exit (1);
         }
         
         readC = idt->loadCameraSpst( cameraSenPath,
-                                     static_cast<const char *> ( P.make ),
-                                     static_cast<const char *> ( P.model ) );
+                                     static_cast <const char *> (P.make),
+                                     static_cast <const char *> (P.model) );
     }
     else  {
-        if ( !stat(  FILEPATH, &st ) )  {
-            vector<string> cFiles = openDir ( static_cast<string>(  FILEPATH )
+        if ( !stat ( FILEPATH, &st ) )  {
+            vector<string> cFiles = openDir ( static_cast <string> ( FILEPATH )
                                               +"/camera" );
             
             for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
                 string fn( *file );
+
                 readC = idt->loadCameraSpst( fn,
-                                             static_cast<const char *>( P.make ),
-                                             static_cast<const char *>( P.model ) );
+                                             static_cast <const char *> (P.make),
+                                             static_cast <const char *> (P.model) );
                 if ( readC ) return 1;
             }
         }
     }
     
     return readC;
-}
+};
 
 
-bool readIlluminate( const char * illumType,
-                     map< string, vector < double > >& illuCM,
-                     Idt * idt )
+//	=====================================================================
+//	Read light source data to calcuate white balance coefficients
+//
+//	inputs:
+//      const char *  : type of light source ("unknown" if not specified)
+//                      (in "/usr/local/include/rawtoaces/data/illuminate")
+//      map <string, vector <double>> : key is the path (string) to each
+//                                      light source; value is calculated
+//                                      white balance coefficients (vector)
+//                                      for each light source
+//      Idt: idt
+//
+//	outputs:
+//		int : "1" means loading/injecting light source data successfully;
+//            white balance coefficients will also be calculated in the meantime.
+//            "0" means error in reading/ injecting data
+
+int readIlluminate( const char * illumType,
+                    map < string, vector < double > > & illuCM,
+                    Idt * idt )
 {
-    bool readI = 0;
+    int readI = 0;
     
     if( !stat( FILEPATH, &st ) ) {
-        vector<string> iFiles = openDir( static_cast<string>( FILEPATH )
-                                         + "illuminate" );
+        vector <string> iFiles = openDir( static_cast < string >( FILEPATH )
+                                          + "illuminate" );
         
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string fn( *file );
             string strType(illumType);
             
+            const char * illumC = static_cast < const char * >( illumType );
+
             if ( strType.compare("unknown") != 0 ) {
                 
-// Pay attention to this, some old library may not process it correctly
-                
-//                if( fn.find( illumType ) == std::string::npos )  {
-//                    continue;
-//                }
-                
-                readI = idt->loadIlluminate( fn, static_cast<const char *>( illumType ) );
+                readI = idt->loadIlluminate( fn, illumC );
                 if ( readI )
                 {
-                    illuCM[static_cast<string> ( *file )] = idt->calCM();
+                    illuCM[fn] = idt->calWB();
                     return 1;
                 }
             }
             else {
-                readI = idt->loadIlluminate( fn, static_cast<const char *>( illumType ) );
+                readI = idt->loadIlluminate( fn, illumC );
                 if ( readI )
-                    illuCM[static_cast<string>( *file )] = idt->calCM();
+                    illuCM[fn] = idt->calWB();
             }
         }
     }
     
     return readI;
-}
+};
 
 
-bool prepareIDT ( const char * cameraSenPath,
-                  const char * illumType,
-                  libraw_iparams_t P,
+//	=====================================================================
+//  Calculate IDT matrix from camera spectral sensitivity data and the
+//  selected or specified light source data. THe best White balance
+//  coefficients will be generated in the process of obtaining IDT.
+//
+//	inputs:
+//      libraw_iparams_t              : main parameters read from RAW
+//      libraw_colordata_t            : color information from RAW
+//      vector < vector < double > >  : 3 x 3 IDT matrix to fill
+//      vector < double >             : 1 x 3 White Balance coefficients to fill
+//
+//	outputs:
+//		int                           : "1" means IDT matrix generated;
+//                                      "0" means error in calculation.
+
+int prepareIDT (  libraw_iparams_t P,
                   libraw_colordata_t C,
                   vector < vector < double > > &idtm,
                   vector < double > &wbv )
 {
     Idt * idt = new Idt();
-    bool read = readCameraSenPath( cameraSenPath, P, idt );
+    const char * cameraSenPath = static_cast <const char *> (opts.cameraSenPath);
+    const char * illumType = static_cast <const char *> (opts.illumType);
+
+    int read = readCameraSenPath( cameraSenPath, P, idt );
     
-    if (!read ) {
-        fprintf( stderr,"No matching cameras found. "
-                        "Will go with the default process. \n");
-        
-        if (illumType) {
-            fprintf( stderr,"The Illuminate should be accompanied "
-                            "by a matching camera sensitivity data.\n" );
-        }
-        
-        return 0;
+    if ( !read ) {
+        fprintf( stderr, "\nError: No matching cameras found. "
+                         "Please use other options for "
+                         "\"mat-method\" and/or \"wb-method\".\n");
+        exit (1);
     }
 
-    if (!illumType)
+    if ( !illumType )
         illumType = "unknown";
     
-    map < string, vector<double> > illuCM;
+    map < string, vector < double > > illuCM;
     read = readIlluminate( illumType, illuCM, idt );
     
     if( !read ) {
-        fprintf( stderr,"No matching light source. "
-                        "Will use the default settings.\n" );
+        fprintf( stderr, "\nError: No matching light source. "
+                         "Please use other options for "
+                         "\"mat-method\" or \"wb-method\".\n");
+        exit (1);
     }
     else
     {
-        idt->loadTrainingData ( static_cast<string>( FILEPATH )
+        printf ( "\nThe matching camera is: %s %s\n", P.make, P.model );
+        
+        vector < double > mulV (C.cam_mul, C.cam_mul+3);
+//        FORI(3) mulV[i] = static_cast < double > ( C.cam_mul[i] );
+        scaleVectorMax (mulV);
+        
+        idt->loadTrainingData ( static_cast < string > ( FILEPATH )
                                 +"/training/training_spectral" );
-        idt->loadCMF ( static_cast<string>( FILEPATH )
+        idt->loadCMF ( static_cast < string > ( FILEPATH )
                        +"/cmf/cmf_193" );
+        idt->chooseIlluminate ( illuCM, mulV, illumType );
         
-        vector < double > pre_mulV( 3, 1.0 );
-        FORI(3) pre_mulV[i] = ( double )( C.pre_mul[i] );
-        idt->chooseIlluminate( illuCM, pre_mulV );
+        printf ( "\nCalculating IDT Matrix from Spectral Sensitivity ...\n" );
         
-        idt->calWB(illumType);
-        
+        if (opts.use_mat == 0) idt->setVerbosity(1);
         if ( idt->calIDT() )  {
             idtm = idt->getIDT();
             wbv = idt->getWB();
@@ -195,26 +241,115 @@ bool prepareIDT ( const char * cameraSenPath,
     }
     
     return 0;
-}
+};
+
+
+//	=====================================================================
+//  Calculate just white balance coefficients from camera spectral
+//  sensitivity data and the best or specified light source data.
+//  IDT matrix will not be calculated here, as curve-fitting may
+//  take more time
+//
+//	inputs:
+//      libraw_iparams_t   : main parameters read from RAW
+//      libraw_colordata_t : color information from RAW
+//      vector < double >  : 1 x 3 White Balance vector to be filled
+//
+//	outputs:
+//		int                : "1" means white balance coefficients generated;
+//                           "0" means error during calculation
+
+int prepareWB ( libraw_iparams_t P,
+                libraw_colordata_t C,
+                vector < double > &wbv )
+{
+    Idt * idt = new Idt();
+    const char * cameraSenPath = static_cast <const char *> (opts.cameraSenPath);
+    const char * illumType = static_cast <const char *> (opts.illumType);
+    
+    int read = readCameraSenPath ( cameraSenPath, P, idt );
+    
+    if (!read ) {
+        fprintf( stderr, "\nError: No matching cameras found. "
+                         "Please use other options for "
+                         "\"wb-method\".\n");
+        exit (1);
+    }
+    
+    if (!illumType) illumType = "unknown";
+    
+    map < string, vector < double > > illuCM;
+    read = readIlluminate( illumType, illuCM, idt );
+    
+    if( !read ) {
+        fprintf( stderr, "\nError: No matching light source. "
+                "Please use other options for "
+                "\"mat-method\" or \"wb-method\".\n");
+        exit (1);
+    }
+    else
+    {
+        printf ( "\nThe matching camera is: %s %s\n", P.make, P.model );
+        
+        vector < double > mulV (C.cam_mul, C.cam_mul+3);
+//        FORI(3) mulV[i] = ( double )( C.cam_mul[i] );
+        scaleVectorD (mulV);
+        
+        // loading training data (190 patches)
+        idt->loadTrainingData ( static_cast < string > ( FILEPATH )
+                                +"/training/training_spectral" );
+        
+        // loading color matching function
+        idt->loadCMF ( static_cast < string > ( FILEPATH )
+                      +"/cmf/cmf_193" );
+        
+        // choose the best light source based on
+        // as-shot white balance coefficients
+        idt->chooseIlluminate( illuCM, mulV, illumType );
+        
+        printf ( "\nCalculating White Balance from Spectral Sensitivity...\n" );
+        printf ( "\nApplying Calculated White Balance ...\n" );
+        
+        wbv = idt->getWB();
+    
+        return 1;
+    }
+    
+    return 0;
+};
+
+
+//	=====================================================================
+//  Apply white balance values to each pixel
+//  ( We actually do not need it here because white-balancing
+//  happens before demosaicing )
+//
+//	inputs:
+//      float *          : pixels (R/G/B)
+//      uint8_t          : number of channels
+//      uint32_t         : the size of pixels
+//      vector < double >: 1 x 3 white balance coefficients
+//
+//	outputs:
+//		N/A              : pixel values modified by mutiplying white
+//                         balance coefficients
 
 void apply_WB ( float * pixels,
                 uint8_t bits,
                 uint32_t total,
-                vector<double> wb )
+                vector < double > wb )
 {
     double min_wb = * min_element ( wb.begin(), wb.end() );
     double target = 1.0;
     
-    if ( bits == 8 ) {
+    if ( bits == 8 )
         target /= INV_255;
-    }
-    else if ( bits == 16 ){
+    else if ( bits == 16 )
         target /= INV_65535;
-    }
     
     if ( !pixels ) {
         fprintf ( stderr, "The pixel code value may not exist. \n" );
-        exit (EXIT_FAILURE);
+        exit (1);
     }
     else {
         for ( uint32_t i = 0; i < total; i+=3 ){
@@ -223,12 +358,25 @@ void apply_WB ( float * pixels,
             pixels[i+2] = clip (wb[2] * pixels[i+2] / min_wb, target);
         }
     }
-}
+};
+
+
+//	=====================================================================
+//  Apply IDT matrix to each pixel
+//
+//	inputs:
+//      float *   : pixels (R/G/B)
+//      uint8_t   : number of channels
+//      uint32_t  : the size of pixels
+//      vector < vector <double> >: 3 x 3 IDT matrix
+//
+//	outputs:
+//		N/A       : pixel values modified by mutiplying IDT matrix
 
 void apply_IDT ( float * pixels,
                  uint8_t channel,
                  uint32_t total,
-                 vector < vector < double > > idt)
+                 vector < vector < double > > idt )
 {
     assert(pixels);
     
@@ -246,86 +394,166 @@ void apply_IDT ( float * pixels,
     }
     
     if ( channel != 3 && channel != 4 ) {
-        fprintf (stderr, "Currenly support 3 channels and 4 channels. \n");
-        exit (EXIT_FAILURE);
+        fprintf ( stderr, "\nError: Currenly support 3 channels "
+                          "and 4 channels. \n" );
+        exit (1);
     }
     
-    pixels = mulVectorArray(pixels, total, channel, idt);
-}
+    pixels = mulVectorArray ( pixels,
+                              total,
+                              channel,
+                              idt );
+};
 
+
+//	=====================================================================
+//  Apply CAT matrix (e.g., D50 to D60) to each pixel
+//  It will be used if using adobe coeffs from "libraw"
+//
+//	inputs:
+//      float *   : pixels (R/G/B)
+//      uint8_t   : number of channels
+//      uint32_t  : the size of pixels
+//
+//	outputs:
+//		N/A       : pixel values modified by mutiplying CAT matrix
+
+void apply_CAT ( float * pixels,
+                 uint8_t channel,
+                 uint32_t total )
+{
+    assert(pixels);
+    
+    if ( channel != 3 && channel != 4 ) {
+        fprintf ( stderr, "\nError: Currenly support 3 channels "
+                 "and 4 channels. \n" );
+        exit (1);
+    }
+    
+    // will use calCAT() inside rawtoaces
+    Idt * idt = new Idt();
+    vector < double > d50V (d50, d50 + 3);
+    vector < double > d60V (d60, d60 + 3);
+    
+    pixels = mulVectorArray ( pixels,
+                              total,
+                              channel,
+                              idt->calCAT(d50V, d60V) );
+};
+
+
+//	=====================================================================
+//  Convert DNG RAW to aces file
+//
+//	inputs:
+//      libraw_processed_image_t *   : result set of pixels from libraw
+//      vector < float > : camera to display matrix
+//
+//	outputs:
+//		float * : an array of converted aces values
 
 float * convert_to_aces_DNG ( libraw_processed_image_t *image,
-                              valarray<float> cameraToDisplayMtx )
+                              vector < float > cameraToDisplayMtx )
 {
     uchar * pixels = image->data;
     uint32_t total = image->width * image->height * image->colors;
-    vector < vector< double> > CAT( image->colors,
+    vector < vector< double> > CMT( image->colors,
                                     vector< double >(image->colors));
 
-    float * aces = new (std::nothrow) float[total];
-    FORI(total){
-        aces[i] = static_cast<float>(pixels[i]);
-    }
+    float * aces = new  (std::nothrow) float[total];
+    FORI (total)
+        aces[i] = static_cast < float > (pixels[i]);
     
     FORI(3)
         FORJ(3)
-            CAT[i][j] = static_cast<double>(cameraToDisplayMtx[i*3+j]);
+            CMT[i][j] = static_cast < double > (cameraToDisplayMtx[i*3+j]);
    
     if(image->colors == 3) {
-        return mulVectorArray(aces, total, 3, CAT);
+        aces = mulVectorArray( aces,
+                               total,
+                               3,
+                               CMT);
     }
     else if(image->colors == 4){
-        CAT[0][3]=0.0;
-        CAT[1][3]=0.0;
-        CAT[2][3]=0.0;
-        CAT[3][3]=1.0;
-        CAT[3][0]=0.0;
-        CAT[3][1]=0.0;
-        CAT[3][2]=0.0;
+        CMT[0][3]=0.0;
+        CMT[1][3]=0.0;
+        CMT[2][3]=0.0;
+        CMT[3][3]=1.0;
+        CMT[3][0]=0.0;
+        CMT[3][1]=0.0;
+        CMT[3][2]=0.0;
         
-        return mulVectorArray(aces, total, 4, CAT);
+        aces =  mulVectorArray( aces,
+                                total,
+                                4,
+                                CMT);
     }
     else {
-        fprintf(stderr, "Currenly support 3 channels and 4 channels. \n");
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "\nError: Currenly support 3 channels "
+                        "and 4 channels. \n");
+        exit(1);
     }
 
     return aces;
-}
+};
+
+//	=====================================================================
+//  Convert Non-DNG RAW to aces file (no IDT involved)
+//
+//	inputs:
+//      libraw_processed_image_t * : result set of pixels from
+//                                   dcraw_make_mem_image() functions
+//
+//	outputs:
+//		float *                    : an array of converted aces values
 
 float * prepareAcesData_NonDNG ( libraw_processed_image_t *image )
 {
     uchar * pixel = image->data;
-    uint32_t total = image->width*image->height*image->colors;
+    uint32_t total = image->width * image->height * image->colors;
     float * aces = new (std::nothrow) float[total];
     
-    for(uint32_t i = 0; i < total; i++ ){
-        aces[i] = static_cast<float>(pixel[i]);
-    }
+    FORI (total)
+        aces[i] = static_cast <float> (pixel[i]);
     
+    if(opts.use_mat == 2)
+        apply_CAT(aces, image->colors, total);
+        
     vector < vector< double> > XYZ_acesrgb(image->colors,
                                            vector < double > (image->colors));
-    if(image->colors == 3) {
+    if (image->colors == 3) {
         FORI(3)
-        FORJ(3)
-        XYZ_acesrgb[i][j] = XYZ_acesrgb_3[i][j];
+            FORJ(3)
+                XYZ_acesrgb[i][j] = XYZ_acesrgb_3[i][j];
         
-        return mulVectorArray(aces, total, 3, XYZ_acesrgb);
+        aces = mulVectorArray(aces, total, 3, XYZ_acesrgb);
     }
-    else if(image->colors == 4){
+    else if (image->colors == 4){
         FORI(4)
             FORJ(4)
                 XYZ_acesrgb[i][j] = XYZ_acesrgb_4[i][j];
         
-        return mulVectorArray(aces, total, 4, XYZ_acesrgb);
+        aces = mulVectorArray(aces, total, 4, XYZ_acesrgb);
     }
     else {
-        fprintf ( stderr, "Currenly support 3 channels and 4 channels. \n" );
-        exit (EXIT_FAILURE);
+        fprintf ( stderr, "\nError: Currenly support 3 channels "
+                          "and 4 channels. \n" );
+        exit (1);
     }
     
     return aces;
-}
+};
+
+//	=====================================================================
+//  Convert Non-DNG RAW to aces file (IDT involved)
+//
+//	inputs:
+//      libraw_processed_image_t *   : result set of pixels from libraw
+//      vector < vector < double > > : 3 x 3 IDT matrix
+//      vector < double >            : 1 x 3 white balance coefficients
+//
+//	outputs:
+//		float * : an array of converted aces values
 
 float * prepareAcesData_NonDNG_IDT ( libraw_processed_image_t *image,
                                      vector < vector < double > > idtm,
@@ -335,88 +563,47 @@ float * prepareAcesData_NonDNG_IDT ( libraw_processed_image_t *image,
     uint32_t total = image->width * image->height * image->colors;
     float * aces = new (std::nothrow) float[total];
     
-    FORI(total) aces[i] = static_cast<float> (pixels[i]);
+    FORI(total) aces[i] = static_cast <float> (pixels[i]);
     
-    apply_WB ( aces, image->bits, total, wbv );
+    printf ( "\nApplying IDT Matrix ...\n\n" );
+    
     apply_IDT ( aces, image->colors, total, idtm );
     
     return aces;
-}
+};
 
-//float * prepareAcesData_DNG(libraw_rawdata_t R,
-//                            libraw_processed_image_t *image
-//                            )
-//{
-//    float (*dng_cm1)[3] = R.color.dng_color[0].colormatrix;
-//    float (*dng_cc1)[4] = R.color.dng_color[0].calibration;
-//    float (*dng_cm2)[3] = R.color.dng_color[1].colormatrix;
-//    float (*dng_cc2)[4] = R.color.dng_color[1].calibration;
-//        
-//    calibrateIllum[0] = R.color.dng_color[0].illuminant;
-//    calibrateIllum[1] = R.color.dng_color[1].illuminant;
-//    
-////    cout << "calibrateIllum[0]: " << calibrateIllum[0] << endl;
-////    cout << "calibrateIllum[1]: " << calibrateIllum[1] << endl;
-//    
-//    valarray<float> XYZToACESMtx(1.0f, 9);
-//    
-//    for(int i=0; i<3; i++) {
-//        neutralRGBDNG[i] = 1.0f/(R.color.cam_mul)[i];
-//        for (int j=0; j<3; j++){
-//            xyz2rgbMatrix1DNG[i*3+j] = (dng_cm1)[i][j];
-//            xyz2rgbMatrix2DNG[i*3+j] = (dng_cm2)[i][j];
-//            cameraCalibration1DNG[i*3+j] = (dng_cc1)[i][j];
-//            cameraCalibration1DNG[i*3+j] = (dng_cc2)[i][j];
-//            XYZToACESMtx[i*3+j] = XYZ_acesrgb_3[i][j];
-//        }
-//    }
-//    
-//    valarray<float> deviceWhiteV(deviceWhite, 3);
-//    getCameraXYZMtxAndWhitePoint(R.color.baseline_exposure);
-//    valarray<float> outputRGBtoXYZMtx(matrixRGBtoXYZ(chromaticitiesACES));
-////    valarray<float> XYZToDisplayMtx(invertMatrix(outputRGBtoXYZMtx));
-//    valarray<float> outputXYZWhitePoint(multiplyMatrix(outputRGBtoXYZMtx, deviceWhiteV));
-//    valarray<float> chadMtx(matrixChromaticAdaptation(cameraXYZWhitePoint, outputXYZWhitePoint));
-//    
-////    valarray<float> cameraToDisplayMtx(multiplyMatrix(multiplyMatrix(XYZToDisplayMtx, chadMtx), cameraToXYZMtx));
-////    valarray<float> cameraToDisplayMtx(multiplyMatrix(multiplyMatrix(XYZToACESMtx, chadMtx), cameraToXYZMtx));
-//    valarray<float> cameraToDisplayMtx(multiplyMatrix(XYZToACESMtx, chadMtx));
-//    
-//    valarray<float> outRGBWhite(multiplyMatrix(cameraToDisplayMtx, multiplyMatrix(invertMatrix(cameraToXYZMtx), cameraXYZWhitePoint)));
-//    outRGBWhite	= outRGBWhite/outRGBWhite.max();
-//    
-//    valarray<float> absdif = abs(outRGBWhite-deviceWhiteV);
-//    if (absdif.max() >= 0.0001 ) {
-//        printf("WARNING: The neutrals should come out white balanced.\n");
-//    }
+//	=====================================================================
+//  Write processed image file to an aces-compliant openexr file
 //
-//    assert(cameraToDisplayMtx.sum()!= 0);
-//    
-////    float * pixels = convert_to_aces_DNG(R, P, cameraToDisplayMtx);
-//    float * pixels = convert_to_aces_DNG(image, cameraToDisplayMtx);
+//	inputs:
+//      libraw_processed_image_t * : result set of pixels from libraw
+//      const char *               : the name of output file
+//      float *                    : an array of converted aces values
+//      float                      : scale
 //
-//    return pixels;
-//}
+//	outputs:
+//		N/A                        : an aces file should be generated in
+//                                   the same folder
 
-void aces_write( const char * name,
-                 uint16_t width,
-                 uint16_t height,
-                 uint8_t  channels,
-                 uint8_t  bits,
-                 float *  pixels,
+void aces_write( libraw_processed_image_t * post_image,
+                 const char * name,
+                 float *  aces,
                  float    scale = 1.0 )
 {
+    uint16_t width     = post_image->width;
+    uint16_t height    = post_image->height;
+    uint8_t  channels  = post_image->colors;
+    uint8_t  bits      = post_image->bits;
+    
     halfBytes *in = new (std::nothrow) halfBytes[channels * width * height];
     
     FORI ( channels * width * height ){
-        if ( bits == 8 ) {
-            pixels[i] = (double) pixels[i] * INV_255 * scale;
-        }
-        else if ( bits == 16 ){
-            pixels[i] = (double) pixels[i] * INV_65535 * scale;
-        }
+        if ( bits == 8 )
+            aces[i] = (double) aces[i] * INV_255 * scale;
+        else if ( bits == 16 )
+            aces[i] = (double) aces[i] * INV_65535 * scale;
         
-        half tmpV( pixels[i] / 1.0f );
+        half tmpV( aces[i] / 1.0f );
         in[i] = tmpV.bits();
     }
     
@@ -456,26 +643,8 @@ void aces_write( const char * name,
             break;
         case 6:
             throw std::invalid_argument("Stereo RGB support not yet implemented");
-            //			writeParams.hi.channels.resize(6);
-            //			writeParams.hi.channels[0].name = "B";
-            //			writeParams.hi.channels[1].name = "G";
-            //			writeParams.hi.channels[2].name = "R";
-            //			writeParams.hi.channels[3].name = "left.B";
-            //			writeParams.hi.channels[4].name = "left.G";
-            //			writeParams.hi.channels[5].name = "left.R";
-            //			break;
         case 8:
             throw std::invalid_argument("Stereo RGB support not yet implemented");
-            //			writeParams.hi.channels.resize(8);
-            //			writeParams.hi.channels[0].name = "A";
-            //			writeParams.hi.channels[1].name = "B";
-            //			writeParams.hi.channels[2].name = "G";
-            //			writeParams.hi.channels[3].name = "R";
-            //			writeParams.hi.channels[4].name = "left.A";
-            //			writeParams.hi.channels[5].name = "left.B";
-            //			writeParams.hi.channels[6].name = "left.G";
-            //			writeParams.hi.channels[7].name = "left.R";
-            //			break;
         default:
             throw std::invalid_argument("Only RGB, RGBA or"
                                         "stereo RGB[A] file supported");
@@ -512,4 +681,4 @@ void aces_write( const char * name,
 #endif
     
     x.saveImageObject ( );
-}
+};

@@ -64,21 +64,14 @@ double invertD(double val) {
     return 1.0/val;
 }
 
-// For print valarray data purpose
-template<class T>
-void printValarray (const valarray<T>&va, string s, int num)
+template<typename T>
+T clip (T val, T target)
 {
-    assert (num <= va.size());
-    printf("%s:", s.c_str());
-    for (int i=0; i<num; i++) {
-        printf("%f ", va[i]);
-    }
-    printf(";\n");
-    return;
+    return min(val, target);
 }
 
 template<typename T>
-bool isSquare(const vector< vector<T> > vm){
+int isSquare(const vector< vector<T> > vm){
     FORI(vm.size()){
         if (vm[i].size() != vm.size())
             return 0;
@@ -96,11 +89,7 @@ T cross(const vector <T> &vectorA, const vector <T> &vectorB) {
 template <typename T>
 const vector < vector <T> > repmat(const T* data[], int row, int col) {
     vector < vector <T> > vect(row, vector<T>(col));
-    FORI(row) {
-        FORJ(col) {
-            vect[i][j] = data[i][j];
-        }
-    }
+    FORIJ(row, col) vect[i][j] = data[i][j];
     
     const vector < vector <T> > cvect(vect);
     return cvect;
@@ -109,11 +98,7 @@ const vector < vector <T> > repmat(const T* data[], int row, int col) {
 template <typename T>
 const vector <T> repmat1d(const T data[], int row, int col) {
     vector <T> vect(row*col);
-    FORI(row) {
-        FORJ(col) {
-            vect[i*col + j] = data[i];
-        }
-    }
+    FORIJ(row, col) vect[i*col + j] = data[i];
     
     const vector < T > cvect(vect);
     return cvect;
@@ -122,11 +107,7 @@ const vector <T> repmat1d(const T data[], int row, int col) {
 template <typename T>
 const vector < vector <T> > repmat2dr(const T data[], int row, int col) {
     vector < vector <T> > vect(row, vector<T>(col));
-    FORI(row) {
-        FORJ(col) {
-            vect[i][j] = data[i];
-        }
-    }
+    FORIJ(row, col) vect[i][j] = data[i];
     
     const vector < vector <T> > cvect(vect);
     return cvect;
@@ -135,11 +116,7 @@ const vector < vector <T> > repmat2dr(const T data[], int row, int col) {
 template <typename T>
 const vector < vector <T> > repmat2dc(const T data[], int row, int col) {
     vector < vector <T> > vect(row, vector<T>(col));
-    FORI(row) {
-        FORJ(col) {
-            vect[i][j] = data[j];
-        }
-    }
+    FORIJ(row, col) vect[i][j] = data[j];
     
     const vector < vector <T> > cvect(vect);
     return cvect;
@@ -152,9 +129,7 @@ vector< vector<T> > invertVM3(const vector< vector<T> > &vMtx)
            isSquare(vMtx));
     
     vector <T> mtx(9);
-    FORI(3)
-        FORJ(3)
-            mtx[i*3+j] = vMtx[i][j];
+    FORIJ(3, 3) mtx[i*3+j] = vMtx[i][j];
     
     T CinvMtx[] = {
         0.0 - mtx[5] * mtx[7] + mtx[4] * mtx[8],
@@ -173,13 +148,10 @@ vector< vector<T> > invertVM3(const vector< vector<T> > &vMtx)
     
     // pay attention to this
     assert (det != 0);
-    FORI(9)
-        invMtx[i] /= det;
+    FORI(9) invMtx[i] /= det;
     
     vector< vector<T> > vMtxR(3, vector<T>(3));
-    FORI(3)
-        FORJ(3)
-            vMtxR[i][j] = invMtx[3*i+j];
+    FORIJ(3, 3) vMtxR[i][j] = invMtx[3*i+j];
     
     return vMtxR;
 }
@@ -190,8 +162,7 @@ vector < vector<T> > diagVM(const vector<T>& vct)
     assert(vct.size() != 0);
     vector < vector<T> > vctdiag(vct.size(), vector<T>(vct.size(), 0.0));
     
-    FORI(vct.size())
-        vctdiag[i][i] = vct[i];
+    FORI(vct.size()) vctdiag[i][i] = vct[i];
     
     return vctdiag;
 }
@@ -201,11 +172,9 @@ void transpose(T* mtx[], int row, int col)
 {
     assert (row != 0 && col != 0);
     
-    FORI(row) {
-        FORJ(col) {
-            mtx[i][j] ^= mtx[j][i];
-            mtx[i][j] ^= (mtx[j][i] ^= mtx[i][j]);
-        }
+    FORIJ(row, col) {
+        mtx[i][j] ^= mtx[j][i];
+        mtx[i][j] ^= (mtx[j][i] ^= mtx[i][j]);
     }
     
     return;
@@ -214,8 +183,8 @@ void transpose(T* mtx[], int row, int col)
 template <typename T>
 vector< vector<T> > transposeVec(const vector< vector<T> > vMtx)
 {
-    assert(vMtx.size() != 0
-           && vMtx[0].size() != 0);
+    assert( vMtx.size() != 0
+            && vMtx[0].size() != 0 );
     
     int row = vMtx.size();
     int col = vMtx[0].size();
@@ -223,11 +192,7 @@ vector< vector<T> > transposeVec(const vector< vector<T> > vMtx)
     assert (row != 0 && col != 0);
     vector< vector<T> > vTran(col, vector<T>(row));
     
-    FORI(row) {
-        FORJ(col) {
-            vTran[j][i] = vMtx[i][j];
-        }
-    }
+    FORIJ(row, col) vTran[j][i] = vMtx[i][j];
     
     return vTran;
 }
@@ -236,11 +201,9 @@ template <typename T>
 T sumVector(const vector<T>& vct)
 {
     T sum = T(0.0);
-    FORI(vct.size())
-        sum += vct[i];
+    FORI(vct.size()) sum += vct[i];
     
 //    return accumulate(vct.begin(), vct.end(), static_cast<T>(0));
-    
     return sum;
 }
 
@@ -269,6 +232,16 @@ void scaleVector(vector<T>& vct, const T scale)
 }
 
 template <typename T>
+void scaleVectorMax(vector<T>& vct){
+    T max = *max_element(vct.begin(), vct.end());
+    
+    transform(vct.begin(), vct.end(), vct.begin(),
+              bind1st(multiplies<T>(), 1.0/max));
+    
+    return;
+}
+
+template <typename T>
 void scaleVectorD(vector<T>& vct){
     T max = *max_element(vct.begin(), vct.end());
     
@@ -277,6 +250,14 @@ void scaleVectorD(vector<T>& vct){
               bind1st(multiplies<T>(), max));
     
     return;
+}
+
+template <typename T>
+void scaleArrayMax(T a[], int length){
+    vector <T> tmp (a, a + length);
+    scaleVectorMax(tmp);
+    
+    FORI(length) a[i] = tmp[i];
 }
 
 template <typename T>
@@ -299,8 +280,7 @@ vector<T> mulVectorElement(const vector<T>& vct1, const vector<T>& vct2)
 //              vct2.begin(), vct3Element.begin(),
 //              multiplies<T>());
     
-    FORI(vct1.size())
-        vct3Element[i] = vct1[i] * vct2[i];
+    FORI(vct1.size()) vct3Element[i] = vct1[i] * vct2[i];
     
     return vct3Element;
 }
@@ -323,16 +303,12 @@ template <typename T>
 vector < vector<T> > mulVector(const vector< vector<T> >& vct1,
                                const vector< vector<T> >& vct2)
 {
-    assert(vct1.size() != 0
-           && vct2.size() != 0);
-    
+    assert(vct1.size() != 0 && vct2.size() != 0);
+
     vector< vector<T> > vct3(vct1.size(), vector<T>(vct2.size()));
     
-    FORI(vct1.size()) {
-        FORJ(vct2.size()) {
-            vct3[i][j] = (sumVector(mulVectorElement(vct1[i], vct2[j])));
-        }
-    }
+    FORIJ (vct1.size(), vct2.size())
+        vct3[i][j] = (sumVector(mulVectorElement(vct1[i], vct2[j])));
     
     return vct3;
 }
@@ -363,7 +339,7 @@ vector < T > mulVector(const vector<T>& vct1,
 float* mulVectorArray(float * data,
                       const uint32_t total,
                       const uint8_t dim,
-                      const  vector< vector<double> > vct)
+                      const vector< vector < double > > vct)
 {
     assert(vct.size() == dim
            && isSquare(vct));
@@ -400,13 +376,18 @@ T calSSE(vector<T>& tcp, vector<T>& src)
     assert(tcp.size() == src.size());
     vector<T> tmp(src.size());
     
-    FORI(tcp.size())
-        tmp[i] = tcp[i]-src[i];
+    T sum = 0.0;
     
-    return accumulate(tmp.begin(),
-                      tmp.end(),
-                      0.0f,
-                      square<T>());
+    FORI(tcp.size())
+//        tmp[i] = tcp[i]-src[i];
+        sum += (tcp[i]-src[i]) * (tcp[i]-src[i]);
+    
+//    return accumulate(tmp.begin(),
+//                      tmp.end(),
+//                      0.0f,
+//                      square<T>());
+    
+    return sum;
 }
 
 template<typename T>
@@ -422,15 +403,13 @@ vector < vector<T> > XYZtoLAB( const vector < vector<T> >& XYZ )
     T add = T(16.0/116.0);
     
     vector< vector<T> > tmpXYZ(190, vector<T>(3, T(1.0)));
-    FORI(190) {
-        FORJ(3)
-        {
-            tmpXYZ[i][j] = XYZ[i][j] / XYZ_w[j];
-            if (tmpXYZ[i][j] > T(e))
-                tmpXYZ[i][j] = ceres::pow(tmpXYZ[i][j], 1.0/3.0);
-            else
-                tmpXYZ[i][j] = T(k) * tmpXYZ[i][j] + add;
-        }
+    FORIJ(190, 3)
+    {
+        tmpXYZ[i][j] = XYZ[i][j] / XYZ_w[j];
+        if (tmpXYZ[i][j] > T(e))
+            tmpXYZ[i][j] = ceres::pow(tmpXYZ[i][j], 1.0/3.0);
+        else
+            tmpXYZ[i][j] = T(k) * tmpXYZ[i][j] + add;
     }
     
     vector< vector<T> > outCalcLab(190, vector<T>(3));
@@ -441,6 +420,7 @@ vector < vector<T> > XYZtoLAB( const vector < vector<T> >& XYZ )
         outCalcLab[i][2] = T(200.0) * (tmpXYZ[i][1] - tmpXYZ[i][2]);
     }
     
+    // It may not be necessary here, but just want to show we clean stuff
     clearVM(tmpXYZ);
     
     return outCalcLab;
@@ -451,12 +431,10 @@ vector< vector<T> > getCalcXYZt (const vector < vector<T> > RGB,
                                  const T *  B)
 {
     assert(RGB.size() == 190);
-    vector < vector<T> > BV( 3, vector < T >(3) );
+    vector < vector<T> > BV (3, vector < T >(3));
+    vector < vector <T> > M (3, vector < T >(3));
     
-    vector < vector <T> > M(3, vector < T >(3));
-    FORI(3)
-    FORJ(3)
-    M[i][j] = T(acesrgb_XYZ_3[i][j]);
+    FORIJ(3, 3) M[i][j] = T(acesrgb_XYZ_3[i][j]);
     
     BV[0][0] = B[0];
     BV[0][1] = B[1];
@@ -468,58 +446,12 @@ vector< vector<T> > getCalcXYZt (const vector < vector<T> > RGB,
     BV[2][1] = B[5];
     BV[2][2] = 1.0 - B[4] - B[5];
     
-    //    vector< vector<T> > outCalcXYZt = transposeVec(mulVector(BV, RGB));
-    
     vector< vector<T> > outCalcXYZt = mulVector(mulVector(RGB, BV), M);
     
+    // It may not be necessary here, but just want to show we clean stuff
     clearVM(BV);
-    return outCalcXYZt;
-
-}
-
-cameraDataPath& cameraPathsFinder() {
-    static cameraDataPath cdp;
-    static bool firstTime = 1;
     
-    if(firstTime)
-    {
-        vector <string>& cPaths = cdp.paths;
-        
-        string path;
-        const char* env = getenv("RAWTOACES_CAMERASEN_PATH");
-        if (env)
-            path = env;
-        
-        if (path == "") {
-#if defined (WIN32) || defined (WIN64)
-            path = ".";
-            cdp.os = "WIN";
-#else
-            path = ".:/usr/local/lib/RAWTOACES:/usr/local" PACKAGE "-" VERSION "/lib/RAWTOACES";
-            cdp.os = "UNIX";
-#endif
-        }
-        
-        size_t pos = 0;
-        while (pos < path.size()){
-#if defined (WIN32) || defined (WIN64)
-            size_t end = path.find(';', pos);
-#else
-            size_t end = path.find(':', pos);
-#endif
-            
-            if (end == string::npos)
-                end = path.size();
-            
-            string pathItem = path.substr(pos, end-pos);
-            
-            if(find(cPaths.begin(), cPaths.end(), pathItem) == cPaths.end())
-                cPaths.push_back(pathItem);
-            
-            pos = end + 1;
-        }
-    }
-    return cdp;
+    return outCalcXYZt;
 }
 #endif
 

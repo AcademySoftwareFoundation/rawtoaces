@@ -59,9 +59,9 @@ int main(int argc, char *argv[])
     if ( argc == 1 ) usage( argv[0] );
     
     LibRaw RawProcessor;
-    vector < vector < double > > idtm( 3, vector < double > (3, 1.0) );
-    vector < double > wbv( 3, 1.0 );
-
+    AcesRender Render;
+    option opts;
+    
 #ifndef WIN32
     void *iobuffer=0;
 #endif
@@ -72,11 +72,7 @@ int main(int argc, char *argv[])
 
 #define OUT RawProcessor.imgdata.params
 #define P1 RawProcessor.imgdata.idata
-#define S RawProcessor.imgdata.sizes
 #define C RawProcessor.imgdata.color
-#define R RawProcessor.imgdata.rawdata
-#define T RawProcessor.imgdata.thumbnail
-#define P2 RawProcessor.imgdata.other
 
 #ifndef WIN32
   putenv ((char*)"TZ=UTC");
@@ -93,7 +89,7 @@ int main(int argc, char *argv[])
     OUT.no_auto_bright    = 1;
 
   // Fetch conditions and conduct some pre-processing
-  int arg = configureSetting (argc, argv, OUT);
+  int arg = configureSetting (argc, argv, opts, OUT);
     
   if ( opts.verbosity > 2 )
       RawProcessor.set_progress_handler( my_progress_callback,
@@ -103,6 +99,7 @@ int main(int argc, char *argv[])
       printf ( "Using %d threads\n", omp_get_max_threads() );
 #endif
     
+    Render.setOptions(opts);
     // Process actual RAW files
     for ( ; arg < argc; arg++ )
     {
@@ -184,15 +181,16 @@ int main(int argc, char *argv[])
             if ( opts.use_timing )
                 timerprint( "LibRaw::unpack()", argv[arg] );
         
+            Render.updateOptions(opts);
+        
             // use_mat 0, 1, 2
             if ( !opts.use_mat ) {
                 OUT.use_camera_matrix = 0;
                 
                 // get IDT matrix
-                int gotIDT = prepareIDT ( P1, C, idtm, wbv );
+                int gotIDT = Render.prepareIDT ( P1, C );
                 if ( gotIDT ) {
                     OUT.output_color = 0;
-                    
                     // set four_color_rgb to 0 if half_size is 1
                     if ( OUT.half_size == 1 )
                         OUT.four_color_rgb = 0;
@@ -200,6 +198,7 @@ int main(int argc, char *argv[])
                     // --wb-method condition 0
                     if ( !opts.use_wb ) {
                         opts.use_Mul = 1;
+                        vector < double > wbv = Render.getWB();
                         FORI(3) OUT.user_mul[i] = wbv[i];
                     }
                 }
@@ -213,13 +212,14 @@ int main(int argc, char *argv[])
                 OUT.use_camera_matrix = 3;
             }
         
+            Render.updateOptions(opts);
+        
             // --wb-method condition 0,1,2
             if ( !opts.use_wb && !opts.use_Mul) {
                 OUT.use_camera_matrix = 0;
             
                 // Calculate white balance
-                int gotWB = prepareWB ( P1, C, wbv );
-            
+                int gotWB = Render.prepareWB ( P1, C );
                 if ( !gotWB && C.profile )
                     opts.use_wb = 1;
                 else if ( !gotWB && !C.profile )
@@ -227,10 +227,13 @@ int main(int argc, char *argv[])
             
                 if ( gotWB ) {
                     opts.use_Mul = 1;
+                    vector < double > wbv = Render.getWB();
                     FORI(3) OUT.user_mul[i] = wbv[i];
                 }
             }
         
+            Render.updateOptions(opts);
+
             if ( opts.use_wb == 1 ) {
                 OUT.use_camera_wb = 1;
                 OUT.use_auto_wb = 0;
@@ -260,7 +263,7 @@ int main(int argc, char *argv[])
                 }
             }
         
-            // Start dcraw process
+            // Start the dcraw process
             timerstart_timeval();
             if ( LIBRAW_SUCCESS != ( opts.ret = RawProcessor.dcraw_process() ) )
                 {
@@ -293,14 +296,11 @@ int main(int argc, char *argv[])
                 
                 float * aces = 0;
                 if ( !OUT.output_color )
-                    aces = prepareAcesData_NonDNG_IDT( post_image, idtm, wbv );
+                    aces = Render.renderNonDNG_IDT ( post_image );
                 else
-                    aces = prepareAcesData_NonDNG( post_image );
-                
-                aces_write( post_image,
-                            outfn,
-                            aces,
-                            opts.scale );
+                    aces = Render.renderNonDNG ( post_image );
+
+                Render.acesWrite ( post_image, outfn, aces );
             }
         
 #ifndef WIN32

@@ -157,9 +157,8 @@ namespace rta {
             illum getIlluminate();
             int getVerbosity();
 
-            const vector< vector<double> > getIDT() const;
+            const vector< vector <double> > getIDT() const;
             const vector< double > getWB() const;
-
 
         private:
             string  _outputEncoding;

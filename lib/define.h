@@ -107,7 +107,7 @@
 #define FORJ(val) for (int j=0; j < val; j++)
 #define FORIJ(val1, val2) for (int i=0; i < val1; i++) for (int j=0; j < val2; j++)
 
-typedef half   float16_t;
+//typedef half   float16_t;
 typedef float  float32_t;
 typedef double float64_t;
 
@@ -180,14 +180,12 @@ struct illum {
     vector <double> data;
 };
 
-
 struct stat st;
 const double e = 216.0/24389.0;
 const double k = (24389.0/27.0)/116.0;
 const double dmin = numeric_limits<double>::min();
 const double dmax = numeric_limits<double>::max();
 
-static option opts;
 static map < const string, char > keys;
 static const double XYZ_w[3] = {0.952646074569846, 1.0, 1.00882518435159};
 static const double d50[3] = {0.9642, 1.0000, 0.8250};

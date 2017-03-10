@@ -52,7 +52,10 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
-#include "rawtoaces.h"
+#ifndef _USAGE_h__
+#define _USAGE_h__
+
+#include "acesrender.cpp"
 
 //	=====================================================================
 //  Print usage / help message
@@ -180,7 +183,7 @@ void create_key()
 //	outputs:
 //		N/A : opts should be initialized
 
-void initialize()
+void initialize (option &opts)
 {
     opts.use_bigfile = 0;
     opts.use_timing = 0;
@@ -212,10 +215,11 @@ void initialize()
 
 int configureSetting ( int argc,
                        char * argv[],
+                       option &opts,
                        libraw_output_params_t &OUT )
 {
     create_key();
-    initialize();
+    initialize(opts);
     
     char *cp, *sp;
     int arg;
@@ -459,5 +463,7 @@ void timerprint (const char * msg, const char * filename)
     printf ( "Timing: %s/%s: %6.3f msec\n",
              filename,msg,msec );
 };
+#endif
+
 #endif
 

@@ -202,6 +202,7 @@ int AcesRender::readIlluminate( const char * illumType,
     return readI;
 }
 
+
 //	=====================================================================
 //  Calculate IDT matrix from camera spectral sensitivity data and the
 //  selected or specified light source data. THe best White balance
@@ -352,7 +353,7 @@ int AcesRender::prepareWB ( libraw_iparams_t P, libraw_colordata_t C )
 //		N/A              : pixel values modified by mutiplying white
 //                         balance coefficients
 
-void AcesRender::applyWB ( float * pixels, int bits, uint32_t total )
+void AcesRender::applyWB ( float * pixels, int bits, uint32_t total ) const
 {
     double min_wb = * min_element ( _wbv.begin(), _wbv.end() );
     double target = 1.0;
@@ -430,7 +431,7 @@ void AcesRender::applyIDT ( float * pixels, int channel, uint32_t total )
 //	outputs:
 //		N/A       : pixel values modified by mutiplying CAT matrix
 
-void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total )
+void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total ) const
 {
     assert(pixels);
     
@@ -462,7 +463,7 @@ void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total )
 //		float * : an array of converted aces values
 
 float * AcesRender::renderDNG ( libraw_processed_image_t *image,
-                                vector < float > cameraToDisplayMtx )
+                                vector < float > cameraToDisplayMtx ) const
 {
     uchar * pixels = image->data;
     uint32_t total = image->width * image->height * image->colors;
@@ -516,7 +517,7 @@ float * AcesRender::renderDNG ( libraw_processed_image_t *image,
 //	outputs:
 //		float *                    : an array of converted aces values
 
-float * AcesRender::renderNonDNG ( libraw_processed_image_t *image )
+float * AcesRender::renderNonDNG ( libraw_processed_image_t *image ) const
 {
     uchar * pixel = image->data;
     uint32_t total = image->width * image->height * image->colors;
@@ -584,7 +585,7 @@ float * AcesRender::renderNonDNG_IDT ( libraw_processed_image_t *image )
 
 void AcesRender::acesWrite (  libraw_processed_image_t * post_image,
                               const char * name,
-                              float *  aces )
+                              float *  aces ) const
 {
     uint16_t width     = post_image->width;
     uint16_t height    = post_image->height;

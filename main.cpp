@@ -117,17 +117,18 @@ int main(int argc, char *argv[])
                 
                 if( file<0 )
                 {
-                    fprintf( stderr, "\nError: Cannot open %s: %s\n",
+                    fprintf( stderr, "\nError: Cannot open %s: %s\n\n",
                              argv[arg], strerror(errno) );
-                    continue;
+                    exit(1);
                 }
                 
                 if( fstat( file,&st ) )
                 {
-                    fprintf( stderr, "\nError: Cannot stat %s: %s\n",
+                    fprintf( stderr, "\nError: Cannot stat %s: %s\n\n",
                              argv[arg], strerror(errno) );
                     close( file );
-                    continue;
+
+                    exit(1);
                 }
                 
                 int pgsz = getpagesize();
@@ -135,19 +136,21 @@ int main(int argc, char *argv[])
                 iobuffer = mmap( NULL, opts.msize, PROT_READ, MAP_PRIVATE, file, 0 );
                 if( !iobuffer )
                 {
-                    fprintf ( stderr, "\nError: Cannot mmap %s: %s\n",
+                    fprintf ( stderr, "\nError: Cannot mmap %s: %s\n\n",
                                       argv[arg], strerror(errno) );
                     close( file );
-                    continue;
+
+                    exit(1);
                 }
                 
                 close( file );
                 if (( opts.ret = RawProcessor.open_buffer( iobuffer,st.st_size ) != LIBRAW_SUCCESS ))
                 {
-                    fprintf ( stderr, "\nError: Cannot open_buffer %s: %s\n",
+                    fprintf ( stderr, "\nError: Cannot open_buffer %s: %s\n\n",
                               argv[arg],
                               libraw_strerror(opts.ret) );
-                    continue; // no recycle b/c open file will recycle itself
+
+                    exit(1);
                 }
 
             }
@@ -161,9 +164,9 @@ int main(int argc, char *argv[])
                         
                if ( opts.ret  != LIBRAW_SUCCESS)
                {
-                   fprintf( stderr, "\nError: Cannot open %s: %s\n",
+                   fprintf( stderr, "\nError: Cannot open %s: %s\n\n",
                                     argv[arg], libraw_strerror(opts.ret) );
-                   continue;
+                   exit(1);
                }
             }
 
@@ -173,11 +176,11 @@ int main(int argc, char *argv[])
             timerstart_timeval();
             if (( opts.ret = RawProcessor.unpack() ) != LIBRAW_SUCCESS )
             {
-                fprintf( stderr, "\nError: Cannot unpack %s: %s\n",
+                fprintf( stderr, "\nError: Cannot unpack %s: %s\n\n",
                                   argv[arg], libraw_strerror(opts.ret) );
-                continue;
+                exit(1);
             }
-            
+        
             if ( opts.use_timing )
                 timerprint( "LibRaw::unpack()", argv[arg] );
         
@@ -205,7 +208,7 @@ int main(int argc, char *argv[])
             }
             else if ( opts.use_mat == 1 && !C.profile ) {
                 fprintf( stderr, "\nWarning: Cannot find color profile from the RAW, "
-                                 "will use the default camera matrix from libraw\n" );
+                                 "will use the default camera matrix from libraw\n\n" );
                 OUT.use_camera_matrix = 1;
             }
             else if ( opts.use_mat == 1 && C.profile ) {
@@ -258,7 +261,7 @@ int main(int argc, char *argv[])
                 
                 if ( sc != 1.0 ) {
                     fprintf ( stderr, "\nWarning: The smallest channel multiplier "
-                                      "should be 1.0. \n" );
+                                      "should be 1.0. \n\n" );
                     // scaleArrayMax (OUT.user_mul, 3);
                 }
             }
@@ -267,10 +270,10 @@ int main(int argc, char *argv[])
             timerstart_timeval();
             if ( LIBRAW_SUCCESS != ( opts.ret = RawProcessor.dcraw_process() ) )
                 {
-                    fprintf ( stderr, "Error: Cannot do postpocessing on %s: %s\n",
+                    fprintf ( stderr, "Error: Cannot do postpocessing on %s: %s\n\n",
                                       argv[arg],libraw_strerror(opts.ret) );
                     if ( LIBRAW_FATAL_ERROR( opts.ret ) )
-                        continue; 
+                        exit(1);
                 }
         
             if ( opts.use_timing )

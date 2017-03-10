@@ -80,16 +80,16 @@ class AcesRender {
     
         void setOptions (option opts);
         void updateOptions (option opts);
-        void applyWB ( float * pixels, int bits, uint32_t total );
+        void applyWB ( float * pixels, int bits, uint32_t total ) const;
         void applyIDT ( float * pixels, int bits, uint32_t total );
-        void applyCAT ( float * pixels, int channel, uint32_t total );
+        void applyCAT ( float * pixels, int channel, uint32_t total ) const;
         void acesWrite( libraw_processed_image_t * image,
                         const char * name,
-                        float *  aces );
+                        float *  aces ) const;
     
         float * renderDNG ( libraw_processed_image_t * image,
-                            vector < float > cameraToDisplayMtx );
-        float * renderNonDNG ( libraw_processed_image_t * image );
+                            vector < float > cameraToDisplayMtx ) const;
+        float * renderNonDNG ( libraw_processed_image_t * image ) const;
         float * renderNonDNG_IDT ( libraw_processed_image_t * image );
     
         const vector< vector < double > > getIDTMatrix () const;

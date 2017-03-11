@@ -90,36 +90,6 @@ The rawtoaces depends on an essential part of IlmBase software package, which ca
 	```sh
 	$ brew install ilmBase
 	```
-
-###### OpenEXR
-
-As the outcome is in the OpenEXR image file format, you should download OpenEXR. OpenEXR can be downloaded from [http://www.openexr.com/downloads.html]() and/or installed using one of the commands below.
-
-* Ubuntu
-
-	```sh
-	$ sudo apt-get install libopenexr-dev
-	```
-
-* Redhat
-
-	```sh
-	$ yum install OpenEXR-devel
-	```
-
-* OS X
-
-	Install homebrew if not already installed
-	
-	```sh
-	$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
-	```
-	
-	Install OpenEXR
-	
-	```sh
-	$ brew install openexr
-	```
 	
 ###### ACES Container 
 

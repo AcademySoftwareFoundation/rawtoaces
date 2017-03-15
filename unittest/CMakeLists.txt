@@ -17,8 +17,15 @@ link_directories ( ${AcesContainer_LIBRARY_DIRS} ${libraw_LIBRARY_DIRS} ${CERES_
 add_definitions (-DBOOST_TEST_DYN_LINK)
 
 add_executable (
+<<<<<<< HEAD
 	Test_IDT
 	testIDT.cpp
+=======
+	Test
+
+	testMath.cpp
+	testSI.cpp
+>>>>>>> improves the building process and ready to expand unit-test
 )
 
 target_link_libraries ( Test_IDT

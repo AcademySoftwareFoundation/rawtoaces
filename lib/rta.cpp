@@ -603,7 +603,7 @@ namespace rta {
         
         if (!fin.good()) {
             fprintf(stderr, "The file may not exist.\n");
-            exit(EXIT_FAILURE);
+            exit(1);
         }
         
         while (!fin.eof()){
@@ -688,9 +688,7 @@ namespace rta {
         vector< double > wb = mulVector ( colRGB, _illuminate.data );
         clearVM(colRGB);
         
-        FORI(wb.size()) {
-            wb[i] = invertD(wb[i]);
-        }
+        FORI(wb.size()) wb[i] = invertD(wb[i]);
         
         return wb;
     }
@@ -714,20 +712,8 @@ namespace rta {
                                  const string type ) {
         double sse = dmax;
         
-//        FORI(src.size()) {
-//            printf ("%f ", src[i]);
-//        }
-//        printf ("\n");
-        
         for ( map< string, vector<double> >::iterator it = illuCM.begin(); it != illuCM.end(); ++it ){
             double tmp = calSSE(it->second, src);
-            
-//            printf( "%s: wb (",
-//                    (it->first).c_str());
-//            FORI(it->second.size()) {
-//                printf ("%f, ", (it->second)[i]);
-//            }
-//            printf( " ) sse ( %f )\n", tmp );
             
             if (sse > tmp) {
                 sse = tmp;
@@ -770,8 +756,7 @@ namespace rta {
             rgbsenV[2][i] = rgbsen[i].BSen;
         }
         
-        vector<double> CM = mulVector(rgbsenV,
-                                      _illuminate.data);
+        vector<double> CM = mulVector ( rgbsenV, _illuminate.data );
         scaleVectorD(CM);
         
         return CM;
@@ -817,9 +802,9 @@ namespace rta {
         vector < vector <double> > vect(3, vector<double>(3));
         FORIJ(3, 3) vect[i][j] = cat02[i][j];
         
-        vector< double > wSRC = mulVector(src, vect);
-        vector< double > wDES = mulVector(des, vect);
-        vector< vector<double> > vkm = solveVM(vect, diagVM(divVectorElement(wDES,wSRC)));
+        vector< double > wSRC = mulVector ( src, vect );
+        vector< double > wDES = mulVector ( des, vect );
+        vector< vector<double> > vkm = solveVM(vect, diagVM ( divVectorElement (wDES,wSRC) ));
         vkm = mulVector(vkm, transposeVec(vect));
         
         clearVM(wSRC);
@@ -1022,6 +1007,19 @@ namespace rta {
 
     const illum Idt::getIlluminate() const {
         return static_cast<const illum>(_illuminate);
+    }
+    
+    //	=====================================================================
+    //	Get Verbosity value for the length of IDT generation status message
+    //
+    //	inputs:
+    //      N/A
+    //
+    //	outputs:
+    //		int: _verbosity (const)
+    
+    const int Idt::getVerbosity() const {
+        return static_cast<const int>(_verbosity);
     }
     
     //	=====================================================================

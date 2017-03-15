@@ -243,6 +243,8 @@ endif()
 # include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" "${IlmBase_INCLUDE_DIRS}" "${AcesContainer_INCLUDE_DIRS}" "${libraw_INCLUDE_DIRS}")
 
 add_executable( rawtoaces
+  
+  src/acesrender.cpp
   main.cpp
 )
 

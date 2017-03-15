@@ -6,6 +6,7 @@
 3. [Prerequisites](#prerequisites)
 4. [Installation](#installation)
 5. [Usage](#usage)
+6. [Known Issues](#known-issues)
 6. [License](#license)
 
 ## Introduction
@@ -350,6 +351,10 @@ The following commands will convert RAW to ACES using the camera file metadata f
 	$ rawtoaces --mat-method 2
 	
 `libraw` also provides a few other methods for calculating white balance, including averaging the entire image, averaging a specified box within the image, or explicitly specifying the white balance gain factors to be used.  These options can be utilized by using `--wb-method [2-4]` as desired.
+
+## Known Issues
+
+For a lise of currently known issues see the [issues list](https://github.com/ampas/rawtoaces/issues) in github.  Please add any issue found to the github list.
 
 
 ## License

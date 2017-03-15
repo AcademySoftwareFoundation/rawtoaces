@@ -63,8 +63,7 @@ AcesRender::AcesRender(){
     FORI(3) {
         _idtm[i].resize(3);
         _wbv[i] = 1.0;
-        FORJ(3)
-            _idtm[i][j] = neutral3[i][j];
+        FORJ(3) _idtm[i][j] = neutral3[i][j];
     }
 }
 
@@ -244,7 +243,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, libraw_colordata_t C )
     if ( !read ) {
         fprintf( stderr, "\nError: No matching cameras found. "
                          "Please use other options for "
-                         "\"mat-method\" and/or \"wb-method\".\n");
+                         "\"--mat-method\" and/or \"--wb-method\".\n");
         exit (1);
     }
 
@@ -256,7 +255,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, libraw_colordata_t C )
     if( !read ) {
         fprintf( stderr, "\nError: No matching light source. "
                          "Please use other options for "
-                         "\"mat-method\" or \"wb-method\".\n");
+                         "\"--mat-method\" or \"--wb-method\".\n");
         exit (1);
     }
     else
@@ -311,7 +310,7 @@ int AcesRender::prepareWB ( libraw_iparams_t P, libraw_colordata_t C )
     if (!read ) {
         fprintf( stderr, "\nError: No matching cameras found. "
                          "Please use other options for "
-                         "\"wb-method\".\n");
+                         "\"--wb-method\".\n");
         exit (1);
     }
     
@@ -323,7 +322,7 @@ int AcesRender::prepareWB ( libraw_iparams_t P, libraw_colordata_t C )
     if( !read ) {
         fprintf( stderr, "\nError: No matching light source. "
                 "Please use other options for "
-                "\"mat-method\" or \"wb-method\".\n");
+                "\"--mat-method\" or \"--wb-method\".\n");
         exit (1);
     }
     else
@@ -382,7 +381,7 @@ void AcesRender::applyWB ( float * pixels, int bits, uint32_t total ) const
         target /= INV_65535;
     
     if ( !pixels ) {
-        fprintf ( stderr, "The pixel code value may not exist. \n" );
+        fprintf ( stderr, "\nThe pixels cannot be found. \n" );
         exit (1);
     }
     else {
@@ -530,7 +529,7 @@ float * AcesRender::renderDNG ( vector < float > cameraToDisplayMtx ) const
 //	inputs:  N/A
 //
 //	outputs:
-//		float *                    : an array of converted aces values
+//		float * : an array of converted aces code values
 
 float * AcesRender::renderNonDNG () const
 {
@@ -566,7 +565,7 @@ float * AcesRender::renderNonDNG () const
 //	=====================================================================
 //  Convert Non-DNG RAW to aces file through IDT
 //
-//	inputs:
+//	inputs:  N/A
 //
 //	outputs:
 //		float * : an array of aces values for each pixel

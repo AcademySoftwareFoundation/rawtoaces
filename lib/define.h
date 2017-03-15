@@ -235,7 +235,7 @@ static const double cat02[3][3] = {
 };
 
 // Function to Open Directories
-vector<string> openDir(string path = ".") {
+inline vector<string> openDir(string path = ".") {
     DIR *    dir;
     dirent * pDir;
     struct stat fStat;
@@ -257,12 +257,12 @@ vector<string> openDir(string path = ".") {
 
 // Function to clear the memories occupied by vectors
 template<typename T>
-void clearVM (vector<T> vct){
+inline void clearVM (vector<T> vct){
     vector< T >().swap(vct);
 };
 
 // Function to print out the version number
-void printVS (const vector <string> vs) {
+inline void printVS (const vector <string> vs) {
     assert (vs.size() > 0);
     printf("\nThe following options are available:\n\n");
     
@@ -271,7 +271,7 @@ void printVS (const vector <string> vs) {
 };
 
 // Function to covert upper-case to lower-case
-void lowerCase (char * tex)
+inline void lowerCase (char * tex)
 {
     string tmp(tex);
     
@@ -280,7 +280,7 @@ void lowerCase (char * tex)
 };
 
 // Function to check if a value is numeric
-bool isNumeric ( const char * val )
+inline bool isNumeric ( const char * val )
 {
     string base = "0123456789E-.";
     string input(val);

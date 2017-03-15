@@ -152,14 +152,14 @@ namespace rta {
         
             const Spst getCameraSpst() const;
             const illum getIlluminate() const;
+            const int getVerbosity() const;
+            const vector< vector <double> > getIDT() const;
+            const vector< double > getWB() const;
         
             Spst getCameraSpst();
             illum getIlluminate();
             int getVerbosity();
-
-            const vector< vector <double> > getIDT() const;
-            const vector< double > getWB() const;
-
+        
         private:
             string  _outputEncoding;
             Spst    _cameraSpst;

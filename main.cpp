@@ -317,5 +317,6 @@ int main(int argc, char *argv[])
 #endif
             RawProcessor.recycle();
         }
+    
     return 0;
 }

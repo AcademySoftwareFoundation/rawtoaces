@@ -58,7 +58,7 @@
 #include "define.h"
 
 // Non-class functions
-double invertD(double val) {
+inline double invertD(double val) {
     assert (val != 0.0);
     
     return 1.0/val;
@@ -335,41 +335,6 @@ vector < T > mulVector(const vector<T>& vct1,
     return mulVector(vct2, vct1);
 }
 
-
-float* mulVectorArray(float * data,
-                      const uint32_t total,
-                      const uint8_t dim,
-                      const vector< vector < double > > vct)
-{
-    assert(vct.size() == dim
-           && isSquare(vct));
-    
-    if(dim == 3) {
-        for(uint32_t i = 0; i < total; i+=dim ){
-            data[i] = vct[0][0]*(data[i]) + vct[0][1]*(data[i+1])
-                        + vct[0][2]*(data[i+2]);
-            data[i+1] = vct[1][0]*(data[i]) + vct[1][1]*(data[i+1])
-                        + vct[1][2]*(data[i+2]);
-            data[i+2] = vct[2][0]*(data[i]) + vct[2][1]*(data[i+1])
-                        + vct[2][2]*(data[i+2]);
-        }
-    }
-    else if (dim == 4) {
-        for(uint32_t i = 0; i < total; i+=4 ){
-            data[i] = vct[0][0]*data[i] + vct[0][1]*data[i+1]
-                        + vct[0][2]*data[i+2] + vct[0][3]*data[i+3];
-            data[i+1] = vct[1][0]*data[i] + vct[1][1]*data[i+1]
-                        + vct[1][2]*data[i+2] + vct[1][3]*data[i+3];
-            data[i+2] = vct[2][0]*data[i] + vct[2][1]*data[i+1]
-                        + vct[2][2]*data[i+2] + vct[2][3]*data[i+3];
-            data[i+3] = vct[3][0]*data[i] + vct[3][1]*data[i+1]
-                        + vct[3][2]*data[i+2] + vct[3][3]*data[i+3];
-        }
-    }
-
-    return data;
-}
-
 template <typename T>
 T calSSE(vector<T>& tcp, vector<T>& src)
 {
@@ -379,13 +344,7 @@ T calSSE(vector<T>& tcp, vector<T>& src)
     T sum = 0.0;
     
     FORI(tcp.size())
-//        tmp[i] = tcp[i]-src[i];
         sum += (tcp[i]-src[i]) * (tcp[i]-src[i]);
-    
-//    return accumulate(tmp.begin(),
-//                      tmp.end(),
-//                      0.0f,
-//                      square<T>());
     
     return sum;
 }
@@ -453,5 +412,41 @@ vector< vector<T> > getCalcXYZt (const vector < vector<T> > RGB,
     
     return outCalcXYZt;
 }
+
+// Non-class misc math functions
+inline float* mulVectorArray(float * data,
+                             const uint32_t total,
+                             const uint8_t dim,
+                             const vector< vector < double > > vct)
+{
+    assert(vct.size() == dim
+           && isSquare(vct));
+    
+    if(dim == 3) {
+        for(uint32_t i = 0; i < total; i+=dim ){
+            data[i] = vct[0][0]*(data[i]) + vct[0][1]*(data[i+1])
+            + vct[0][2]*(data[i+2]);
+            data[i+1] = vct[1][0]*(data[i]) + vct[1][1]*(data[i+1])
+            + vct[1][2]*(data[i+2]);
+            data[i+2] = vct[2][0]*(data[i]) + vct[2][1]*(data[i+1])
+            + vct[2][2]*(data[i+2]);
+        }
+    }
+    else if (dim == 4) {
+        for(uint32_t i = 0; i < total; i+=4 ){
+            data[i] = vct[0][0]*data[i] + vct[0][1]*data[i+1]
+            + vct[0][2]*data[i+2] + vct[0][3]*data[i+3];
+            data[i+1] = vct[1][0]*data[i] + vct[1][1]*data[i+1]
+            + vct[1][2]*data[i+2] + vct[1][3]*data[i+3];
+            data[i+2] = vct[2][0]*data[i] + vct[2][1]*data[i+1]
+            + vct[2][2]*data[i+2] + vct[2][3]*data[i+3];
+            data[i+3] = vct[3][0]*data[i] + vct[3][1]*data[i+1]
+            + vct[3][2]*data[i+2] + vct[3][3]*data[i+3];
+        }
+    }
+    
+    return data;
+}
+
 #endif
 

@@ -55,7 +55,7 @@
 #ifndef _USAGE_h__
 #define _USAGE_h__
 
-#include "acesrender.cpp"
+#include "acesrender.h"
 
 //	=====================================================================
 //  Print usage / help message

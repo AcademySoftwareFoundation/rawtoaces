@@ -26,9 +26,9 @@ The source code contains the following:
 * [`config/`](./config) - CMake configuration files
 * [`data/`](./data) - Data files containing camera sensitivity, light source, color matching function and 190 training patch data
 * [`lib/`](./lib) - IDT and math libraries
-* [`main.cpp`](main.cpp), [`rawtoaces.h`](rawtoaces.h) - C++ source code files for call routines to process images
-* [`usage.h`](usage.h) - C++ header files containing `rawtoaces` usage information
-
+* [`src/`](./src) - AcesRender wrapper library and C++ header file containing `rawtoaces` usage information
+* [`test/`](./test) - Sample testing materials such as a ".NEF" RAW image and a camera spectral sensitivity data file
+* [`main.cpp`](main.cpp) - C++ source code files for call routines to process images
 
 ## Prerequisites
 
@@ -98,7 +98,7 @@ ACES Container is the reference implementation for a file writer intended to be 
 
 * Ubuntu / Redhat / OS X
 
-__NOTE : During the beta period please use the build of ACES container specified below__
+	__NOTE : During the beta period please use the build of ACES container specified below__
 	
 	Install aces-container
 	
@@ -230,7 +230,7 @@ If there are errors with regard to version mis-match of *Eigen* library, please 
 	$ sudo make install
 	```
 
-	The default process will install `librawtoacesIDT.dylib` to `/usr/local/lib`, a few header files to `/usr/local/include/RAWTOACES` and a number of data files into `/usr/local/include/RAWTOACES`
+	The default process will install `librawtoacesIDT.dylib` to `/usr/local/lib`, a few header files to `/usr/local/include/rawtoaces` and a number of data files into `/usr/local/include/rawtoaces`
 	
 ## Usage
 

@@ -344,8 +344,10 @@ int AcesRender::prepareWB ( libraw_iparams_t P, libraw_colordata_t C )
         // as-shot white balance coefficients
         _idt->chooseIlluminate( illuCM, mulV, illumType );
         
-        printf ( "\nCalculating White Balance from Spectral Sensitivity...\n" );
-        printf ( "\nApplying Calculated White Balance ...\n\n" );
+        printf ( "\nCalculating White Balance Coefficients "
+                "from Spectral Sensitivity...\n" );
+        printf ( "\nApplying Calculated White Balance "
+                 "Coefficients...\n\n" );
         
         _wbv = _idt->getWB();
     

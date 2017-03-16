@@ -166,10 +166,10 @@ namespace rta {
             string  _bestIllum;
             int     _verbosity;
         
-            vector< CMF > _cmf;
-            vector< trainSpec > _trainingSpec;
-            vector< double > _wb;
-            vector< vector< double > > _idt;
+            vector < CMF > _cmf;
+            vector < trainSpec > _trainingSpec;
+            vector < double > _wb;
+            vector < vector< double > > _idt;
     };
     
     

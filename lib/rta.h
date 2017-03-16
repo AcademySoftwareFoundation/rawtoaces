@@ -161,7 +161,6 @@ namespace rta {
             int getVerbosity();
         
         private:
-            string  _outputEncoding;
             Spst    _cameraSpst;
             illum   _illuminate;
             string  _bestIllum;

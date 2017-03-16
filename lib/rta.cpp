@@ -289,16 +289,13 @@ namespace rta {
     //		void: _rgbsen (private member)
 
     void Spst::setSensitivity ( const vector<RGBSen> rgbsen ) {
-        FORI(rgbsen.size()){
-            _rgbsen[i] = rgbsen[i];
-        }
+        FORI(rgbsen.size()) _rgbsen[i] = rgbsen[i];
         
         return;
     }
     
     Idt::Idt() {
-        _outputEncoding = "ACES";
-        _bestIllum = " ";
+        _bestIllum = "";
         _verbosity = 0;
         
         FORI(81) {
@@ -311,8 +308,7 @@ namespace rta {
         FORI(3) {
             _idt[i].resize(3);
             _wb[i] = 1.0;
-            FORJ(3)
-                _idt[i][j] = neutral3[i][j];
+            FORJ(3) _idt[i][j] = neutral3[i][j];
         }
     }
     
@@ -712,7 +708,7 @@ namespace rta {
                                  const string type ) {
         double sse = dmax;
         
-        for ( map< string, vector<double> >::iterator it = illuCM.begin(); it != illuCM.end(); ++it ){
+        for ( map< string, vector<double> >::iterator it = illuCM.begin(); it != illuCM.end(); ++it ) {
             double tmp = calSSE(it->second, src);
             
             if (sse > tmp) {
@@ -722,7 +718,7 @@ namespace rta {
             }
         }
         
-        if((_illuminate.data).size() != 0){
+        if ((_illuminate.data).size() != 0) {
             _illuminate.type = "";
             _illuminate.inc = 5;
             _illuminate.data.clear();
@@ -804,11 +800,11 @@ namespace rta {
         
         vector< double > wSRC = mulVector ( src, vect );
         vector< double > wDES = mulVector ( des, vect );
-        vector< vector<double> > vkm = solveVM(vect, diagVM ( divVectorElement (wDES,wSRC) ));
+        vector< vector<double> > vkm = solveVM(vect, diagVM ( divVectorElement (wDES, wSRC) ));
         vkm = mulVector(vkm, transposeVec(vect));
         
-        clearVM(wSRC);
-        clearVM(wDES);
+        clearVM (wSRC);
+        clearVM (wDES);
 
         return vkm;
     }

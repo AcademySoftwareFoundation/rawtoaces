@@ -103,7 +103,7 @@ BOOST_AUTO_TEST_CASE ( TestSpstDefaultConstructor ) {
         BOOST_CHECK_EQUAL( rgbsen_cp[i].GSen, 1.0 );
         BOOST_CHECK_EQUAL( rgbsen_cp[i].BSen, 1.0 );
     }
-}
+};
 
 BOOST_AUTO_TEST_CASE ( TestSpstConstructor2 ) {
     char * brand;
@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE ( TestSpstConstructor2 ) {
         BOOST_CHECK_EQUAL( rgbsen_cp[i].GSen, 1.0 );
         BOOST_CHECK_EQUAL( rgbsen_cp[i].BSen, 1.0 );
     }
-}
+};
 
 BOOST_AUTO_TEST_CASE ( TestSpstCopyConstructor ) {
     char * brand;
@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE ( TestSpstCopyConstructor ) {
         BOOST_CHECK_EQUAL( rgbsen_cp[i].GSen, 1.0 );
         BOOST_CHECK_EQUAL( rgbsen_cp[i].BSen, 1.0 );
     }
-}
+};
 
 BOOST_AUTO_TEST_CASE( TestDataAccess ) {
     char * brand1, * brand2, * brand3;
@@ -284,6 +284,32 @@ BOOST_AUTO_TEST_CASE( TestDataAccess ) {
         BOOST_CHECK_CLOSE( rgbsen_cp[i].GSen, 1e-3, 1e-5 );
         BOOST_CHECK_CLOSE( rgbsen_cp[i].BSen, 1.0000000000001, 1e-5);
     }
-}
+};
+
+BOOST_AUTO_TEST_CASE ( TestIDTLoadSpst ) {
+    uint8_t len = 6;
+    char * brand = (char *) malloc(len+1);
+
+    memset(brand, 0x0, len);
+    memcpy(brand, "nikon", len);
+    brand[len] = '\0';
+    
+    char * model = (char *) malloc(len+1);
+    memset(model, 0x0, len);
+    memcpy(model, "d200", len);
+    model[len] = '\0';
+    
+    Idt * idtTest = new Idt();
+    
+    const string path = "../../unittest/"
+                        "materials/Nikon_D200_380_780_5_test";
+    idtTest->loadCameraSpst ( path, brand, model );
+    
+    const Spst spstTest = idtTest->getCameraSpst();
+    const vector <RGBSen> rgbsenTest = spstTest.getSensitivity();
+    
+    BOOST_CHECK_EQUAL( int( rgbsenTest.size() ), 81 );
+
+};
 
 

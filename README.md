@@ -136,7 +136,7 @@ LibRaw is the library that obtains RAW files from digital cameras. It handles im
 	$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
 	```
 	
-	Install OpenEXR
+	Install `LibRaw`
 	
 	```sh
 	$ brew install libraw

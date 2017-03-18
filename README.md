@@ -103,7 +103,8 @@ ACES Container is the reference implementation for a file writer intended to be 
 	Install aces-container
 	
 	```sh
-	git clone git@github.com:miaoqi/aces_container.git
+	git clone https://github.com/miaoqi/aces_container.git
+	cd aces_container
 	git checkout windowBuildSupport
 
 	mkdir build && cd build

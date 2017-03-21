@@ -271,7 +271,8 @@ void minusVector(vector<T>& vct, T sub)
 }
 
 template <typename T>
-vector<T> mulVectorElement(const vector<T>& vct1, const vector<T>& vct2)
+vector<T> mulVectorElement ( const vector<T>& vct1,
+                             const vector<T>& vct2 )
 {
     assert(vct1.size() == vct2.size());
     
@@ -287,7 +288,8 @@ vector<T> mulVectorElement(const vector<T>& vct1, const vector<T>& vct2)
 
 
 template <typename T>
-vector<T> divVectorElement(const vector<T>& vct1, const vector<T>& vct2)
+vector<T> divVectorElement ( const vector<T>& vct1,
+                             const vector<T>& vct2 )
 {
     assert(vct1.size() == vct2.size());
     
@@ -300,8 +302,8 @@ vector<T> divVectorElement(const vector<T>& vct1, const vector<T>& vct2)
 }
 
 template <typename T>
-vector < vector<T> > mulVector(const vector< vector<T> >& vct1,
-                               const vector< vector<T> >& vct2)
+vector < vector<T> > mulVector ( const vector< vector<T> >& vct1,
+                                 const vector< vector<T> >& vct2 )
 {
     assert(vct1.size() != 0 && vct2.size() != 0);
 
@@ -323,16 +325,16 @@ vector < T > mulVector(const vector< vector<T> >& vct1,
     vector< T > vct3(vct1.size(), 1.0);
 
     FORI(vct1.size())
-        vct3[i] = (sumVector(mulVectorElement(vct1[i], vct2)));
+        vct3[i] = sumVector(mulVectorElement(vct1[i], vct2));
     
     return vct3;
 }
 
 template <typename T>
-vector < T > mulVector(const vector<T>& vct1,
-                       const vector< vector<T> >& vct2)
+vector < T > mulVector ( const vector<T>& vct1,
+                         const vector< vector<T> >& vct2 )
 {
-    return mulVector(vct2, vct1);
+    return mulVector (vct2, vct1);
 }
 
 template <typename T>
@@ -350,13 +352,14 @@ T calSSE(vector<T>& tcp, vector<T>& src)
 }
 
 template<typename T>
-vector < vector<T> > solveVM(const vector< vector<T> >& vct1, const vector< vector<T> >& vct2)
+vector < vector<T> > solveVM ( const vector< vector<T> >& vct1,
+                               const vector< vector<T> >& vct2 )
 {
-    return mulVector(invertVM3(vct1), vct2);
+    return mulVector ( invertVM3(vct1), vct2 );
 }
 
 template<typename T>
-vector < vector<T> > XYZtoLAB( const vector < vector<T> >& XYZ )
+vector < vector<T> > XYZtoLAB ( const vector < vector<T> >& XYZ )
 {
     assert(XYZ.size() == 190);
     T add = T(16.0/116.0);
@@ -386,8 +389,8 @@ vector < vector<T> > XYZtoLAB( const vector < vector<T> >& XYZ )
 }
 
 template<typename T>
-vector< vector<T> > getCalcXYZt (const vector < vector<T> > RGB,
-                                 const T *  B)
+vector< vector<T> > getCalcXYZt ( const vector < vector<T> > RGB,
+                                  const T *  B )
 {
     assert(RGB.size() == 190);
     vector < vector<T> > BV (3, vector < T >(3));
@@ -414,16 +417,16 @@ vector< vector<T> > getCalcXYZt (const vector < vector<T> > RGB,
 }
 
 // Non-class misc math functions
-inline float* mulVectorArray(float * data,
-                             const uint32_t total,
-                             const uint8_t dim,
-                             const vector< vector < double > > vct)
+inline float * mulVectorArray (float * data,
+                               const uint32_t total,
+                               const uint8_t dim,
+                               const vector< vector < double > > vct )
 {
     assert(vct.size() == dim
            && isSquare(vct));
     
     if(dim == 3) {
-        for(uint32_t i = 0; i < total; i+=dim ){
+        for(uint32_t i = 0; i < total; i+=dim ) {
             data[i] = vct[0][0]*(data[i]) + vct[0][1]*(data[i+1])
             + vct[0][2]*(data[i+2]);
             data[i+1] = vct[1][0]*(data[i]) + vct[1][1]*(data[i+1])

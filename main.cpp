@@ -93,8 +93,8 @@ int main(int argc, char *argv[])
   int arg = configureSetting (argc, argv, opts, OUT);
     
   if ( opts.verbosity > 2 )
-      RawProcessor.set_progress_handler( my_progress_callback,
-                                         (void * )"Sample data passed" );
+      RawProcessor.set_progress_handler ( my_progress_callback,
+                                          ( void * )"Sample data passed" );
 #ifdef LIBRAW_USE_OPENMP
   if( opts.verbosity )
       printf ( "Using %d threads\n", omp_get_max_threads() );
@@ -164,10 +164,11 @@ int main(int argc, char *argv[])
                else
                    opts.ret = RawProcessor.open_file( argv[arg] );
                         
-               if ( opts.ret  != LIBRAW_SUCCESS)
+               if ( opts.ret  != LIBRAW_SUCCESS )
                {
                    fprintf( stderr, "\nError: Cannot open %s: %s\n\n",
-                                    argv[arg], libraw_strerror(opts.ret) );
+                                    argv[arg],
+                                    libraw_strerror(opts.ret) );
                    exit(1);
                }
             }
@@ -197,8 +198,7 @@ int main(int argc, char *argv[])
                 if ( gotIDT ) {
                     OUT.output_color = 0;
                     // set four_color_rgb to 0 if half_size is 1
-                    if ( OUT.half_size == 1 )
-                        OUT.four_color_rgb = 0;
+                    if ( OUT.half_size == 1 ) OUT.four_color_rgb = 0;
                     
                     // --wb-method condition 0
                     if ( !opts.use_wb ) {
@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
             Render.updateOptions(opts);
         
             // --wb-method condition 0,1,2
-            if ( !opts.use_wb && !opts.use_Mul) {
+            if ( !opts.use_wb && !opts.use_Mul ) {
                 OUT.use_camera_matrix = 0;
             
                 // Calculate white balance
@@ -296,6 +296,7 @@ int main(int argc, char *argv[])
         
             if ( !P1.dng_version ) {
                 libraw_processed_image_t * post_image = RawProcessor.dcraw_make_mem_image ( &opts.ret );
+                
                 Render.setPixels (post_image);
                 if ( opts.use_timing )
                     timerprint( "LibRaw::dcraw_make_mem_image()", argv[arg]);
@@ -305,7 +306,7 @@ int main(int argc, char *argv[])
                     aces = Render.renderNonDNG_IDT();
                 else
                     aces = Render.renderNonDNG();
-
+            
                 Render.acesWrite ( outfn, aces );
             }
         

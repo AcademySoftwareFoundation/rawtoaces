@@ -678,8 +678,8 @@ void AcesRender::acesWrite ( const char * name, float *  aces ) const
     x.configure ( writeParams );
     x.newImageObject ( dynamicMeta );
     
-    FORI( height ){
-        halfBytes *rgbData = halfIn + width * channels * i;
+    FORI ( height ){
+        halfBytes * rgbData = halfIn + width * channels * i;
         x.storeHalfRow (rgbData, i);
     }
     

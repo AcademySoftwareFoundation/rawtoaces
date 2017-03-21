@@ -82,6 +82,7 @@ int main(int argc, char *argv[])
     
     // General set-up
     OUT.output_color      = 5;
+    OUT.output_bps        = 16;
     OUT.highlight         = 0;
     OUT.use_camera_matrix = 0;
     OUT.gamm[0]           = 1.0;

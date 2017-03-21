@@ -483,10 +483,11 @@ void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total ) const
 float * AcesRender::renderDNG ( vector < float > cameraToDisplayMtx ) const
 {
     assert(_image);
-    uchar * pixels = _image->data;
+    
+    ushort * pixels = (ushort *) _image->data;
     uint32_t total = _image->width * _image->height * _image->colors;
     vector < vector< double> > CMT( _image->colors,
-                                    vector< double >(_image->colors));
+                                    vector< double >(_image->colors) );
 
     float * aces = new  (std::nothrow) float[total];
     FORI (total)
@@ -537,11 +538,11 @@ float * AcesRender::renderNonDNG () const
 {
     assert(_image);
 
-    uchar * pixel = _image->data;
+    ushort * pixels = (ushort *) _image->data;
     uint32_t total = _image->width * _image->height * _image->colors;
     float * aces = new (std::nothrow) float[total];
     
-    FORI(total) aces[i] = static_cast <float> (pixel[i]);
+    FORI(total) aces[i] = static_cast <float> (pixels[i]);
     
     if(_opts.use_mat == 2) applyCAT(aces, _image->colors, total);
         
@@ -576,7 +577,7 @@ float * AcesRender::renderNonDNG_IDT ()
 {
     assert(_image);
 
-    uchar * pixels = _image->data;
+    ushort * pixels = (ushort *) _image->data;
     uint32_t total = _image->width * _image->height * _image->colors;
     float * aces = new (std::nothrow) float[total];
     

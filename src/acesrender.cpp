@@ -144,8 +144,9 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
         }
         
         readC = _idt->loadCameraSpst( cameraSenPath,
-                                     static_cast <const char *> (P.make),
-                                     static_cast <const char *> (P.model) );
+                                      static_cast <const char *> (P.make),
+                                      static_cast <const char *> (P.model),
+                                      _opts.use_camera_path );
     }
     else  {
         if ( !stat ( FILEPATH, &st ) )  {
@@ -156,8 +157,9 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
                 string fn( *file );
 
                 readC = _idt->loadCameraSpst( fn,
-                                             static_cast <const char *> (P.make),
-                                             static_cast <const char *> (P.model) );
+                                              static_cast <const char *> (P.make),
+                                              static_cast <const char *> (P.model),
+                                              _opts.use_camera_path);
                 if ( readC ) return 1;
             }
         }
@@ -240,7 +242,8 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, libraw_colordata_t C )
 
     int read = readCameraSenPath( cameraSenPath, P );
     
-    if ( !read ) {
+    if ( !read &&
+         !_opts.use_camera_path ) {
         fprintf( stderr, "\nError: No matching cameras found. "
                          "Please use other options for "
                          "\"--mat-method\" and/or \"--wb-method\".\n");
@@ -307,7 +310,8 @@ int AcesRender::prepareWB ( libraw_iparams_t P, libraw_colordata_t C )
     
     int read = readCameraSenPath ( cameraSenPath, P );
     
-    if (!read ) {
+    if (!read &&
+        !_opts.use_camera_path) {
         fprintf( stderr, "\nError: No matching cameras found. "
                          "Please use other options for "
                          "\"--wb-method\".\n");

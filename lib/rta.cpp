@@ -358,6 +358,7 @@ namespace rta {
     //		const string: path to the camera sensitivity file
     //      const char *: camera maker  (from libraw)
     //      const char *: camera model  (from libraw)
+    //      const int: ss_path  (from user input "--ss-path")
     //
     //	outputs:
     //		boolean: If successufully parsed, _cameraSpst will be filled and return 1;
@@ -365,7 +366,8 @@ namespace rta {
     
     int Idt::loadCameraSpst ( const string & path,
                               const char * maker,
-                              const char * model ) {
+                              const char * model,
+                              const int ss_path) {
         assert(path.find("_380_780") != std::string::npos);
 
         ifstream fin;
@@ -387,27 +389,30 @@ namespace rta {
             if (!buffer[0]) continue;
             
             RGBSen tmp_sen;
-            char* token[3] = {};
-            token[0] = strtok(buffer, " ,");
-//            assert(token[0]);
             
             if(line == 0) {
-                if (cmp_str(maker, static_cast<const char *>(token[0]))) {
+                // token [0]
+                if (!ss_path &&
+                    cmp_str(maker, static_cast<const char *>(buffer))) {
                     fin.close();
                     return 0;
                 }
-                _cameraSpst.setBrand(static_cast<const char *>(token[0]));
+                _cameraSpst.setBrand(static_cast<const char *>(buffer));
             }
             else if(line == 1) {
-                if (cmp_str(model, static_cast<const char *>(token[0]))) {
+                if (!ss_path &&
+                    cmp_str(model, static_cast<const char *>(buffer))) {
                     fin.close();
                     return 0;
                 }
-                _cameraSpst.setModel(static_cast<const char *>(token[0]));
+                _cameraSpst.setModel(static_cast<const char *>(buffer));
             }
             else if(line == 2)
-                _cameraSpst.setWLIncrement(static_cast<uint8_t>(atoi(token[0])));
+                _cameraSpst.setWLIncrement(static_cast<uint8_t>(atoi(buffer)));
             else {
+                char* token[3] = {};
+                
+                token[0] = strtok(buffer, " ,");
                 token[1] = strtok(null_ptr, " ,");
                 token[2] = strtok(null_ptr, " ,");
                 
@@ -483,12 +488,8 @@ namespace rta {
             
             if (!buffer[0]) continue;
             
-            char* token;
-            token = strtok(buffer, " ");
-            //            assert(token);
-            
             if (line == 0) {
-                string strToken(token);
+                string strToken(buffer);
                 
                 if (type.compare(strToken) != 0
                     && type.compare("unknown") != 0)
@@ -500,9 +501,13 @@ namespace rta {
                 _illuminate.type = strToken;
             }
             else if (line == 1) {
-                 _illuminate.inc = atoi(token);
+                 _illuminate.inc = atoi(buffer);
             }
             else {
+                char* token;
+                token = strtok(buffer, " ");
+                //            assert(token);
+                
                 assert(isNumeric(token));
                 
                 _illuminate.data.push_back(atof(token));

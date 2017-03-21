@@ -124,7 +124,8 @@ namespace rta {
         
             int loadCameraSpst( const string &path,
                                 const char * maker,
-                                const char * model);
+                                const char * model,
+                                const int ss_path);
             int loadIlluminate( const string &path,
                                 const string type="unknown");
             void loadTrainingData( const string &path );

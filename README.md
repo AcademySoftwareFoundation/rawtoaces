@@ -231,7 +231,7 @@ If there are errors with regard to version mis-match of *Eigen* library, please 
 	$ sudo make install
 	```
 
-	The default process will install `librawtoacesIDT.dylib` to `/usr/local/lib`, a few header files to `/usr/local/include/rawtoaces` and a number of data files into `/usr/local/include/rawtoaces`
+	The default process will install `librawtoacesIDT.dylib` to `/usr/local/lib`, a few header files to `/usr/local/include/rawtoaces` and a number of data files into `/usr/local/include/rawtoaces/data`
 	
 ## Usage
 

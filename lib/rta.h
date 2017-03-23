@@ -68,11 +68,14 @@
 #include <half.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 #include "mathOps.h"
 
 using namespace std;
 using namespace ceres;
+using namespace boost::property_tree;
 
 namespace rta {
     class Idt;

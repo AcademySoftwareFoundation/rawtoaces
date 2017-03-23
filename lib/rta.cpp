@@ -369,7 +369,33 @@ namespace rta {
                               const char * model,
                               const int ss_path) {
         assert(path.find("_380_780") != std::string::npos);
+        
+        // using libraries from boost::property_tree
+        ptree root;
+        read_json(path, root);
+        
+        const char * cmaker = (root.get<string>("maker")).c_str();
+        const char * cmodel = (root.get<string>("model")).c_str();
+        uint8_t cwl = root.get<uint8_t>("increment");
+        
+//        printf ("%s\n", string(cmaker).c_str());
 
+        if (!ss_path &&
+            cmp_str(maker, cmaker)) {
+            return 0;
+        }
+//        printf ("%s\n", cmaker);
+        _cameraSpst.setBrand(cmaker);
+        
+        if (!ss_path &&
+            cmp_str(model, cmodel)) {
+            return 0;
+        }
+//        printf ("%s\n", cmodel);
+        _cameraSpst.setModel(cmaker);
+
+        
+        
         ifstream fin;
         fin.open(path);
         int line = 0;

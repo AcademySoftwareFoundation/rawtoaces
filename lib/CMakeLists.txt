@@ -1,4 +1,8 @@
+
+# find_package (Boost REQUIRED)
+
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" 
+		      ${Boost_INCLUDE_DIRS}
 		     "${CERES_INCLUDE_DIRS}"
 )
 
@@ -7,12 +11,12 @@ if ( UNIX AND NOT APPLE )
 endif()
 
 add_library( rawtoacesIDT SHARED
-    	     rta.cpp 
+    	       rta.cpp 
            )
 
-# if ( Ceres_FOUND )
-  target_link_libraries( rawtoacesIDT ${CERES_LIBRARIES} )
-# endif()
+target_link_libraries( rawtoacesIDT 
+                       ${Boost_LIBRARIES}
+		                   ${CERES_LIBRARIES} )
 
 install(FILES
 	 define.h

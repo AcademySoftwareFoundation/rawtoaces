@@ -240,6 +240,12 @@ if ( Ceres_FOUND )
   link_directories( ${CERES_LIBRARY_DIRS} ) 
 endif()
 
+if ( Boost_FOUND )
+  add_definitions( -DHAVE_Boost=1 )
+  include_directories( ${Boost_INCLUDE_DIRS} )
+  link_directories( ${Boost_LIBRARY_DIRS} ) 
+endif()
+
 # include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" "${IlmBase_INCLUDE_DIRS}" "${AcesContainer_INCLUDE_DIRS}" "${libraw_INCLUDE_DIRS}")
 
 add_executable( rawtoaces

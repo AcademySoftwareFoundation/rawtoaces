@@ -150,8 +150,11 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
     }
     else  {
         if ( !stat ( FILEPATH, &st ) )  {
+//            vector<string> cFiles = openDir ( static_cast <string> ( FILEPATH )
+//                                              +"/camera" );
             vector<string> cFiles = openDir ( static_cast <string> ( FILEPATH )
-                                              +"/camera" );
+                                             +"/camera/JSON" );
+
             
             for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
                 string fn( *file );

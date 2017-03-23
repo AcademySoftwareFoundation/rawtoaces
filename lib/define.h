@@ -82,7 +82,7 @@
 
 #define INV_255 (1.0/(double) 255.0)
 #define INV_65535 (1.0/(double) 65535.0)
-#define FILEPATH ("/usr/local/include/rawtoaces/data/")
+#define FILEPATH ("/usr/local/include/rawtoaces/data")
 
 #ifdef WIN32
 // suppress sprintf-related warning. sprintf() is permitted in sample code
@@ -179,6 +179,11 @@ struct illum {
     uint8_t inc;
     double index;
     vector <double> data;
+};
+
+struct cameraDataPath {
+    string os;
+    vector <string> paths;
 };
 
 const double e = 216.0/24389.0;
@@ -287,6 +292,52 @@ inline bool isNumeric ( const char * val )
     string input(val);
     
     return (input.find_first_not_of(base.substr(0, base.size())) == string::npos);
+};
+
+// Function to get environment variable for camera data
+inline cameraDataPath& cameraPathsFinder() {
+    static cameraDataPath cdp;
+    static bool firstTime = 1;
+    
+    if(firstTime)
+    {
+        vector <string>& cPaths = cdp.paths;
+        
+        string path;
+        const char* env = getenv("RAWTOACES_CAM_PATH");
+        if (env)
+            path = env;
+        
+        if (path == "") {
+#if defined (WIN32) || defined (WIN64)
+            path = ".";
+            cdp.os = "WIN";
+#else
+            path = ".:/usr/local/lib/rawtoaces:/usr/local" PACKAGE "-" VERSION "/lib/rawtoaces";
+            cdp.os = "UNIX";
+#endif
+        }
+        
+        size_t pos = 0;
+        while (pos < path.size()){
+#if defined (WIN32) || defined (WIN64)
+            size_t end = path.find(';', pos);
+#else
+            size_t end = path.find(':', pos);
+#endif
+            
+            if (end == string::npos)
+                end = path.size();
+            
+            string pathItem = path.substr(pos, end-pos);
+            
+            if(find(cPaths.begin(), cPaths.end(), pathItem) == cPaths.end())
+                cPaths.push_back(pathItem);
+            
+            pos = end + 1;
+        }
+    }
+    return cdp;
 };
 
 #endif

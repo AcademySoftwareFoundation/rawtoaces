@@ -155,10 +155,9 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
             vector<string> cFiles = openDir ( static_cast <string> ( FILEPATH )
                                              +"/camera/JSON" );
 
-            
             for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
                 string fn( *file );
-
+                
                 readC = _idt->loadCameraSpst( fn,
                                               static_cast <const char *> (P.make),
                                               static_cast <const char *> (P.model),
@@ -197,7 +196,7 @@ int AcesRender::readIlluminate( const char * illumType,
     if( !stat( FILEPATH, &st ) ) {
         vector <string> iFiles = openDir( static_cast < string >( FILEPATH )
                                           + "illuminate" );
-        
+
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string fn( *file );
             string strType(illumType);

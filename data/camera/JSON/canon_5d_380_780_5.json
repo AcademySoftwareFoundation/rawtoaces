@@ -1,8 +1,7 @@
 {
 	"maker" : "canon",
 	"model" : "eos 5d mark ii",
-	"increment" : 5,
-	"range" : [ 380, 780 ],
+	"range" : [ 380, 780, 5 ],
     "sensitivity" : [
     	[ 0.0354, 0.0359, 0.0334 ],
 		[ 0.0325, 0.0329, 0.0327 ],

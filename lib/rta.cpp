@@ -370,104 +370,77 @@ namespace rta {
                               const int ss_path) {
         assert(path.find("_380_780") != std::string::npos);
         
-        // using libraries from boost::property_tree
-        ptree root;
-        read_json(path, root);
-        
-        const char * cmaker = (root.get<string>("maker")).c_str();
-        const char * cmodel = (root.get<string>("model")).c_str();
-        uint8_t cwl = root.get<uint8_t>("increment");
-        
-//        printf ("%s\n", string(cmaker).c_str());
-
-        if (!ss_path &&
-            cmp_str(maker, cmaker)) {
-            return 0;
-        }
-//        printf ("%s\n", cmaker);
-        _cameraSpst.setBrand(cmaker);
-        
-        if (!ss_path &&
-            cmp_str(model, cmodel)) {
-            return 0;
-        }
-//        printf ("%s\n", cmodel);
-        _cameraSpst.setModel(cmaker);
-
-        
-        
-        ifstream fin;
-        fin.open(path);
-        int line = 0;
-        
-        if (!fin.good()) {
-            fprintf(stderr, "The Camera Sensitivity data file may not exist.\n");
-            exit(1);
-        }
-        
         vector <RGBSen> rgbsen;
-        vector <double> max(3, numeric_limits<double>::min());
+        vector <double> max(3, dmin);
         
-        while (!fin.eof()){
-            char buffer[512];
-            fin.getline(buffer, 512);
+        try
+        {
+            // using libraries from boost::property_tree
+            ptree pt;
+            read_json(path, pt);
             
-            if (!buffer[0]) continue;
+            const char * cmaker = (pt.get<string>("maker")).c_str();
+//            printf ("%s\n", cmaker);
             
-            RGBSen tmp_sen;
-            
-            if(line == 0) {
-                // token [0]
-                if (!ss_path &&
-                    cmp_str(maker, static_cast<const char *>(buffer))) {
-                    fin.close();
-                    return 0;
-                }
-                _cameraSpst.setBrand(static_cast<const char *>(buffer));
+            if (!ss_path &&
+                cmp_str(maker, cmaker)) {
+                return 0;
             }
-            else if(line == 1) {
-                if (!ss_path &&
-                    cmp_str(model, static_cast<const char *>(buffer))) {
-                    fin.close();
-                    return 0;
-                }
-                _cameraSpst.setModel(static_cast<const char *>(buffer));
+//            printf ("%s\n", cmaker);
+            _cameraSpst.setBrand(cmaker);
+            
+            const char * cmodel = (pt.get<string>("model")).c_str();
+            if (!ss_path &&
+                cmp_str(model, cmodel)) {
+                return 0;
             }
-            else if(line == 2)
-                _cameraSpst.setWLIncrement(static_cast<uint8_t>(atoi(buffer)));
-            else {
-                char* token[3] = {};
-                
-                token[0] = strtok(buffer, " ,");
-                token[1] = strtok(null_ptr, " ,");
-                token[2] = strtok(null_ptr, " ,");
-                
-                assert(isNumeric(token[0])
-                       && isNumeric(token[1])
-                       && isNumeric(token[2]));
+//            printf ("%s\n", cmodel);
+            _cameraSpst.setModel(cmaker);
+            
+            vector <int> range;
+            BOOST_FOREACH ( ptree::value_type &row, pt.get_child("range") )
+            {
+                range.push_back(row.second.get_value<int>());
+            }
+            
+            if ( range[0] != 380
+                || range[1] != 780) {
+                fprintf(stderr, "Please double check the Camera "
+                        "Sensitivity data (e.g. the increment "
+                        "should be from 380nm to 780nm).\n");
+                exit(1);
+            }
+            _cameraSpst.setWLIncrement(range[3]);
 
-                tmp_sen.RSen = atof(token[0]);
-                tmp_sen.GSen = atof(token[1]);
-                tmp_sen.BSen = atof(token[2]);
+            BOOST_FOREACH ( ptree::value_type &row, pt.get_child("sensitivity") )
+            {
+                double data[3];
+                int i = 0;
                 
-                if(tmp_sen.RSen > max[0])
-                    max[0] = tmp_sen.RSen;
-                if(tmp_sen.GSen > max[1])
-                    max[1] = tmp_sen.GSen;
-                if(tmp_sen.BSen > max[2])
-                    max[2] = tmp_sen.BSen;
+                BOOST_FOREACH ( ptree::value_type &cell, row.second )
+                {
+                    data[i] = cell.second.get_value<double>();
+                    i++;
+                }
+                
+                RGBSen tmp_sen ( data[0], data[1], data[2] );
+                
+                if(tmp_sen.RSen > max[0]) max[0] = tmp_sen.RSen;
+                if(tmp_sen.GSen > max[1]) max[1] = tmp_sen.GSen;
+                if(tmp_sen.BSen > max[2]) max[2] = tmp_sen.BSen;
                 
                 rgbsen.push_back(tmp_sen);
             }
-            line++;
         }
-        
-        fin.close();
-        
-        if (line != 84 || rgbsen.size() != 81) {
+        catch (std::exception const& e)
+        {
+            std::cerr << e.what() << std::endl;
+        }
+                
+        if ( rgbsen.size() != 81 ) {
             fprintf(stderr, "Please double check the Camera "
-                            "Sensitivity data (e.g. the increment "
-                            "should be 5nm from 380nm to 780nm).\n");
+                    "Sensitivity data (e.g. the increment "
+                    "should be 5nm from 380nm to 780nm).\n");
             exit(1);
         }
         

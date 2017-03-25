@@ -142,7 +142,37 @@ LibRaw is the library that obtains RAW files from digital cameras. It handles im
 	```sh
 	$ brew install libraw
 	```
+
+###### boost
+
+boost has multiple C++ libraries that support tasks and structures such as linear algebra, multithreading, image processing, unit testing, etc. It handles data loading an unit-test for rawtoaces. LibRaw can be downloaded from [http://www.boost.org/]() or installed using one of the commands below.
+
+* Ubuntu
+
+	```sh
+	$ sudo apt-get install libboost-all-dev
+	```
+
+* Redhat
+
+	```sh
+	$ yum install boost-devel
+	```
+
+* OS X
+
+	Install homebrew if not already installed
 	
+	```sh
+	$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+	```
+	
+	Install `boost`
+	
+	```sh
+	$ brew install boost
+	```
+
 ###### Ceres Solver
 
 Ceres Solver is an open source library for solving Non-linear Least Squares problems with bounds constraints and unconstrained optimization problems. It processes non-linear regression for rawtoaces. Ceres Solver can be downloaded from [http://ceres-solver.org/]() or installed using one of the commands below.

@@ -379,11 +379,11 @@ namespace rta {
             
             const char * cmaker = (pt.get<string>( "maker" )).c_str();
             if (!ss_path && cmp_str(maker, cmaker)) return 0;
-            _cameraSpst.setBrand(cmaker);
+                _cameraSpst.setBrand(cmaker);
             
             const char * cmodel = (pt.get<string>( "model" )).c_str();
             if (!ss_path && cmp_str(model, cmodel)) return 0;
-            _cameraSpst.setModel(cmaker);
+                _cameraSpst.setModel(cmaker);
             
             vector < int > range;
             BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "range" ) )

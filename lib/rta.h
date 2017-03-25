@@ -130,12 +130,12 @@ namespace rta {
                                 const char * maker,
                                 const char * model,
                                 const int ss_path);
-            int loadIlluminate( const string &path,
+            int loadIlluminant( const string &path,
                                 const string type="unknown");
             void loadTrainingData( const string &path );
             void loadCMF( const string &path );
         
-            void chooseIlluminate( map< string,
+            void chooseIlluminant( map< string,
                                    vector<double> >& illuCM,
                                    vector<double>& src,
                                    const string type );
@@ -156,18 +156,18 @@ namespace rta {
             int calIDT();
         
             const Spst getCameraSpst() const;
-            const illum getIlluminate() const;
+            const illum getIlluminant() const;
             const int getVerbosity() const;
             const vector< vector <double> > getIDT() const;
             const vector< double > getWB() const;
         
             Spst getCameraSpst();
-            illum getIlluminate();
+            illum getIlluminant();
             int getVerbosity();
         
         private:
             Spst    _cameraSpst;
-            illum   _illuminate;
+            illum   _Illuminant;
             string  _bestIllum;
             int     _verbosity;
         

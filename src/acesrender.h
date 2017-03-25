@@ -69,7 +69,7 @@ class AcesRender {
         int readCameraSenPath( const char * cameraSenPath,
                                libraw_iparams_t P );
     
-        int readIlluminate( const char * illumType,
+        int readIlluminant( const char * illumType,
                             map < string, vector < double > > & illuCM );
     
         //  LibRaw RawProcessor

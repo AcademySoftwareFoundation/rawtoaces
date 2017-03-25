@@ -226,8 +226,7 @@ namespace rta {
         
         assert(len < 64);
         
-        if(len > 64)
-            len = 64;
+        if(len > 64) len = 64;
         
         _brand = (char *) malloc(len+1);
         memset(_brand, 0x0, len);
@@ -253,8 +252,7 @@ namespace rta {
         
         assert(len < 64);
         
-        if(len > 64)
-            len = 64;
+        if(len > 64) len = 64;
         
         _model = (char *)malloc(len+1);
         memset(_model, 0x0, len);
@@ -313,26 +311,26 @@ namespace rta {
     }
     
     Idt::~Idt() {
-        vector< CMF >().swap(_cmf);
-        vector< trainSpec >().swap(_trainingSpec);
-        vector< double >().swap(_wb);
-        vector< vector<double> >().swap(_idt);
+        vector < CMF >().swap(_cmf);
+        vector < trainSpec >().swap(_trainingSpec);
+        vector < double >().swap(_wb);
+        vector < vector<double> >().swap(_idt);
     }
     
     //	=====================================================================
-    //	Scale the Illuminate data using the max element of RGB code values
+    //	Scale the Illuminant data using the max element of RGB code values
     //
     //	inputs:
     //		N/A
     //	
     //	outputs:
-    //		scaled _illuminate data set
+    //		scaled _Illuminant data set
     
     void Idt::scaleLSC() {
         assert(_cameraSpst._spstMaxCol >= 0
-               && (_illuminate.data).size() != 0);
+               && (_Illuminant.data).size() != 0);
         
-        vector <double> colMax(81, 1.0);
+        vector < double > colMax(81, 1.0);
         switch (_cameraSpst._spstMaxCol){
             case 0:
                 FORI(81) colMax[i] = _cameraSpst._rgbsen[i].RSen;
@@ -347,8 +345,8 @@ namespace rta {
                 return;
         }
         
-        scaleVector(_illuminate.data,
-                    1.0/sumVector(mulVectorElement(_illuminate.data, colMax)));
+        scaleVector(_Illuminant.data,
+                    1.0/sumVector(mulVectorElement(_Illuminant.data, colMax)));
     }
     
     //	=====================================================================
@@ -377,51 +375,36 @@ namespace rta {
         {
             // using libraries from boost::property_tree
             ptree pt;
-            read_json(path, pt);
+            read_json ( path, pt );
             
-            const char * cmaker = (pt.get<string>("maker")).c_str();
-//            printf ("%s\n", cmaker);
-            
-            if (!ss_path &&
-                cmp_str(maker, cmaker)) {
-                return 0;
-            }
-//            printf ("%s\n", cmaker);
+            const char * cmaker = (pt.get<string>( "maker" )).c_str();
+            if (!ss_path && cmp_str(maker, cmaker)) return 0;
             _cameraSpst.setBrand(cmaker);
             
-            const char * cmodel = (pt.get<string>("model")).c_str();
-            if (!ss_path &&
-                cmp_str(model, cmodel)) {
-                return 0;
-            }
-//            printf ("%s\n", cmodel);
+            const char * cmodel = (pt.get<string>( "model" )).c_str();
+            if (!ss_path && cmp_str(model, cmodel)) return 0;
             _cameraSpst.setModel(cmaker);
             
-            vector <int> range;
-            BOOST_FOREACH ( ptree::value_type &row, pt.get_child("range") )
-            {
+            vector < int > range;
+            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "range" ) )
                 range.push_back(row.second.get_value<int>());
-            }
             
-            if ( range[0] != 380
-                || range[1] != 780) {
+            if ( range[0] != 380 || range[1] != 780) {
                 fprintf(stderr, "Please double check the Camera "
-                        "Sensitivity data (e.g. the increment "
-                        "should be from 380nm to 780nm).\n");
+                                "Sensitivity data (e.g. the increment "
+                                "should be from 380nm to 780nm).\n");
                 exit(1);
             }
-            _cameraSpst.setWLIncrement(range[3]);
+            _cameraSpst.setWLIncrement (range[3]);
 
-            BOOST_FOREACH ( ptree::value_type &row, pt.get_child("sensitivity") )
+            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "sensitivity" ) )
             {
-                double data[3];
-                int i = 0;
+                vector < double > data;
                 
                 BOOST_FOREACH ( ptree::value_type &cell, row.second )
-                {
-                    data[i] = cell.second.get_value<double>();
-                    i++;
-                }
+                    data.push_back ( cell.second.get_value<double>() );
+                
+                assert(data.size() == 3);
                 
                 RGBSen tmp_sen ( data[0], data[1], data[2] );
                 
@@ -429,101 +412,98 @@ namespace rta {
                 if(tmp_sen.GSen > max[1]) max[1] = tmp_sen.GSen;
                 if(tmp_sen.BSen > max[2]) max[2] = tmp_sen.BSen;
                 
-                rgbsen.push_back(tmp_sen);
+                rgbsen.push_back (tmp_sen);
             }
         }
-        catch (std::exception const& e)
+        catch ( std::exception const& e )
         {
             std::cerr << e.what() << std::endl;
         }
-                
+        
+        // it can be updated if there is a broader spectrum
+        // (e.g., 300nm-800nm) or a smaller increment values (e.g, 1nm)
         if ( rgbsen.size() != 81 ) {
             fprintf(stderr, "Please double check the Camera "
-                    "Sensitivity data (e.g. the increment "
-                    "should be 5nm from 380nm to 780nm).\n");
+                            "Sensitivity data (e.g. the increment "
+                            "should be 5nm from 380nm to 780nm).\n");
             exit(1);
         }
         
-        _cameraSpst._spstMaxCol = max_element(max.begin(), max.end()) - max.begin();
-        _cameraSpst.setSensitivity(rgbsen);
+        _cameraSpst._spstMaxCol = max_element (max.begin(), max.end()) - max.begin();
+        _cameraSpst.setSensitivity (rgbsen);
         
         return 1;
     }
     
     //	=====================================================================
-    //	Load the Illuminate data
+    //	Load the Illuminant data
     //
     //	inputs:
-    //		const string: path to the illuminate data file
+    //		const string: path to the Illuminant data file
     //      const char *: type of light source if user specifies
     //
     //	outputs:
-    //		boolean: If successufully parsed, _illuminate will be filled and return 1;
+    //		boolean: If successufully parsed, _Illuminant will be filled and return 1;
     //               Otherwise, return 0
 
     
-    int Idt::loadIlluminate ( const string &path,
+    int Idt::loadIlluminant ( const string &path,
                               const string type ) {
         
         assert(path.find("_380_780") != std::string::npos);
         
-        ifstream fin;
-        fin.open(path);
-        
-        int line = 0;
         int wl = 380;
         
-        if (!fin.good()) {
-            fprintf(stderr, "The Illuminate Data file may not exist.\n");
-            exit(1);
-        }
+        if ((_Illuminant.data).size() != 0)
+            (_Illuminant.data).clear();
         
-        if ((_illuminate.data).size() != 0)
-            (_illuminate.data).clear();
-        
-        while ((!fin.eof())){
-            char buffer[128];
-            fin.getline(buffer, 128);
+        try
+        {
+            // using libraries from boost::property_tree
+            ptree pt;
+            read_json ( path, pt );
             
-            if (!buffer[0]) continue;
+            const string stype = pt.get<string>( "illuminant" );
             
-            if (line == 0) {
-                string strToken(buffer);
-                
-                if (type.compare(strToken) != 0
-                    && type.compare("unknown") != 0)
-                {
-                    fin.close();
-                    return 0;
-                }
-                
-                _illuminate.type = strToken;
+            if (type.compare(stype) != 0
+                && type.compare("unknown") != 0)
+            {
+                return 0;
             }
-            else if (line == 1) {
-                 _illuminate.inc = atoi(buffer);
+            
+            _Illuminant.type = stype;
+            
+            vector < int > range;
+            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "range" ) )
+                range.push_back(row.second.get_value<int>());
+            
+            if ( range[0] != 380 || range[1] != 780) {
+                fprintf(stderr, "Please double check the Camera "
+                                "Sensitivity data (e.g. the increment "
+                                "should be from 380nm to 780nm).\n");
+                exit(1);
             }
-            else {
-                char* token;
-                token = strtok(buffer, " ");
-                //            assert(token);
+            
+            _Illuminant.inc = range[3];
+            
+            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "spec" ) )
+            {
+                _Illuminant.data.push_back(row.second.get_value<double>());
+                if (wl == 550)
+                    _Illuminant.index = row.second.get_value<double>();
                 
-                assert(isNumeric(token));
-                
-                _illuminate.data.push_back(atof(token));
-                if(wl == 550)
-                    _illuminate.index = atof(token);
-                
-                wl += _illuminate.inc;
+                wl += _Illuminant.inc;
             }
-            line += 1;
         }
-
-        fin.close();
-        
-        if(_illuminate.data.size() != 81) {
+        catch ( std::exception const& e )
+        {
+            std::cerr << e.what() << std::endl;
+        }
+            
+        if ( _Illuminant.data.size() != 81 ) {
             fprintf(stderr, "Please double check the Light "
-                    "Source data (e.g. the increment "
-                    "should be 5nm from 380nm to 780nm).\n");
+                            "Source data (e.g. the increment "
+                            "should be 5nm from 380nm to 780nm).\n");
             exit(1);
         }
         
@@ -541,48 +521,30 @@ namespace rta {
     
     void Idt::loadTrainingData ( const string &path ) {
         
-        ifstream fin;
-        fin.open(path);
-        
-        int i = 0;
-        int wl = 380;
-        
-        if (!fin.good()) {
-            fprintf(stderr, "The Training Data file may not exist.\n");
-            exit(1);
-        }
-        
-        while ((!fin.eof())){
-            char buffer[4096];
-            fin.getline(buffer, 4096);
+        try
+        {
+            // using libraries from boost::property_tree
+            ptree pt;
+            read_json ( path, pt );
             
-            if (!buffer[0]) continue;
-            
-            char* token[190] = {};
-            token[0] = strtok(buffer, " ,");
-            assert(isNumeric(token[0]));
-            
-            _trainingSpec[i].wl = wl;
-            _trainingSpec[i].data.push_back(atof(token[0]));
-
-            for (uint8_t n = 1; n < 190; n++){
-                token[n] = strtok(null_ptr, " ,");
-                assert(isNumeric(token[n]));
-
-                if(token[n]) {
-                    _trainingSpec[i].data.push_back(atof(token[n]));
-                }
-                else {
-                    fprintf(stderr, "The training spectral sensitivity file "
-                                    " may need to be looked at\n");
-                    exit(1);
-                }
+            int i = 0;
+            int wl = 380;
+            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "data" ) )
+            {
+                _trainingSpec[i].wl = wl;
+                
+                BOOST_FOREACH ( ptree::value_type &cell, row.second )
+                    _trainingSpec[i].data.push_back(cell.second.get_value<double>());
+                
+                assert(_trainingSpec[i].data.size() == 190);
+                i += 1;
+                wl += 5;
             }
-            i += 1;
-            wl += 5;
         }
-        
-        fin.close();
+        catch ( std::exception const& e )
+        {
+            std::cerr << e.what() << std::endl;
+        }
     }
     
     //	=====================================================================
@@ -596,56 +558,39 @@ namespace rta {
     
     void Idt::loadCMF ( const string &path ) {
         
-        ifstream fin;
-        fin.open(path);
-        
-        int i = 0;
-        
-        if (!fin.good()) {
-            fprintf(stderr, "The file may not exist.\n");
-            exit(1);
-        }
-        
-        while (!fin.eof()){
-            char buffer[512];
-            fin.getline(buffer, 512);
+        try
+        {
+            // using libraries from boost::property_tree
+            ptree pt;
+            read_json ( path, pt );
             
-            if (!buffer[0]) continue;
-            
-            char* token[4] = {};
-            token[0] = strtok(buffer, " ,");
-            assert(isNumeric(token[0]));
-
-            _cmf[i].wl = (uint16_t)atoi(token[0]);
-            
-            if (!(_cmf[i].wl % 5)
-                && _cmf[i].wl >= 380
-                && _cmf[i].wl <= 780) {
-                for (int n = 1; n < 4; n++){
-                    token[n] = strtok(null_ptr, " ,");
-                    assert(isNumeric(token[n]));
-                    
-                    if(token[n] && n == 1) {
-                        _cmf[i].xbar = atof(token[n]);
-                    }
-                    else if(token[n] && n == 2) {
-                        _cmf[i].ybar = atof(token[n]);
-                    }
-                    else if(token[n] && n == 3) {
-                        _cmf[i].zbar = atof(token[n]);
-                    }
-                    else {
-                        fprintf(stderr, "The color matching function"
-                                        "file may need to be looked at\n");
-                        exit(1);
-                    }
-                }
+            int i = 0;
+            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "tristimulus" ) )
+            {
+                vector < double > data;
                 
-                i += 1;
+                BOOST_FOREACH ( ptree::value_type &cell, row.second )
+                    data.push_back ( cell.second.get_value<double>() );
+                
+                assert(data.size() == 4);
+                
+                _cmf[i].wl = (uint16_t)data[0];
+                
+                if (!(_cmf[i].wl % 5)
+                    && _cmf[i].wl >= 380
+                    && _cmf[i].wl <= 780){
+                    _cmf[i].xbar = data[1];
+                    _cmf[i].ybar = data[2];
+                    _cmf[i].zbar = data[3];
+                    
+                    i += 1;
+                }
             }
         }
-        
-        fin.close();
+        catch ( std::exception const& e )
+        {
+            std::cerr << e.what() << std::endl;
+        }
     }
     
     //	=====================================================================
@@ -662,7 +607,7 @@ namespace rta {
     }
     
     //	=====================================================================
-    //	Calculate White Balance based on the best illuminate data
+    //	Calculate White Balance based on the best Illuminant data
     //
     //	inputs:
     //      const string: filePath
@@ -672,7 +617,7 @@ namespace rta {
     //		vector: wb(R, G, B)
     
     vector < double > Idt::calWB() {
-        assert( _illuminate.data.size() == 81
+        assert( _Illuminant.data.size() == 81
                 && _cameraSpst._rgbsen.size() > 0 );
         
         scaleLSC();
@@ -685,7 +630,7 @@ namespace rta {
             colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
         }
         
-        vector< double > wb = mulVector ( colRGB, _illuminate.data );
+        vector< double > wb = mulVector ( colRGB, _Illuminant.data );
         clearVM(colRGB);
         
         FORI(wb.size()) wb[i] = invertD(wb[i]);
@@ -704,9 +649,9 @@ namespace rta {
     //      String: Light Source Name
     //
     //	outputs:
-    //		illum: the best _illuminate
+    //		illum: the best _Illuminant
     
-    void Idt::chooseIlluminate ( map< string,
+    void Idt::chooseIlluminant ( map< string,
                                  vector<double> >& illuCM,
                                  vector<double>& src,
                                  const string type ) {
@@ -722,15 +667,15 @@ namespace rta {
             }
         }
         
-        if ((_illuminate.data).size() != 0) {
-            _illuminate.type = "";
-            _illuminate.inc = 5;
-            _illuminate.data.clear();
+        if ((_Illuminant.data).size() != 0) {
+            _Illuminant.type = "";
+            _Illuminant.inc = 5;
+            _Illuminant.data.clear();
         }
         
         cout << "The best light source is: " << _bestIllum << endl;
 
-        if(loadIlluminate(_bestIllum, type))
+        if(loadIlluminant(_bestIllum, type))
             scaleLSC();
         
         return;
@@ -738,7 +683,7 @@ namespace rta {
     
     //	=====================================================================
     //	Calculate the middle product based on the camera sensitivity data
-    //  and illuminate/light source data
+    //  and Illuminant/light source data
     //
     //	inputs:
     //		N/A
@@ -756,7 +701,7 @@ namespace rta {
             rgbsenV[2][i] = rgbsen[i].BSen;
         }
         
-        vector<double> CM = mulVector ( rgbsenV, _illuminate.data );
+        vector<double> CM = mulVector ( rgbsenV, _Illuminant.data );
         scaleVectorD(CM);
         
         return CM;
@@ -764,7 +709,7 @@ namespace rta {
     
     //	=====================================================================
     //	Calculate the middle product based on the 190 patch / training data
-    //  and illuminate/light source data
+    //  and Illuminant/light source data
     //
     //	inputs:
     //		N/A
@@ -773,12 +718,12 @@ namespace rta {
     //		vector < vector<double> >: 2D vector (81 x 190)
     
     vector< vector<double> > Idt::calTI() const {
-        assert(_illuminate.data.size() == 81 &&
+        assert(_Illuminant.data.size() == 81 &&
                _trainingSpec[0].data.size() == 190);
 
         vector< vector<double> > TI(81, vector<double>(190));
         FORIJ(81, 190)
-            TI[i][j] = _illuminate.data[i] * (_trainingSpec[i].data)[j];
+            TI[i][j] = _Illuminant.data[i] * (_trainingSpec[i].data)[j];
         
         return TI;
     }
@@ -838,9 +783,9 @@ namespace rta {
         
         FORI(XYZ.size())
             scaleVector(XYZ[i],
-                        1.0 / sumVector(mulVectorElement(colXYZ[1],_illuminate.data)));
+                        1.0 / sumVector(mulVectorElement(colXYZ[1],_Illuminant.data)));
         
-        vector <double> ww = mulVector(colXYZ, _illuminate.data);
+        vector <double> ww = mulVector(colXYZ, _Illuminant.data);
         scaleVector(ww, (1.0/ww[1]));
         vector <double> w(XYZ_w, XYZ_w+3);
 
@@ -991,16 +936,16 @@ namespace rta {
     }
     
     //	=====================================================================
-    //  Get illuminate data / light source that was loaded from the file
+    //  Get Illuminant data / light source that was loaded from the file
     //
     //	inputs:
     //         N/A
     //
     //	outputs:
-    //      const illum: illuminate data that was loaded from the file
+    //      const illum: Illuminant data that was loaded from the file
 
-    const illum Idt::getIlluminate() const {
-        return static_cast<const illum>(_illuminate);
+    const illum Idt::getIlluminant() const {
+        return static_cast<const illum>(_Illuminant);
     }
     
     //	=====================================================================
@@ -1030,16 +975,16 @@ namespace rta {
     }
     
     //	=====================================================================
-    //  Get illuminate data / light source that was loaded from the file
+    //  Get Illuminant data / light source that was loaded from the file
     //
     //	inputs:
     //         N/A
     //
     //	outputs:
-    //         illum: illuminate data that was loaded from the file
+    //         illum: Illuminant data that was loaded from the file
     
-    illum Idt::getIlluminate() {
-        return _illuminate;
+    illum Idt::getIlluminant() {
+        return _Illuminant;
     }
     
     //	=====================================================================

@@ -153,7 +153,7 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
 //            vector<string> cFiles = openDir ( static_cast <string> ( FILEPATH )
 //                                              +"/camera" );
             vector<string> cFiles = openDir ( static_cast <string> ( FILEPATH )
-                                             +"/camera/JSON" );
+                                             +"camera/json" );
 
             for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
                 string fn( *file );
@@ -176,7 +176,7 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
 //
 //	inputs:
 //      const char *  : type of light source ("unknown" if not specified)
-//                      (in "/usr/local/include/rawtoaces/data/illuminate")
+//                      (in "/usr/local/include/rawtoaces/data/Illuminant")
 //      map <string, vector <double>> : key is the path (string) to each
 //                                      light source; value is calculated
 //                                      white balance coefficients (vector)
@@ -187,7 +187,7 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
 //            white balance coefficients will also be calculated in the meantime.
 //            "0" means error in reading/ injecting data
 
-int AcesRender::readIlluminate( const char * illumType,
+int AcesRender::readIlluminant( const char * illumType,
                                 map < string, vector < double > > & illuCM )
 {
     int readI = 0;
@@ -195,7 +195,7 @@ int AcesRender::readIlluminate( const char * illumType,
     
     if( !stat( FILEPATH, &st ) ) {
         vector <string> iFiles = openDir( static_cast < string >( FILEPATH )
-                                          + "illuminate" );
+                                          + "illuminant/json" );
 
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string fn( *file );
@@ -205,7 +205,7 @@ int AcesRender::readIlluminate( const char * illumType,
 
             if ( strType.compare("unknown") != 0 ) {
                 
-                readI = _idt->loadIlluminate( fn, illumC );
+                readI = _idt->loadIlluminant( fn, illumC );
                 if ( readI )
                 {
                     illuCM[fn] = _idt->calWB();
@@ -213,7 +213,7 @@ int AcesRender::readIlluminate( const char * illumType,
                 }
             }
             else {
-                readI = _idt->loadIlluminate( fn, illumC );
+                readI = _idt->loadIlluminant( fn, illumC );
                 if ( readI )
                     illuCM[fn] = _idt->calWB();
             }
@@ -255,7 +255,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, libraw_colordata_t C )
     if ( !illumType ) illumType = "unknown";
     
     map < string, vector < double > > illuCM;
-    read = readIlluminate( illumType, illuCM );
+    read = readIlluminant( illumType, illuCM );
     
     if( !read ) {
         fprintf( stderr, "\nError: No matching light source. "
@@ -271,10 +271,10 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, libraw_colordata_t C )
         scaleVectorMax (mulV);
         
         _idt->loadTrainingData ( static_cast < string > ( FILEPATH )
-                                +"/training/training_spectral" );
+                                 +"training/json/training_spectral.json" );
         _idt->loadCMF ( static_cast < string > ( FILEPATH )
-                       +"/cmf/cmf_193" );
-        _idt->chooseIlluminate ( illuCM, mulV, illumType );
+                        +"cmf/json/cmf_1931.json" );
+        _idt->chooseIlluminant ( illuCM, mulV, illumType );
         
         printf ( "\nCalculating IDT Matrix from Spectral Sensitivity ...\n" );
         
@@ -323,7 +323,7 @@ int AcesRender::prepareWB ( libraw_iparams_t P, libraw_colordata_t C )
     if (!illumType) illumType = "unknown";
     
     map < string, vector < double > > illuCM;
-    read = readIlluminate( illumType, illuCM );
+    read = readIlluminant( illumType, illuCM );
     
     if( !read ) {
         fprintf( stderr, "\nError: No matching light source. "
@@ -344,11 +344,11 @@ int AcesRender::prepareWB ( libraw_iparams_t P, libraw_colordata_t C )
         
         // loading color matching function
         _idt->loadCMF ( static_cast < string > ( FILEPATH )
-                      +"/cmf/cmf_193" );
+                      +"/cmf/json/cmf_1931.json" );
         
         // choose the best light source based on
         // as-shot white balance coefficients
-        _idt->chooseIlluminate( illuCM, mulV, illumType );
+        _idt->chooseIlluminant( illuCM, mulV, illumType );
         
         printf ( "\nCalculating White Balance Coefficients "
                 "from Spectral Sensitivity...\n" );

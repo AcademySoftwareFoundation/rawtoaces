@@ -153,7 +153,7 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
 //            vector<string> cFiles = openDir ( static_cast <string> ( FILEPATH )
 //                                              +"/camera" );
             vector<string> cFiles = openDir ( static_cast <string> ( FILEPATH )
-                                             +"camera/json" );
+                                             +"camera" );
 
             for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
                 string fn( *file );
@@ -195,7 +195,7 @@ int AcesRender::readIlluminant( const char * illumType,
     
     if( !stat( FILEPATH, &st ) ) {
         vector <string> iFiles = openDir( static_cast < string >( FILEPATH )
-                                          + "illuminant/json" );
+                                          + "illuminant" );
 
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string fn( *file );
@@ -271,9 +271,9 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, libraw_colordata_t C )
         scaleVectorMax (mulV);
         
         _idt->loadTrainingData ( static_cast < string > ( FILEPATH )
-                                 +"training/json/training_spectral.json" );
+                                 +"training/training_spectral.json" );
         _idt->loadCMF ( static_cast < string > ( FILEPATH )
-                        +"cmf/json/cmf_1931.json" );
+                        +"cmf/cmf_1931.json" );
         _idt->chooseIlluminant ( illuCM, mulV, illumType );
         
         printf ( "\nCalculating IDT Matrix from Spectral Sensitivity ...\n" );

@@ -145,7 +145,7 @@ LibRaw is the library that obtains RAW files from digital cameras. It handles im
 
 ###### boost
 
-boost has multiple C++ libraries that support tasks and structures such as linear algebra, multithreading, image processing, unit testing, etc. It handles data loading an unit-test for rawtoaces. LibRaw can be downloaded from [http://www.boost.org/]() or installed using one of the commands below.
+boost has multiple C++ libraries that support tasks related to linear algebra, multithreading, image processing, unit testing, etc. It handles data loading an unit-test for rawtoaces. boost can be downloaded from [http://www.boost.org/]() or installed using one of the commands below.
 
 * Ubuntu
 

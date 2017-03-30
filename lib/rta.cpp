@@ -828,17 +828,14 @@ namespace rta {
     vector< vector<double> > Idt::calXYZ (vector < vector < double > > TI ) const {
         assert(TI.size() == 81);
         
-        vector< vector<double> > transTI = transposeVec(TI);
         vector< vector<double> > colXYZ(3, vector<double>(TI.size(), 1.0));
-
         FORI(81){
             colXYZ[0][i] = _cmf[i].xbar;
             colXYZ[1][i] = _cmf[i].ybar;
             colXYZ[2][i] = _cmf[i].zbar;
         }
         
-        vector< vector<double> > XYZ = transposeVec(mulVector(colXYZ,
-                                                              transTI));
+        vector< vector<double> > XYZ = mulVector(transposeVec(TI), colXYZ);
         
         FORI(XYZ.size())
             scaleVector(XYZ[i],
@@ -870,7 +867,6 @@ namespace rta {
     vector< vector<double> > Idt::calRGB ( vector < vector< double > > TI ) const {
         assert(TI.size() == 81);
         
-        vector< vector<double> > transTI = transposeVec(TI);
         vector< vector<double> > colRGB(3, vector<double>(TI.size(), 1.0));
         
         FORI(81) {
@@ -879,13 +875,11 @@ namespace rta {
             colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
         }
         
-//        vector< vector<double> > RGB = transposeVec(mulVector(colRGB, transTI));
-        vector< vector<double> > RGB = mulVector(transTI, colRGB);
+        vector< vector<double> > RGB = mulVector(transposeVec(TI), colRGB);
 
         FORI(RGB.size())
             RGB[i] = mulVectorElement(_wb, RGB[i]);
         
-        clearVM(transTI);
         clearVM(colRGB);
         
         return RGB;
@@ -905,8 +899,8 @@ namespace rta {
     //               that minimize the distance between RGB and XYZ
     //               through updated B.
     
-    int Idt::curveFit ( vector< vector<double> > RGB,
-                        vector< vector<double> > XYZ,
+    int Idt::curveFit ( vector < vector <double> > RGB,
+                        vector < vector <double> > XYZ,
                         double * B ) {
         Problem problem;
         vector < vector <double> > outLAB = XYZtoLAB(XYZ);

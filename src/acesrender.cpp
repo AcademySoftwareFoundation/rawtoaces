@@ -518,7 +518,7 @@ float * AcesRender::renderDNG ( vector < float > cameraToDisplayMtx ) const
         aces =  mulVectorArray( aces,
                                 total,
                                 4,
-                                CMT);
+                                CMT );
     }
     else {
         fprintf(stderr, "\nError: Currenly support 3 channels "

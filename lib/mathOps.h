@@ -56,7 +56,6 @@
 #define _MATHOPS_h__
 
 #include "define.h"
-#include <Eigen/Core>
 
 using namespace Eigen;
 
@@ -67,10 +66,12 @@ inline double invertD (double val) {
     return 1.0/val;
 };
 
+
 template<typename T>
 T clip (T val, T target) {
     return min(val, target);
 };
+
 
 template<typename T>
 int isSquare (const vector< vector<T> > vm) {
@@ -82,12 +83,14 @@ int isSquare (const vector< vector<T> > vm) {
     return 1;
 };
 
-// this is not the typic "cross" product
+
+// This is not the typical "cross" product
 template <typename T>
 T cross (const vector <T> &vectorA, const vector <T> &vectorB) {
     assert (vectorA.size() == 2 && vectorB.size() == 2 );
     return vectorA[0] * vectorB[1] - vectorA[1] * vectorB[0];
 };
+
 
 template <typename T>
 vector< vector<T> > invertVM3 (const vector< vector<T> > &vMtx) {
@@ -132,6 +135,7 @@ vector< vector<T> > invertVM3 (const vector< vector<T> > &vMtx) {
     return vMtxR;
 };
 
+
 template <typename T>
 vector < vector<T> > diagVM (const vector<T>& vct) {
     assert(vct.size() != 0);
@@ -140,6 +144,7 @@ vector < vector<T> > diagVM (const vector<T>& vct) {
     FORI(vct.size()) vctdiag[i][i] = vct[i];
     return vctdiag;
 };
+
 
 template <typename T>
 vector< vector<T> > transposeVec (const vector < vector<T> > vMtx) {
@@ -168,6 +173,7 @@ vector< vector<T> > transposeVec (const vector < vector<T> > vMtx) {
     return vTran;
 };
 
+
 template <typename T>
 T sumVector (const vector<T>& vct) {
 //    T sum = T(0.0);
@@ -183,6 +189,7 @@ T sumVector (const vector<T>& vct) {
     return v.sum();
     // -------*/
 };
+
 
 template <typename T>
 void scaleVector (vector<T>& vct, const T scale) {
@@ -204,6 +211,7 @@ void scaleVector (vector<T>& vct, const T scale) {
     return;
 };
 
+
 template <typename T>
 void scaleVectorMax (vector<T>& vct) {
 //    T max = *max_element(vct.begin(), vct.end());
@@ -224,6 +232,7 @@ void scaleVectorMax (vector<T>& vct) {
     return;
 };
 
+
 template <typename T>
 void scaleVectorD (vector<T>& vct) {
 //    T max = *max_element(vct.begin(), vct.end());
@@ -242,6 +251,7 @@ void scaleVectorD (vector<T>& vct) {
     
     return;
 };
+
 
 template <typename T>
 vector<T> mulVectorElement ( const vector<T>& vct1,
@@ -269,6 +279,7 @@ vector<T> mulVectorElement ( const vector<T>& vct1,
     return vct3;
 };
 
+
 template <typename T>
 vector<T> divVectorElement ( const vector<T>& vct1,
                              const vector<T>& vct2 ) {
@@ -291,6 +302,7 @@ vector<T> divVectorElement ( const vector<T>& vct1,
     //-------*/
     
 };
+
 
 template <typename T>
 vector < vector<T> > mulVector ( const vector < vector < T > > & vct1,
@@ -321,6 +333,7 @@ vector < vector<T> > mulVector ( const vector < vector < T > > & vct1,
     return vct3;
 };
 
+
 template <typename T>
 vector < T > mulVector( const vector < vector<T> >& vct1,
                         const vector < T > & vct2 ) {
@@ -349,6 +362,7 @@ vector < T > mulVector( const vector < vector<T> >& vct1,
     
     return vct3;
 };
+
 
 template <typename T>
 vector < T > mulVector ( const vector < T > & vct1,
@@ -381,6 +395,7 @@ vector < vector<T> > solveVM ( const vector < vector<T> >& vct1,
     return vct3;
 };
 
+
 template <typename T>
 T calSSE ( vector <T> & tcp, vector <T> & src ) {
     assert(tcp.size() == src.size());
@@ -392,6 +407,7 @@ T calSSE ( vector <T> & tcp, vector <T> & src ) {
     
     return sum;
 };
+
 
 template<typename T>
 vector < vector<T> > XYZtoLAB ( const vector < vector<T> >& XYZ ) {
@@ -422,6 +438,7 @@ vector < vector<T> > XYZtoLAB ( const vector < vector<T> >& XYZ ) {
     
     return outCalcLab;
 };
+
 
 template<typename T>
 vector< vector<T> > getCalcXYZt ( const vector < vector<T> > RGB,

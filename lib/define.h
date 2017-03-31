@@ -68,8 +68,9 @@
 #include <ctype.h>
 #include <dirent.h>
 #include <half.h>
-#include <ceres/ceres.h>
+#include <Eigen/Core>
 #include <glog/logging.h>
+#include <ceres/ceres.h>
 
 #ifndef WIN32
 #include <fcntl.h>

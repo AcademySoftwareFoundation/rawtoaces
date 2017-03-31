@@ -69,7 +69,7 @@ inline double invertD (double val) {
 
 template<typename T>
 T clip (T val, T target) {
-    return min(val, target);
+    return std::min(val, target);
 };
 
 
@@ -93,44 +93,20 @@ T cross (const vector <T> &vectorA, const vector <T> &vectorB) {
 
 
 template <typename T>
-vector< vector<T> > invertVM3 (const vector< vector<T> > &vMtx) {
-    assert(vMtx.size() == 3 &&
-           isSquare(vMtx));
+vector< vector<T> > invertVM (const vector< vector<T> > &vMtx) {
+    assert(isSquare(vMtx));
     
-//    vector <T> mtx(9);
-//    FORIJ(3, 3) mtx[i*3+j] = vMtx[i][j];
-//    
-//    T CinvMtx[] = {
-//        0.0 - mtx[5] * mtx[7] + mtx[4] * mtx[8],
-//        0.0 + mtx[2] * mtx[7] - mtx[1] * mtx[8],
-//        0.0 - mtx[2] * mtx[4] + mtx[1] * mtx[5],
-//        0.0 + mtx[5] * mtx[6] - mtx[3] * mtx[8],
-//        0.0 - mtx[2] * mtx[6] + mtx[0] * mtx[8],
-//        0.0 + mtx[2] * mtx[3] - mtx[0] * mtx[5],
-//        0.0 - mtx[4] * mtx[6] + mtx[3] * mtx[7],
-//        0.0 + mtx[1] * mtx[6] - mtx[0] * mtx[7],
-//        0.0 - mtx[1] * mtx[3] + mtx[0] * mtx[4]
-//    };
-//    
-//    vector<T> invMtx(CinvMtx, CinvMtx+sizeof(CinvMtx) / sizeof(T));
-//    T det = mtx[0] * invMtx[0] + mtx[1] * invMtx[3] + mtx[2] * invMtx[6];
-//    
-//    // pay attention to this
-//    assert (det != 0);
-//    FORI(9) invMtx[i] /= det;
-//    
-//    vector< vector<T> > vMtxR(3, vector<T>(3));
-//    FORIJ(3, 3) vMtxR[i][j] = invMtx[3*i+j];
+    Matrix <T, Dynamic, Dynamic> m;
+    m.resize(vMtx.size(), vMtx[0].size());
+    FORIJ(m.rows(), m.cols()) m(i,j) = vMtx[i][j];
     
-    // /*------- Eigen matrix operations
-    Matrix <T, 3, 3> m, c;
+    //    Map < Matrix < T, Dynamic, Dynamic, RowMajor > > m (vMtx[0]);
+    //    m.resize(vMtx.size(), vMtx[0].size());
     
-    FORIJ(3, 3) m(i,j) = vMtx[i][j];
-    c = m.inverse();
+    m = m.inverse();
     
-    vector < vector <T> > vMtxR (3, vector<T>(3));
-    FORIJ(3, 3) vMtxR[i][j] = c(i, j);
-    // -------*/
+    vector < vector <T> > vMtxR (m.rows(), vector<T>(m.cols()));
+    FORIJ(m.rows(), m.cols()) vMtxR[i][j] = m(i, j);
     
     return vMtxR;
 };
@@ -150,55 +126,32 @@ template <typename T>
 vector< vector<T> > transposeVec (const vector < vector<T> > vMtx) {
     assert( vMtx.size() != 0
             && vMtx[0].size() != 0 );
-    
-    int row = vMtx.size();
-    int col = vMtx[0].size();
 
-//    assert (row != 0 && col != 0);
-//    vector< vector<T> > vTran(col, vector<T>(row));
-//    
-//    FORIJ(row, col) vTran[j][i] = vMtx[i][j];
-    
-    // /*-------  Eigen matrix operations
     Matrix <T, Dynamic, Dynamic> m;
-    m.resize(row, col);
+    m.resize(vMtx.size(), vMtx[0].size());
     
-    FORIJ(row, col) m(i, j) = vMtx[i][j];
+    FORIJ (m.rows(), m.cols()) m(i, j) = vMtx[i][j];
     m.transposeInPlace();
      
-    vector < vector<T> > vTran(col, vector<T>(row));
-    FORIJ(col, row) vTran[i][j] = m(i, j);
-    // -------*/
-    
+    vector < vector<T> > vTran( m.rows(), vector<T>(m.cols()) );
+    FORIJ(m.rows(),  m.cols()) vTran[i][j] = m(i, j);
+
     return vTran;
 };
 
 
 template <typename T>
 T sumVector (const vector<T>& vct) {
-//    T sum = T(0.0);
-//    FORI(vct.size()) sum += vct[i];
-//    
-//    return sum;
-    
-    // /*-------  Eigen matrix operations
     Matrix <T, Dynamic, 1> v;
     v.resize(vct.size(), 1);
     FORI(v.rows()) v(i, 0) = vct[i];
     
     return v.sum();
-    // -------*/
 };
 
 
 template <typename T>
 void scaleVector (vector<T>& vct, const T scale) {
-//    transform(vct.begin(),
-//              vct.end(),
-//              vct.begin(),
-//              bind1st(multiplies<T>(), scale));
-    
-    // /*-------  Eigen matrix operations
     Matrix <T, Dynamic, 1> v;
     v.resize(vct.size(), 1);
     
@@ -206,7 +159,6 @@ void scaleVector (vector<T>& vct, const T scale) {
     v *= scale;
     
     FORI(vct.size()) vct[i] = v(i,0);
-    // -------*/
     
     return;
 };
@@ -214,12 +166,6 @@ void scaleVector (vector<T>& vct, const T scale) {
 
 template <typename T>
 void scaleVectorMax (vector<T>& vct) {
-//    T max = *max_element(vct.begin(), vct.end());
-//    
-//    transform(vct.begin(), vct.end(), vct.begin(),
-//              bind1st(multiplies<T>(), 1.0/max));
-    
-    ///*-------  Eigen matrix operations
     Matrix <T, Dynamic, 1> v;
     v.resize(vct.size(), 1);
     
@@ -227,7 +173,6 @@ void scaleVectorMax (vector<T>& vct) {
     v *= (1.0 / v.maxCoeff());
 
     FORI(vct.size()) vct[i] = v(i,0);
-    // -------*/
     
     return;
 };
@@ -235,19 +180,11 @@ void scaleVectorMax (vector<T>& vct) {
 
 template <typename T>
 void scaleVectorD (vector<T>& vct) {
-//    T max = *max_element(vct.begin(), vct.end());
-//    
-//    transform(vct.begin(), vct.end(), vct.begin(), invertD);
-//    transform(vct.begin(), vct.end(), vct.begin(),
-//              bind1st(multiplies<T>(), max));
-    
-    ///*-------  Eigen matrix operations
     Matrix <T, Dynamic, 1> v;
     v.resize(vct.size(), 1);
 
     FORI(v.rows()) v(i,0) = vct[i];
     FORI(v.rows()) vct[i] = v.maxCoeff() / vct[i];
-    //-------*/
     
     return;
 };
@@ -258,10 +195,6 @@ vector<T> mulVectorElement ( const vector<T>& vct1,
                              const vector<T>& vct2 ) {
     assert(vct1.size() == vct2.size());
     
-//    vector<T> vct3(vct1.size(), T(1.0));
-//    FORI(vct1.size()) vct3[i] = vct1[i] * vct2[i];
-    
-    ///*-------  Eigen array operations
     Array <T, Dynamic, 1> a1, a2;
     a1.resize(vct1.size(), 1);
     a2.resize(vct1.size(), 1);
@@ -274,7 +207,6 @@ vector<T> mulVectorElement ( const vector<T>& vct1,
     
     vector< T > vct3 (a1.data(),
                       a1.data() + a1.rows() * a1.cols());
-    //-------*/
     
     return vct3;
 };
@@ -284,14 +216,7 @@ template <typename T>
 vector<T> divVectorElement ( const vector<T>& vct1,
                              const vector<T>& vct2 ) {
     assert(vct1.size() == vct2.size());
-    
-//    vector<T> vct3Element(vct1.size(), 1.0);
-//    transform(vct1.begin(), vct1.end(),
-//              vct2.begin(), vct3Element.begin(),
-//              divides<T>());
-//    return vct3Element;
 
-    ///*-------  Eigen matrix operations
     vector<T> vct2D (vct2.size(), T(1.0));
     FORI(vct2.size()) {
         assert(vct2[i] != T(0.0));
@@ -299,8 +224,6 @@ vector<T> divVectorElement ( const vector<T>& vct1,
     }
     
     return mulVectorElement ( vct1, vct2D );
-    //-------*/
-    
 };
 
 
@@ -309,12 +232,6 @@ vector < vector<T> > mulVector ( const vector < vector < T > > & vct1,
                                  const vector < vector < T > > & vct2 ) {
     assert(vct1.size() != 0 && vct2.size() != 0);
 
-//    vector< vector<T> > vct3(vct1.size(), vector<T>(vct2.size()));
-//    
-//    FORIJ (vct1.size(), vct2.size())
-//        vct3[i][j] = (sumVector(mulVectorElement(vct1[i], vct2[j])));
-    
-    ///*-------  Eigen matrix operations
     Matrix <T, Dynamic, Dynamic> m1, m2, m3;
     m1.resize(vct1.size(), vct1[0].size());
     m2.resize(vct2[0].size(), vct2.size());
@@ -328,7 +245,6 @@ vector < vector<T> > mulVector ( const vector < vector < T > > & vct1,
     
     vector < vector<T> > vct3( m3.rows(), vector<T>(m3.cols()) );
     FORIJ (m3.rows(), m3.cols()) vct3[i][j] = m3(i, j);
-    //-------*/
 
     return vct3;
 };
@@ -340,11 +256,6 @@ vector < T > mulVector( const vector < vector<T> >& vct1,
     assert( vct1.size() != 0 &&
             (vct1[0]).size() == vct2.size() );
     
-//    vector< T > vct3 (vct1.size(), 1.0);
-//    FORI(vct1.size())
-//        vct3[i] = sumVector(mulVectorElement(vct1[i], vct2));
-    
-    ///*-------  Eigen matrix operations
     Matrix <T, Dynamic, Dynamic> m1, m2, m3;
     m1.resize(vct1.size(), vct1[0].size());
     m2.resize(vct2.size(), 1);
@@ -358,7 +269,6 @@ vector < T > mulVector( const vector < vector<T> >& vct1,
     
     vector< T > vct3 (m3.data(),
                       m3.data() + m3.rows() * m3.cols());
-    //-------*/
     
     return vct3;
 };
@@ -370,12 +280,32 @@ vector < T > mulVector ( const vector < T > & vct1,
     return mulVector (vct2, vct1);
 };
 
+
+template<typename T>
+T * mulVectorArray ( T * data,
+                     const uint32_t total,
+                     const uint8_t dim,
+                     const vector< vector < double > > vct ) {
+    assert(vct.size() == dim
+           && isSquare(vct));
+    
+    Matrix <T, Dynamic, Dynamic> MI, mvct;
+    MI.resize(total/dim, dim);
+    mvct.resize(dim, dim);
+    FORIJ(MI.rows(), MI.cols()) MI(i,j) = data[i*dim+j];
+    FORIJ(dim, dim) mvct(i,j) = static_cast<T>(vct[i][j]);
+    
+    Matrix<T,Dynamic,Dynamic,RowMajor> MR(MI * (mvct.transpose()));
+    FORI(total) data[i] = MR(i);
+    
+    return data;
+};
+
+
 template<typename T>
 vector < vector<T> > solveVM ( const vector < vector<T> >& vct1,
                                const vector < vector<T> >& vct2 ) {
-//    return mulVector ( invertVM3(vct1), vct2 );
     
-    ///*-------  Eigen matrix operations
     Matrix <T, Dynamic, Dynamic> m1, m2, m3;
     m1.resize(vct1.size(), vct1[0].size());
     m2.resize(vct2.size(), vct2[0].size());
@@ -390,7 +320,6 @@ vector < vector<T> > solveVM ( const vector < vector<T> >& vct1,
     
     vector < vector <T> > vct3 (m3.rows(), vector <T>(m3.cols()));
     FORIJ(m3.rows(), m3.cols()) vct3[i][j] = m3(i, j);
-    //-------*/
 
     return vct3;
 };
@@ -432,8 +361,7 @@ vector < vector<T> > XYZtoLAB ( const vector < vector<T> >& XYZ ) {
         outCalcLab[i][2] = T(200.0) * (tmpXYZ[i][1] - tmpXYZ[i][2]);
     }
     
-    // It may not be necessary here
-    // just want to show we clean stuff
+    // not necessary, just want to show we clean stuff
     clearVM(tmpXYZ);
     
     return outCalcLab;
@@ -461,61 +389,10 @@ vector< vector<T> > getCalcXYZt ( const vector < vector<T> > RGB,
     
     vector< vector<T> > outCalcXYZt = mulVector(mulVector(RGB, BV), M);
     
-    // It may not be necessary here
-    // just want to show we clean stuff
+    // not necessary, just want to show we clean stuff
     clearVM(BV);
     
     return outCalcXYZt;
-};
-
-// Non-class misc math functions
-inline float * mulVectorArray ( float * data,
-                                const uint32_t total,
-                                const uint8_t dim,
-                                const vector< vector < double > > vct ) {
-    assert(vct.size() == dim
-           && isSquare(vct));
-    
-//    MatrixXf M(total, 1), mvct(dim, dim);
-//    FORI(total) M(i,0) = data[i];
-//    Map<MatrixXf> MI(M.data(), total/dim, dim);
-    
-    MatrixXf MI(total/dim, dim), mvct(dim, dim);
-    FORIJ(MI.rows(), MI.cols()) MI(i,j) = data[i*dim+j];
-    FORIJ(dim, dim) mvct(i,j) = static_cast<float>(vct[i][j]);
-    
-    Matrix<float,Dynamic,Dynamic,RowMajor> MR(MI*(mvct.transpose()));
-    Map<RowVectorXf> v(MR.data(), MR.size());
-    FORI(total) data[i] = MR(i);
-    
-//    if (dim == 3) {
-//        for(uint32_t i = 0; i < total; i+=dim ) {
-//            if (i<100) printf("%f, ", data[i]);
-//        
-//            data[i] = vct[0][0]*(data[i]) + vct[0][1]*(data[i+1])
-//            + vct[0][2]*(data[i+2]);
-//            data[i+1] = vct[1][0]*(data[i]) + vct[1][1]*(data[i+1])
-//            + vct[1][2]*(data[i+2]);
-//            data[i+2] = vct[2][0]*(data[i]) + vct[2][1]*(data[i+1])
-//            + vct[2][2]*(data[i+2]);
-//            
-//            if (i<100) printf("%f\n", data[i]);
-//        }
-//    }
-//    else if (dim == 4) {
-//        for(uint32_t i = 0; i < total; i+=4 ){
-//            data[i] = vct[0][0]*data[i] + vct[0][1]*data[i+1]
-//            + vct[0][2]*data[i+2] + vct[0][3]*data[i+3];
-//            data[i+1] = vct[1][0]*data[i] + vct[1][1]*data[i+1]
-//            + vct[1][2]*data[i+2] + vct[1][3]*data[i+3];
-//            data[i+2] = vct[2][0]*data[i] + vct[2][1]*data[i+1]
-//            + vct[2][2]*data[i+2] + vct[2][3]*data[i+3];
-//            data[i+3] = vct[3][0]*data[i] + vct[3][1]*data[i+1]
-//            + vct[3][2]*data[i+2] + vct[3][3]*data[i+3];
-//        }
-//    }
-    
-    return data;
 };
 
 #endif

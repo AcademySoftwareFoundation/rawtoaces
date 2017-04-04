@@ -101,19 +101,6 @@ void AcesRender::setPixels (libraw_processed_image_t * image) {
     _image = image;
 }
 
-//	=====================================================================
-//	Update option list
-//
-//	inputs:
-//      option     : a list of initial options specified by users
-//
-//	outputs:
-//      N/A        : _opts will be filled
-
-void AcesRender::updateOptions (option opts) {
-    _opts = opts;
-}
-
 
 //	=====================================================================
 //	Read camera spectral sensitivity data from path
@@ -276,9 +263,13 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, libraw_colordata_t C )
                         +"cmf/cmf_1931.json" );
         _idt->chooseIlluminant ( illuCM, mulV, illumType );
         
-        printf ( "\nCalculating IDT Matrix from Spectral Sensitivity ...\n" );
+        printf ( "\nCalculating IDT Matrix from Spectral Sensitivity ...\n\n" );
         
-        if (_opts.use_mat == 0) _idt->setVerbosity(1);
+        _idt->setVerbosity(_opts.verbosity);
+        if (_opts.use_mat == 0 &&
+            !_opts.verbosity )
+            _idt->setVerbosity(1);
+        
         if ( _idt->calIDT() )  {
             _idtm = _idt->getIDT();
             _wbv = _idt->getWB();

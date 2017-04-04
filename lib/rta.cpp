@@ -862,17 +862,21 @@ namespace rta {
         
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::DENSE_QR;
-        options.minimizer_progress_to_stdout = false;
         options.parameter_tolerance = 1e-17;
         options.gradient_tolerance = 1e-17;
         options.function_tolerance = 1e-17;
         options.min_line_search_step_size = 1e-17;
         options.max_num_iterations = 300;
         
+        if (_verbosity > 2)
+            options.minimizer_progress_to_stdout = true;
+        
         ceres::Solver::Summary summary;
         ceres::Solve(options, &problem, &summary);
 
-        if (_verbosity)
+        if (_verbosity == 1)
+            std::cout << summary.BriefReport() << "\n";
+        else if (_verbosity >= 2)
             std::cout << summary.FullReport() << "\n";
         
         if (summary.num_successful_steps) {
@@ -886,8 +890,8 @@ namespace rta {
             _idt[2][1] = B[5];
             _idt[2][2] = 1.0 - B[4] - B[5];
             
-            if (_verbosity) {
-                printf("The Final IDT Matrix is: \n\n");
+            if (_verbosity >= 1) {
+                printf("\nThe Final IDT Matrix is: \n\n");
 
                 FORI(3) {
                     FORJ(3) {

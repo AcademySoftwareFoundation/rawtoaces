@@ -80,7 +80,6 @@ class AcesRender {
     
         void setOptions (option opts);
         void setPixels (libraw_processed_image_t * image);
-        void updateOptions (option opts);
         void applyWB  ( float * pixels, int bits, uint32_t total ) const;
         void applyIDT ( float * pixels, int bits, uint32_t total );
         void applyCAT ( float * pixels, int channel, uint32_t total ) const;

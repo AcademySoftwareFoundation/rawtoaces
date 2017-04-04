@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
             if ( opts.use_timing )
                 timerprint( "LibRaw::unpack()", argv[arg] );
         
-            Render.updateOptions(opts);
+            Render.setOptions(opts);
         
             // use_mat 0, 1, 2
             if ( !opts.use_mat ) {
@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
                 OUT.use_camera_matrix = 3;
             }
         
-            Render.updateOptions(opts);
+            Render.setOptions(opts);
         
             // --wb-method condition 0,1,2
             if ( !opts.use_wb && !opts.use_Mul ) {
@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
                 }
             }
         
-            Render.updateOptions(opts);
+//            Render.setOptions(opts);
 
             if ( opts.use_wb == 1 ) {
                 OUT.use_camera_wb = 1;
@@ -285,6 +285,8 @@ int main(int argc, char *argv[])
                 printf ( "Converting to aces RGB\n" );
             else if ( opts.verbosity )
                 printf ( "Writing file %s\n", outfn );
+        
+            Render.setOptions(opts);
         
             char * cp;
             if (( cp = strrchr ( argv[arg], '.' ))) *cp = 0;

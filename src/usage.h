@@ -195,6 +195,20 @@ void initialize (option &opts)
     opts.use_wb = 0;
     opts.scale  = 1.0;
     
+    struct stat st;
+
+    dataPath PATH = pathsFinder ();
+    
+    FORI ( PATH.cpaths.size() ) {
+        if ( !stat( (PATH.cpaths)[i].c_str(), &st ) )
+            opts.cEnvPaths.push_back((PATH.cpaths)[i]);
+    }
+    
+    FORI ( PATH.ipaths.size() ) {
+        if ( !stat( (PATH.ipaths)[i].c_str(), &st ) )
+            opts.iEnvPaths.push_back((PATH.ipaths)[i]);
+    }
+    
 #ifndef WIN32
     opts.msize = 0;
     opts.use_mmap=0;

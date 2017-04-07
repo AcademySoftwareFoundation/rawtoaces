@@ -137,6 +137,7 @@ struct option {
     char * illumType;
     
     float scale;
+    vector <string> cEnvPaths, iEnvPaths;
 };
 
 struct CIEXYZ {
@@ -181,9 +182,9 @@ struct illum {
     vector <double> data;
 };
 
-struct cameraDataPath {
+struct dataPath {
     string os;
-    vector <string> paths;
+    vector <string> cpaths, ipaths;
 };
 
 const double e = 216.0/24389.0;
@@ -295,46 +296,80 @@ inline bool isNumeric ( const char * val )
 };
 
 // Function to get environment variable for camera data
-inline cameraDataPath& cameraPathsFinder() {
-    static cameraDataPath cdp;
+inline dataPath& pathsFinder ( )
+{
+    static dataPath cdp;
     static bool firstTime = 1;
     
     if(firstTime)
     {
-        vector <string>& cPaths = cdp.paths;
+        string pathc, pathi;
+        const char* envc, * envi;
         
-        string path;
-        const char* env = getenv("RAWTOACES_CAM_PATH");
-        if (env)
-            path = env;
+        vector <string>& CPs = cdp.cpaths;
+        envc = getenv("AMPAS_CAMERA_SENSITIVITIES_PATH");
         
-        if (path == "") {
+        vector <string>& IPs = cdp.ipaths;
+        envi = getenv("AMPAS_ILLUMINANT_PATH");
+    
+        if (envc) pathc = envc;
+        if (envi) pathi = envi;
+        
+        if (pathc == "") {
 #if defined (WIN32) || defined (WIN64)
-            path = ".";
+            pathc = ".";
             cdp.os = "WIN";
 #else
-            path = ".:/usr/local/lib/rawtoaces:/usr/local" PACKAGE "-" VERSION "/lib/rawtoaces";
+            pathc = "/usr/local/include/rawtoaces/data/camera:/usr/local/"PACKAGE "-" VERSION "/include/rawtoaces/data/camera";
             cdp.os = "UNIX";
 #endif
         }
         
-        size_t pos = 0;
-        while (pos < path.size()){
+        if (pathi == "") {
 #if defined (WIN32) || defined (WIN64)
-            size_t end = path.find(';', pos);
+            pathi = ".";
+            cdp.os = "WIN";
 #else
-            size_t end = path.find(':', pos);
+            pathi = "/usr/local/include/rawtoaces/data/illuminant:/usr/local/"PACKAGE "-" VERSION "/include/rawtoaces/data/illuminant";
+            cdp.os = "UNIX";
+#endif
+        }
+        
+        size_t posc = 0, posi = 0;
+        while (posc < pathc.size()){
+#if defined (WIN32) || defined (WIN64)
+            size_t end = pathc.find(';', posc);
+#else
+            size_t end = pathc.find(':', posc);
 #endif
             
             if (end == string::npos)
-                end = path.size();
+                end = pathc.size();
             
-            string pathItem = path.substr(pos, end-pos);
+            string pathItem = pathc.substr(posc, end-posc);
             
-            if(find(cPaths.begin(), cPaths.end(), pathItem) == cPaths.end())
-                cPaths.push_back(pathItem);
+            if(find(CPs.begin(), CPs.end(), pathItem) == CPs.end())
+                CPs.push_back(pathItem);
             
-            pos = end + 1;
+            posc = end + 1;
+        }
+            
+        while (posi < pathi.size()){
+#if defined (WIN32) || defined (WIN64)
+            size_t end = pathi.find(';', posi);
+#else
+            size_t end = pathi.find(':', posi);
+#endif
+                
+            if (end == string::npos)
+                end = pathi.size();
+                
+            string pathItem = pathi.substr(posi, end-posi);
+                
+            if(find(IPs.begin(), IPs.end(), pathItem) == IPs.end())
+                IPs.push_back(pathItem);
+                
+            posi = end + 1;
         }
     }
     return cdp;

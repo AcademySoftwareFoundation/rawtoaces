@@ -107,8 +107,10 @@ void AcesRender::setPixels (libraw_processed_image_t * image) {
 //
 //	inputs:
 //      const char *     : camera spectral sensitivity path
-//                         (either in "/usr/local/include/rawtoaces/data/camera"
-//                         or specified by user)
+//                         (either in the environment variable of
+//                          "AMPAS_CAMERA_SENSITIVITIES_PATH"
+//                          such as  "/usr/local/include/rawtoaces/data/camera"
+//                          or specified by users)
 //      libraw_iparams_t : main parameters read from RAW
 //
 //	outputs:
@@ -136,11 +138,11 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
                                       _opts.use_camera_path );
     }
     else  {
-        if ( !stat ( FILEPATH, &st ) )  {
-//            vector<string> cFiles = openDir ( static_cast <string> ( FILEPATH )
-//                                              +"/camera" );
-            vector<string> cFiles = openDir ( static_cast <string> ( FILEPATH )
-                                             +"camera" );
+        FORI (_opts.cEnvPaths.size()) {
+            string cPath = (_opts.cEnvPaths)[i];            
+//          vector<string> cFiles = openDir ( static_cast <string> ( FILEPATH )
+//                                                  +"/camera" );
+            vector<string> cFiles = openDir ( cPath );
 
             for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
                 string fn( *file );
@@ -148,7 +150,7 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
                 readC = _idt->loadCameraSpst( fn,
                                               static_cast <const char *> (P.make),
                                               static_cast <const char *> (P.model),
-                                              _opts.use_camera_path);
+                                              _opts.use_camera_path );
                 if ( readC ) return 1;
             }
         }
@@ -163,7 +165,8 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
 //
 //	inputs:
 //      const char *  : type of light source ("unknown" if not specified)
-//                      (in "/usr/local/include/rawtoaces/data/Illuminant")
+//                      (in the environment variable of "AMPAS_ILLUMINANT_PATH"
+//                       such as "/usr/local/include/rawtoaces/data/Illuminant")
 //      map <string, vector <double>> : key is the path (string) to each
 //                                      light source; value is calculated
 //                                      white balance coefficients (vector)
@@ -180,18 +183,18 @@ int AcesRender::readIlluminant( const char * illumType,
     int readI = 0;
     struct stat st;
     
-    if( !stat( FILEPATH, &st ) ) {
-        vector <string> iFiles = openDir( static_cast < string >( FILEPATH )
-                                          + "illuminant" );
+    FORI (_opts.iEnvPaths.size()) {
+        string iPath = (_opts.iEnvPaths)[i];
+        vector <string> iFiles = openDir( iPath );
+//        printf("%s, ", iPath.c_str());
 
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string fn( *file );
             string strType(illumType);
-            
+                
             const char * illumC = static_cast < const char * >( illumType );
 
             if ( strType.compare("unknown") != 0 ) {
-                
                 readI = _idt->loadIlluminant( fn, illumC );
                 if ( readI )
                 {
@@ -201,8 +204,7 @@ int AcesRender::readIlluminant( const char * illumType,
             }
             else {
                 readI = _idt->loadIlluminant( fn, illumC );
-                if ( readI )
-                    illuCM[fn] = _idt->calWB();
+                if ( readI ) illuCM[fn] = _idt->calWB();
             }
         }
     }

@@ -132,6 +132,7 @@ struct option {
     int use_mmap;
     int msize;
     int verbosity;
+    int highlight;
     
     char * cameraSenPath;
     char * illumType;

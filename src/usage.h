@@ -185,15 +185,16 @@ void create_key()
 
 void initialize (option &opts)
 {
-    opts.use_bigfile = 0;
-    opts.use_timing = 0;
+    opts.use_bigfile     = 0;
+    opts.use_timing      = 0;
     opts.use_camera_path = 0;
-    opts.use_illum = 0;
-    opts.use_Mul = 0;
-    opts.verbosity = 0;
-    opts.use_mat = 0;
-    opts.use_wb = 0;
-    opts.scale  = 1.0;
+    opts.use_illum       = 0;
+    opts.use_Mul         = 0;
+    opts.verbosity       = 0;
+    opts.use_mat         = 0;
+    opts.use_wb          = 0;
+    opts.highlight       = 0;
+    opts.scale           = 1.0;
     
     struct stat st;
 

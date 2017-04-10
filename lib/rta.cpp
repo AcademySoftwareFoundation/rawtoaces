@@ -449,7 +449,6 @@ namespace rta {
     
     int Idt::loadIlluminant ( const string &path,
                               const string type ) {
-        
         assert(path.find("_380_780") != std::string::npos);
         
         int wl = 380;
@@ -465,11 +464,9 @@ namespace rta {
             
             const string stype = pt.get<string>( "illuminant" );
             
-            if (type.compare(stype) != 0
-                && type.compare("unknown") != 0)
-            {
+            if ( type.compare(stype) != 0
+                 && type.compare("unknown") != 0 )
                 return 0;
-            }
             
             _Illuminant.type = stype;
             
@@ -520,7 +517,6 @@ namespace rta {
     //		_trainingSpec: If successufully parsed, _trainingSpec will be filled
     
     void Idt::loadTrainingData ( const string &path ) {
-        
         try
         {
             // using libraries from boost::property_tree
@@ -557,7 +553,6 @@ namespace rta {
     //		_cmf: If successufully parsed, _cmf will be filled
     
     void Idt::loadCMF ( const string &path ) {
-        
         try
         {
             // using libraries from boost::property_tree
@@ -673,9 +668,9 @@ namespace rta {
             _Illuminant.data.clear();
         }
         
-        cout << "The best light source is: " << _bestIllum << endl;
+        cout << "The closest light source is: " << _bestIllum << endl;
 
-        if(loadIlluminant(_bestIllum, type))
+        if ( loadIlluminant ( _bestIllum, type ) )
             scaleLSC();
         
         return;

@@ -187,6 +187,7 @@ int main(int argc, char *argv[])
             if ( opts.use_timing )
                 timerprint( "LibRaw::unpack()", argv[arg] );
         
+            opts.highlight = OUT.highlight;
             Render.setOptions(opts);
         
             // use_mat 0, 1, 2

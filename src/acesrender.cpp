@@ -257,10 +257,15 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, libraw_colordata_t C )
         printf ( "\nThe matching camera is: %s %s\n", P.make, P.model );
         
         vector < double > mulV (C.cam_mul, C.cam_mul+3);
-        scaleVectorMax (mulV);
+        if( !_opts.highlight )
+            scaleVectorMin (mulV);
+        else
+            scaleVectorMax (mulV);
         
+        // loading training data (190 patches)
         _idt->loadTrainingData ( static_cast < string > ( FILEPATH )
                                  +"training/training_spectral.json" );
+        // loading color matching function
         _idt->loadCMF ( static_cast < string > ( FILEPATH )
                         +"cmf/cmf_1931.json" );
         _idt->chooseIlluminant ( illuCM, mulV, illumType );
@@ -305,15 +310,15 @@ int AcesRender::prepareWB ( libraw_iparams_t P, libraw_colordata_t C )
     
     int read = readCameraSenPath ( cameraSenPath, P );
     
-    if (!read &&
-        !_opts.use_camera_path) {
+    if ( !read &&
+         !_opts.use_camera_path ) {
         fprintf( stderr, "\nError: No matching cameras found. "
                          "Please use other options for "
                          "\"--wb-method\".\n");
         exit (1);
     }
     
-    if (!illumType) illumType = "unknown";
+    if ( !illumType ) illumType = "unknown";
     
     map < string, vector < double > > illuCM;
     read = readIlluminant( illumType, illuCM );
@@ -329,7 +334,10 @@ int AcesRender::prepareWB ( libraw_iparams_t P, libraw_colordata_t C )
         printf ( "\nThe matching camera is: %s %s\n", P.make, P.model );
         
         vector < double > mulV (C.cam_mul, C.cam_mul+3);
-        scaleVectorMax (mulV);
+        if( !_opts.highlight )
+            scaleVectorMin (mulV);
+        else
+            scaleVectorMax (mulV);
         
         // loading training data (190 patches)
         _idt->loadTrainingData ( static_cast < string > ( FILEPATH )

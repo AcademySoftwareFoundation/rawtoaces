@@ -198,13 +198,13 @@ int AcesRender::readIlluminant( const char * illumType,
                 readI = _idt->loadIlluminant( fn, illumC );
                 if ( readI )
                 {
-                    illuCM[fn] = _idt->calWB();
+                    illuCM[fn] = _idt->calWB( _opts.highlight );
                     return 1;
                 }
             }
             else {
                 readI = _idt->loadIlluminant( fn, illumC );
-                if ( readI ) illuCM[fn] = _idt->calWB();
+                if ( readI ) illuCM[fn] = _idt->calWB( _opts.highlight );
             }
         }
     }
@@ -357,7 +357,7 @@ int AcesRender::prepareWB ( libraw_iparams_t P, libraw_colordata_t C )
                  "Coefficients...\n\n" );
         
         _wbv = _idt->getWB();
-    
+        
         return 1;
     }
     

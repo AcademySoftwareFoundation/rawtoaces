@@ -105,6 +105,8 @@ int main(int argc, char *argv[])
     {
         char outfn[1024];
         AcesRender Render;
+        
+        opts.highlight = OUT.highlight;
         Render.setOptions(opts);
         
         if( opts.verbosity )
@@ -187,7 +189,6 @@ int main(int argc, char *argv[])
             if ( opts.use_timing )
                 timerprint( "LibRaw::unpack()", argv[arg] );
         
-            opts.highlight = OUT.highlight;
             Render.setOptions(opts);
         
             // use_mat 0, 1, 2

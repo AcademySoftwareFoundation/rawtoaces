@@ -601,37 +601,6 @@ namespace rta {
         _verbosity = verbosity;
     }
     
-    //	=====================================================================
-    //	Calculate White Balance based on the best Illuminant data
-    //
-    //	inputs:
-    //      const string: filePath
-    //		const char *: illumType
-    //
-    //	outputs:
-    //		vector: wb(R, G, B)
-    
-    vector < double > Idt::calWB() {
-        assert( _Illuminant.data.size() == 81
-                && _cameraSpst._rgbsen.size() > 0 );
-        
-        scaleLSC();
-
-        vector < vector < double > > colRGB (3, vector <double> (81, 1.0));
-        
-        FORI(81) {
-            colRGB[0][i] = _cameraSpst._rgbsen[i].RSen;
-            colRGB[1][i] = _cameraSpst._rgbsen[i].GSen;
-            colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
-        }
-        
-        vector< double > wb = mulVector ( colRGB, _Illuminant.data );
-        clearVM(colRGB);
-        
-        FORI(wb.size()) wb[i] = invertD(wb[i]);
-        
-        return wb;
-    }
   
     //	=====================================================================
     //	Choose the best Light Source based on White Balance Coefficients from
@@ -751,6 +720,43 @@ namespace rta {
         clearVM (wDES);
 
         return vkm;
+    }
+    
+    //	=====================================================================
+    //	Calculate White Balance based on the best Illuminant data and
+    //  highlight mode used in pre-processing with "libraw"
+    //
+    //	inputs:
+    //      int: highlight
+    //
+    //	outputs:
+    //		vector: wb(R, G, B)
+    
+    vector < double > Idt::calWB( int highlight ) {
+        assert( _Illuminant.data.size() == 81
+               && _cameraSpst._rgbsen.size() > 0 );
+        
+        scaleLSC();
+        
+        vector < vector < double > > colRGB (3, vector <double> (81, 1.0));
+        
+        FORI(81) {
+            colRGB[0][i] = _cameraSpst._rgbsen[i].RSen;
+            colRGB[1][i] = _cameraSpst._rgbsen[i].GSen;
+            colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
+        }
+        
+        vector< double > wb = mulVector ( colRGB, _Illuminant.data );
+        clearVM(colRGB);
+        
+        FORI(wb.size()) wb[i] = invertD(wb[i]);
+        
+        if ( !highlight )
+            scaleVectorMin (wb);
+        else
+            scaleVectorMax (wb);
+        
+        return wb;
     }
     
     //	=====================================================================

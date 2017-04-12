@@ -377,30 +377,49 @@ namespace rta {
             ptree pt;
             read_json ( path, pt );
             
-            const char * cmaker = (pt.get<string>( "maker" )).c_str();
+            const char * cmaker = (pt.get<string>( "header.manufacturer" )).c_str();
             if (!ss_path && cmp_str(maker, cmaker)) return 0;
                 _cameraSpst.setBrand(cmaker);
             
-            const char * cmodel = (pt.get<string>( "model" )).c_str();
+            const char * cmodel = (pt.get<string>( "header.model" )).c_str();
             if (!ss_path && cmp_str(model, cmodel)) return 0;
                 _cameraSpst.setModel(cmaker);
             
-            vector < int > range;
-            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "range" ) )
-                range.push_back(row.second.get_value<int>());
+//            vector < int > range;
+//            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "range" ) )
+//                range.push_back(row.second.get_value<int>());
+//            
+//            if ( range[0] != 380 || range[1] != 780) {
+//                fprintf(stderr, "Please double check the Camera "
+//                                "Sensitivity data (e.g. the increment "
+//                                "should be from 380nm to 780nm).\n");
+//                exit(1);
+//            }
+//            _cameraSpst.setWLIncrement (range[3]);
             
-            if ( range[0] != 380 || range[1] != 780) {
-                fprintf(stderr, "Please double check the Camera "
-                                "Sensitivity data (e.g. the increment "
-                                "should be from 380nm to 780nm).\n");
-                exit(1);
-            }
-            _cameraSpst.setWLIncrement (range[3]);
+            vector <int> wavs;
+            int inc;
 
-            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "sensitivity" ) )
+            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "spectral_data.data.main" ) )
             {
-                vector < double > data;
+                wavs.push_back(atoi((row.first).c_str()));
+
+                if ( wavs.size() == 2 )
+                    inc = wavs[1] - wavs[0];
+                else if ( wavs.size() > 2 &&
+                          wavs[wavs.size()-1] - wavs[wavs.size()-2] != inc ) {
+                    fprintf(stderr, "Please double check the Camera "
+                            "Sensitivity data (e.g. the increment "
+                            "should be uniform from 380nm to 780nm).\n");
+                    exit(1);
+                }
                 
+                if (wavs[wavs.size()-1] < 380)
+                    continue;
+                else if (wavs[wavs.size()-1] > 780)
+                    break;
+
+                vector < double > data;
                 BOOST_FOREACH ( ptree::value_type &cell, row.second )
                     data.push_back ( cell.second.get_value<double>() );
                 
@@ -412,8 +431,11 @@ namespace rta {
                 if(tmp_sen.GSen > max[1]) max[1] = tmp_sen.GSen;
                 if(tmp_sen.BSen > max[2]) max[2] = tmp_sen.BSen;
                 
+//                printf("\"%i\": [ %18.13f,  %18.13f,  %18.13f ], \n", wavs[wavs.size()-1], data[0], data[1], data[2] );
+                
                 rgbsen.push_back (tmp_sen);
             }
+            _cameraSpst.setWLIncrement (inc);
         }
         catch ( std::exception const& e )
         {
@@ -425,7 +447,7 @@ namespace rta {
         if ( rgbsen.size() != 81 ) {
             fprintf(stderr, "Please double check the Camera "
                             "Sensitivity data (e.g. the increment "
-                            "should be 5nm from 380nm to 780nm).\n");
+                            "should be uniform from 380nm to 780nm).\n");
             exit(1);
         }
         

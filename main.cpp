@@ -92,8 +92,6 @@ int main(int argc, char *argv[])
     OUT.no_auto_bright    = 1;
     OUT.auto_bright_thr   = 0.0;
     
-    RawProcessor.show();
-
   // Fetch conditions and conduct some pre-processing
   int arg = configureSetting (argc, argv, opts, OUT);
     
@@ -195,24 +193,16 @@ int main(int argc, char *argv[])
                 timerprint( "LibRaw::unpack()", argv[arg] );
         
             Render.setOptions(opts);
-
-            printf("The black Level is: %i\n\n", C.black);
-            printf("The data_maximum is: %i\n\n", C.data_maximum);
-            printf("The maximum is: %f\n\n", (float)(C.maximum));
-            printf("The fmaximum is: %f\n\n", (float)(C.fmaximum));
-            printf("The fnorm is: %f\n\n", C.fnorm);
         
             float scaling = 1.0;
-            // if C.black is not 0, figure out a scaling factor that will be used to
-            // multiples the calculated white balance. The default value is 1.0
-            if ( C.black != 0 )
-                scaling =  C.maximum / ( C.maximum - C.black );
-            // if C.black is 0, use “-S” and set the value to be the maximum pixel value
-            // multiplied by 0.9
-            else
-                OUT.user_sat = static_cast<int> ( C.maximum * 0.9 );
-
-            printf("The scaling is: %f\n\n", scaling);
+//            // if C.black is not 0, figure out a scaling factor that will be used to
+//            // multiples the calculated white balance. The default value is 1.0
+//            if ( C.black != 0 )
+//                scaling =  C.maximum / ( C.maximum - C.black );
+//            // if C.black is 0, use “-S” and set the value to be the maximum pixel value
+//            // multiplied by 0.9
+//            else
+//                OUT.user_sat = static_cast<int> ( C.maximum * 0.9 );
 
             // use_mat 0, 1, 2
             if ( !opts.use_mat ) {
@@ -302,13 +292,7 @@ int main(int argc, char *argv[])
                 if ( LIBRAW_FATAL_ERROR( opts.ret ) )
                     exit(1);
             }
-        
-            printf("The black Level is: %i\n\n", C.black);
-            printf("The data_maximum is: %i\n\n", C.data_maximum);
-            printf("The maximum is: %f\n\n", (float)(C.maximum));
-            printf("The fmaximum is: %f\n\n", (float)(C.fmaximum));
-            printf("The fnorm is: %f\n\n", C.fnorm);
-        
+    
             if ( opts.use_timing )
                 timerprint ( "LibRaw::dcraw_process()", argv[arg] );
             

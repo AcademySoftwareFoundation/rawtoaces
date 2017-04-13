@@ -82,12 +82,14 @@ int main(int argc, char *argv[])
     
     // General set-up
     OUT.output_color      = 5;
+//    OUT.user_black        = 0;
     OUT.output_bps        = 16;
     OUT.highlight         = 0;
     OUT.use_camera_matrix = 0;
     OUT.gamm[0]           = 1.0;
     OUT.gamm[1]           = 1.0;
     OUT.no_auto_bright    = 1;
+    OUT.auto_bright_thr   = 0.0;
 
   // Fetch conditions and conduct some pre-processing
   int arg = configureSetting (argc, argv, opts, OUT);
@@ -191,6 +193,19 @@ int main(int argc, char *argv[])
         
             Render.setOptions(opts);
         
+            printf("The black Level is: %i\n\n", C.black);
+            printf("The data_maximum is: %i\n\n", C.data_maximum);
+            printf("The maximum is: %f\n\n", (float)(C.maximum));
+            printf("The fmaximum is: %f\n\n", (float)(C.fmaximum));
+            printf("The fnorm is: %f\n\n", C.fnorm);
+        
+//            float scaling = invertD (C.maximum * INV_65535);
+            float scaling = 1.0;
+            if ( C.black != 0 )
+                scaling =  65535.0 / ( 65535 - C.black );
+
+            printf("The scaling is: %f\n\n", scaling);
+
             // use_mat 0, 1, 2
             if ( !opts.use_mat ) {
                 OUT.use_camera_matrix = 0;
@@ -206,7 +221,7 @@ int main(int argc, char *argv[])
                     if ( !opts.use_wb ) {
                         opts.use_Mul = 1;
                         vector < double > wbv = Render.getWB();
-                        FORI(3) OUT.user_mul[i] = wbv[i];
+                        FORI(3) OUT.user_mul[i] = wbv[i] * scaling;
                     }
                 }
             }
@@ -235,7 +250,7 @@ int main(int argc, char *argv[])
                 if ( gotWB ) {
                     opts.use_Mul = 1;
                     vector < double > wbv = Render.getWB();
-                    FORI(3) OUT.user_mul[i] = wbv[i];
+                    FORI(3) OUT.user_mul[i] = wbv[i] * scaling;
                 }
             }
         
@@ -273,12 +288,18 @@ int main(int argc, char *argv[])
             // Start the dcraw process
             timerstart_timeval();
             if ( LIBRAW_SUCCESS != ( opts.ret = RawProcessor.dcraw_process() ) )
-                {
-                    fprintf ( stderr, "Error: Cannot do postpocessing on %s: %s\n\n",
-                                      argv[arg],libraw_strerror(opts.ret) );
-                    if ( LIBRAW_FATAL_ERROR( opts.ret ) )
-                        exit(1);
-                }
+            {
+                fprintf ( stderr, "Error: Cannot do postpocessing on %s: %s\n\n",
+                                  argv[arg],libraw_strerror(opts.ret) );
+                if ( LIBRAW_FATAL_ERROR( opts.ret ) )
+                    exit(1);
+            }
+        
+            printf("The black Level is: %i\n\n", C.black);
+            printf("The data_maximum is: %i\n\n", C.data_maximum);
+            printf("The maximum is: %f\n\n", (float)(C.maximum));
+            printf("The fmaximum is: %f\n\n", (float)(C.fmaximum));
+            printf("The fnorm is: %f\n\n", C.fnorm);
         
             if ( opts.use_timing )
                 timerprint ( "LibRaw::dcraw_process()", argv[arg] );

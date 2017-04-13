@@ -61,6 +61,13 @@
 
 using namespace rta;
 
+class LibRawAces : public LibRaw {
+    public:
+        void show () {
+            cout << "I am here with LibRawAces.\n" << endl;
+        }
+};
+
 class AcesRender {
     public:
         AcesRender();

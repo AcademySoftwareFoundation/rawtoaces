@@ -58,7 +58,9 @@ int main(int argc, char *argv[])
 {
     if ( argc == 1 ) usage( argv[0] );
     
-    LibRaw RawProcessor;
+//    LibRaw RawProcessor;
+    LibRawAces RawProcessor;
+
     option opts;
     struct stat st;
     
@@ -82,7 +84,6 @@ int main(int argc, char *argv[])
     
     // General set-up
     OUT.output_color      = 5;
-//    OUT.user_black        = 0;
     OUT.output_bps        = 16;
     OUT.highlight         = 0;
     OUT.use_camera_matrix = 0;
@@ -90,6 +91,8 @@ int main(int argc, char *argv[])
     OUT.gamm[1]           = 1.0;
     OUT.no_auto_bright    = 1;
     OUT.auto_bright_thr   = 0.0;
+    
+    RawProcessor.show();
 
   // Fetch conditions and conduct some pre-processing
   int arg = configureSetting (argc, argv, opts, OUT);
@@ -139,8 +142,8 @@ int main(int argc, char *argv[])
                 
                 int pgsz = getpagesize();
                 opts.msize = (( st.st_size+pgsz-1 ) / pgsz ) * pgsz;
-                iobuffer = mmap( NULL, opts.msize, PROT_READ, MAP_PRIVATE, file, 0 );
-                if( !iobuffer )
+                iobuffer = mmap ( NULL, opts.msize, PROT_READ, MAP_PRIVATE, file, 0 );
+                if ( !iobuffer )
                 {
                     fprintf ( stderr, "\nError: Cannot mmap %s: %s\n\n",
                                       argv[arg], strerror(errno) );
@@ -192,17 +195,22 @@ int main(int argc, char *argv[])
                 timerprint( "LibRaw::unpack()", argv[arg] );
         
             Render.setOptions(opts);
-        
+
             printf("The black Level is: %i\n\n", C.black);
             printf("The data_maximum is: %i\n\n", C.data_maximum);
             printf("The maximum is: %f\n\n", (float)(C.maximum));
             printf("The fmaximum is: %f\n\n", (float)(C.fmaximum));
             printf("The fnorm is: %f\n\n", C.fnorm);
         
-//            float scaling = invertD (C.maximum * INV_65535);
             float scaling = 1.0;
+            // if C.black is not 0, figure out a scaling factor that will be used to
+            // multiples the calculated white balance. The default value is 1.0
             if ( C.black != 0 )
-                scaling =  65535.0 / ( 65535 - C.black );
+                scaling =  C.maximum / ( C.maximum - C.black );
+            // if C.black is 0, use “-S” and set the value to be the maximum pixel value
+            // multiplied by 0.9
+            else
+                OUT.user_sat = static_cast<int> ( C.maximum * 0.9 );
 
             printf("The scaling is: %f\n\n", scaling);
 

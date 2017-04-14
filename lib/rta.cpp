@@ -366,8 +366,6 @@ namespace rta {
                               const char * maker,
                               const char * model,
                               const int ss_path) {
-        assert(path.find("_380_780") != std::string::npos);
-        
         vector <RGBSen> rgbsen;
         vector <double> max(3, dmin);
         
@@ -384,18 +382,6 @@ namespace rta {
             const char * cmodel = (pt.get<string>( "header.model" )).c_str();
             if (!ss_path && cmp_str(model, cmodel)) return 0;
                 _cameraSpst.setModel(cmaker);
-            
-//            vector < int > range;
-//            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "range" ) )
-//                range.push_back(row.second.get_value<int>());
-//            
-//            if ( range[0] != 380 || range[1] != 780) {
-//                fprintf(stderr, "Please double check the Camera "
-//                                "Sensitivity data (e.g. the increment "
-//                                "should be from 380nm to 780nm).\n");
-//                exit(1);
-//            }
-//            _cameraSpst.setWLIncrement (range[3]);
             
             vector <int> wavs;
             int inc;
@@ -427,9 +413,9 @@ namespace rta {
                 
                 RGBSen tmp_sen ( data[0], data[1], data[2] );
                 
-                if(tmp_sen.RSen > max[0]) max[0] = tmp_sen.RSen;
-                if(tmp_sen.GSen > max[1]) max[1] = tmp_sen.GSen;
-                if(tmp_sen.BSen > max[2]) max[2] = tmp_sen.BSen;
+                if (tmp_sen.RSen > max[0]) max[0] = tmp_sen.RSen;
+                if (tmp_sen.GSen > max[1]) max[1] = tmp_sen.GSen;
+                if (tmp_sen.BSen > max[2]) max[2] = tmp_sen.BSen;
                 
 //                printf("\"%i\": [ %18.13f,  %18.13f,  %18.13f ], \n", wavs[wavs.size()-1], data[0], data[1], data[2] );
                 
@@ -471,11 +457,7 @@ namespace rta {
     
     int Idt::loadIlluminant ( const string &path,
                               const string type ) {
-        assert(path.find("_380_780") != std::string::npos);
-        
-        int wl = 380;
-        
-        if ((_Illuminant.data).size() != 0)
+        if ( (_Illuminant.data).size() != 0 )
             (_Illuminant.data).clear();
         
         try
@@ -484,45 +466,54 @@ namespace rta {
             ptree pt;
             read_json ( path, pt );
             
-            const string stype = pt.get<string>( "illuminant" );
-            
-            if ( type.compare(stype) != 0
-                 && type.compare("unknown") != 0 )
+            const string stype = pt.get<string>( "header.illuminant" );
+            if (type.compare(stype) != 0
+                && type.compare("unknown") != 0)
+            {
                 return 0;
-            
+            }
             _Illuminant.type = stype;
             
-            vector < int > range;
-            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "range" ) )
-                range.push_back(row.second.get_value<int>());
+            vector <int> wavs;
+            int inc;
             
-            if ( range[0] != 380 || range[1] != 780) {
-                fprintf(stderr, "Please double check the Camera "
-                                "Sensitivity data (e.g. the increment "
-                                "should be from 380nm to 780nm).\n");
-                exit(1);
-            }
-            
-            _Illuminant.inc = range[3];
-            
-            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "spec" ) )
+            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "spectral_data.data.main" ) )
             {
-                _Illuminant.data.push_back(row.second.get_value<double>());
-                if (wl == 550)
-                    _Illuminant.index = row.second.get_value<double>();
+                wavs.push_back(atoi((row.first).c_str()));
                 
-                wl += _Illuminant.inc;
+                if ( wavs.size() == 2 )
+                    inc = wavs[1] - wavs[0];
+                else if ( wavs.size() > 2 &&
+                         wavs[wavs.size()-1] - wavs[wavs.size()-2] != inc ) {
+                    fprintf ( stderr, "Please double check the Light "
+                                      "Source data (e.g. the increment "
+                                      "should be uniform from 380nm to 780nm).\n" );
+                    exit(1);
+                }
+                
+                if ( wavs[wavs.size()-1] < 380 )
+                    continue;
+                else if ( wavs[wavs.size()-1] > 780 )
+                    break;
+
+                BOOST_FOREACH ( ptree::value_type &cell, row.second ) {
+                    _Illuminant.data.push_back(cell.second.get_value<double>());
+                    if ( wavs[wavs.size()-1] == 550 )
+                        _Illuminant.index = cell.second.get_value<double>();
+                }
+
+//                printf("\"%i\": [ %18.13f ], \n", wavs[wavs.size()-1], _Illuminant.data[_Illuminant.data.size()-1] );
             }
         }
         catch ( std::exception const& e )
         {
             std::cerr << e.what() << std::endl;
         }
-            
+        
         if ( _Illuminant.data.size() != 81 ) {
-            fprintf(stderr, "Please double check the Light "
-                            "Source data (e.g. the increment "
-                            "should be 5nm from 380nm to 780nm).\n");
+            fprintf ( stderr, "Please double check the Light "
+                              "Source data (e.g. the increment "
+                              "should be 5nm from 380nm to 780nm).\n" );
             exit(1);
         }
         
@@ -539,6 +530,7 @@ namespace rta {
     //		_trainingSpec: If successufully parsed, _trainingSpec will be filled
     
     void Idt::loadTrainingData ( const string &path ) {
+        
         try
         {
             // using libraries from boost::property_tree
@@ -575,6 +567,7 @@ namespace rta {
     //		_cmf: If successufully parsed, _cmf will be filled
     
     void Idt::loadCMF ( const string &path ) {
+        
         try
         {
             // using libraries from boost::property_tree
@@ -623,6 +616,37 @@ namespace rta {
         _verbosity = verbosity;
     }
     
+    //	=====================================================================
+    //	Calculate White Balance based on the best Illuminant data
+    //
+    //	inputs:
+    //      const string: filePath
+    //		const char *: illumType
+    //
+    //	outputs:
+    //		vector: wb(R, G, B)
+    
+    vector < double > Idt::calWB() {
+        assert( _Illuminant.data.size() == 81
+                && _cameraSpst._rgbsen.size() > 0 );
+        
+        scaleLSC();
+
+        vector < vector < double > > colRGB (3, vector <double> (81, 1.0));
+        
+        FORI(81) {
+            colRGB[0][i] = _cameraSpst._rgbsen[i].RSen;
+            colRGB[1][i] = _cameraSpst._rgbsen[i].GSen;
+            colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
+        }
+        
+        vector< double > wb = mulVector ( colRGB, _Illuminant.data );
+        clearVM(colRGB);
+        
+        FORI(wb.size()) wb[i] = invertD(wb[i]);
+        
+        return wb;
+    }
   
     //	=====================================================================
     //	Choose the best Light Source based on White Balance Coefficients from
@@ -659,9 +683,9 @@ namespace rta {
             _Illuminant.data.clear();
         }
         
-        cout << "The closest light source is: " << _bestIllum << endl;
+        cout << "The best light source is: " << _bestIllum << endl;
 
-        if ( loadIlluminant ( _bestIllum, type ) )
+        if(loadIlluminant(_bestIllum, type))
             scaleLSC();
         
         return;
@@ -745,43 +769,6 @@ namespace rta {
     }
     
     //	=====================================================================
-    //	Calculate White Balance based on the best Illuminant data and
-    //  highlight mode used in pre-processing with "libraw"
-    //
-    //	inputs:
-    //      int: highlight
-    //
-    //	outputs:
-    //		vector: wb(R, G, B)
-    
-    vector < double > Idt::calWB( int highlight ) {
-        assert( _Illuminant.data.size() == 81
-               && _cameraSpst._rgbsen.size() > 0 );
-        
-        scaleLSC();
-        
-        vector < vector < double > > colRGB (3, vector <double> (81, 1.0));
-        
-        FORI(81) {
-            colRGB[0][i] = _cameraSpst._rgbsen[i].RSen;
-            colRGB[1][i] = _cameraSpst._rgbsen[i].GSen;
-            colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
-        }
-        
-        vector< double > wb = mulVector ( colRGB, _Illuminant.data );
-        clearVM(colRGB);
-        
-        FORI(wb.size()) wb[i] = invertD(wb[i]);
-        
-        if ( !highlight )
-            scaleVectorMin (wb);
-        else
-            scaleVectorMax (wb);
-        
-        return wb;
-    }
-    
-    //	=====================================================================
     //	Calculate CIE XYZ tristimulus values of scene adopted white
     //  based on training color spectral radiances from CalTI() and color
     //  adaptation matrix from CalCAT()
@@ -795,14 +782,17 @@ namespace rta {
     vector< vector<double> > Idt::calXYZ (vector < vector < double > > TI ) const {
         assert(TI.size() == 81);
         
+        vector< vector<double> > transTI = transposeVec(TI);
         vector< vector<double> > colXYZ(3, vector<double>(TI.size(), 1.0));
+
         FORI(81){
             colXYZ[0][i] = _cmf[i].xbar;
             colXYZ[1][i] = _cmf[i].ybar;
             colXYZ[2][i] = _cmf[i].zbar;
         }
         
-        vector< vector<double> > XYZ = mulVector(transposeVec(TI), colXYZ);
+        vector< vector<double> > XYZ = transposeVec(mulVector(colXYZ,
+                                                              transTI));
         
         FORI(XYZ.size())
             scaleVector(XYZ[i],
@@ -834,6 +824,7 @@ namespace rta {
     vector< vector<double> > Idt::calRGB ( vector < vector< double > > TI ) const {
         assert(TI.size() == 81);
         
+        vector< vector<double> > transTI = transposeVec(TI);
         vector< vector<double> > colRGB(3, vector<double>(TI.size(), 1.0));
         
         FORI(81) {
@@ -842,11 +833,13 @@ namespace rta {
             colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
         }
         
-        vector< vector<double> > RGB = mulVector(transposeVec(TI), colRGB);
+//        vector< vector<double> > RGB = transposeVec(mulVector(colRGB, transTI));
+        vector< vector<double> > RGB = mulVector(transTI, colRGB);
 
         FORI(RGB.size())
             RGB[i] = mulVectorElement(_wb, RGB[i]);
         
+        clearVM(transTI);
         clearVM(colRGB);
         
         return RGB;
@@ -866,8 +859,8 @@ namespace rta {
     //               that minimize the distance between RGB and XYZ
     //               through updated B.
     
-    int Idt::curveFit ( vector < vector <double> > RGB,
-                        vector < vector <double> > XYZ,
+    int Idt::curveFit ( vector< vector<double> > RGB,
+                        vector< vector<double> > XYZ,
                         double * B ) {
         Problem problem;
         vector < vector <double> > outLAB = XYZtoLAB(XYZ);

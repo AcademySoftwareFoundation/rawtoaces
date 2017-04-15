@@ -400,7 +400,8 @@ namespace rta {
                     exit(1);
                 }
                 
-                if (wavs[wavs.size()-1] < 380)
+                if ( wavs[wavs.size()-1] < 380 ||
+                     wavs[wavs.size()-1] % 5 )
                     continue;
                 else if (wavs[wavs.size()-1] > 780)
                     break;
@@ -491,7 +492,8 @@ namespace rta {
                     exit(1);
                 }
                 
-                if ( wavs[wavs.size()-1] < 380 )
+                if ( wavs[wavs.size()-1] < 380 ||
+                     wavs[wavs.size()-1] % 5 )
                     continue;
                 else if ( wavs[wavs.size()-1] > 780 )
                     break;

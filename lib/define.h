@@ -138,7 +138,7 @@ struct option {
     char * illumType;
     
     float scale;
-    vector <string> cEnvPaths, iEnvPaths;
+    vector <string> EnvPaths, cEnvPaths, iEnvPaths;
 };
 
 struct CIEXYZ {
@@ -185,7 +185,7 @@ struct illum {
 
 struct dataPath {
     string os;
-    vector <string> cpaths, ipaths;
+    vector <string> paths;
 };
 
 const double e = 216.0/24389.0;
@@ -243,7 +243,7 @@ static const double cat02[3][3] = {
 };
 
 // Function to Open Directories
-inline vector<string> openDir(string path = ".") {
+inline vector<string> openDir (string path = ".") {
     DIR *    dir;
     dirent * pDir;
     struct stat fStat;
@@ -265,7 +265,7 @@ inline vector<string> openDir(string path = ".") {
 
 // Function to clear the memories occupied by vectors
 template<typename T>
-inline void clearVM (vector<T> vct){
+inline void clearVM (vector<T> vct) {
     vector< T >().swap(vct);
 };
 
@@ -304,73 +304,42 @@ inline dataPath& pathsFinder ( )
     
     if(firstTime)
     {
-        string pathc, pathi;
-        const char* envc, * envi;
+        string path;
+        const char * env;
         
-        vector <string>& CPs = cdp.cpaths;
-        envc = getenv("AMPAS_CAMERA_SENSITIVITIES_PATH");
+        vector <string>& PATHs = cdp.paths;
+        env = getenv("AMPAS_DATA_PATH");
         
-        vector <string>& IPs = cdp.ipaths;
-        envi = getenv("AMPAS_ILLUMINANT_PATH");
-    
-        if (envc) pathc = envc;
-        if (envi) pathi = envi;
+        if (env) path = env;
         
-        if (pathc == "") {
+        if ( path == "" ) {
 #if defined (WIN32) || defined (WIN64)
-            pathc = ".";
+            path = ".";
             cdp.os = "WIN";
 #else
-            pathc = "/usr/local/include/rawtoaces/data/camera:/usr/local/"PACKAGE "-" VERSION "/include/rawtoaces/data/camera";
+            path = "/usr/local/include/rawtoaces/data:/usr/local/"PACKAGE "-" VERSION "/include/rawtoaces/data";
             cdp.os = "UNIX";
 #endif
         }
         
-        if (pathi == "") {
-#if defined (WIN32) || defined (WIN64)
-            pathi = ".";
-            cdp.os = "WIN";
-#else
-            pathi = "/usr/local/include/rawtoaces/data/illuminant:/usr/local/"PACKAGE "-" VERSION "/include/rawtoaces/data/illuminant";
-            cdp.os = "UNIX";
-#endif
-        }
+        size_t pos = 0;
         
-        size_t posc = 0, posi = 0;
-        while (posc < pathc.size()){
+        while (pos < path.size()){
 #if defined (WIN32) || defined (WIN64)
-            size_t end = pathc.find(';', posc);
+            size_t end = path.find(';', pos);
 #else
-            size_t end = pathc.find(':', posc);
+            size_t end = path.find(':', pos);
 #endif
             
             if (end == string::npos)
-                end = pathc.size();
+                end = path.size();
             
-            string pathItem = pathc.substr(posc, end-posc);
+            string pathItem = path.substr(pos, end-pos);
             
-            if(find(CPs.begin(), CPs.end(), pathItem) == CPs.end())
-                CPs.push_back(pathItem);
+            if (find(PATHs.begin(), PATHs.end(), pathItem) == PATHs.end())
+                PATHs.push_back(pathItem);
             
-            posc = end + 1;
-        }
-            
-        while (posi < pathi.size()){
-#if defined (WIN32) || defined (WIN64)
-            size_t end = pathi.find(';', posi);
-#else
-            size_t end = pathi.find(':', posi);
-#endif
-                
-            if (end == string::npos)
-                end = pathi.size();
-                
-            string pathItem = pathi.substr(posi, end-posi);
-                
-            if(find(IPs.begin(), IPs.end(), pathItem) == IPs.end())
-                IPs.push_back(pathItem);
-                
-            posi = end + 1;
+            pos = end + 1;
         }
     }
     return cdp;

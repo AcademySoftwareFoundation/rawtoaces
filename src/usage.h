@@ -198,16 +198,11 @@ void initialize (option &opts)
     
     struct stat st;
 
-    dataPath PATH = pathsFinder ();
+    dataPath dp = pathsFinder ();
     
-    FORI ( PATH.cpaths.size() ) {
-        if ( !stat( (PATH.cpaths)[i].c_str(), &st ) )
-            opts.cEnvPaths.push_back((PATH.cpaths)[i]);
-    }
-    
-    FORI ( PATH.ipaths.size() ) {
-        if ( !stat( (PATH.ipaths)[i].c_str(), &st ) )
-            opts.iEnvPaths.push_back((PATH.ipaths)[i]);
+    FORI ( dp.paths.size() ) {
+        if ( !stat( (dp.paths)[i].c_str(), &st ) )
+            opts.EnvPaths.push_back((dp.paths)[i]);
     }
     
 #ifndef WIN32

@@ -138,11 +138,11 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
                                       _opts.use_camera_path );
     }
     else  {
-        FORI (_opts.cEnvPaths.size()) {
-            string cPath = (_opts.cEnvPaths)[i];            
+        FORI (_opts.EnvPaths.size()) {
+            vector<string> cFiles = openDir ( static_cast <string> ( (_opts.EnvPaths)[i] )
+                                              +"/camera" );
 //          vector<string> cFiles = openDir ( static_cast <string> ( FILEPATH )
 //                                                  +"/camera" );
-            vector<string> cFiles = openDir ( cPath );
 
             for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
                 string fn( *file );
@@ -183,11 +183,10 @@ int AcesRender::readIlluminant( const char * illumType,
     int readI = 0;
     struct stat st;
     
-    FORI (_opts.iEnvPaths.size()) {
-        string iPath = (_opts.iEnvPaths)[i];
-        vector <string> iFiles = openDir( iPath );
-//        printf("%s, ", iPath.c_str());
-
+    FORI (_opts.EnvPaths.size()) {
+        vector<string> iFiles = openDir ( static_cast <string> ( (_opts.EnvPaths)[i] )
+                                         +"/illuminant" );
+        
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string fn( *file );
             string strType(illumType);

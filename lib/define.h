@@ -317,7 +317,7 @@ inline dataPath& pathsFinder ( )
             path = ".";
             cdp.os = "WIN";
 #else
-            path = "/usr/local/include/rawtoaces/data:/usr/local/"PACKAGE "-" VERSION "/include/rawtoaces/data";
+            path = "/usr/local/include/rawtoaces/data:/usr/local/" PACKAGE "-" VERSION "/include/rawtoaces/data";
             cdp.os = "UNIX";
 #endif
         }

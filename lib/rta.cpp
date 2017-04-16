@@ -403,13 +403,14 @@ namespace rta {
                 if ( wavs[wavs.size()-1] < 380 ||
                      wavs[wavs.size()-1] % 5 )
                     continue;
-                else if (wavs[wavs.size()-1] > 780)
+                else if ( wavs[wavs.size()-1] > 780 )
                     break;
 
                 vector < double > data;
                 BOOST_FOREACH ( ptree::value_type &cell, row.second )
                     data.push_back ( cell.second.get_value<double>() );
                 
+                // ensure there are three components
                 assert(data.size() == 3);
                 
                 RGBSen tmp_sen ( data[0], data[1], data[2] );
@@ -468,8 +469,8 @@ namespace rta {
             read_json ( path, pt );
             
             const string stype = pt.get<string>( "header.illuminant" );
-            if (type.compare(stype) != 0
-                && type.compare("unknown") != 0)
+            if ( type.compare(stype) != 0
+                 && type.compare("unknown") != 0 )
             {
                 return 0;
             }
@@ -526,12 +527,14 @@ namespace rta {
     //	Load the 190-patch training data
     //
     //	inputs:
-    //		path to the 190-patch training data file
+    //		path to the 190-patch training data
     //
     //	outputs:
     //		_trainingSpec: If successufully parsed, _trainingSpec will be filled
     
     void Idt::loadTrainingData ( const string &path ) {
+        struct stat st;
+        assert (!stat( path.c_str(), &st ));
         
         try
         {
@@ -540,17 +543,20 @@ namespace rta {
             read_json ( path, pt );
             
             int i = 0;
-            int wl = 380;
-            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "data" ) )
+            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "spectral_data.data.main" ) )
             {
-                _trainingSpec[i].wl = wl;
+                _trainingSpec[i].wl = atoi((row.first).c_str());
                 
                 BOOST_FOREACH ( ptree::value_type &cell, row.second )
                     _trainingSpec[i].data.push_back(cell.second.get_value<double>());
                 
                 assert(_trainingSpec[i].data.size() == 190);
+                
+//                printf("\"%i\": [", _trainingSpec[i].wl);
+//                FORJ (190) printf("%18.13f,", _trainingSpec[i].data[j] );
+//                printf("], \n");
+                
                 i += 1;
-                wl += 5;
             }
         }
         catch ( std::exception const& e )
@@ -560,15 +566,17 @@ namespace rta {
     }
     
     //	=====================================================================
-    //	Load the Color Matching Function data
+    //	Load the CIE 1931 Color Matching Functions data
     //
     //	inputs:
-    //		path to the Color Matching Function data file
+    //		path to the CIE 1931 Color Matching Functions data
     //
     //	outputs:
     //		_cmf: If successufully parsed, _cmf will be filled
     
     void Idt::loadCMF ( const string &path ) {
+        struct stat st;
+        assert (!stat( path.c_str(), &st ));
         
         try
         {
@@ -577,26 +585,28 @@ namespace rta {
             read_json ( path, pt );
             
             int i = 0;
-            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "tristimulus" ) )
+            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "spectral_data.data.main" ) )
             {
-                vector < double > data;
+                _cmf[i].wl = atoi((row.first).c_str());
                 
+                if ( _cmf[i].wl < 380 ||
+                    _cmf[i].wl % 5 )
+                     continue;
+                else if ( _cmf[i].wl > 780 )
+                    break;
+                
+                vector < double > data;
                 BOOST_FOREACH ( ptree::value_type &cell, row.second )
                     data.push_back ( cell.second.get_value<double>() );
                 
-                assert(data.size() == 4);
+                assert(data.size() == 3);
+                _cmf[i].xbar = data[0];
+                _cmf[i].ybar = data[1];
+                _cmf[i].zbar = data[2];
                 
-                _cmf[i].wl = (uint16_t)data[0];
+//                printf("\"%i\": [ %18.13f,  %18.13f,  %18.13f ], \n", _cmf[i].wl, data[0], data[1], data[2] );
                 
-                if (!(_cmf[i].wl % 5)
-                    && _cmf[i].wl >= 380
-                    && _cmf[i].wl <= 780){
-                    _cmf[i].xbar = data[1];
-                    _cmf[i].ybar = data[2];
-                    _cmf[i].zbar = data[3];
-                    
-                    i += 1;
-                }
+                i += 1;
             }
         }
         catch ( std::exception const& e )

@@ -197,9 +197,8 @@ void initialize (option &opts)
     opts.scale           = 1.0;
     
     struct stat st;
-
     dataPath dp = pathsFinder ();
-    
+
     FORI ( dp.paths.size() ) {
         if ( !stat( (dp.paths)[i].c_str(), &st ) )
             opts.EnvPaths.push_back((dp.paths)[i]);

@@ -303,6 +303,9 @@ T * mulVectorArray ( T * data,
     assert(vct.size() == dim
            && isSquare(vct));
     
+    /**
+    // new implementation based on Eigen::Matrix (Slow...)
+     
     Matrix <T, Dynamic, Dynamic> MI, mvct;
     MI.resize(total/dim, dim);
     mvct.resize(dim, dim);
@@ -311,6 +314,31 @@ T * mulVectorArray ( T * data,
     
     Matrix<T,Dynamic,Dynamic,RowMajor> MR(MI * (mvct.transpose()));
     FORI(total) data[i] = MR(i);
+    */
+    
+    if(dim == 3) {
+        for(uint32_t i = 0; i < total; i+=dim ) {
+            data[i] = vct[0][0]*data[i] + vct[0][1]*data[i+1]
+            + vct[0][2]*data[i+2];
+            data[i+1] = vct[1][0]*data[i] + vct[1][1]*data[i+1]
+            + vct[1][2]*data[i+2];
+            data[i+2] = vct[2][0]*data[i] + vct[2][1]*data[i+1]
+            + vct[2][2]*data[i+2];
+        }
+    }
+    else if (dim == 4) {
+        for(uint32_t i = 0; i < total; i+=4 ){
+            data[i] = vct[0][0]*data[i] + vct[0][1]*data[i+1]
+            + vct[0][2]*data[i+2] + vct[0][3]*data[i+3];
+            data[i+1] = vct[1][0]*data[i] + vct[1][1]*data[i+1]
+            + vct[1][2]*data[i+2] + vct[1][3]*data[i+3];
+            data[i+2] = vct[2][0]*data[i] + vct[2][1]*data[i+1]
+            + vct[2][2]*data[i+2] + vct[2][3]*data[i+3];
+            data[i+3] = vct[3][0]*data[i] + vct[3][1]*data[i+1]
+            + vct[3][2]*data[i+2] + vct[3][3]*data[i+3];
+        }
+    }
+
     
     return data;
 };

@@ -179,6 +179,20 @@ void scaleVectorMax (vector<T>& vct) {
 
 
 template <typename T>
+void scaleVectorMin (vector<T>& vct) {
+    Matrix <T, Dynamic, 1> v;
+    v.resize(vct.size(), 1);
+    
+    FORI(vct.size()) v(i,0) = vct[i];
+    v *= (1.0 / v.minCoeff());
+    
+    FORI(vct.size()) vct[i] = v(i,0);
+    
+    return;
+};
+
+
+template <typename T>
 void scaleVectorD (vector<T>& vct) {
     Matrix <T, Dynamic, 1> v;
     v.resize(vct.size(), 1);

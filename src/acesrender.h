@@ -64,7 +64,7 @@ using namespace rta;
 class LibRawAces : virtual public LibRaw {
     public:
         void show () {
-            cout << "I am here with LibRawAces.\n" << endl;
+            printf ("I am here with LibRawAces.\n");
         }
 };
 

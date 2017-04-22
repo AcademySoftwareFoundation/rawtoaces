@@ -125,7 +125,7 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
     struct stat st;
     
     if ( cameraSenPath )  {
-        if ( stat( static_cast <const char *> ( cameraSenPath ), &st ) )  {
+        if ( stat( static_cast< const char * >( cameraSenPath ), &st ) )  {
             fprintf ( stderr, "The camera sensitivity file does "
                               "not seem to exist. Please use other"
                               "options for \"mat-method\".\n" );
@@ -139,7 +139,7 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
     }
     else  {
         FORI (_opts.EnvPaths.size()) {
-            vector<string> cFiles = openDir ( static_cast <string> ( (_opts.EnvPaths)[i] )
+            vector<string> cFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
                                               +"/camera" );
 //          vector<string> cFiles = openDir ( static_cast <string> ( FILEPATH )
 //                                                  +"/camera" );
@@ -184,14 +184,14 @@ int AcesRender::readIlluminant( const char * illumType,
     struct stat st;
     
     FORI (_opts.EnvPaths.size()) {
-        vector<string> iFiles = openDir ( static_cast <string> ( (_opts.EnvPaths)[i] )
+        vector<string> iFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
                                          +"/illuminant" );
         
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string fn( *file );
             string strType(illumType);
                 
-            const char * illumC = static_cast < const char * >( illumType );
+            const char * illumC = static_cast< const char * >( illumType );
 
             if ( strType.compare("unknown") != 0 ) {
                 readI = _idt->loadIlluminant( fn, illumC );

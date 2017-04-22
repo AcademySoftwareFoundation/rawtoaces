@@ -58,9 +58,7 @@ int main(int argc, char *argv[])
 {
     if ( argc == 1 ) usage( argv[0] );
     
-//    LibRaw RawProcessor;
-    LibRawAces RawProcessor;
-
+    LibRaw RawProcessor;
     option opts;
     struct stat st;
     
@@ -90,17 +88,16 @@ int main(int argc, char *argv[])
     OUT.gamm[0]           = 1.0;
     OUT.gamm[1]           = 1.0;
     OUT.no_auto_bright    = 1;
-    OUT.auto_bright_thr   = 0.0;
-    
+
   // Fetch conditions and conduct some pre-processing
-  int arg = configureSetting (argc, argv, opts, OUT);
+   int arg = configureSetting (argc, argv, opts, OUT);
     
-  if ( opts.verbosity > 2 )
-      RawProcessor.set_progress_handler ( my_progress_callback,
+   if ( opts.verbosity > 2 )
+       RawProcessor.set_progress_handler ( my_progress_callback,
                                           ( void * )"Sample data passed" );
 #ifdef LIBRAW_USE_OPENMP
-  if( opts.verbosity )
-      printf ( "Using %d threads\n", omp_get_max_threads() );
+   if( opts.verbosity )
+       printf ( "Using %d threads\n", omp_get_max_threads() );
 #endif
     
     // Gather all the raw images from arg list
@@ -133,35 +130,27 @@ int main(int argc, char *argv[])
         
         char outfn[1024];
         AcesRender Render;
-        
-        opts.highlight = OUT.highlight;
         Render.setOptions(opts);
         
         if( opts.verbosity )
-            printf( "Processing file %s\n", argv[arg] );
+            printf( "Processing file %s\n", raw );
         
         timerstart_timeval();
             
 #ifndef WIN32
             if ( opts.use_mmap )
             {
-                int file = open( argv[arg],O_RDONLY );
                 int file = open ( raw, O_RDONLY );
                 
-                if( file<0 )
+                if( file < 0 )
                 {
-                    fprintf( stderr, "\nError: Cannot open %s: %s\n\n",
-                             argv[arg], strerror(errno) );
-                    break;
                     fprintf ( stderr, "\nError: Cannot open %s: %s\n\n",
                               raw, strerror(errno) );
                     continue;
                 }
                 
-                if( fstat( file,&st ) )
+                if( fstat ( file,&st ) )
                 {
-                    fprintf( stderr, "\nError: Cannot stat %s: %s\n\n",
-                             argv[arg], strerror(errno) );
                     fprintf ( stderr, "\nError: Cannot stat %s: %s\n\n",
                               raw, strerror(errno) );
                     close( file );
@@ -172,7 +161,7 @@ int main(int argc, char *argv[])
                 int pgsz = getpagesize();
                 opts.msize = (( st.st_size+pgsz-1 ) / pgsz ) * pgsz;
                 iobuffer = mmap ( NULL, opts.msize, PROT_READ, MAP_PRIVATE, file, 0 );
-                if ( !iobuffer )
+                if( !iobuffer )
                 {
                     fprintf ( stderr, "\nError: Cannot mmap %s: %s\n\n",
                                       raw, strerror(errno) );
@@ -226,16 +215,6 @@ int main(int argc, char *argv[])
         
             Render.setOptions(opts);
         
-            float scaling = 1.0;
-//            // if C.black is not 0, figure out a scaling factor that will be used to
-//            // multiples the calculated white balance. The default value is 1.0
-//            if ( C.black != 0 )
-//                scaling =  C.maximum / ( C.maximum - C.black );
-//            // if C.black is 0, use “-S” and set the value to be the maximum pixel value
-//            // multiplied by 0.9
-//            else
-//                OUT.user_sat = static_cast<int> ( C.maximum * 0.9 );
-
             // use_mat 0, 1, 2
             if ( !opts.use_mat ) {
                 OUT.use_camera_matrix = 0;
@@ -251,13 +230,13 @@ int main(int argc, char *argv[])
                     if ( !opts.use_wb ) {
                         opts.use_Mul = 1;
                         vector < double > wbv = Render.getWB();
-                        FORI(3) OUT.user_mul[i] = wbv[i] * scaling;
+                        FORI(3) OUT.user_mul[i] = wbv[i];
                     }
                 }
             }
             else if ( opts.use_mat == 1 && !C.profile ) {
-                fprintf( stderr, "\nWarning: Cannot find color profile from the RAW, "
-                                 "will use the default camera matrix from libraw\n\n" );
+                fprintf ( stderr, "\nWarning: Cannot find color profile from the RAW, "
+                                  "will use the default camera matrix from libraw\n\n" );
                 OUT.use_camera_matrix = 1;
             }
             else if ( opts.use_mat == 1 && C.profile ) {
@@ -280,7 +259,7 @@ int main(int argc, char *argv[])
                 if ( gotWB ) {
                     opts.use_Mul = 1;
                     vector < double > wbv = Render.getWB();
-                    FORI(3) OUT.user_mul[i] = wbv[i] * scaling;
+                    FORI(3) OUT.user_mul[i] = wbv[i];
                 }
             }
         
@@ -310,23 +289,13 @@ int main(int argc, char *argv[])
                 
                 if ( sc != 1.0 ) {
                     fprintf ( stderr, "\nWarning: The smallest channel multiplier "
-                                      "should be 1.0. \n\n" );
-                    // scaleArrayMax (OUT.user_mul, 3);
+                                      "should be 1.0.\n\n" );
                 }
             }
         
             // Start the dcraw process
             timerstart_timeval();
             if ( LIBRAW_SUCCESS != ( opts.ret = RawProcessor.dcraw_process() ) )
-<<<<<<< HEAD
-            {
-                fprintf ( stderr, "Error: Cannot do postpocessing on %s: %s\n\n",
-                                  argv[arg],libraw_strerror(opts.ret) );
-                if ( LIBRAW_FATAL_ERROR( opts.ret ) )
-                    exit(1);
-            }
-    
-=======
                 {
                     fprintf ( stderr, "Error: Cannot do postpocessing on %s: %s\n\n",
                                        raw,libraw_strerror(opts.ret) );
@@ -335,7 +304,6 @@ int main(int argc, char *argv[])
 //                        exit(1);
                 }
         
->>>>>>> enables batch-processing in rawtoaces
             if ( opts.use_timing )
                 timerprint ( "LibRaw::dcraw_process()", raw );
         

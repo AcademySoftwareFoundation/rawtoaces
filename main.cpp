@@ -315,12 +315,12 @@ int main(int argc, char *argv[])
             Render.setOptions(opts);
         
             char * cp;
-            if (( cp = strrchr ( raw, '.' ))) *cp = 0;
+            if (( cp = strrchr ( (RAWs[i]).c_str(), '.' ))) *cp = 0;
 
             snprintf( outfn,
                       sizeof(outfn),
                       "%s%s",
-                      raw,
+                      (RAWs[i]).c_str(),
                       "_aces.exr" );
         
             if ( !P1.dng_version ) {

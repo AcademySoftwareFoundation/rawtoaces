@@ -103,9 +103,34 @@ int main(int argc, char *argv[])
       printf ( "Using %d threads\n", omp_get_max_threads() );
 #endif
     
-    // Process actual RAW files
-    for ( ; arg < argc; arg++ )
+    // Gather all the raw images from arg list
+    vector < string > RAWs;
+    for ( ; arg < argc; arg++ ) {
+        if( stat( argv[arg], &st) != 0 ) {
+            fprintf ( stderr, "\nError: The directory or file may not exist - \"%s\"\n\n",
+                              argv[arg]);
+            continue;
+        }
+        
+        if ( st.st_mode & S_IFDIR ) {
+            vector <string> files = openDir ( static_cast< string >( argv[arg] ) );
+            for ( vector <string>::iterator file = files.begin( ); file != files.end( ); ++file ) {
+                if ( stat( file->c_str(), &st) == 0 &&
+                    ( st.st_mode & S_IFREG ) )
+                    RAWs.push_back ( *file );
+            }
+        }
+        else if ( st.st_mode & S_IFREG ) {
+            RAWs.push_back ( argv[arg] );
+        }
+    }
+    
+    // Process RAW files
+    FORI ( RAWs.size() )
     {
+        const char * raw = (RAWs[i]).c_str();
+        printf ( "----- Currently Processing: %s \n", raw );
+        
         char outfn[1024];
         AcesRender Render;
         
@@ -121,21 +146,27 @@ int main(int argc, char *argv[])
             if ( opts.use_mmap )
             {
                 int file = open( argv[arg],O_RDONLY );
+                int file = open ( raw, O_RDONLY );
                 
                 if( file<0 )
                 {
                     fprintf( stderr, "\nError: Cannot open %s: %s\n\n",
                              argv[arg], strerror(errno) );
                     break;
+                    fprintf ( stderr, "\nError: Cannot open %s: %s\n\n",
+                              raw, strerror(errno) );
+                    continue;
                 }
                 
                 if( fstat( file,&st ) )
                 {
                     fprintf( stderr, "\nError: Cannot stat %s: %s\n\n",
                              argv[arg], strerror(errno) );
+                    fprintf ( stderr, "\nError: Cannot stat %s: %s\n\n",
+                              raw, strerror(errno) );
                     close( file );
 
-                    break;
+                    continue;
                 }
                 
                 int pgsz = getpagesize();
@@ -144,20 +175,19 @@ int main(int argc, char *argv[])
                 if ( !iobuffer )
                 {
                     fprintf ( stderr, "\nError: Cannot mmap %s: %s\n\n",
-                                      argv[arg], strerror(errno) );
+                                      raw, strerror(errno) );
                     close( file );
 
-                    break;
+                    continue;
                 }
                 
                 close( file );
                 if (( opts.ret = RawProcessor.open_buffer( iobuffer,st.st_size ) != LIBRAW_SUCCESS ))
                 {
                     fprintf ( stderr, "\nError: Cannot open_buffer %s: %s\n\n",
-                              argv[arg],
-                              libraw_strerror(opts.ret) );
-
-                    break;
+                                      raw,
+                                      libraw_strerror(opts.ret) );
+                    continue;
                 }
 
             }
@@ -165,32 +195,34 @@ int main(int argc, char *argv[])
 #endif
             {
                if ( opts.use_bigfile )
-                   opts.ret = RawProcessor.open_file( argv[arg],1 );
+                   opts.ret = RawProcessor.open_file ( raw, 1 );
                else
-                   opts.ret = RawProcessor.open_file( argv[arg] );
-                        
+                   opts.ret = RawProcessor.open_file ( raw );
+
+                
                if ( opts.ret  != LIBRAW_SUCCESS )
                {
-                   fprintf( stderr, "\nError: Cannot open %s: %s\n\n",
-                                    argv[arg],
-                                    libraw_strerror(opts.ret) );
-                   exit(1);
+                   fprintf ( stderr, "\nError: Cannot open %s: %s\n\n",
+                                     raw,
+                                     libraw_strerror (opts.ret) );
+                   
+                   continue;
                }
             }
 
             if ( opts.use_timing )
-                timerprint( "LibRaw::open_file()", argv[arg] );
+                timerprint ( "LibRaw::open_file()", raw );
 
             timerstart_timeval();
             if (( opts.ret = RawProcessor.unpack() ) != LIBRAW_SUCCESS )
             {
-                fprintf( stderr, "\nError: Cannot unpack %s: %s\n\n",
-                                  argv[arg], libraw_strerror(opts.ret) );
-                break;
+                fprintf ( stderr, "\nError: Cannot unpack %s: %s\n\n",
+                                  raw, libraw_strerror (opts.ret) );
+                continue;
             }
         
             if ( opts.use_timing )
-                timerprint( "LibRaw::unpack()", argv[arg] );
+                timerprint ( "LibRaw::unpack()", raw );
         
             Render.setOptions(opts);
         
@@ -286,6 +318,7 @@ int main(int argc, char *argv[])
             // Start the dcraw process
             timerstart_timeval();
             if ( LIBRAW_SUCCESS != ( opts.ret = RawProcessor.dcraw_process() ) )
+<<<<<<< HEAD
             {
                 fprintf ( stderr, "Error: Cannot do postpocessing on %s: %s\n\n",
                                   argv[arg],libraw_strerror(opts.ret) );
@@ -293,9 +326,19 @@ int main(int argc, char *argv[])
                     exit(1);
             }
     
+=======
+                {
+                    fprintf ( stderr, "Error: Cannot do postpocessing on %s: %s\n\n",
+                                       raw,libraw_strerror(opts.ret) );
+                    if ( LIBRAW_FATAL_ERROR( opts.ret ) )
+                        continue;
+//                        exit(1);
+                }
+        
+>>>>>>> enables batch-processing in rawtoaces
             if ( opts.use_timing )
-                timerprint ( "LibRaw::dcraw_process()", argv[arg] );
-            
+                timerprint ( "LibRaw::dcraw_process()", raw );
+        
             if ( opts.verbosity >= 2 ) // verbosity set by repeat -v switches
                 printf ( "Converting to aces RGB\n" );
             else if ( opts.verbosity )
@@ -304,11 +347,12 @@ int main(int argc, char *argv[])
             Render.setOptions(opts);
         
             char * cp;
-            if (( cp = strrchr ( argv[arg], '.' ))) *cp = 0;
+            if (( cp = strrchr ( raw, '.' ))) *cp = 0;
+
             snprintf( outfn,
                       sizeof(outfn),
                       "%s%s",
-                      argv[arg],
+                      raw,
                       "_aces.exr" );
         
             if ( !P1.dng_version ) {
@@ -316,7 +360,7 @@ int main(int argc, char *argv[])
                 
                 Render.setPixels (post_image);
                 if ( opts.use_timing )
-                    timerprint( "LibRaw::dcraw_make_mem_image()", argv[arg]);
+                    timerprint( "LibRaw::dcraw_make_mem_image()", raw);
                 
                 float * aces = 0;
                 if ( !OUT.output_color )

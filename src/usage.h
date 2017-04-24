@@ -246,21 +246,16 @@ int configureSetting ( int argc,
         
         arg++;
         char opt = keys[key];
-        if (( cp = strchr ( sp = (char*)"RpMgcnbksStqmHBC", opt )) != 0 ) {
+        if (( cp = strchr ( sp = (char*)"MgcnbksStqmHBC", opt )) != 0 ) {
             for (int i=0; i < "111411111142"[cp-sp]-'0'; i++) {
                 if (!isdigit(argv[arg+i][0]))
                 {
-                    if ( opt == 'R' || opt == 'p')
-                    {
-                        fprintf ( stderr, "\nError: Non-numeric argument to \"%s\"\n", key.c_str() );
-                        exit(1);
-                    }
                     fprintf ( stderr, "\nError: Non-numeric argument to \"%s\"\n", key.c_str() );
                     exit(1);
                 }
             }
         }
-        else if ((cp = strchr ( sp = (char*)"T", opt )) != 0) {
+        else if ((cp = strchr ( sp = ( char * )"T", opt )) != 0) {
             for (int i=0; i < "111411111142"[cp-sp]-'0'; i++) {
                 if ( !isalnum(argv[arg+i][0] ) )
                 {

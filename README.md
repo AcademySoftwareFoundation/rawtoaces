@@ -28,7 +28,7 @@ The source code contains the following:
 * [`lib/`](./lib) - IDT and math libraries
 * [`src/`](./src) - AcesRender wrapper library and C++ header file containing `rawtoaces` usage information
 * [`test/`](./test) - Sample testing materials such as a ".NEF" RAW image and a camera spectral sensitivity data file
-* [`main.cpp`](main.cpp) - C++ source code files for call routines to process images
+* [`main.cpp`](main.cpp) - C++ source code file for call routines to process images
 
 ## Prerequisites
 
@@ -143,9 +143,9 @@ LibRaw is the library that obtains RAW files from digital cameras. It handles im
 	$ brew install libraw
 	```
 
-###### boost
+###### Boost
 
-boost has multiple C++ libraries that support tasks related to linear algebra, multithreading, image processing, unit testing, etc. It handles data loading an unit-test for rawtoaces. boost can be downloaded from [http://www.boost.org/]() or installed using one of the commands below.
+Boost has multiple C++ libraries that support tasks related to linear algebra, multithreading, image processing, unit testing, etc. It handles data loading an unit-test for rawtoaces. Boost can be downloaded from [http://www.boost.org/]() or installed using one of the commands below.
 
 * Ubuntu
 

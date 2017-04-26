@@ -253,7 +253,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, libraw_colordata_t C )
     }
     else
     {
-        printf ( "\nThe matching camera is: %s %s\n", P.make, P.model );
+        printf ( "\nThe camera is: %s %s\n", P.make, P.model );
         
         vector < double > mulV (C.cam_mul, C.cam_mul+3);
         if( !_opts.highlight )

@@ -57,7 +57,7 @@
 
 #include "define.h"
 
-using namespace Eigen;
+//using namespace Eigen;
 
 // Non-class functions
 inline double invertD (double val) {
@@ -96,11 +96,11 @@ template <typename T>
 vector< vector<T> > invertVM (const vector< vector<T> > &vMtx) {
     assert(isSquare(vMtx));
     
-    Matrix <T, Dynamic, Dynamic> m;
+    Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic> m;
     m.resize(vMtx.size(), vMtx[0].size());
     FORIJ(m.rows(), m.cols()) m(i,j) = vMtx[i][j];
     
-    //    Map < Matrix < T, Dynamic, Dynamic, RowMajor > > m (vMtx[0]);
+    //    Map < Eigen::Matrix < T, Eigen::Dynamic, Eigen::Dynamic, RowMajor > > m (vMtx[0]);
     //    m.resize(vMtx.size(), vMtx[0].size());
     
     m = m.inverse();
@@ -127,7 +127,7 @@ vector< vector<T> > transposeVec (const vector < vector<T> > vMtx) {
     assert( vMtx.size() != 0
             && vMtx[0].size() != 0 );
 
-    Matrix <T, Dynamic, Dynamic> m;
+    Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic> m;
     m.resize(vMtx.size(), vMtx[0].size());
     
     FORIJ (m.rows(), m.cols()) m(i, j) = vMtx[i][j];
@@ -142,7 +142,7 @@ vector< vector<T> > transposeVec (const vector < vector<T> > vMtx) {
 
 template <typename T>
 T sumVector (const vector<T>& vct) {
-    Matrix <T, Dynamic, 1> v;
+    Eigen::Matrix <T, Eigen::Dynamic, 1> v;
     v.resize(vct.size(), 1);
     FORI(v.rows()) v(i, 0) = vct[i];
     
@@ -152,7 +152,7 @@ T sumVector (const vector<T>& vct) {
 
 template <typename T>
 void scaleVector (vector<T>& vct, const T scale) {
-    Matrix <T, Dynamic, 1> v;
+    Eigen::Matrix <T, Eigen::Dynamic, 1> v;
     v.resize(vct.size(), 1);
     
     FORI(vct.size()) v(i,0) = vct[i];
@@ -166,7 +166,7 @@ void scaleVector (vector<T>& vct, const T scale) {
 
 template <typename T>
 void scaleVectorMax (vector<T>& vct) {
-    Matrix <T, Dynamic, 1> v;
+    Eigen::Matrix <T, Eigen::Dynamic, 1> v;
     v.resize(vct.size(), 1);
     
     FORI(vct.size()) v(i,0) = vct[i];
@@ -180,7 +180,7 @@ void scaleVectorMax (vector<T>& vct) {
 
 template <typename T>
 void scaleVectorMin (vector<T>& vct) {
-    Matrix <T, Dynamic, 1> v;
+    Eigen::Matrix <T, Eigen::Dynamic, 1> v;
     v.resize(vct.size(), 1);
     
     FORI(vct.size()) v(i,0) = vct[i];
@@ -194,7 +194,7 @@ void scaleVectorMin (vector<T>& vct) {
 
 template <typename T>
 void scaleVectorD (vector<T>& vct) {
-    Matrix <T, Dynamic, 1> v;
+    Eigen::Matrix <T, Eigen::Dynamic, 1> v;
     v.resize(vct.size(), 1);
 
     FORI(v.rows()) v(i,0) = vct[i];
@@ -209,7 +209,7 @@ vector<T> mulVectorElement ( const vector<T>& vct1,
                              const vector<T>& vct2 ) {
     assert(vct1.size() == vct2.size());
     
-    Array <T, Dynamic, 1> a1, a2;
+    Eigen::Array <T, Eigen::Dynamic, 1> a1, a2;
     a1.resize(vct1.size(), 1);
     a2.resize(vct1.size(), 1);
     
@@ -246,7 +246,7 @@ vector < vector<T> > mulVector ( const vector < vector < T > > & vct1,
                                  const vector < vector < T > > & vct2 ) {
     assert(vct1.size() != 0 && vct2.size() != 0);
 
-    Matrix <T, Dynamic, Dynamic> m1, m2, m3;
+    Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic> m1, m2, m3;
     m1.resize(vct1.size(), vct1[0].size());
     m2.resize(vct2[0].size(), vct2.size());
     
@@ -270,7 +270,7 @@ vector < T > mulVector( const vector < vector<T> >& vct1,
     assert( vct1.size() != 0 &&
             (vct1[0]).size() == vct2.size() );
     
-    Matrix <T, Dynamic, Dynamic> m1, m2, m3;
+    Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic> m1, m2, m3;
     m1.resize(vct1.size(), vct1[0].size());
     m2.resize(vct2.size(), 1);
     
@@ -304,15 +304,15 @@ T * mulVectorArray ( T * data,
            && isSquare(vct));
     
     /**
-    // new implementation based on Eigen::Matrix (Slow...)
+    // new implementation based on Eigen::Eigen::Matrix (Slow...)
      
-    Matrix <T, Dynamic, Dynamic> MI, mvct;
+    Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic> MI, mvct;
     MI.resize(total/dim, dim);
     mvct.resize(dim, dim);
     FORIJ(MI.rows(), MI.cols()) MI(i,j) = data[i*dim+j];
     FORIJ(dim, dim) mvct(i,j) = static_cast<T>(vct[i][j]);
     
-    Matrix<T,Dynamic,Dynamic,RowMajor> MR(MI * (mvct.transpose()));
+    Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,RowMajor> MR(MI * (mvct.transpose()));
     FORI(total) data[i] = MR(i);
     */
     
@@ -348,7 +348,7 @@ template<typename T>
 vector < vector<T> > solveVM ( const vector < vector<T> >& vct1,
                                const vector < vector<T> >& vct2 ) {
     
-    Matrix <T, Dynamic, Dynamic> m1, m2, m3;
+    Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic> m1, m2, m3;
     m1.resize(vct1.size(), vct1[0].size());
     m2.resize(vct2.size(), vct2[0].size());
 
@@ -358,7 +358,7 @@ vector < vector<T> > solveVM ( const vector < vector<T> >& vct1,
         m2(i, j) = vct2[i][j];
     
     // colPivHouseholderQr()
-    m3 = m1.jacobiSvd(ComputeThinU | ComputeThinV).solve(m2);
+    m3 = m1.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(m2);
     
     vector < vector <T> > vct3 (m3.rows(), vector <T>(m3.cols()));
     FORIJ(m3.rows(), m3.cols()) vct3[i][j] = m3(i, j);

@@ -695,7 +695,7 @@ namespace rta {
             _Illuminant.data.clear();
         }
         
-        cout << "The best light source is: " << _bestIllum << endl;
+        cout << "The closest light source is: " << _bestIllum << endl;
 
         if(loadIlluminant(_bestIllum, type))
             scaleLSC();

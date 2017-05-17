@@ -174,11 +174,9 @@ int main(int argc, char *argv[])
                 if (( opts.ret = RawProcessor.open_buffer( iobuffer,st.st_size ) != LIBRAW_SUCCESS ))
                 {
                     fprintf ( stderr, "\nError: Cannot open_buffer %s: %s\n\n",
-                                      raw,
-                                      libraw_strerror(opts.ret) );
+                                      raw, libraw_strerror(opts.ret) );
                     continue;
                 }
-
             }
             else
 #endif
@@ -192,8 +190,7 @@ int main(int argc, char *argv[])
                if ( opts.ret  != LIBRAW_SUCCESS )
                {
                    fprintf ( stderr, "\nError: Cannot open %s: %s\n\n",
-                                     raw,
-                                     libraw_strerror (opts.ret) );
+                                     raw, libraw_strerror (opts.ret) );
                    
                    continue;
                }
@@ -255,7 +252,7 @@ int main(int argc, char *argv[])
                     opts.use_wb = 1;
                 else if ( !gotWB && !C.profile )
                     opts.use_wb = 2;
-            
+                
                 if ( gotWB ) {
                     opts.use_Mul = 1;
                     vector < double > wbv = Render.getWB();
@@ -263,20 +260,35 @@ int main(int argc, char *argv[])
                 }
             }
         
-//            Render.setOptions(opts);
-
             if ( opts.use_wb == 1 ) {
-                OUT.use_camera_wb = 1;
+//                OUT.use_camera_wb = 1;
                 OUT.use_auto_wb = 0;
+                opts.use_Mul = 1;
+                
+                vector < double > mulV (C.cam_mul, C.cam_mul+3);
+                if( !opts.highlight )
+                    scaleVectorMin (mulV);
+                else
+                    scaleVectorMax (mulV);
+                
+                FORI(3) OUT.user_mul[i] = mulV[i];
             }
             else if ( opts.use_wb == 2 ) {
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 1;
             }
         
+            Render.setOptions(opts);
+        
+            if ( opts.use_Mul == 1 ) {
+                printf ("\nThe White Balance Coefficients used are: ");
+                FORI(3) printf ("%f ", OUT.user_mul[i]);
+                printf ("\n\n");
+            }
+        
             // For --wb-method 4 or other scenarios in which
             // white balance is specified by users
-            if ( opts.use_Mul ){
+            if ( opts.use_wb == 4 ){
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
                 

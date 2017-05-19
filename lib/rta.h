@@ -142,6 +142,7 @@ namespace rta {
             void setVerbosity( int verbosity );
             void scaleLSC();
         
+//            vector< double > calWB();
             vector< double > calCM();
             vector< vector<double> > calTI() const;
             vector< vector<double> > calCAT( vector<double> src,

@@ -174,9 +174,11 @@ int main(int argc, char *argv[])
                 if (( opts.ret = RawProcessor.open_buffer( iobuffer,st.st_size ) != LIBRAW_SUCCESS ))
                 {
                     fprintf ( stderr, "\nError: Cannot open_buffer %s: %s\n\n",
-                                      raw, libraw_strerror(opts.ret) );
+                                      raw,
+                                      libraw_strerror(opts.ret) );
                     continue;
                 }
+
             }
             else
 #endif

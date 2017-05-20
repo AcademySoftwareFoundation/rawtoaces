@@ -292,7 +292,7 @@ The help message with a description of all command line options can be obtained 
 	
 	IDT options:
 	  --help                  Show this screen
-	  --verison               Show version
+	  --version               Show version
 	  --wb-method [0-4] [str] White balance factor calculation method
 	                            0=Calculate white balance from camera spec sens. Optional 
 	                            string may be included to specify adopted white. 

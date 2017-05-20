@@ -78,7 +78,7 @@ void usage(const char *prog)
     printf ( "\n");
     printf ( "IDT options:\n"
             "  --help                  Show this screen\n"
-            "  --verison               Show version\n"
+            "  --version               Show version\n"
             "  --wb-method [0-4]       White balance factor calculation method\n"
             "                            0=Calculate white balance from camera spec sens. Optional\n"
             "                            string may be included to specify adopted white. [str]\n"

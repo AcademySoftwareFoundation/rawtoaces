@@ -179,27 +179,12 @@ void scaleVectorMax (vector<T>& vct) {
 
 
 template <typename T>
-<<<<<<< HEAD
 void scaleVectorMin (vector<T>& vct) {
     Eigen::Matrix <T, Eigen::Dynamic, 1> v;
     v.resize(vct.size(), 1);
     
     FORI(vct.size()) v(i,0) = vct[i];
     v *= (1.0 / v.minCoeff());
-=======
-void scaleVectorMin(vector<T>& vct){
-    T min = *min_element(vct.begin(), vct.end());
-    
-    transform(vct.begin(), vct.end(), vct.begin(),
-              bind1st(multiplies<T>(), 1.0/min));
-    
-    return;
-}
-
-template <typename T>
-void scaleVectorD(vector<T>& vct){
-    T max = *max_element(vct.begin(), vct.end());
->>>>>>> adds a function to scale the vector by its minimum value
     
     FORI(vct.size()) vct[i] = v(i,0);
     

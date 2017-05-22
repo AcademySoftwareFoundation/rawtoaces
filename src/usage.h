@@ -126,7 +126,7 @@ void usage(const char *prog)
             "  -E                      Use mmap()-ed buffer instead of plain FILE I/O\n"
 #endif
             );
-    exit(1);
+    exit(-1);
 };
 
 
@@ -246,12 +246,20 @@ int configureSetting ( int argc,
         
         arg++;
         char opt = keys[key];
+        
+        if (!opt) {
+            fprintf (stderr,"\nNon-recognizable argument to "
+                            "\"%s\"\n", key.c_str());
+            exit(-1);
+        }
+        
         if (( cp = strchr ( sp = (char*)"MgcnbksStqmHBC", opt )) != 0 ) {
             for (int i=0; i < "111411111142"[cp-sp]-'0'; i++) {
                 if (!isdigit(argv[arg+i][0]))
                 {
-                    fprintf ( stderr, "\nError: Non-numeric argument to \"%s\"\n", key.c_str() );
-                    exit(1);
+                    fprintf ( stderr, "\nError: Non-numeric argument to "
+                                      "\"%s\"\n", key.c_str() );
+                    exit(-1);
                 }
             }
         }
@@ -259,9 +267,9 @@ int configureSetting ( int argc,
             for (int i=0; i < "111411111142"[cp-sp]-'0'; i++) {
                 if ( !isalnum(argv[arg+i][0] ) )
                 {
-                    fprintf (stderr,"\nNon-numeric and/or Non-compatible "
-                                    "argument to \"%s\"\n", key.c_str());
-                    exit(1);
+                    fprintf (stderr,"\nNon-numeric and/or Non-compatible argument to "
+                                    "\"%s\"\n", key.c_str());
+                    exit(-1);
                 }
             }
         }
@@ -277,10 +285,11 @@ int configureSetting ( int argc,
             case 'b':  OUT.bright      = (float)atof(argv[arg++]);  break;
             case 'P':  OUT.bad_pixels  = argv[arg++];        break;
             case 'K':  OUT.dark_frame  = argv[arg++];        break;
-            case 'C':
+            case 'C': {
                 OUT.aber[0] = 1.0 / atof(argv[arg++]);
                 OUT.aber[2] = 1.0 / atof(argv[arg++]);
                 break;
+            }
             case 'k':  OUT.user_black  = atoi(argv[arg++]);  break;
             case 'S':  OUT.user_sat    = atoi(argv[arg++]);  break;
             case 't':  OUT.user_flip   = atoi(argv[arg++]);  break;
@@ -296,26 +305,38 @@ int configureSetting ( int argc,
             case 'F':  opts.use_bigfile        = 1;  break;
             case 'd':  opts.use_timing         = 1;  break;
             case 'z':  printVS(vls);                 break;
-            case 'p':
+            case 'p': {
                 opts.use_mat = atoi(argv[arg++]);
                 if ( opts.use_mat > 2
                      || opts.use_mat < -1) {
                     fprintf (stderr, "\nError: Invalid argument to "
                                      "\"%s\" \n", key.c_str());
-                    exit(1);
+                    exit(-1);
                 }
                 break;
-            case 'Q':
+            }
+            case 'Q': {
                 opts.use_camera_path = 1;
                 opts.cameraSenPath = (char *)(argv[arg++]);
                 break;
-            case 'T':
+            }
+            case 'T': {
                 opts.use_illum = 1;
                 opts.illumType = (char *)(argv[arg++]);
                 break;
+            }
             case 'M':  opts.scale = atof(argv[arg++]); break;
-            case 'R':
+            case 'R': {
+                std::string flag = std::string(argv[arg]);
+                FORI ( flag.size() ) {
+                    if ( !isdigit (flag[i]) ) {
+                        fprintf (stderr,"\nNon-recognizable argument to \"--wb-method\".\n");
+                        exit(-1);
+                    }
+                }
+                
                 opts.use_wb = atoi(argv[arg++]);
+                
                 if ( opts.use_wb == 0 ) {
                     if ( isalnum(argv[arg][0]) )
                     {
@@ -329,7 +350,7 @@ int configureSetting ( int argc,
                         {
                             fprintf (stderr, "\nError: Non-numeric argument to "
                                              "\"%s %i\" \n", key.c_str(), opts.use_wb);
-                            exit(1);
+                            exit(-1);
                         }
                         OUT.greybox[i] = (float)atof(argv[arg++]);
                     }
@@ -341,7 +362,7 @@ int configureSetting ( int argc,
                         {
                             fprintf (stderr, "\nError: Non-numeric argument to "
                                              "\"%s %i\" \n", key.c_str(), opts.use_wb);
-                            exit(1);
+                            exit(-1);
                         }
                         OUT.user_mul[i] = (float)atof(argv[arg++]);
                     }
@@ -350,15 +371,16 @@ int configureSetting ( int argc,
                          || opts.use_wb < -1) {
                     fprintf (stderr, "\nError: Invalid argument to "
                                      "\"%s\" \n", key.c_str());
-                    exit(1);
+                    exit(-1);
                 }
                 break;
+            }
 #ifndef WIN32
             case 'E':  opts.use_mmap = 1;  break;
 #endif
             default:
                 fprintf ( stderr, "\nError: Unknown option \"%s\".\n", key.c_str() );
-                exit(1);
+                exit(-1);
         }
     }
     
@@ -367,7 +389,7 @@ int configureSetting ( int argc,
         if ( cameraSenPathS.find("_380_780") == std::string::npos ) {
             fprintf( stderr,"\nError: Cannot locate camera "
                     "sensitivity data in the file.\n" );
-            exit(1);
+            exit(-1);
         }
     }
     
@@ -387,7 +409,7 @@ int configureSetting ( int argc,
                      "Please use \"--valid-illum\" to see a "
                      "list of available light sources.\n",
                      strIllm.c_str());
-            exit(1);
+            exit(-1);
         }
     }
     

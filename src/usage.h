@@ -248,8 +248,7 @@ int configureSetting ( int argc,
         char opt = keys[key];
         
         if (!opt) {
-            fprintf (stderr,"\nNon-recognizable argument to "
-                            "\"%s\"\n", key.c_str());
+            fprintf (stderr,"\nNon-recognizable flag - \"%s\"\n", key.c_str());
             exit(-1);
         }
         

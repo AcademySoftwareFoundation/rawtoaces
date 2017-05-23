@@ -373,8 +373,8 @@ T calSSE ( vector <T> & tcp, vector <T> & src ) {
     vector<T> tmp(src.size());
     
     T sum = T(0.0);
-    FORI(tcp.size())
-        sum += std::pow((tcp[i]-src[i]), T(2.0));
+    FORI (tcp.size())
+        sum += std::pow((tcp[i]/src[i] - 1.0), T(2.0));
     
     return sum;
 };

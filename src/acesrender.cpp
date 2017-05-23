@@ -467,13 +467,13 @@ void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total ) const
     }
     
     // will use calCAT() inside rawtoaces
-    vector < double > d50V (d50, d50 + 3);
-    vector < double > d60V (d60, d60 + 3);
+    vector < double > dIV (d50, d50 + 3);
+    vector < double > dOV (d60, d60 + 3);
     
     pixels = mulVectorArray ( pixels,
                               total,
                               channel,
-                              _idt->calCAT(d50V, d60V) );
+                              _idt->calCAT(dIV, dOV) );
 }
 
 

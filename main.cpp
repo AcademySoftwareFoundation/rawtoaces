@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
         
             Render.setOptions(opts);
         
-            // use_mat 0, 1, 2
+            // use_mat == 0
             if ( !opts.use_mat ) {
                 OUT.use_camera_matrix = 0;
                 
@@ -225,8 +225,10 @@ int main(int argc, char *argv[])
                     // set four_color_rgb to 0 if half_size is 1
                     if ( OUT.half_size == 1 ) OUT.four_color_rgb = 0;
                     
-                    // --wb-method condition 0
-                    if ( !opts.use_wb ) {
+                    // --mat-method == 0 and
+                    // --wb-method == 0 and
+                    // opts.use_illum == 1
+                    if ( opts.use_illum == 1 ) {
                         opts.use_Mul = 1;
                         vector < double > wbv = Render.getWB();
                         FORI(3) OUT.user_mul[i] = wbv[i];
@@ -244,11 +246,14 @@ int main(int argc, char *argv[])
         
             Render.setOptions(opts);
         
-            // --wb-method condition 0,1,2
-            if ( !opts.use_wb && !opts.use_Mul ) {
-                OUT.use_camera_matrix = 0;
+            // --mat-method != 0 and
+            // --wb-method == 0 and
+            // opts.use_illum == 1
+            if ( opts.use_mat &&
+                 opts.use_illum == 1 ) {
+//                OUT.use_camera_matrix = 0;
             
-                // Calculate white balance
+                // Calculate white balance, no IDT matrix
                 int gotWB = Render.prepareWB ( P1, C );
                 if ( !gotWB && C.profile )
                     opts.use_wb = 1;
@@ -262,9 +267,9 @@ int main(int argc, char *argv[])
                 }
             }
         
-            if ( opts.use_wb == 1 ) {
-//                OUT.use_camera_wb = 1;
-                OUT.use_auto_wb = 0;
+            if ( opts.use_wb == 1 ||
+                 ( opts.use_wb == 0 &&
+                   opts.use_illum != 1) ) {
                 opts.use_Mul = 1;
                 
                 vector < double > mulV (C.cam_mul, C.cam_mul+3);
@@ -283,6 +288,10 @@ int main(int argc, char *argv[])
             Render.setOptions(opts);
         
             if ( opts.use_Mul == 1 ) {
+                OUT.use_camera_wb = 0;
+                OUT.use_auto_wb = 0;
+//                printf ("\nas-shot White Balance Coefficients used are: ");
+//                FORI(3) printf ("%f ", C.cam_mul[i]);
                 printf ("\nThe White Balance Coefficients used are: ");
                 FORI(3) printf ("%f ", OUT.user_mul[i]);
                 printf ("\n\n");

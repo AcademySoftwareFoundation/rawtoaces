@@ -8,7 +8,7 @@
         "unique_identifier"      : "ce772664-5283-431c-bcf3-bc0e62af69c7",
         "measurement_equipment"  : null,
         "laboratory"             : "scitech",
-        "document_creation_date" : "2017-04-13",
+        "document_creation_date" : "2017-04-13T12:00:00Z",
         "comments"               : "this is for rawtoaces software to convert RAW to aces",
         "license"                : null
     },

@@ -240,7 +240,21 @@ In case of linking errors you should take ownership of CMAKE then run linker
 	sudo chown -R $USER:admin /usr/local/lib/cmake
 	$ brew link ceres-solver
 	```
-	
+In case of GFlag errors AFTER running next step (rawtoaces installation) you should repeat install of ceres and follow the instructions shown in terminal to switch the version.
+	```sh
+	$ brew install ceres-solver --HEAD
+	```
+This should present something like:
+
+homebrew/science/ceres-solver-HEAD-97cefd4_4 already installed, however linked version is 1.12.0_4
+You can use `brew switch ceres-solver HEAD-97cefd4_4` to link to this version.
+
+Therefore you would enter:
+	```sh
+	$ brew switch ceres-solver HEAD-97cefd4_4
+	```	
+then repeat installation of rawtoaces in the next step
+
 
 ## Installation
 
@@ -263,6 +277,7 @@ In case of linking errors you should take ownership of CMAKE then run linker
 	From the root source directory:
 
 	```sh
+	$ git clone https://github.com/ampas/rawtoaces
 	$ mkdir build && cd build
 	$ cmake ..
 	$ make

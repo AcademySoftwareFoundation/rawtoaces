@@ -83,7 +83,7 @@ The rawtoaces depends on an essential part of IlmBase software package, which ca
 	Install homebrew if not already installed
 	
 	```sh
-	$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
 	
 	Install ilmBase
@@ -134,7 +134,7 @@ LibRaw is the library that obtains RAW files from digital cameras. It handles im
 	Install homebrew if not already installed
 	
 	```sh
-	$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
 	
 	Install `LibRaw`
@@ -164,7 +164,7 @@ Boost has multiple C++ libraries that support tasks related to linear algebra, m
 	Install homebrew if not already installed
 	
 	```sh
-	$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
 	
 	Install `boost`
@@ -224,7 +224,7 @@ Ceres Solver is an open source library for solving Non-linear Least Squares prob
 	Install homebrew if not already installed
 	
 	```sh
-	$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
 	
 	Install `Ceres`
@@ -263,7 +263,7 @@ then repeat installation of rawtoaces in the next step
 	Install homebrew if not already installed
 
 	```sh
-	$ ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go)"
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
 
 	Install rawtoaces

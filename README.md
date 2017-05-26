@@ -230,9 +230,17 @@ Ceres Solver is an open source library for solving Non-linear Least Squares prob
 	Install `Ceres`
 	
 	```sh
+	$ brew tap homebrew/homebrew-science
 	$ brew install ceres-solver --HEAD
 	```
 If there are errors with regard to version mis-match of *Eigen* library, please consider brew-installing required libraries first and then buiding Ceres from source (see above).
+
+In case of linking errors you should take ownership of CMAKE then run linker
+	```sh
+	sudo chown -R $USER:admin /usr/local/lib/cmake
+	$ brew link ceres-solver
+	```
+	
 
 ## Installation
 

@@ -53,7 +53,7 @@ CMake can be downloaded directly from [https://cmake.org/]() and/or installed us
 	Install homebrew if not already installed
 	
 	```sh
-	$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
 	
 	Install cmake
@@ -83,7 +83,7 @@ The rawtoaces depends on an essential part of IlmBase software package, which ca
 	Install homebrew if not already installed
 	
 	```sh
-	$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
 	
 	Install ilmBase
@@ -134,7 +134,7 @@ LibRaw is the library that obtains RAW files from digital cameras. It handles im
 	Install homebrew if not already installed
 	
 	```sh
-	$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
 	
 	Install `LibRaw`
@@ -164,7 +164,7 @@ Boost has multiple C++ libraries that support tasks related to linear algebra, m
 	Install homebrew if not already installed
 	
 	```sh
-	$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
 	
 	Install `boost`
@@ -224,15 +224,37 @@ Ceres Solver is an open source library for solving Non-linear Least Squares prob
 	Install homebrew if not already installed
 	
 	```sh
-	$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
 	
 	Install `Ceres`
 	
 	```sh
+	$ brew tap homebrew/homebrew-science
 	$ brew install ceres-solver --HEAD
 	```
 If there are errors with regard to version mis-match of *Eigen* library, please consider brew-installing required libraries first and then buiding Ceres from source (see above).
+
+In case of linking errors you should take ownership of CMAKE then run linker
+	```sh
+	sudo chown -R $USER:admin /usr/local/lib/cmake
+	$ brew link ceres-solver
+	```
+In case of GFlag errors AFTER running next step (rawtoaces installation) you should repeat install of ceres and follow the instructions shown in terminal to switch the version.
+	```sh
+	$ brew install ceres-solver --HEAD
+	```
+This should present something like:
+
+homebrew/science/ceres-solver-HEAD-97cefd4_4 already installed, however linked version is 1.12.0_4
+You can use `brew switch ceres-solver HEAD-97cefd4_4` to link to this version.
+
+Therefore you would enter:
+	```sh
+	$ brew switch ceres-solver HEAD-97cefd4_4
+	```	
+then repeat installation of rawtoaces in the next step
+
 
 ## Installation
 
@@ -241,7 +263,7 @@ If there are errors with regard to version mis-match of *Eigen* library, please 
 	Install homebrew if not already installed
 
 	```sh
-	$ ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go)"
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
 
 	Install rawtoaces
@@ -255,6 +277,7 @@ If there are errors with regard to version mis-match of *Eigen* library, please 
 	From the root source directory:
 
 	```sh
+	$ git clone https://github.com/ampas/rawtoaces
 	$ mkdir build && cd build
 	$ cmake ..
 	$ make

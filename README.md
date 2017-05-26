@@ -53,7 +53,7 @@ CMake can be downloaded directly from [https://cmake.org/]() and/or installed us
 	Install homebrew if not already installed
 	
 	```sh
-	$ ruby -e "$(curl -fsSL https://raw.github.com/Homebrew/homebrew/go/install)"
+	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
 	
 	Install cmake

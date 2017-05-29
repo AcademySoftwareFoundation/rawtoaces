@@ -1,6 +1,6 @@
 {
     "header": {
-        "api_version"            : "0.1.0",
+        "schema_version"         : "0.1.0",
         "illuminant"             : "d60",
         "catalog_number"         : "illuminant_d60_0.1.0",
         "description"            : "light source d60",

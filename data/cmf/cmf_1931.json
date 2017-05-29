@@ -1,6 +1,6 @@
 {
     "header": {
-        "api_version"            : "0.1.0",
+        "schema_version"         : "0.1.0",
         "type"                   : "cie-1931",
         "catalog_number"         : "cie-1931_color_matching_functions_0.1.0",
         "description"            : "cie-1931 color matching functions",

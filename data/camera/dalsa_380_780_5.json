@@ -1,6 +1,6 @@
 {
     "header": {
-        "api_version"            : "0.1.0",
+        "schema_version"         : "0.1.0",
         "manufacturer"           : "dalsa",
         "model"                  : "na",
         "catalog_number"         : "camera_dalsa_na_0.1.0",

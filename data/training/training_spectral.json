@@ -1,6 +1,6 @@
 {
     "header": {
-        "api_version"            : "0.1.0",
+        "schema_version"         : "0.1.0",
         "type"                   : "190-patch",
         "catalog_number"         : "training_data_190-patch_0.1.0",
         "description"            : "190-patch training data",

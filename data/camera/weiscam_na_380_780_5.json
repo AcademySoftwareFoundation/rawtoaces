@@ -1,6 +1,6 @@
 {
     "header": {
-        "api_version"            : "0.1.0",
+        "schema_version"         : "0.1.0",
         "manufacturer"           : "weiscam",
         "model"                  : "na",
         "catalog_number"         : "camera_weiscam_na_0.1.0",

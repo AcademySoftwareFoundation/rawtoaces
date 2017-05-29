@@ -1,6 +1,6 @@
 {
     "header": {
-        "api_version"            : "0.1.0",
+        "schema_version"         : "0.1.0",
         "illuminant"             : "3200k",
         "catalog_number"         : "illuminant_3200k_0.1.0",
         "description"            : "light source 3200k",

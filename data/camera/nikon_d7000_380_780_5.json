@@ -1,6 +1,6 @@
 {
     "header": {
-        "api_version"            : "0.1.0",
+        "schema_version"         : "0.1.0",
         "manufacturer"           : "nikon",
         "model"                  : "d7000",
         "catalog_number"         : "camera_nikon_d7000_0.1.0",

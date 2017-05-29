@@ -363,9 +363,226 @@ An example of the use of the --ss-path option would be
 
 	$ rawtoaces --ss-path /path/to/my/ss/data/ input.raw
 
-#### Camera spectral sensitivity data format
+#### JSON Schema for Spectral Dataset
 
-Include basic information on the data format here
+The schema takes its roots in [IES TM-27-14](http://www.techstreet.com/standards/ies-tm-27-14?product_id=1881073) but implements support for multiple spectral dataset while adopting [JSON](http://www.json.org/) over [XML](https://www.w3.org/TR/REC-xml/) for the simplicity of its grammar.
+
+`rawtoaces` expects the spectral dataset to have the following shape: **(380, 780, 5)**, i.e. starting from 380nm, ending to 780nm with a 5nm interval/bin size.
+
+The attributes are defined as follows:
+
+
+- `header`
+    - `schema_version`
+        - **description**: *Required*, schema version of the current document.
+        - **type**: `"string"`
+    - `catalog_number`
+        - **description**: *Optional*,
+        - **type**: `["string", "null"]`
+    - `comments`
+        - **description**: *Optional*, additional information to the spectral dataset.
+        - **type**: `["string", "null"]`
+    - `description`
+        - **description**: *Required*, description of the spectral dataset.
+        - **type**: `"string"`
+    - `document_creation_date`
+        - **description**: *Required*, document creation date expressed as per RFC 3339 - Date and Time on the Internet: Timestamps, e.g. 2017-01-01T12:00:00Z.
+        - **type**: `"string"`
+        - **format**: `"date-time"`
+    - `document_creator`
+        - **description**: *Required*, creator of the document, e.g. company, individual, laboratory, etc...
+        - **type**: `"string"`
+    - `laboratory`
+        - **description**: *Optional*, laboratory or company that performed the measurements.
+        - **type**: `["string", "null"]`
+    - `license`
+        - **description**: *Required*, usage license of the document, e.g. CC-BY-NC-ND".
+        - **type**: `"string"`
+    - `manufacturer`
+        - **description**: *Optional*, manufacturer of the device being tested.
+        - **type**: `["string", "null"]`
+    - `measurement_equipment`
+        - **description**: *Optional*, measurement equipment used to test the device.
+        - **type**: `["string", "null"]`
+    - `model`
+        - **description**: *Optional*, model of the device being tested.
+        - **type**: `["string", "null"]`
+    - `unique_identifier`
+        - **description**: *Optional*, generated unique identifier for the document, e.g. SHA256.
+        - **type**: `["string", "null"]`
+- `spectral_data`
+    - `bandwidth_FWHM`
+        - **description**: *Optional*, spectro-radiometer full-width at half-maximum bandwidth in nm.
+        - **type**: `["number", "null"]`
+    - `bandwidth_corrected`
+        - **description**: *Optional*, whether bandwidth correction has been applied to the spectral data.
+        - **type**: `["boolean", "null"]`
+    - `data`
+        - **description**: *Required*, defines the spectral dataset: at least a *key* from `index` whose *value* is an *object* containing wavelength/values pairs.
+        - **type**: `"object"`
+    - `index`
+        - **description**: *Required*, indexes the spectral dataset.
+        - **type**: `"object"`
+    - `reflection_geometry`
+        - **description**: *Required* if `units` is *reflectance*, reflection geometry attributes as per CIE 15:2004.
+        - **type**: `["string", "null"]`
+        - **enum**: `["di:8", "de:8", "8:di", "8:de", "d:d", "d:0", "45a:0", "45c:0", "0:45a", "45x:0", "0:45x", "other", null]`
+    - `transmission_geometry`
+        - **description**: *Required* if `units` is *transmittance”*, transmission geometry attributes as per CIE 15:2004.
+        - **type**: `["string", "null"]`
+        - **enum**: `["0:0", "di:0", "de:0", "0:di", "0:de", "d:d", "other", null]`
+    - `units`
+        - **description**: *Required*, unit or quantity of measurement for the spectral dataset.
+        - **type**: `"string"`
+        - **enum**: `["flux", "absorptance", "transmittance", "reflectance", "intensity", "irradiance", "radiance", "exitance", "R-Factor", "T-Factor", "relative", "other"]`
+
+The full JSON schema for spectral dataset can be used to validate a new user file using a [validator](http://www.jsonschemavalidator.net/) and is defined as follows:
+
+```json
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "definitions": {
+    },
+    "id": "#",
+    "properties": {
+        "header": {
+            "id": "/properties/header",
+            "properties": {
+                "schema_version": {
+                    "description": "Required, schema version of the current document.",
+                    "id": "/properties/header/properties/api_version",
+                    "type": "string"
+                },
+                "catalog_number": {
+                    "description": "Optional, ",
+                    "id": "/properties/header/properties/catalog_number",
+                    "type": ["string", "null"]
+                },
+                "comments": {
+                    "description": "Optional, additional information to the spectral dataset.",
+                    "id": "/properties/header/properties/comments",
+                    "type": ["string", "null"]
+                },
+                "description": {
+                    "description": "Required, description of the spectral dataset.",
+                    "id": "/properties/header/properties/description",
+                    "type": "string"
+                },
+                "document_creation_date": {
+                    "description": "Required, document creation date expressed as per RFC 3339 - Date and Time on the Internet: Timestamps, e.g. 2017-01-01T12:00:00Z.",
+                    "id": "/properties/header/properties/document_creation_date",
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "document_creator": {
+                    "description": "Required, creator of the document, e.g. company, individual, laboratory, etc...",
+                    "id": "/properties/header/properties/document_creator",
+                    "type": "string"
+                },
+                "laboratory": {
+                    "description": "Optional, laboratory or company that performed the measurements.",
+                    "id": "/properties/header/properties/laboratory",
+                    "type": ["string", "null"]
+                },
+                "license": {
+                    "description": "Required, usage license of the document, e.g. CC-BY-NC-ND",
+                    "id": "/properties/header/properties/license",
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "description": "Optional, manufacturer of the device being tested.",
+                    "id": "/properties/header/properties/manufacturer",
+                    "type": ["string", "null"]
+                },
+                "measurement_equipment": {
+                    "description": "Optional, measurement equipment used to test the device.",
+                    "id": "/properties/header/properties/measurement_equipment",
+                    "type": ["string", "null"]
+                },
+                "model": {
+                    "description": "Optional, model of the device being tested.",
+                    "id": "/properties/header/properties/model",
+                    "type": ["string", "null"]
+                },
+                "unique_identifier": {
+                    "description": "Optional, generated unique identifier for the document, e.g. SHA256.",
+                    "id": "/properties/header/properties/unique_identifier",
+                    "type": ["string", "null"]
+                }
+            },
+            "required": [
+                "description",
+                "document_creation_date",
+                "document_creator",
+                "license"
+            ],
+            "type": "object"
+        },
+        "spectral_data": {
+            "id": "/properties/spectral_data",
+            "properties": {
+                "bandwidth_FWHM": {
+                    "description": "Optional, spectro-radiometer full-width at half-maximum bandwidth in nm.",
+                    "id": "/properties/spectral_data/properties/bandwidth_FWHM",
+                    "type": ["number", "null"]
+                },
+                "bandwidth_corrected": {
+                    "description": "Optional, whether bandwidth correction has been applied to the spectral data.",
+                    "id": "/properties/spectral_data/properties/bandwidth_corrected",
+                    "type": ["boolean", "null"]
+                },
+                "data": {
+                    "description": "Required, defines the spectral dataset: at least a *key* from `index` whose *value* is an *object* containing wavelength/values pairs.",
+                    "id": "/properties/spectral_data/properties/data",
+                    "patternProperties": {
+                    	"^.*$": { "type": "object" }
+                    },
+                    "additionalProperties": false,
+                    "type": "object"
+                },
+                "index": {
+                    "description": "Required, indexes the spectral dataset.",
+                    "id": "/properties/spectral_data/properties/index",
+                    "patternProperties": {
+                        	"^.*$": { "type": "array" }
+                    },
+                    "additionalProperties": false,
+                    "type": "object"
+                },
+                "reflection_geometry": {
+                    "description": "Required if `units` is *reflectance*, reflection geometry attributes as per CIE 15:2004.",
+                    "id": "/properties/spectral_data/properties/reflection_geometry",
+                    "type": ["string", "null"],
+                    "enum": ["di:8", "de:8", "8:di", "8:de", "d:d", "d:0", "45a:0", "45c:0", "0:45a", "45x:0", "0:45x", "other", null]
+                },
+                "transmission_geometry": {
+                    "description": "Required if `units` is *transmittance”*, transmission geometry attributes as per CIE 15:2004.",
+                    "id": "/properties/spectral_data/properties/transmission_geometry",
+                    "type": ["string", "null"],
+                    "enum": ["0:0", "di:0", "de:0", "0:di", "0:de", "d:d", "other", null]
+                },
+                "units": {
+                    "description": "Required, unit or quantity of measurement for the spectral dataset.",
+                    "id": "/properties/spectral_data/properties/units",
+                    "type": "string",
+                    "enum": ["flux", "absorptance", "transmittance", "reflectance", "intensity", "irradiance", "radiance", "exitance", "R-Factor", "T-Factor", "relative", "other"]
+                }
+            },
+            "required": [
+                "data",
+                "index",
+                "units"
+            ],
+            "type": "object"
+        }
+    },
+    "required": [
+        "header",
+        "spectral_data"
+    ],
+    "type": "object"
+}
+```
 
 ### Conversion using camera file metadata
 

@@ -14,7 +14,7 @@
         "license"                : null
     },
     "spectral_data": {
-        "quantity"              : "relative",
+        "units"                 : "relative",
         "reflection_geometry"   : null,
         "transmission_geometry" : null,
         "bandwidth_FWHM"        : null,

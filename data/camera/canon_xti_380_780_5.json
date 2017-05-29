@@ -1,6 +1,6 @@
 {
     "header": {
-        "api_version"            : "0.1.0",
+        "schema_version"         : "0.1.0",
         "manufacturer"           : "canon",
         "model"                  : "xti",
         "catalog_number"         : "camera_canon_xti_0.1.0",

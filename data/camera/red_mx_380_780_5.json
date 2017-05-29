@@ -1,6 +1,6 @@
 {
     "header": {
-        "api_version"            : "0.1.0",
+        "schema_version"         : "0.1.0",
         "manufacturer"           : "red",
         "model"                  : "mx",
         "catalog_number"         : "camera_red_mx_0.1.0",

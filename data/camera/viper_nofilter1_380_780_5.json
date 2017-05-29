@@ -1,6 +1,6 @@
 {
     "header": {
-        "api_version"            : "0.1.0",
+        "schema_version"         : "0.1.0",
         "manufacturer"           : "viper",
         "model"                  : "nofilter1",
         "catalog_number"         : "camera_viper_nofilter1_0.1.0",

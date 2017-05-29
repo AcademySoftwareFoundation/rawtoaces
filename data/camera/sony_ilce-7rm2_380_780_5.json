@@ -1,6 +1,6 @@
 {
     "header": {
-        "api_version"            : "0.1.0",
+        "schema_version"         : "0.1.0",
         "manufacturer"           : "sony",
         "model"                  : "ilce-7rm2",
         "catalog_number"         : "camera_sony_ilce-7rm2_0.1.0",

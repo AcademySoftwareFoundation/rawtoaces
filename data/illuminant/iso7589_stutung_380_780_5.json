@@ -1,6 +1,6 @@
 {
     "header": {
-        "api_version"            : "0.1.0",
+        "schema_version"         : "0.1.0",
         "illuminant"             : "iso7589-stutung",
         "catalog_number"         : "illuminant_iso7589-stutung_0.1.0",
         "description"            : "light source iso7589-stutung",

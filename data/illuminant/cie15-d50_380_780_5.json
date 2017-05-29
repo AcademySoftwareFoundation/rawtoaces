@@ -1,6 +1,6 @@
 {
     "header": {
-        "api_version"            : "0.1.0",
+        "schema_version"         : "0.1.0",
         "illuminant"             : "cie15-d50",
         "catalog_number"         : "illuminant_cie15-d50_0.1.0",
         "description"            : "light source cie15-d50",

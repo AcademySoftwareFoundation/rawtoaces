@@ -256,7 +256,8 @@ int configureSetting ( int argc,
             exit(-1);
         }
         
-        if (( cp = strchr ( sp = (char*)"MgcnbksStqmHBC", opt )) != 0 ) {
+        // HMgcnbksStqmBC
+        if (( cp = strchr ( sp = (char*)"HMGcnbksStqmBC", opt )) != 0 ) {
             for (int i=0; i < "111411111142"[cp-sp]-'0'; i++) {
                 if (!isdigit(argv[arg+i][0]))
                 {

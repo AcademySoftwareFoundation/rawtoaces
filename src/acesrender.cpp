@@ -141,8 +141,6 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
         FORI (_opts.EnvPaths.size()) {
             vector<string> cFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
                                               +"/camera" );
-//          vector<string> cFiles = openDir ( static_cast <string> ( FILEPATH )
-//                                                  +"/camera" );
 
             for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
                 string fn( *file );

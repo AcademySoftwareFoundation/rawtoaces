@@ -650,6 +650,10 @@ namespace rta {
         for ( map< string, vector<double> >::iterator it = illuCM.begin(); it != illuCM.end(); ++it ) {
             double tmp = calSSE(it->second, src);
             
+//            printf ("%s, %f\n", it->first.c_str(), tmp);
+//            FORI(3) printf ("%f, ", it->second[i]);
+//            printf ("\n");
+            
             if (sse > tmp) {
                 sse = tmp;
                 _bestIllum = it->first;
@@ -663,7 +667,7 @@ namespace rta {
             _Illuminant.data.clear();
         }
         
-        cout << "The closest light source is: " << _bestIllum << endl;
+        printf ( "The closest/selected light source is: %s\n", _bestIllum.c_str() );
 
         if(loadIlluminant(_bestIllum, type))
             scaleLSC();

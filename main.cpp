@@ -79,8 +79,8 @@ int main(int argc, char *argv[])
 #else
   _putenv ((char*)"TZ=UTC");
 #endif
-    
-    // General set-up
+
+//  General set-up
     OUT.output_color      = 5;
     OUT.output_bps        = 16;
     OUT.highlight         = 0;
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
     OUT.gamm[1]           = 1.0;
     OUT.no_auto_bright    = 1;
 
-  // Fetch conditions and conduct some pre-processing
+// Fetch conditions and conduct some pre-processing
    int arg = configureSetting (argc, argv, opts, OUT);
     
    if ( opts.verbosity > 2 )
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
         }
     }
     
-    // Process RAW files
+// Process RAW files ...
     FORI ( RAWs.size() )
     {
         const char * raw = (RAWs[i]).c_str();
@@ -214,49 +214,40 @@ int main(int argc, char *argv[])
         
             Render.setOptions(opts);
         
-            // use_mat == 0
-            if ( !opts.use_mat ) {
+            printf ( "\nThe camera is: %s %s\n\n", P1.make, P1.model );
+
+//        opts.use_mat == 2 then go with the default
+            if ( opts.use_mat == 0 ) {
                 OUT.use_camera_matrix = 0;
-                
-                // get IDT matrix
-                int gotIDT = Render.prepareIDT ( P1, C );
-                if ( gotIDT ) {
-                    OUT.output_color = 0;
-                    // set four_color_rgb to 0 if half_size is 1
-                    if ( OUT.half_size == 1 ) OUT.four_color_rgb = 0;
-                    
-                    // --mat-method == 0 and
-                    // --wb-method == 0 and
-                    // opts.use_illum == 1
-                    if ( opts.use_illum == 1 ) {
-                        opts.use_Mul = 1;
-                        vector < double > wbv = Render.getWB();
-                        FORI(3) OUT.user_mul[i] = wbv[i];
-                    }
-                }
+                OUT.output_color = 0;
             }
-            else if ( opts.use_mat == 1 && !C.profile ) {
-                fprintf ( stderr, "\nWarning: Cannot find color profile from the RAW, "
-                                  "will use the default camera matrix from libraw\n\n" );
-                OUT.use_camera_matrix = 1;
-            }
-            else if ( opts.use_mat == 1 && C.profile ) {
+            else if ( opts.use_mat == 1 )
                 OUT.use_camera_matrix = 3;
-            }
         
+//            else if ( ( opts.use_mat == 1 && C.profile )
+//                     || opts.use_mat == 2 ) {
+//                OUT.use_camera_matrix = 3;
+//            }
+//            else if ( opts.use_mat == 1 && !C.profile ) {
+//                fprintf ( stderr, "\nWarning: Cannot find ICC Profile from the RAW, "
+//                         "will use the default camera matrix from libraw\n\n" );
+//                OUT.use_camera_matrix = 3;
+//            }
+        
+//          Set four_color_rgb to 0 if half_size is 1
+            if ( OUT.output_color == 0 &&
+                 OUT.half_size == 1 )
+                OUT.four_color_rgb = 0;
+
             Render.setOptions(opts);
         
-            // --mat-method != 0 and
-            // --wb-method == 0 and
-            // opts.use_illum == 1
+//          --wb-method == 1
             if ( opts.use_mat &&
-                 opts.use_illum == 1 ) {
-//                OUT.use_camera_matrix = 0;
-            
-                // Calculate white balance, no IDT matrix
-                int gotWB = Render.prepareWB ( P1, C );
+                 opts.use_wb == 1 ) {
+                // Only calculate white balance, no IDT matrix
+                int gotWB = Render.prepareWB ( P1, C.cam_mul );
                 if ( !gotWB && C.profile )
-                    opts.use_wb = 1;
+                    opts.use_wb = 0;
                 else if ( !gotWB && !C.profile )
                     opts.use_wb = 2;
                 
@@ -266,12 +257,24 @@ int main(int argc, char *argv[])
                     FORI(3) OUT.user_mul[i] = wbv[i];
                 }
             }
-        
-            if ( opts.use_wb == 1 ||
-                 ( opts.use_wb == 0 &&
-                   opts.use_illum != 1) ) {
-                opts.use_Mul = 1;
+            else if ( opts.use_mat == 0 &&
+                      opts.use_wb == 1 ) {
+                int gotIDT = Render.prepareIDT ( P1, C.cam_mul );
+                if ( !gotIDT && C.profile )
+                    opts.use_wb = 0;
+                else if ( !gotIDT && !C.profile )
+                    opts.use_wb = 2;
                 
+                if ( gotIDT ) {
+                    opts.use_Mul = 1;
+                    vector < double > wbv = Render.getWB();
+                    FORI(3) OUT.user_mul[i] = wbv[i];
+                }
+            }
+        
+//          --wb-method == 0
+            if ( opts.use_wb == 0 ) {
+                opts.use_Mul = 1;
                 vector < double > mulV (C.cam_mul, C.cam_mul+3);
                 if( !opts.highlight )
                     scaleVectorMin (mulV);
@@ -280,6 +283,7 @@ int main(int argc, char *argv[])
                 
                 FORI(3) OUT.user_mul[i] = mulV[i];
             }
+//          --wb-method == 2
             else if ( opts.use_wb == 2 ) {
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 1;
@@ -290,15 +294,10 @@ int main(int argc, char *argv[])
             if ( opts.use_Mul == 1 ) {
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
-//                printf ("\nas-shot White Balance Coefficients used are: ");
-//                FORI(3) printf ("%f ", C.cam_mul[i]);
-                printf ("\nThe White Balance Coefficients used are: ");
-                FORI(3) printf ("%f ", OUT.user_mul[i]);
-                printf ("\n\n");
             }
         
-            // For --wb-method 4 or other scenarios in which
-            // white balance is specified by users
+//          For --wb-method == 4 or other scenarios in which
+//          white balance is specified by users
             if ( opts.use_wb == 4 ){
                 OUT.use_camera_wb = 0;
                 OUT.use_auto_wb = 0;
@@ -316,7 +315,7 @@ int main(int argc, char *argv[])
                 }
             }
         
-            // Start the dcraw process
+//          Start the dcraw process
             timerstart_timeval();
             if ( LIBRAW_SUCCESS != ( opts.ret = RawProcessor.dcraw_process() ) )
                 {
@@ -324,9 +323,15 @@ int main(int argc, char *argv[])
                                        raw,libraw_strerror(opts.ret) );
                     if ( LIBRAW_FATAL_ERROR( opts.ret ) )
                         continue;
-//                        exit(1);
                 }
         
+//          Create IDT matrix ...
+//          pre_mul is the final white balance coefficient
+//          ONLY after dcraw_process
+            if ( opts.use_mat == 0 &&
+                 opts.use_wb != 1)
+                Render.prepareIDT ( P1, C.pre_mul );
+                
             if ( opts.use_timing )
                 timerprint ( "LibRaw::dcraw_process()", raw );
         
@@ -336,6 +341,10 @@ int main(int argc, char *argv[])
                 printf ( "Writing file %s\n", outfn );
         
             Render.setOptions(opts);
+        
+            printf ("\nThe White Balance Coefficients used are: ");
+            FORI(3) printf ("%f ", C.pre_mul[i]);
+            printf ("\n\n");
         
             char * cp;
             if (( cp = strrchr ( (char *)((RAWs[i]).c_str()), '.' ))) *cp = 0;

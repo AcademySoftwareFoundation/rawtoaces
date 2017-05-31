@@ -81,9 +81,9 @@ class AcesRender {
     
         //  LibRaw RawProcessor
         int prepareIDT ( libraw_iparams_t P,
-                         libraw_colordata_t C );
+                         float * M );
         int prepareWB ( libraw_iparams_t P,
-                         libraw_colordata_t C );
+                        float * M );
     
         void setOptions (option opts);
         void setPixels (libraw_processed_image_t * image);

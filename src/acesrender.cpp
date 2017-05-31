@@ -223,7 +223,7 @@ int AcesRender::readIlluminant( const char * illumType,
 //		int                           : "1" means IDT matrix generated;
 //                                      "0" means error in calculation.
 
-int AcesRender::prepareIDT ( libraw_iparams_t P, libraw_colordata_t C )
+int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
 {
     const char * cameraSenPath = static_cast <const char *> (_opts.cameraSenPath);
     const char * illumType = static_cast <const char *> (_opts.illumType);
@@ -251,9 +251,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, libraw_colordata_t C )
     }
     else
     {
-        printf ( "\nThe camera is: %s %s\n", P.make, P.model );
-        
-        vector < double > mulV (C.cam_mul, C.cam_mul+3);
+        vector < double > mulV (M, M+3);
         if( !_opts.highlight )
             scaleVectorMin (mulV);
         else
@@ -300,7 +298,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, libraw_colordata_t C )
 //		int                : "1" means white balance coefficients generated;
 //                           "0" means error during calculation
 
-int AcesRender::prepareWB ( libraw_iparams_t P, libraw_colordata_t C )
+int AcesRender::prepareWB ( libraw_iparams_t P, float * M )
 {
     const char * cameraSenPath = static_cast <const char *> (_opts.cameraSenPath);
     const char * illumType = static_cast <const char *> (_opts.illumType);
@@ -328,9 +326,7 @@ int AcesRender::prepareWB ( libraw_iparams_t P, libraw_colordata_t C )
     }
     else
     {
-        printf ( "\nThe camera is: %s %s\n", P.make, P.model );
-        
-        vector < double > mulV (C.cam_mul, C.cam_mul+3);
+        vector < double > mulV (M, M+3);
         if( !_opts.highlight )
             scaleVectorMin (mulV);
         else
@@ -338,11 +334,11 @@ int AcesRender::prepareWB ( libraw_iparams_t P, libraw_colordata_t C )
         
         // loading training data (190 patches)
         _idt->loadTrainingData ( static_cast < string > ( FILEPATH )
-                                +"/training/training_spectral" );
+                                +"/training/training_spectral.json" );
         
         // loading color matching function
         _idt->loadCMF ( static_cast < string > ( FILEPATH )
-                      +"/cmf/json/cmf_1931.json" );
+                      +"/cmf/cmf_1931.json" );
         
         // choose the best light source based on
         // as-shot white balance coefficients

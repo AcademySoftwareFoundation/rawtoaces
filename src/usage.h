@@ -81,12 +81,10 @@ void usage(const char *prog)
             "  --version               Show version\n"
             "  --wb-method [0-4]       White balance factor calculation method\n"
             "                            0=use as-shot white balance and calculate matrix for \n"
-            "                            closest illuminant from spectral sensitivities, \n"
-            "                            unless user specifies illuminant in which case both \n"
+            "                            closest illuminant from spectral sensitivities. \n"
+            "                            1=user specifies illuminant [str] in which case both \n"
             "                            white balance and matrix are calculated for specified \n"
-            "                            illuminant from spectral sensitivities. Optional\n"
-            "                            string may be included to specify adopted white. [str]\n"
-            "                            1=Use file metadata for white balance\n"
+            "                            illuminant from spectral sensitivities.\n"
             "                            2=Average the whole image for white balance\n"
             "                            3=Average a grey box for white balance <x y w h>\n"
             "                            4=Use custom white balance  <r g b g>\n"
@@ -151,7 +149,7 @@ void create_key()
     keys["--mat-method"] = 'p';
     keys["--ss-path"] = 'Q';
     keys["--exp-comp"] = 'M';
-    keys["--adopt-white"] = 'T';
+//    keys["--adopt-white"] = 'T';
     keys["--valid-illum"] = 'z';
     keys["-c"] = 'c';
     keys["-C"] = 'C';
@@ -324,28 +322,34 @@ int configureSetting ( int argc,
                 opts.cameraSenPath = (char *)(argv[arg++]);
                 break;
             }
-            case 'T': {
-                opts.use_illum = 1;
-                opts.illumType = (char *)(argv[arg++]);
-                break;
-            }
+//            case 'T': {
+//                opts.use_illum = 1;
+//                opts.illumType = (char *)(argv[arg++]);
+//                break;
+//            }
             case 'M':  opts.scale = atof(argv[arg++]); break;
             case 'R': {
                 std::string flag = std::string(argv[arg]);
                 FORI ( flag.size() ) {
                     if ( !isdigit (flag[i]) ) {
-                        fprintf (stderr,"\nNon-recognizable argument to \"--wb-method\".\n");
+                        fprintf (stderr,"\nNon-recognizable argument to "
+                                        "\"--wb-method\".\n");
                         exit(-1);
                     }
                 }
                 
                 opts.use_wb = atoi(argv[arg++]);
                 
-                if ( opts.use_wb == 0 ) {
+                if ( opts.use_wb == 1 ) {
                     if ( isalnum(argv[arg][0]) )
                     {
                         opts.use_illum = 1;
                         opts.illumType = (char *)(argv[arg++]);
+                    }
+                    else {
+                        fprintf( stderr,"\nError: Please specify a "
+                                 "desirable illuminant to proceed.\n" );
+                        exit(-1);
                     }
                 }
                 if ( opts.use_wb == 3 ) {
@@ -353,7 +357,9 @@ int configureSetting ( int argc,
                         if ( !isdigit(argv[arg][0]) )
                         {
                             fprintf (stderr, "\nError: Non-numeric argument to "
-                                             "\"%s %i\" \n", key.c_str(), opts.use_wb);
+                                             "\"%s %i\" \n",
+                                             key.c_str(),
+                                             opts.use_wb);
                             exit(-1);
                         }
                         OUT.greybox[i] = (float)atof(argv[arg++]);
@@ -365,7 +371,9 @@ int configureSetting ( int argc,
                         if ( !isdigit(argv[arg][0]) )
                         {
                             fprintf (stderr, "\nError: Non-numeric argument to "
-                                             "\"%s %i\" \n", key.c_str(), opts.use_wb);
+                                             "\"%s %i\" \n",
+                                             key.c_str(),
+                                             opts.use_wb);
                             exit(-1);
                         }
                         OUT.user_mul[i] = (float)atof(argv[arg++]);
@@ -374,7 +382,8 @@ int configureSetting ( int argc,
                 else if ( opts.use_wb > 4
                          || opts.use_wb < -1) {
                     fprintf (stderr, "\nError: Invalid argument to "
-                                     "\"%s\" \n", key.c_str());
+                                     "\"%s\" \n",
+                                     key.c_str());
                     exit(-1);
                 }
                 break;
@@ -392,7 +401,7 @@ int configureSetting ( int argc,
         string cameraSenPathS( opts.cameraSenPath );
         if ( cameraSenPathS.find("_380_780") == std::string::npos ) {
             fprintf( stderr,"\nError: Cannot locate camera "
-                    "sensitivity data in the file.\n" );
+                     "sensitivity data in the file.\n" );
             exit(-1);
         }
     }
@@ -410,11 +419,18 @@ int configureSetting ( int argc,
         
         if ( !illumCmp ) {
             fprintf ( stderr, "\nError: Unknown light source - %s.\n"
-                     "Please use \"--valid-illum\" to see a "
-                     "list of available light sources.\n",
-                     strIllm.c_str());
+                      "Please use \"--valid-illum\" to see a "
+                      "list of available light sources.\n",
+                      strIllm.c_str());
             exit(-1);
         }
+    }
+    
+    if ( opts.use_wb == 1 &&
+        opts.use_illum != 1 ) {
+        fprintf( stderr,"\nError: Please specify a "
+                 "desirable illuminant to proceed.\n" );
+        exit(-1);
     }
     
     if ( opts.use_camera_path

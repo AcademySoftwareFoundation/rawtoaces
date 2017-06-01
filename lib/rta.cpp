@@ -459,9 +459,12 @@ namespace rta {
     
     int Idt::loadIlluminant ( const string &path,
                               const string type ) {
-
-        if ( (_Illuminant.data).size() > 0 )
-            (_Illuminant.data).clear();
+        
+        if ((_Illuminant.data).size() != 0) {
+            _Illuminant.type = "";
+            _Illuminant.inc = 5;
+            _Illuminant.data.clear();
+        }
         
         try
         {
@@ -640,21 +643,18 @@ namespace rta {
     
     //	=====================================================================
     //	Choose the best Light Source based on White Balance Coefficients from
-    //  the camera read by libraw
+    //  the camera read by libraw according to a given set of coefficients
     //
     //	inputs:
     //		Map: Key: path to the Light Source data;
     //           Value: Light Source x Camera Sensitivity
     //      Vector: White Balance Coefficients
-    //      String: Light Source Name
     //
     //	outputs:
     //		illum: the best _Illuminant
     
-    void Idt::chooseIlluminant ( map< string,
-                                 vector<double> >& illuCM,
-                                 vector<double>& src,
-                                 const string type ) {
+    void Idt::chooseIllumSrc ( map < string, vector<double> >& illuCM,
+                               vector<double>& src) {
         double sse = dmax;
         
         for ( map< string, vector<double> >::iterator it = illuCM.begin(); it != illuCM.end(); ++it ) {
@@ -671,17 +671,38 @@ namespace rta {
             }
         }
         
-        if ((_Illuminant.data).size() != 0) {
-            _Illuminant.type = "";
-            _Illuminant.inc = 5;
-            _Illuminant.data.clear();
-        }
-        
-        if ( type.compare("unknown") != 0 )
-            printf ( "The closest/selected light source is: %s\n",
-                    _bestIllum.c_str() );
+        printf ( "The choosen light source is: %s\n",
+                 _bestIllum.c_str() );
 
-        if(loadIlluminant(_bestIllum, type))
+        if ( loadIlluminant( _bestIllum ) )
+            scaleLSC();
+        
+        return;
+    }
+    
+    
+    //	=====================================================================
+    //	Choose the best Light Source based on White Balance Coefficients from
+    //  the camera read by libraw according to user-specified illuminant
+    //
+    //	inputs:
+    //		Map: Key: path to the Light Source data;
+    //           Value: Light Source x Camera Sensitivity
+    //      String: Light Source Name
+    //
+    //	outputs:
+    //		illum: the best _Illuminant
+    
+    void Idt::chooseIllumType ( map < string, vector<double> >& illuCM,
+                                const string type ) {
+        
+        _bestIllum = illuCM.begin()->first;
+        _wb = illuCM.begin()->second;
+
+        printf ( "The specified light source is: %s\n",
+                 _bestIllum.c_str() );
+        
+        if ( loadIlluminant( _bestIllum, type ) )
             scaleLSC();
         
         return;

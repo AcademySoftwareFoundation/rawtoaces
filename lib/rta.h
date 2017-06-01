@@ -135,10 +135,12 @@ namespace rta {
             void loadTrainingData( const string &path );
             void loadCMF( const string &path );
         
-            void chooseIlluminant( map< string,
-                                   vector<double> >& illuCM,
-                                   vector<double>& src,
-                                   const string type );
+            void chooseIllumSrc( map < string,
+                                 vector<double> >& illuCM,
+                                 vector<double>& src );
+            void chooseIllumType( map < string,
+                                  vector<double> >& illuCM,
+                                  const string type );
             void setVerbosity( int verbosity );
             void scaleLSC();
         

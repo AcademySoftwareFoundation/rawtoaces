@@ -264,7 +264,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
         _idt->loadCMF ( static_cast < string > ( FILEPATH )
                         +"cmf/cmf_1931.json" );
         
-        _idt->chooseIlluminant ( illuCM, mulV, illumType );
+        _idt->chooseIllumSrc ( illuCM, mulV );
         
         printf ( "\nCalculating IDT Matrix from Spectral Sensitivity ...\n\n" );
         
@@ -299,7 +299,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
 //		int                : "1" means white balance coefficients generated;
 //                           "0" means error during calculation
 
-int AcesRender::prepareWB ( libraw_iparams_t P, float * M )
+int AcesRender::prepareWB ( libraw_iparams_t P )
 {
     const char * cameraSenPath = static_cast <const char *> (_opts.cameraSenPath);
     const char * illumType = static_cast <const char *> (_opts.illumType);
@@ -313,9 +313,7 @@ int AcesRender::prepareWB ( libraw_iparams_t P, float * M )
                          "\"--wb-method\".\n");
         exit (-1);
     }
-    
-    if ( !illumType ) illumType = "unknown";
-    
+        
     map < string, vector < double > > illuCM;
     read = readIlluminant( illumType, illuCM );
     
@@ -327,12 +325,6 @@ int AcesRender::prepareWB ( libraw_iparams_t P, float * M )
     }
     else
     {
-        vector < double > mulV (M, M+3);
-        if( !_opts.highlight )
-            scaleVectorMin (mulV);
-        else
-            scaleVectorMax (mulV);
-        
         // loading training data (190 patches)
         _idt->loadTrainingData ( static_cast < string > ( FILEPATH )
                                 +"/training/training_spectral.json" );
@@ -343,7 +335,7 @@ int AcesRender::prepareWB ( libraw_iparams_t P, float * M )
         
         // choose the best light source based on
         // as-shot white balance coefficients
-        _idt->chooseIlluminant( illuCM, mulV, illumType );
+        _idt->chooseIllumType( illuCM, illumType );
         
         printf ( "\nCalculating White Balance Coefficients "
                 "from Spectral Sensitivity...\n" );

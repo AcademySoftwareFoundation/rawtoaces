@@ -459,7 +459,8 @@ namespace rta {
     
     int Idt::loadIlluminant ( const string &path,
                               const string type ) {
-        if ( (_Illuminant.data).size() != 0 )
+
+        if ( (_Illuminant.data).size() > 0 )
             (_Illuminant.data).clear();
         
         try
@@ -536,6 +537,11 @@ namespace rta {
         struct stat st;
         assert (!stat( path.c_str(), &st ));
         
+        if ( _trainingSpec.size() > 0 ) {
+            FORI (_trainingSpec.size())
+                _trainingSpec[i].data.clear();
+        }
+        
         try
         {
             // using libraries from boost::property_tree
@@ -577,6 +583,9 @@ namespace rta {
     void Idt::loadCMF ( const string &path ) {
         struct stat st;
         assert (!stat( path.c_str(), &st ));
+        
+        if ( _cmf.size() > 0 )
+            _cmf.clear();
         
         try
         {

@@ -88,6 +88,8 @@ int main(int argc, char *argv[])
     OUT.gamm[0]           = 1.0;
     OUT.gamm[1]           = 1.0;
     OUT.no_auto_bright    = 1;
+    OUT.use_camera_wb     = 0;
+    OUT.use_auto_wb       = 0;
 
 // Fetch conditions and conduct some pre-processing
    int arg = configureSetting (argc, argv, opts, OUT);
@@ -226,9 +228,6 @@ int main(int argc, char *argv[])
                     else
                         scaleVectorMax (mulV);
                     
-                    OUT.use_camera_wb = 0;
-                    OUT.use_auto_wb = 0;
-                    
                     FORI(3) OUT.user_mul[i] = mulV[i];
                     
                     printf ( "Using white balance factors from "
@@ -236,12 +235,10 @@ int main(int argc, char *argv[])
                     break;
                 }
                 case 1 : {
-                    int gotWB = Render.prepareWB ( P1, C.cam_mul );
+                    int gotWB = Render.prepareWB ( P1 );
                     
                     if ( gotWB ) {
                         opts.use_Mul = 1;
-                        OUT.use_camera_wb = 0;
-                        OUT.use_auto_wb = 0;
                         vector < double > wbv = Render.getWB();
                         FORI(3) OUT.user_mul[i] = wbv[i];
                     }
@@ -249,22 +246,17 @@ int main(int argc, char *argv[])
                     break;
                 }
                 case 2 : {
-                    OUT.use_camera_wb = 0;
                     OUT.use_auto_wb = 1;
                     printf ( "Using white balance factors by "
                              "averaging the entire image. \n" );
                     break;
                 }
                 case 3 : {
-                    OUT.use_camera_wb = 0;
-                    OUT.use_auto_wb = 0;
                     printf ( "Using white balance factors "
                              "from averaging the grey box. \n" );
                     break;
                 }
                 case 4 : {
-                    OUT.use_camera_wb = 0;
-                    OUT.use_auto_wb = 0;
                     opts.use_Mul = 1;
                     double sc = dmax;
                     

@@ -263,6 +263,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
         // loading color matching function
         _idt->loadCMF ( static_cast < string > ( FILEPATH )
                         +"cmf/cmf_1931.json" );
+        
         _idt->chooseIlluminant ( illuCM, mulV, illumType );
         
         printf ( "\nCalculating IDT Matrix from Spectral Sensitivity ...\n\n" );

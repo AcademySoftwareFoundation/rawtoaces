@@ -549,10 +549,11 @@ namespace rta {
             read_json ( path, pt );
             
             int i = 0;
+            
             BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "spectral_data.data.main" ) )
             {
                 _trainingSpec[i].wl = atoi((row.first).c_str());
-                
+
                 BOOST_FOREACH ( ptree::value_type &cell, row.second )
                     _trainingSpec[i].data.push_back(cell.second.get_value<double>());
                 

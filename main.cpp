@@ -334,7 +334,7 @@ int main(int argc, char *argv[])
 //          Use the final wb factors to otbain IDT
             if ( opts.use_mat == 0 )
                 Render.prepareIDT ( P1, C.pre_mul );
-                
+
             if ( opts.use_timing )
                 timerprint ( "LibRaw::dcraw_process()", raw );
         

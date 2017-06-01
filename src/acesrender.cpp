@@ -235,7 +235,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
         fprintf( stderr, "\nError: No matching cameras found. "
                          "Please use other options for "
                          "\"--mat-method\" and/or \"--wb-method\".\n");
-        exit (1);
+        exit (-1);
     }
 
     if ( !illumType ) illumType = "unknown";
@@ -247,7 +247,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
         fprintf( stderr, "\nError: No matching light source. "
                          "Please use other options for "
                          "\"--mat-method\" or \"--wb-method\".\n");
-        exit (1);
+        exit (-1);
     }
     else
     {
@@ -310,7 +310,7 @@ int AcesRender::prepareWB ( libraw_iparams_t P, float * M )
         fprintf( stderr, "\nError: No matching cameras found. "
                          "Please use other options for "
                          "\"--wb-method\".\n");
-        exit (1);
+        exit (-1);
     }
     
     if ( !illumType ) illumType = "unknown";
@@ -322,7 +322,7 @@ int AcesRender::prepareWB ( libraw_iparams_t P, float * M )
         fprintf( stderr, "\nError: No matching light source. "
                 "Please use other options for "
                 "\"--mat-method\" or \"--wb-method\".\n");
-        exit (1);
+        exit (-1);
     }
     else
     {

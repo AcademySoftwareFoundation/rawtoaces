@@ -436,7 +436,7 @@ namespace rta {
             fprintf(stderr, "Please double check the Camera "
                             "Sensitivity data (e.g. the increment "
                             "should be uniform from 380nm to 780nm).\n");
-            exit(1);
+            exit(-1);
         }
         
         _cameraSpst._spstMaxCol = max_element (max.begin(), max.end()) - max.begin();
@@ -491,7 +491,7 @@ namespace rta {
                     fprintf ( stderr, "Please double check the Light "
                                       "Source data (e.g. the increment "
                                       "should be uniform from 380nm to 780nm).\n" );
-                    exit(1);
+                    exit(-1);
                 }
                 
                 if ( wavs[wavs.size()-1] < 380 ||

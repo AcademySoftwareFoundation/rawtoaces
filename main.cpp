@@ -215,106 +215,112 @@ int main(int argc, char *argv[])
             Render.setOptions(opts);
         
             printf ( "\nThe camera is: %s %s\n\n", P1.make, P1.model );
-
-//        opts.use_mat == 2 then go with the default
-            if ( opts.use_mat == 0 ) {
-                OUT.use_camera_matrix = 0;
-                OUT.output_color = 0;
-            }
-            else if ( opts.use_mat == 1 )
-                OUT.use_camera_matrix = 3;
         
-//            else if ( ( opts.use_mat == 1 && C.profile )
-//                     || opts.use_mat == 2 ) {
-//                OUT.use_camera_matrix = 3;
-//            }
-//            else if ( opts.use_mat == 1 && !C.profile ) {
-//                fprintf ( stderr, "\nWarning: Cannot find ICC Profile from the RAW, "
-//                         "will use the default camera matrix from libraw\n\n" );
-//                OUT.use_camera_matrix = 3;
-//            }
-        
-//          Set four_color_rgb to 0 if half_size is 1
-            if ( OUT.output_color == 0 &&
-                 OUT.half_size == 1 )
-                OUT.four_color_rgb = 0;
-
-            Render.setOptions(opts);
-        
-//          --wb-method == 1
-            if ( opts.use_mat &&
-                 opts.use_wb == 1 ) {
-                // Only calculate white balance, no IDT matrix
-                int gotWB = Render.prepareWB ( P1, C.cam_mul );
-                if ( !gotWB && C.profile )
-                    opts.use_wb = 0;
-                else if ( !gotWB && !C.profile )
-                    opts.use_wb = 2;
-                
-                if ( gotWB ) {
+//          Set parameters for --wb-method
+            switch ( opts.use_wb ) {
+                case 0 : {
                     opts.use_Mul = 1;
-                    vector < double > wbv = Render.getWB();
-                    FORI(3) OUT.user_mul[i] = wbv[i];
+                    vector < double > mulV (C.cam_mul, C.cam_mul+3);
+                    if( !opts.highlight )
+                        scaleVectorMin (mulV);
+                    else
+                        scaleVectorMax (mulV);
+                    
+                    OUT.use_camera_wb = 0;
+                    OUT.use_auto_wb = 0;
+                    
+                    FORI(3) OUT.user_mul[i] = mulV[i];
+                    
+                    printf ( "Using white balance factors from file metadata. \n" );
+                    
+                    break;
                 }
-            }
-            else if ( opts.use_mat == 0 &&
-                      opts.use_wb == 1 ) {
-                int gotIDT = Render.prepareIDT ( P1, C.cam_mul );
-                if ( !gotIDT && C.profile )
-                    opts.use_wb = 0;
-                else if ( !gotIDT && !C.profile )
-                    opts.use_wb = 2;
-                
-                if ( gotIDT ) {
+                case 1 : {
+                    int gotWB = Render.prepareWB ( P1, C.cam_mul );
+                    
+                    if ( gotWB ) {
+                        opts.use_Mul = 1;
+                        OUT.use_camera_wb = 0;
+                        OUT.use_auto_wb = 0;
+                        vector < double > wbv = Render.getWB();
+                        FORI(3) OUT.user_mul[i] = wbv[i];
+                    }
+                    
+                    printf ( "Using calculated white balance factors. \n" );
+                    
+                    break;
+                }
+                case 2 : {
+                    OUT.use_camera_wb = 0;
+                    OUT.use_auto_wb = 1;
+                    
+                    printf ( "Using white balance factors by averaging the entire image. \n" );
+                    
+                    break;
+                }
+                case 3 : {
+                    OUT.use_camera_wb = 0;
+                    OUT.use_auto_wb = 0;
+                    
+                    printf ( "Using white balance factors from averaging the grey box. \n" );
+                    
+                    break;
+                }
+                case 4 : {
+                    OUT.use_camera_wb = 0;
+                    OUT.use_auto_wb = 0;
                     opts.use_Mul = 1;
-                    vector < double > wbv = Render.getWB();
-                    FORI(3) OUT.user_mul[i] = wbv[i];
+                    
+                    double sc = dmax;
+                    
+                    FORI(P1.colors){
+                        if ( OUT.user_mul[i] <= sc )
+                            sc = OUT.user_mul[i];
+                    }
+                    
+                    if ( sc != 1.0 ) {
+                        fprintf ( stderr, "\nWarning: The smallest channel multiplier "
+                                  "should be 1.0.\n\n" );
+                    }
+                    
+                    printf ( "Using user-supplied white balance factors. \n" );
+                    
+                    break;
+                }
+                default: {
+                    fprintf ( stderr, "--wb-method must be 0, 1, 2, 3, or 4 \n" );
+                    break;
                 }
             }
         
-//          --wb-method == 0
-            if ( opts.use_wb == 0 ) {
-                opts.use_Mul = 1;
-                vector < double > mulV (C.cam_mul, C.cam_mul+3);
-                if( !opts.highlight )
-                    scaleVectorMin (mulV);
-                else
-                    scaleVectorMax (mulV);
-                
-                FORI(3) OUT.user_mul[i] = mulV[i];
-            }
-//          --wb-method == 2
-            else if ( opts.use_wb == 2 ) {
-                OUT.use_camera_wb = 0;
-                OUT.use_auto_wb = 1;
+//          Set parameters for --mat-method
+            switch ( opts.use_mat ) {
+                case 0 :
+                    OUT.output_color = 0;
+//          Set four_color_rgb to 0 when half_size is set to 1
+                    if ( OUT.half_size == 1 )
+                        OUT.four_color_rgb = 0;
+                    
+                    printf ("Using calculate matrix from camera spec sens. \n");
+
+                    break;
+                case 1 :
+                    OUT.use_camera_matrix = 0;
+                    printf ("Using file metadata color matrix. \n");
+
+                    break;
+                case 2 :
+                    OUT.use_camera_matrix = 3;
+                    printf ("Using adobe coeffs included in libraw. \n");
+
+                    break;
+                default:
+                    fprintf ( stderr, "--mat-method must be 0, 1, 2 \n" );
+                    break;
             }
         
             Render.setOptions(opts);
-        
-            if ( opts.use_Mul == 1 ) {
-                OUT.use_camera_wb = 0;
-                OUT.use_auto_wb = 0;
-            }
-        
-//          For --wb-method == 4 or other scenarios in which
-//          white balance is specified by users
-            if ( opts.use_wb == 4 ){
-                OUT.use_camera_wb = 0;
-                OUT.use_auto_wb = 0;
-                
-                double sc = dmax;
-                
-                FORI(P1.colors){
-                    if ( OUT.user_mul[i] <= sc )
-                        sc = OUT.user_mul[i];
-                }
-                
-                if ( sc != 1.0 ) {
-                    fprintf ( stderr, "\nWarning: The smallest channel multiplier "
-                                      "should be 1.0.\n\n" );
-                }
-            }
-        
+
 //          Start the dcraw process
             timerstart_timeval();
             if ( LIBRAW_SUCCESS != ( opts.ret = RawProcessor.dcraw_process() ) )
@@ -325,11 +331,8 @@ int main(int argc, char *argv[])
                         continue;
                 }
         
-//          Create IDT matrix ...
-//          pre_mul is the final white balance coefficient
-//          ONLY after dcraw_process
-            if ( opts.use_mat == 0 &&
-                 opts.use_wb != 1)
+//          Use the final wb factors to otbain IDT
+            if ( opts.use_mat == 0 )
                 Render.prepareIDT ( P1, C.pre_mul );
                 
             if ( opts.use_timing )

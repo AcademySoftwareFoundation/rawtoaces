@@ -365,7 +365,7 @@ namespace rta {
     int Idt::loadCameraSpst ( const string & path,
                               const char * maker,
                               const char * model,
-                              const int ss_path) {
+                              const int ss_path ) {
         vector <RGBSen> rgbsen;
         vector <double> max(3, dmin);
         

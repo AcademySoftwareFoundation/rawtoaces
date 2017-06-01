@@ -231,8 +231,8 @@ int main(int argc, char *argv[])
                     
                     FORI(3) OUT.user_mul[i] = mulV[i];
                     
-                    printf ( "Using white balance factors from file metadata. \n" );
-                    
+                    printf ( "Using white balance factors from "
+                             "file metadata. \n" );
                     break;
                 }
                 case 1 : {
@@ -245,32 +245,27 @@ int main(int argc, char *argv[])
                         vector < double > wbv = Render.getWB();
                         FORI(3) OUT.user_mul[i] = wbv[i];
                     }
-                    
                     printf ( "Using calculated white balance factors. \n" );
-                    
                     break;
                 }
                 case 2 : {
                     OUT.use_camera_wb = 0;
                     OUT.use_auto_wb = 1;
-                    
-                    printf ( "Using white balance factors by averaging the entire image. \n" );
-                    
+                    printf ( "Using white balance factors by "
+                             "averaging the entire image. \n" );
                     break;
                 }
                 case 3 : {
                     OUT.use_camera_wb = 0;
                     OUT.use_auto_wb = 0;
-                    
-                    printf ( "Using white balance factors from averaging the grey box. \n" );
-                    
+                    printf ( "Using white balance factors "
+                             "from averaging the grey box. \n" );
                     break;
                 }
                 case 4 : {
                     OUT.use_camera_wb = 0;
                     OUT.use_auto_wb = 0;
                     opts.use_Mul = 1;
-                    
                     double sc = dmax;
                     
                     FORI(P1.colors){
@@ -279,16 +274,16 @@ int main(int argc, char *argv[])
                     }
                     
                     if ( sc != 1.0 ) {
-                        fprintf ( stderr, "\nWarning: The smallest channel multiplier "
-                                  "should be 1.0.\n\n" );
+                        fprintf ( stderr, "\nWarning: The smallest channel  "
+                                          "multiplier should be 1.0.\n\n" );
                     }
                     
                     printf ( "Using user-supplied white balance factors. \n" );
-                    
                     break;
                 }
                 default: {
-                    fprintf ( stderr, "--wb-method must be 0, 1, 2, 3, or 4 \n" );
+                    fprintf ( stderr, "--wb-method must be 0, 1, 2, 3, "
+                                      "or 4 \n" );
                     break;
                 }
             }
@@ -301,18 +296,15 @@ int main(int argc, char *argv[])
                     if ( OUT.half_size == 1 )
                         OUT.four_color_rgb = 0;
                     
-                    printf ("Using calculate matrix from camera spec sens. \n");
-
+                    printf ( "Using calculate matrix from camera spec sens. \n" );
                     break;
                 case 1 :
                     OUT.use_camera_matrix = 0;
-                    printf ("Using file metadata color matrix. \n");
-
+                    printf ( "Using file metadata color matrix. \n" );
                     break;
                 case 2 :
                     OUT.use_camera_matrix = 3;
-                    printf ("Using adobe coeffs included in libraw. \n");
-
+                    printf ( "Using adobe coeffs included in libraw. \n" );
                     break;
                 default:
                     fprintf ( stderr, "--mat-method must be 0, 1, 2 \n" );
@@ -321,17 +313,17 @@ int main(int argc, char *argv[])
         
             Render.setOptions(opts);
 
-//          Start the dcraw process
+//          Start the dcraw_process()
             timerstart_timeval();
-            if ( LIBRAW_SUCCESS != ( opts.ret = RawProcessor.dcraw_process() ) )
-                {
-                    fprintf ( stderr, "Error: Cannot do postpocessing on %s: %s\n\n",
-                                       raw,libraw_strerror(opts.ret) );
-                    if ( LIBRAW_FATAL_ERROR( opts.ret ) )
-                        continue;
-                }
+            if ( LIBRAW_SUCCESS != ( opts.ret = RawProcessor.dcraw_process() ) ) {
+                
+                fprintf ( stderr, "Error: Cannot do postpocessing on %s: %s\n\n",
+                          raw,libraw_strerror(opts.ret) );
+                if ( LIBRAW_FATAL_ERROR( opts.ret ) )
+                    continue;
+            }
         
-//          Use the final wb factors to otbain IDT
+//          Use the final wb factors to otbain IDT matrix
             if ( opts.use_mat == 0 )
                 Render.prepareIDT ( P1, C.pre_mul );
 

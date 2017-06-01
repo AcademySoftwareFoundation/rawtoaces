@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 {
     if ( argc == 1 ) usage( argv[0] );
     
-    LibRaw RawProcessor;
+    LibRawAces RawProcessor;
     option opts;
     struct stat st;
     

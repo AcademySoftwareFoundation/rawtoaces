@@ -345,7 +345,7 @@ int main(int argc, char *argv[])
         
             Render.setOptions(opts);
         
-            printf ("\nThe White Balance Coefficients used are: ");
+            printf ("\nThe Final White Balance Coefficients used are: ");
             FORI(3) printf ("%f ", C.pre_mul[i]);
             printf ("\n\n");
         

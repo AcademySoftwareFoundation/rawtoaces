@@ -677,7 +677,9 @@ namespace rta {
             _Illuminant.data.clear();
         }
         
-        printf ( "The closest/selected light source is: %s\n", _bestIllum.c_str() );
+        if ( type.compare("unknown") != 0 )
+            printf ( "The closest/selected light source is: %s\n",
+                    _bestIllum.c_str() );
 
         if(loadIlluminant(_bestIllum, type))
             scaleLSC();

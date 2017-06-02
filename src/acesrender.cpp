@@ -144,7 +144,7 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
 
             for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
                 string fn( *file );
-                
+                if ( fn.find(".json") == std::string::npos ) continue;
                 readC = _idt->loadCameraSpst( fn,
                                               static_cast <const char *> (P.make),
                                               static_cast <const char *> (P.model),
@@ -187,8 +187,9 @@ int AcesRender::readIlluminant( const char * illumType,
         
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string fn( *file );
+            if ( fn.find(".json") == std::string::npos ) continue;
+            
             string strType(illumType);
-                
             const char * illumC = static_cast< const char * >( illumType );
 
             if ( strType.compare("unknown") != 0 ) {

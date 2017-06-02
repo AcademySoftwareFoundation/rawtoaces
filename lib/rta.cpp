@@ -330,16 +330,17 @@ namespace rta {
         assert(_cameraSpst._spstMaxCol >= 0
                && (_Illuminant.data).size() != 0);
         
-        vector < double > colMax(81, 1.0);
+        uint16_t size =_cameraSpst._rgbsen.size();
+        vector < double > colMax(size, 1.0);
         switch (_cameraSpst._spstMaxCol){
             case 0:
-                FORI(81) colMax[i] = _cameraSpst._rgbsen[i].RSen;
+                FORI(size) colMax[i] = _cameraSpst._rgbsen[i].RSen;
                 break;
             case 1:
-                FORI(81) colMax[i] = _cameraSpst._rgbsen[i].GSen;
+                FORI(size) colMax[i] = _cameraSpst._rgbsen[i].GSen;
                 break;
             case 2:
-                FORI(81) colMax[i] = _cameraSpst._rgbsen[i].BSen;
+                FORI(size) colMax[i] = _cameraSpst._rgbsen[i].BSen;
                 break;
             default:
                 return;
@@ -748,8 +749,8 @@ namespace rta {
         assert(_Illuminant.data.size() == 81 &&
                _trainingSpec[0].data.size() == 190);
 
-        vector< vector<double> > TI(81, vector<double>(190));
-        FORIJ(81, 190)
+        vector< vector<double> > TI(_Illuminant.data.size(), vector<double>(190));
+        FORIJ(_Illuminant.data.size(), _trainingSpec[0].data.size())
             TI[i][j] = _Illuminant.data[i] * (_trainingSpec[i].data)[j];
         
         return TI;
@@ -801,9 +802,9 @@ namespace rta {
         
         scaleLSC();
         
-        vector < vector < double > > colRGB (3, vector <double> (81, 1.0));
+        vector < vector < double > > colRGB (3, vector <double> (_Illuminant.data.size(), 1.0));
         
-        FORI(81) {
+        FORI(_Illuminant.data.size()) {
             colRGB[0][i] = _cameraSpst._rgbsen[i].RSen;
             colRGB[1][i] = _cameraSpst._rgbsen[i].GSen;
             colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
@@ -839,7 +840,7 @@ namespace rta {
         vector< vector<double> > transTI = transposeVec(TI);
         vector< vector<double> > colXYZ(3, vector<double>(TI.size(), 1.0));
 
-        FORI(81){
+        FORI(TI.size()){
             colXYZ[0][i] = _cmf[i].xbar;
             colXYZ[1][i] = _cmf[i].ybar;
             colXYZ[2][i] = _cmf[i].zbar;
@@ -881,7 +882,7 @@ namespace rta {
         vector< vector<double> > transTI = transposeVec(TI);
         vector< vector<double> > colRGB(3, vector<double>(TI.size(), 1.0));
         
-        FORI(81) {
+        FORI(TI.size()) {
             colRGB[0][i] = _cameraSpst._rgbsen[i].RSen;
             colRGB[1][i] = _cameraSpst._rgbsen[i].GSen;
             colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;

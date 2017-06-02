@@ -64,7 +64,7 @@ CMake can be downloaded directly from [https://cmake.org/]() and/or installed us
 
 ###### IlmBase
 
-The rawtoaces depends on an essential part of IlmBase software package, which can be downloaded from [http://www.openexr.com]() and/or installed using one of the commands below.
+The rawtoaces depends on an essential part of IlmBase software package, which can be downloaded from [http://www.openexr.com](http://www.openexr.com) and/or installed using one of the commands below.
 
 * Ubuntu
 

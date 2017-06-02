@@ -330,8 +330,7 @@ int main(int argc, char *argv[])
             Render.setOptions(opts);
         
             printf ("\nThe Final White Balance Coefficients used are: ");
-            FORI(3) printf ("%f ", C.pre_mul[i]);
-            printf ("\n\n");
+            printf ("%f, %f, %f\n\n", C.pre_mul[0], C.pre_mul[1], C.pre_mul[2]);
         
             char * cp;
             if (( cp = strrchr ( (char *)((RAWs[i]).c_str()), '.' ))) *cp = 0;

@@ -317,9 +317,8 @@ The help message with a description of all command line options can be obtained 
 	  --help                  Show this screen
 	  --version               Show version
 	  --wb-method [0-4] [str] White balance factor calculation method
-	                            0=Calculate white balance from camera spec sens. Optional 
-	                            string may be included to specify adopted white. 
-	                            1=Use file metadata for white balance
+	                            0=white balance using file metadata
+	                            1=white balance using user specified illuminant [str]
 	                            2=Average the whole image for white balance
 	                            3=Average a grey box for white balance <x y w h>
 	                            4=Use custom white balance  <r g b g>
@@ -391,7 +390,7 @@ This is the preferred method as camera white balance gain factors and the RGB to
 
 By default, `rawtoaces` will determine the adopted white by finding the set of white balance gain factors calculated from spectral sensitivities closest to the "As Shot" (aka Camera Multiplier) white balance gain factors included in the RAW file metadata.  This default behavior can be overridden by including the desired adopted white name after white balance method.  The following example will use the white balance gain factors calculated from spectral sensitivities for D55. 
 
-	$ rawtoaces --wb-method 0 D55 --mat-method 0 input.raw
+	$ rawtoaces --wb-method 1 D55 --mat-method 0 input.raw
 
 If you have spectral sensitivity data for your camera but it is not included with `rawtoaces` you may place that data in `/usr/local/include/RAWTOACES/data/camera` or use the `--ss-path` option to point `rawtoaces` to the path of data.
 
@@ -626,7 +625,7 @@ In lieu of spectral sensitivity data, camera metadata can be used to convert RAW
 
 The following commands will convert RAW to ACES using the camera file metadata for both white balance and the RGB to XYZ matrix.
 
-	$ rawtoaces --wb-method 1 --mat-method 1 input.raw
+	$ rawtoaces --wb-method 0 --mat-method 1 input.raw
 	
 ### Conversion using camera data included in libraw
 

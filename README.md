@@ -94,13 +94,13 @@ The rawtoaces tool depends on an essential part of the IlmBase software package,
 	
 ###### ACES Container 
 
-ACES Container is the reference implementation for a file writer intended to be used with the Academy Color Encoding System (ACES). `rawtoaces` relies on it to produce images that comply with the ACES container specification (SMPTE S2065-4). LibRaw can be downloaded from [https://github.com/ampas/aces_container](https://github.com/ampas/aces_container) or installed using one of the commands below.
+ACES Container is the reference implementation for a file writer intended to be used with the Academy Color Encoding System (ACES). `rawtoaces` relies on it to produce images that comply with the ACES container specification (SMPTE S2065-4). ACES Container can be downloaded from [https://github.com/ampas/aces_container](https://github.com/ampas/aces_container) or installed using one of the commands below.
 
 * Ubuntu / Redhat / OS X
 	
-	__NOTE : During the beta period please use the build of ACES container specified below__
+	__NOTE : During the beta period please use the build of ACES Container specified below__
 	
-	Install aces-container
+	Install aces_container
 	
 	```sh
 	git clone https://github.com/miaoqi/aces_container.git
@@ -137,7 +137,7 @@ LibRaw is a library that processes RAW files from digital cameras. It handles im
 	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
 	
-	Install `LibRaw`
+	Install libraw
 	
 	```sh
 	$ brew install libraw
@@ -167,7 +167,7 @@ Boost has multiple C++ libraries that support tasks related to linear algebra, m
 	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
 	
-	Install `boost`
+	Install boost
 	
 	```sh
 	$ brew install boost
@@ -226,7 +226,7 @@ Ceres Solver is an open source library for solving Non-linear Least Squares prob
 	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 	```
 	
-	Install `Ceres`
+	Install ceres-solver
 	
 	```sh
 	$ brew tap homebrew/homebrew-science
@@ -237,31 +237,23 @@ If there are errors with regard to a version mis-match of the *Eigen* library, p
 
 In case of any linking errors you should take ownership of CMAKE then run linker:
 
-	```sh
 	sudo chown -R $USER:admin /usr/local/lib/cmake
 	$ brew link ceres-solver
-	```
 
 In case of any GFlag errors AFTER running the next step (rawtoaces installation) you should repeat the install of ceres and follow the instructions shown in terminal to switch the version.
 
-	```sh
 	$ brew install ceres-solver --HEAD
-	```
 	
 This should present something like:
 
-	```sh
 	homebrew/science/ceres-solver-HEAD-97cefd4_4 already installed, however linked version is 1.12.0_4
 	You can use `brew switch ceres-solver HEAD-97cefd4_4` to link to this version.
-	```
 	
 Therefore you would enter:
 	
-	```sh
 	$ brew switch ceres-solver HEAD-97cefd4_4
-	```
 	
-then repeat installation of rawtoaces in the next step.
+And then repeat installation of rawtoaces in the next step.
 
 ## Installation
 
@@ -311,7 +303,6 @@ While preferred, camera spectral sensitivity data is not commonly known to gener
 
 A help message with a description of all command line options can be obtained by typing the following command:
 	
-	```sh
 	$ rawtoaces --help
 	rawtoaces - convert RAW digital camera files to ACES
 	
@@ -366,7 +357,6 @@ A help message with a description of all command line options can be obtained by
 	  -F                      Use FILE I/O instead of streambuf API
 	  -d                      Detailed timing report
 	  -E                      Use mmap()-ed buffer instead of plain FILE I/O
-	```
 	
 ### RAW conversion options
 
@@ -376,49 +366,35 @@ In most cases the default values for all "RAW conversion options" should be suff
 
 If spectral sensitivity data for your camera is included with `rawtoaces` then the following command will convert your RAW file to ACES using that information.
 
-	```sh
 	$ rawtoaces input.raw
-	```
 	
 This command is equivalent to :
 	
-	```sh
 	$ rawtoaces --wb-method 0 --mat-method 0 input.raw
-	```
 	
 To process mutiple raw files, you can try:
 	
-	```sh
 	$ rawtoaces input1.raw input2.raw
-	```
 	
 To batch-process raw files in a directory, you can try:
 
-	```sh
 	$ rawtoaces input_dir
-	```
 	
 To batch-process raw files from multiple directories, you can try:
 	
-	```sh
 	$ rawtoaces input_dir1 input_dir2
-	```
 	
 This is the preferred method as camera white balance gain factors and the RGB to ACES conversion matrix will be calculated using the spectral sensitivity data from your camera. This provides the most accurate conversion to ACES. 
 
-By default, `rawtoaces` will determine the adopted white by finding the set of white balance gain factors calculated from spectral sensitivities closest to the "As Shot" (aka Camera Multiplier) white balance gain factors included in the RAW file metadata. This default behavior can be overridden by including the desired adopted white name after the white balance method. The following example will use the white balance gain factors calculated from spectral sensitivities for D55. 
+By default, `rawtoaces` will determine the adopted white by finding the set of white balance gain factors calculated from spectral sensitivities closest to the "As Shot" (aka Camera Multiplier) white balance gain factors included in the RAW file metadata. This default behavior can be overridden by including the desired adopted white name after the white balance method. The following example will use the white balance gain factors calculated from spectral sensitivities for D55.
 
-	```sh
 	$ rawtoaces --wb-method 1 D55 --mat-method 0 input.raw
-	```
 	
 If you have spectral sensitivity data for your camera but it is not included with `rawtoaces` you may place that data in `/usr/local/include/RAWTOACES/data/camera` or use the `--ss-path` option to point `rawtoaces` to the path of the data.
 
 An example of the use of the --ss-path option would be 
 	
-	```sh
 	$ rawtoaces --ss-path /path/to/my/ss/data/ input.raw
-	```
 	
 #### JSON Schema for Spectral Datasets
 
@@ -541,7 +517,7 @@ The full JSON schema for spectral datasets can be used to validate a new user fi
                     "type": ["string", "null"]
                 },
                 "license": {
-                    "description": "Required, usage license of the document, e.g. CC-BY-NC-ND",
+                    "description": "Required, usage license of the document, e.g. "CC-BY-NC-ND",
                     "id": "/properties/header/properties/license",
                     "type": "string"
                 },
@@ -646,17 +622,13 @@ In lieu of spectral sensitivity data, camera metadata can be used to convert RAW
 
 The following commands will convert RAW to ACES using the camera file metadata for both white balance and the RGB to XYZ matrix.
 
-	```sh
 	$ rawtoaces --wb-method 0 --mat-method 1 input.raw
-	```
 	
 ### Conversion using camera data included in LibRaw
 
 `libraw` includes matrices for a wide range of cameras which may provide a reasonable basis for conversion from RGB to ACES. These matrices were calculated by Adobe and are often referred to as the Adobe coefficients. To use these built-in matrices the following command may be used.
 	
-	```sh
 	$ rawtoaces --mat-method 2
-	```
 	
 `libraw` also provides a few other methods for calculating white balance, including averaging the entire image, averaging a specified box within the image, or explicitly specifying the white balance gain factors to be used. These options can be utilized by using `--wb-method [2-4]` as desired.
 

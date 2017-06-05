@@ -49,6 +49,7 @@ CMake can be downloaded directly from [https://cmake.org/](https://cmake.org/) a
 	```
 	
 * OS X
+
 	Install homebrew if not already installed
 	
 	```sh

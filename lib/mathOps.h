@@ -431,8 +431,8 @@ vector < vector<T> > XYZtoLAB ( const vector < vector<T> >& XYZ ) {
     assert(XYZ.size() == 190);
     T add = T(16.0/116.0);
     
-    vector< vector<T> > tmpXYZ(190, vector<T>(3, T(1.0)));
-    FORIJ(190, 3)
+    vector < vector<T> > tmpXYZ(XYZ.size(), vector<T>(3, T(1.0)));
+    FORIJ(XYZ.size(), 3)
     {
         tmpXYZ[i][j] = XYZ[i][j] / XYZ_w[j];
         if (tmpXYZ[i][j] > T(e))
@@ -441,8 +441,8 @@ vector < vector<T> > XYZtoLAB ( const vector < vector<T> >& XYZ ) {
             tmpXYZ[i][j] = T(k) * tmpXYZ[i][j] + add;
     }
     
-    vector< vector<T> > outCalcLab(190, vector<T>(3));
-    FORI(190)
+    vector< vector<T> > outCalcLab(XYZ.size(), vector<T>(3));
+    FORI(XYZ.size())
     {
         outCalcLab[i][0] = T(116.0) * tmpXYZ[i][1]  - T(16.0);
         outCalcLab[i][1] = T(500.0) * (tmpXYZ[i][0] - tmpXYZ[i][1]);

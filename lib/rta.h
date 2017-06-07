@@ -82,43 +82,122 @@ namespace rta {
     struct CIEXYZ {
         CIEXYZ() {};
         CIEXYZ( double X, double Y, double Z ) : Xt(X),
+<<<<<<< HEAD
                                                  Yt(Y),
                                                  Zt(Z){ };
+=======
+        Yt(Y),
+        Zt(Z){ };
+        
+>>>>>>> expands code base to support "daylight" SPD calculation
         double Xt;
         double Yt;
         double Zt;
     };
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> expands code base to support "daylight" SPD calculation
     struct trainSpec {
         uint16_t wl;
         vector <double> data;
     };
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> expands code base to support "daylight" SPD calculation
     struct CMF {
         uint16_t wl;
         double xbar;
         double ybar;
         double zbar;
     };
+<<<<<<< HEAD
 
     struct RGBSen {
         RGBSen() {};
         RGBSen( double r, double g, double b ) : RSen(r),
                                                  GSen(g),
                                                  BSen(b){ };
+=======
+    
+    struct RGBSen {
+        RGBSen() {};
+        RGBSen( double r, double g, double b ) : RSen(r),
+        GSen(g),
+        BSen(b){ };
+        
+>>>>>>> expands code base to support "daylight" SPD calculation
         double RSen;
         double GSen;
         double BSen;
     };
 
+<<<<<<< HEAD
     struct Illum {
+=======
+    struct illum {
+        illum() {};
+        void cctToxy ( int cct,
+                      vector <double>& xy ) {
+            if ( cct >= 4000 && cct <= 7000 )
+                xy[0] = 0.244063+99.11/cct+2.9678*1000000/(std::pow(cct,2))
+                -4.6070*1000000000/(std::pow(cct,3));
+            else
+                xy[0] = 0.237040+247.48/cct+1.9018*1000000/(std::pow(cct,2))
+                -2.0064*1000000000/(std::pow(cct,3));
+            
+            xy[1] = -3.0*(std::pow(xy[0],2))+2.87*xy[0]-0.275;
+            
+        };
+        
+        void calSPD ( const vector <double> xy ) {
+            assert( xy.size() == 2 &&
+                   (s_series[53].wl - s_series[0].wl)%inc == 0 );
+            
+            double m0 = 0.0241 + 0.2562*xy[0] - 0.7341*xy[1];
+            double m1 = (-1.3515 - 1.7703*xy[0] + 5.9114*xy[1]) / m0;
+            double m2 = (0.03000 - 31.4424*xy[0] + 30.0717*xy[1]) / m0;
+            
+            vector <int> wls0, wls1;
+            vector <double> s00, s10, s20, s01, s11, s21;
+            
+            FORI(54) {
+                wls0[i] = s_series[i].wl;
+                s00[i]   = s_series[i].RGB[0];
+                s10[i]   = s_series[i].RGB[1];
+                s20[i]   = s_series[i].RGB[2];
+            }
+            
+            FORI((s_series[53].wl - s_series[0].wl)/inc+1)
+                wls1[i] = s_series[0].wl + inc*i;
+            
+            s01 = interp1DLinear(wls0, wls1, s00);
+            clearVM(s00);
+            s10 = interp1DLinear(wls0, wls1, s11);
+            clearVM(s10);
+            s20 = interp1DLinear(wls0, wls1, s21);
+            clearVM(s20);
+            
+            FORI ((s_series[53].wl - s_series[0].wl)/inc+1)
+                data[i] = s01[i] + m1 * s11[i] + m2 * s21[i];
+            
+        };
+        
+>>>>>>> expands code base to support "daylight" SPD calculation
         string path;
         string type;
         uint8_t inc;
         double index;
         vector <double> data;
     };
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> expands code base to support "daylight" SPD calculation
     class Idt;
     
     class Spst {
@@ -270,5 +349,6 @@ namespace rta {
             const vector< vector<double> > _RGB;
             const vector< vector<double> > _outLAB;
    };
+    
 }
 #endif

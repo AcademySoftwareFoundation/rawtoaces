@@ -398,10 +398,9 @@ int findIndexInterp1 (T val, vector <T> x, int size) {
 
 
 template <typename T>
-vector <T> interp1DLinear ( const vector <T> &X0,
-                            const vector <T> &Y0,
-                            const vector <T> &X1 ) {
-    
+vector <T> interp1DLinear ( const vector <int> X0,
+                            const vector <int> X1,
+                            const vector <T> Y0 ) {
     assert (X0.size() == Y0.size());
     
     vector <T> slope, intercept, Y1;
@@ -415,7 +414,7 @@ vector <T> interp1DLinear ( const vector <T> &X0,
     intercept.push_back(intercept[intercept.size()-1]);
     
     FORI(X1.size()) {
-        int index  = findIndexInterp1(X1[i], X0, X1.size());
+        int index  = findIndexInterp1(X1[i], X0, X0.size());
         if (index != -1)
             Y1[i] = slope[index] * X1[i] + intercept[index];
         else

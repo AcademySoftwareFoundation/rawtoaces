@@ -381,7 +381,7 @@ T calSSE ( vector <T> & tcp, vector <T> & src ) {
 
 
 template <typename T>
-int findIndexInterp1 (T val, vector <T> x, int size) {
+int findIndexInterp1 ( T val, vector <T> x, int size ) {
     T dist = T(dmax);
     int index = -1;
     

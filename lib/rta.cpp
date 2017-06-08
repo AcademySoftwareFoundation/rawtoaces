@@ -655,7 +655,7 @@ namespace rta {
     //      Vector: White Balance Coefficients
     //
     //	outputs:
-    //		illum: the best _Illuminant
+    //		Illum: the best _Illuminant
     
     void Idt::chooseIllumSrc ( map < string, vector<double> >& illuCM,
                                vector<double>& src) {
@@ -700,7 +700,7 @@ namespace rta {
     //      String: Light Source Name
     //
     //	outputs:
-    //		illum: the best _Illuminant
+    //		Illum: the best _Illuminant
     
     void Idt::chooseIllumType ( map < string, vector<double> >& illuCM,
                                 const char * type ) {
@@ -1059,7 +1059,7 @@ namespace rta {
     //         N/A
     //
     //	outputs:
-    //         illum: Illuminant data that was loaded from the file
+    //         Illum: Illuminant data that was loaded from the file
     
     Illum Idt::getIlluminant() {
         return _Illuminant;

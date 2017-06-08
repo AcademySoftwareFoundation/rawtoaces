@@ -381,13 +381,13 @@ T calSSE ( vector <T> & tcp, vector <T> & src ) {
 
 
 template <typename T>
-int findIndexInterp1 ( T val, vector <T> x, int size ) {
-    T dist = T(dmax);
-    int index = -1;
+T findIndexInterp1 ( T val, vector <T> x, T size ) {
+    T dist = T(1000);
+    T index = T(-1);
     
     FORI(size) {
         T tmp = val - x[i];
-        if (tmp < dist && tmp >= T(0.0)) {
+        if (tmp < dist && tmp >= T(0)) {
             dist = tmp;
             index = i;
         }
@@ -406,21 +406,24 @@ vector <T> interp1DLinear ( const vector <int> X0,
     vector <T> slope, intercept, Y1;
     
     FORI(X0.size()-1) {
-        slope[i] = (Y0[i+1] - Y0[i]) / (X0[i+1] - X0[i]);
-        intercept[i] = Y0[i] - X0[i] * slope[i];
+        slope.push_back((Y0[i+1] - Y0[i]) / (X0[i+1] - X0[i]));
+        intercept.push_back(Y0[i] - X0[i] * slope[i]);
     }
     
     slope.push_back(slope[slope.size()-1]);
     intercept.push_back(intercept[intercept.size()-1]);
     
     FORI(X1.size()) {
-        int index  = findIndexInterp1(X1[i], X0, X0.size());
+        int index  = findIndexInterp1(X1[i], X0, int(X0.size()));
         if (index != -1)
-            Y1[i] = slope[index] * X1[i] + intercept[index];
+            Y1.push_back(slope[index] * X1[i] + intercept[index]);
         else
-            Y1[i] = dmax;
+            Y1.push_back(slope[0] * X1[i] + intercept[0]);
     }
     
+    clearVM(slope);
+    clearVM(intercept);
+
     return Y1;
 };
 

@@ -98,6 +98,7 @@ class AcesRender {
     
         const vector < string > getSupportedIllums () const;
         const vector < string > getSupportedCameras () const;
+        const Illum calSPD ( const char * illumType, const int inc=5 );
         const vector< vector < double > > getIDTMatrix () const;
         const vector< vector < double > > getCATMatrix () const;
         const vector< double > getWB () const;

@@ -280,6 +280,13 @@ int AcesRender::readIlluminant( map < string, vector < double > > & illuCM,
         }
     }
     
+    // just for test calSPD
+//    calSPD("D40");
+//    calSPD("D55");
+    calSPD("D60");
+//    calSPD("D100");
+//    calSPD("D250");
+
     return readI;
 }
 
@@ -762,6 +769,32 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
     x.saveImageObject ( );
 }
 
+//	Calculate spectral power distribution(SPD) of CIE standard daylight
+//  illuminant based on the requested Correlated Color Temperature
+//
+//	inputs:
+//      const char * : type of illuminant (e.g. D60)
+//
+//	outputs:
+//      const Illum : Illuminant Object with calculated SPD
+
+const Illum AcesRender::calSPD ( const char * illumType, const int dis ) {
+    Illum illum;
+    
+    illum.path = "NA";
+    illum.type = illumType;
+    illum.inc = dis;
+    //    illum.index
+    
+    string illumStr(illumType);
+    size_t index = illumStr.find_last_not_of("0123456789");
+    int cct = stoi(illumStr.substr(index + 1)) * 100;
+    
+    illum.getSPD(cct);
+    
+    return illum;
+}
+
 //	=====================================================================
 //	Get a list of Supported Illuminants
 //
@@ -770,6 +803,7 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
 //
 //	outputs:
 //      vector < vector < string > > : _illuminant values
+//	=====================================================================
 
 const vector < string > AcesRender::getSupportedIllums ( ) const {
     return _illuminants;
@@ -787,7 +821,6 @@ const vector < string > AcesRender::getSupportedIllums ( ) const {
 const vector < string > AcesRender::getSupportedCameras ( ) const {
     return _cameras;
 }
-
 
 //	=====================================================================
 //	Get IDT matrix

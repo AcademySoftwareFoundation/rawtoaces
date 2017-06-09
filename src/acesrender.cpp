@@ -769,6 +769,7 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
     x.saveImageObject ( );
 }
 
+//	=====================================================================
 //	Calculate spectral power distribution(SPD) of CIE standard daylight
 //  illuminant based on the requested Correlated Color Temperature
 //

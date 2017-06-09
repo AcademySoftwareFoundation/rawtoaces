@@ -2,8 +2,8 @@
     "header": {
         "schema_version"         : "0.1.0",
         "manufacturer"           : "canon",
-        "model"                  : "s90",
-        "catalog_number"         : "camera_canon_s90_0.1.0",
+        "model"                  : "powershot s90",
+        "catalog_number"         : "camera_canon_powershot_s90_0.1.0",
         "description"            : "camera spectral sensitivity data",
         "document_creator"       : "scitech",
         "unique_identifier"      : "0821298a-d697-4e3d-9b4c-648d2df60b3e",

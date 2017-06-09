@@ -330,6 +330,7 @@ A help message with a description of all command line options can be obtained by
 	  --ss-path <path>        Specify the path to camera sensitivity data
 	                            (default = /usr/local/include/RAWTOACES/data/camera)
 	  --exp-comp float        Set exposure compensation factor (default = 1.0)
+	  --cameras               Show a list of supported cameras
 	
 	Raw conversion options:
 	  -c float                Set adjust maximum threshold (default = 0.75)

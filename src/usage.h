@@ -95,6 +95,7 @@ void usage(const char *prog)
             "  --ss-path <path>        Specify the path to camera sensitivity data\n"
             "                            (default = /usr/local/include/rawtoaces/data/camera)\n"
             "  --exp-comp float        Set exposure compensation factor (default = 1.0)\n"
+            "  --cameras               Show a list of supported cameras\n"
             "\n"
             "Raw conversion options:\n"
             "  -c float                Set adjust maximum threshold (default = 0.75)\n"

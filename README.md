@@ -517,7 +517,7 @@ The full JSON schema for spectral datasets can be used to validate a new user fi
                     "type": ["string", "null"]
                 },
                 "license": {
-                    "description": "Required, usage license of the document, e.g. "CC-BY-NC-ND",
+                    "description": "Required, usage license of the document, e.g. CC-BY-NC-ND",
                     "id": "/properties/header/properties/license",
                     "type": "string"
                 },

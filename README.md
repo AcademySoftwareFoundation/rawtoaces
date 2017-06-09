@@ -232,28 +232,34 @@ Ceres Solver is an open source library for solving Non-linear Least Squares prob
 	$ brew tap homebrew/homebrew-science
 	$ brew install ceres-solver --HEAD
 	```
-
-If there are errors with regard to a version mis-match of the *Eigen* library, please consider brew-installing required libraries first and then buiding Ceres from source (see above).
-
-In case of any linking errors you should take ownership of CMAKE then run linker:
-
+	
+	If there are errors with regard to a version mis-match of the *Eigen* library, please consider brew-installing required libraries first and then buiding Ceres from source (see above).
+	
+	In case of any linking errors you should take ownership of CMAKE then run linker:
+	
+	```sh
 	sudo chown -R $USER:admin /usr/local/lib/cmake
 	$ brew link ceres-solver
-
-In case of any GFlag errors AFTER running the next step (rawtoaces installation) you should repeat the install of ceres and follow the instructions shown in terminal to switch the version.
-
-	$ brew install ceres-solver --HEAD
+	```
 	
-This should present something like:
+	In case of any GFlag errors AFTER running the next step (rawtoaces installation) you should repeat the install of ceres and follow the instructions shown in terminal to switch the version.
 
-	homebrew/science/ceres-solver-HEAD-97cefd4_4 already installed, however linked version is 1.12.0_4
+	```sh
+	$ brew install ceres-solver --HEAD
+	```
+	
+	This should present something like:
+
+	`homebrew/science/ceres-solver-HEAD-97cefd4_4` already installed, however linked version is 1.12.0_4
 	You can use `brew switch ceres-solver HEAD-97cefd4_4` to link to this version.
 	
-Therefore you would enter:
+	Therefore you would enter:
 	
+	```sh
 	$ brew switch ceres-solver HEAD-97cefd4_4
+	```
 	
-And then repeat installation of rawtoaces in the next step.
+	And then repeat installation of rawtoaces in the next step.
 
 ## Installation
 
@@ -283,6 +289,7 @@ And then repeat installation of rawtoaces in the next step.
 	$ sudo make install
 	```
 	
+
 The default process will install `librawtoacesIDT.dylib` to `/usr/local/lib`, a few header files to `/usr/local/include/rawtoaces` and a number of data files into `/usr/local/include/rawtoaces/data`.
 	
 ## Usage

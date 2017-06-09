@@ -251,9 +251,8 @@ int configureSetting ( int argc,
             exit(-1);
         }
         
-        // HMgcnbksStqmBC
-        if (( cp = strchr ( sp = (char*)"HMGcnbksStqmBC", opt )) != 0 ) {
-            for (int i=0; i < "111411111142"[cp-sp]-'0'; i++) {
+        if (( cp = strchr ( sp = (char*)"HcnbksStqmBC", opt )) != 0 ) {
+            for (int i=0; i < "111111111142"[cp-sp]-'0'; i++) {
                 if (!isdigit(argv[arg+i][0]))
                 {
                     fprintf ( stderr, "\nError: Non-numeric argument to "
@@ -262,16 +261,6 @@ int configureSetting ( int argc,
                 }
             }
         }
-//        else if ((cp = strchr ( sp = ( char * )"T", opt )) != 0) {
-//            for (int i=0; i < "111411111142"[cp-sp]-'0'; i++) {
-//                if ( !isalnum(argv[arg+i][0] ) )
-//                {
-//                    fprintf (stderr,"\nNon-numeric and/or Non-compatible argument to "
-//                                    "\"%s\"\n", key.c_str());
-//                    exit(-1);
-//                }
-//            }
-//        }
         
         switch ( opt )
         {

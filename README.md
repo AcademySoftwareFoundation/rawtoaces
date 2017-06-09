@@ -394,9 +394,9 @@ To batch-process raw files from multiple directories, you can try:
 	
 This is the preferred method as camera white balance gain factors and the RGB to ACES conversion matrix will be calculated using the spectral sensitivity data from your camera. This provides the most accurate conversion to ACES. 
 
-By default, `rawtoaces` will determine the adopted white by finding the set of white balance gain factors calculated from spectral sensitivities closest to the "As Shot" (aka Camera Multiplier) white balance gain factors included in the RAW file metadata. This default behavior can be overridden by including the desired adopted white name after the white balance method. The following example will use the white balance gain factors calculated from spectral sensitivities for D55.
+By default, `rawtoaces` will determine the adopted white by finding the set of white balance gain factors calculated from spectral sensitivities closest to the "As Shot" (aka Camera Multiplier) white balance gain factors included in the RAW file metadata. This default behavior can be overridden by including the desired adopted white name after the white balance method. The following example will use the white balance gain factors calculated from spectral sensitivities for D60.
 
-	$ rawtoaces --wb-method 1 D55 --mat-method 0 input.raw
+	$ rawtoaces --wb-method 1 D60 --mat-method 0 input.raw
 	
 If you have spectral sensitivity data for your camera but it is not included with `rawtoaces` you may place that data in `/usr/local/include/RAWTOACES/data/camera` or use the `--ss-path` option to point `rawtoaces` to the path of the data.
 

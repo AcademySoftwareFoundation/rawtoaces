@@ -142,11 +142,11 @@ void create_key()
 {
     keys["--help"] = 'I';
     keys["--version"] = 'V';
+    keys["--cameras"] = 'T';
     keys["--wb-method"] = 'R';
     keys["--mat-method"] = 'p';
     keys["--ss-path"] = 'Q';
     keys["--exp-comp"] = 'M';
-//    keys["--adopt-white"] = 'T';
     keys["--valid-illum"] = 'z';
     keys["-c"] = 'c';
     keys["-C"] = 'C';
@@ -262,16 +262,16 @@ int configureSetting ( int argc,
                 }
             }
         }
-        else if ((cp = strchr ( sp = ( char * )"T", opt )) != 0) {
-            for (int i=0; i < "111411111142"[cp-sp]-'0'; i++) {
-                if ( !isalnum(argv[arg+i][0] ) )
-                {
-                    fprintf (stderr,"\nNon-numeric and/or Non-compatible argument to "
-                                    "\"%s\"\n", key.c_str());
-                    exit(-1);
-                }
-            }
-        }
+//        else if ((cp = strchr ( sp = ( char * )"T", opt )) != 0) {
+//            for (int i=0; i < "111411111142"[cp-sp]-'0'; i++) {
+//                if ( !isalnum(argv[arg+i][0] ) )
+//                {
+//                    fprintf (stderr,"\nNon-numeric and/or Non-compatible argument to "
+//                                    "\"%s\"\n", key.c_str());
+//                    exit(-1);
+//                }
+//            }
+//        }
         
         switch ( opt )
         {
@@ -319,11 +319,12 @@ int configureSetting ( int argc,
                 opts.cameraSenPath = (char *)(argv[arg++]);
                 break;
             }
-//            case 'T': {
-//                opts.use_illum = 1;
-//                opts.illumType = (char *)(argv[arg++]);
-//                break;
-//            }
+            case 'T': {
+                printf ("\nThere are %i cameras supported by LibRaw in total:\n\n",
+                         int(opts.cameraListLR.size()));
+                FORI (opts.cameraListLR.size())
+                    printf ("%s\n", opts.cameraListLR[i].c_str());
+            }
             case 'M':  opts.scale = atof(argv[arg++]); break;
             case 'R': {
                 std::string flag = std::string(argv[arg]);

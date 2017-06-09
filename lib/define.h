@@ -139,6 +139,7 @@ struct option {
     
     float scale;
     vector <string> EnvPaths, cEnvPaths, iEnvPaths;
+    vector <string> cameraListLR;
 };
 
 struct CIEXYZ {

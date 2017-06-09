@@ -90,6 +90,10 @@ int main(int argc, char *argv[])
     OUT.no_auto_bright    = 1;
     OUT.use_camera_wb     = 0;
     OUT.use_auto_wb       = 0;
+    
+    const char ** cl = RawProcessor.cameraList();
+    while (*(cl+1) != NULL)
+        opts.cameraListLR.push_back(string(*cl++));
 
 // Fetch conditions and conduct some pre-processing
    int arg = configureSetting (argc, argv, opts, OUT);

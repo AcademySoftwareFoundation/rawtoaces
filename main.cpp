@@ -101,6 +101,11 @@ int main(int argc, char *argv[])
    if ( opts.verbosity > 2 )
        RawProcessor.set_progress_handler ( my_progress_callback,
                                           ( void * )"Sample data passed" );
+
+	// Start rawtoaces
+	if ( opts.verbosity )
+		printf( "\nStarting rawtoaces ...\n");
+
 #ifdef LIBRAW_USE_OPENMP
    if( opts.verbosity )
        printf ( "Using %d threads\n", omp_get_max_threads() );
@@ -110,7 +115,7 @@ int main(int argc, char *argv[])
     vector < string > RAWs;
     for ( ; arg < argc; arg++ ) {
         if( stat( argv[arg], &st) != 0 ) {
-            fprintf ( stderr, "\nError: The directory or file may not exist - \"%s\"\n\n",
+            fprintf ( stderr, "Error: The directory or file may not exist - \"%s\"...",
                               argv[arg]);
             continue;
         }
@@ -132,14 +137,13 @@ int main(int argc, char *argv[])
     FORI ( RAWs.size() )
     {
         const char * raw = (RAWs[i]).c_str();
-        printf ( "----- Currently Processing: %s \n", raw );
+        
+        if ( opts.verbosity )
+        	printf ( "Processing %s ...\n", raw );
         
         char outfn[1024];
         AcesRender Render;
         Render.setOptions(opts);
-        
-        if( opts.verbosity )
-            printf( "Processing file %s\n", raw );
         
         timerstart_timeval();
             
@@ -220,9 +224,11 @@ int main(int argc, char *argv[])
         
             Render.setOptions(opts);
         
-            printf ( "\nThe camera is: %s %s\n\n", P1.make, P1.model );
+        	if (opts.verbosity > 1)
+            	printf ( "The camera has been identified as a %s %s ...\n", P1.make, P1.model );
+            
         
-//          Set parameters for --wb-method
+//          Set parameters for White Balance method is 
             switch ( opts.use_wb ) {
                 case 0 : {
                     opts.use_Mul = 1;
@@ -234,8 +240,11 @@ int main(int argc, char *argv[])
                     
                     FORI(3) OUT.user_mul[i] = mulV[i];
                     
-                    printf ( "Using white balance factors from "
-                             "file metadata. \n" );
+                    if (opts.verbosity > 1 ) {
+                    	printf ( "White Balance method is 0 - ");
+                    	printf ( "Using white balance factors from "
+                    			 "file metadata ...\n" );
+                    }
                     break;
                 }
                 case 1 : {
@@ -246,18 +255,33 @@ int main(int argc, char *argv[])
                         vector < double > wbv = Render.getWB();
                         FORI(3) OUT.user_mul[i] = wbv[i];
                     }
-                    printf ( "Using calculated white balance factors. \n" );
+                    
+                	if (opts.verbosity > 1) {
+                    	printf ( "White Balance calculation method is 1 - ");
+                    	printf ( "Using white balance factors calculated from "
+                    			 "spec sens and user specified illuminant ...\n" );
+                    }
+                    
                     break;
                 }
                 case 2 : {
                     OUT.use_auto_wb = 1;
-                    printf ( "Using white balance factors by "
-                             "averaging the entire image. \n" );
+                    
+                    if (opts.verbosity > 1) {
+                    	printf ( "White Balance calculation method is 2 - ");
+                    	printf ( "Using white balance factors calculate by "
+                             	"averaging the entire image ...\n" );
+                    }
+                    
                     break;
                 }
                 case 3 : {
-                    printf ( "Using white balance factors "
-                             "from averaging the grey box. \n" );
+                	if (opts.verbosity > 1) {
+                		printf ( "White Balance calculation method is 3 - ");
+                    	printf ( "Using white balance factors calculated by "
+                             "averaging a grey box ...\n" );
+                    }
+                    
                     break;
                 }
                 case 4 : {
@@ -274,11 +298,15 @@ int main(int argc, char *argv[])
                                           "multiplier should be 1.0.\n\n" );
                     }
                     
-                    printf ( "Using user-supplied white balance factors. \n" );
+                    if (opts.verbosity > 1) {
+                    	printf ( "White Balance calculation method is 4 - ");
+                    	printf ( "Using user-supplied white balance factors ...\n" );
+                    }
+                    
                     break;
                 }
                 default: {
-                    fprintf ( stderr, "--wb-method must be 0, 1, 2, 3, "
+                    fprintf ( stderr, "White Balance method is must be 0, 1, 2, 3, "
                                       "or 4 \n" );
                     break;
                 }
@@ -291,19 +319,33 @@ int main(int argc, char *argv[])
 //          Set four_color_rgb to 0 when half_size is set to 1
                     if ( OUT.half_size == 1 )
                         OUT.four_color_rgb = 0;
+                        
+                    if (opts.verbosity > 1) {
+                    	printf ( "IDT matrix calculation method is 0 - ");
+                    	printf ( "Calculating IDT matrix using camera spec sens ...\n" );
+                    }
                     
-                    printf ( "Using calculate matrix from camera spec sens. \n" );
                     break;
                 case 1 :
                     OUT.use_camera_matrix = 0;
-                    printf ( "Using file metadata color matrix. \n" );
+                    
+                    if (opts.verbosity > 1) {
+                    	printf ( "IDT matrix calculation method is 1 - ");
+                    	printf ( "Calculating IDT matrix using file metadata ...\n" );
+                    }
+                    
                     break;
                 case 2 :
                     OUT.use_camera_matrix = 3;
-                    printf ( "Using adobe coeffs included in libraw. \n" );
+                    
+                    if (opts.verbosity > 1) {
+                    	printf ( "IDT matrix calculation method is 2 - ");
+                    	printf ( "Calculating IDT matrix using adobe coeffs included in libraw ...\n" );
+                    }
+                    
                     break;
                 default:
-                    fprintf ( stderr, "--mat-method must be 0, 1, 2 \n" );
+                    fprintf ( stderr, "IDT matrix calculation method is must be 0, 1, 2 \n" );
                     break;
             }
         
@@ -325,16 +367,17 @@ int main(int argc, char *argv[])
 
             if ( opts.use_timing )
                 timerprint ( "LibRaw::dcraw_process()", raw );
-        
-            if ( opts.verbosity >= 2 ) // verbosity set by repeat -v switches
-                printf ( "Converting to aces RGB\n" );
-            else if ( opts.verbosity )
-                printf ( "Writing file %s\n", outfn );
+//         
+//         	if (opts.verbosity) {
+//             	printf ( "Applying IDT ...\n" );
+//             }
         
             Render.setOptions(opts);
         
-            printf ("\nThe Final White Balance Coefficients used are: ");
-            printf ("%f, %f, %f\n\n", C.pre_mul[0], C.pre_mul[1], C.pre_mul[2]);
+        	if (opts.verbosity > 1) {
+            	printf ("The final white balance coefficients are ...\n");
+            	printf ("   %f   %f   %f\n", C.pre_mul[0], C.pre_mul[1], C.pre_mul[2]);
+            }
         
             char * cp;
             if (( cp = strrchr ( (char *)((RAWs[i]).c_str()), '.' ))) *cp = 0;
@@ -357,7 +400,10 @@ int main(int argc, char *argv[])
                     aces = Render.renderNonDNG_IDT();
                 else
                     aces = Render.renderNonDNG();
-            
+            	
+            	if (opts.verbosity) 
+            		printf ( "Writing ACES file to %s ...\n", outfn );
+            		
                 Render.acesWrite ( outfn, aces );
             }
         
@@ -370,6 +416,8 @@ int main(int argc, char *argv[])
 #endif
             RawProcessor.recycle();
         }
-    
+    if (opts.verbosity)
+    	printf ("Finished\n\n");
+
     return 0;
 }

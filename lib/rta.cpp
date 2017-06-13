@@ -672,8 +672,9 @@ namespace rta {
             }
         }
         
-        printf ( "The choosen light source is: %s\n",
-                 _bestIllum.c_str() );
+        if (_verbosity > 1)
+        	printf ( "The illuminant calculated to be the best match to the camera metadata is %s\n",
+                	 _bestIllum.c_str() );
 
         if ( loadIlluminant( _bestIllum ) )
             scaleLSC();
@@ -700,6 +701,7 @@ namespace rta {
         _bestIllum = illuCM.begin()->first;
         _wb = illuCM.begin()->second;
 
+		if (_verbosity > 1)
         printf ( "The specified light source is: %s\n",
                  _bestIllum.c_str() );
         
@@ -945,7 +947,7 @@ namespace rta {
         ceres::Solver::Summary summary;
         ceres::Solve(options, &problem, &summary);
 
-        if (_verbosity == 1)
+        if (_verbosity > 1)
             std::cout << summary.BriefReport() << "\n";
         else if (_verbosity >= 2)
             std::cout << summary.FullReport() << "\n";
@@ -961,12 +963,12 @@ namespace rta {
             _idt[2][1] = B[5];
             _idt[2][2] = 1.0 - B[4] - B[5];
             
-            if (_verbosity >= 1) {
-                printf("\nThe Final IDT Matrix is: \n\n");
+            if (_verbosity > 1) {
+                printf("The IDT matrix is ...\n");
 
                 FORI(3) {
                     FORJ(3) {
-                        printf("%f ", _idt[i][j]);
+                        printf("   %f", _idt[i][j]);
                     }
                 printf("\n");
                 }

@@ -335,8 +335,8 @@ int configureSetting ( int argc,
                         opts.illumType = (char *)(argv[arg++]);
                     }
                     else {
-                        fprintf( stderr,"\nError: Please specify a "
-                                 "desirable illuminant to proceed.\n" );
+                        fprintf( stderr,"\nError: Please specify an "
+                                 		"illuminant\n" );
                         exit(-1);
                     }
                 }
@@ -407,17 +407,17 @@ int configureSetting ( int argc,
         
         if ( !illumCmp ) {
             fprintf ( stderr, "\nError: Unknown light source - %s.\n"
-                      "Please use \"--valid-illum\" to see a "
-                      "list of available light sources.\n",
-                      strIllm.c_str());
+                      		  "Please use \"--valid-illum\" to see a "
+                      		  "list of available light sources.\n",
+                      		  strIllm.c_str());
             exit(-1);
         }
     }
     
     if ( opts.use_wb == 1 &&
         opts.use_illum != 1 ) {
-        fprintf( stderr,"\nError: Please specify a "
-                 "desirable illuminant to proceed.\n" );
+        fprintf( stderr, "\nError: Please specify a "
+                 		 "desirable illuminant to proceed.\n" );
         exit(-1);
     }
     

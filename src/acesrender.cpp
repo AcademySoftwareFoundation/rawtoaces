@@ -267,7 +267,8 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
         
         _idt->chooseIllumSrc ( illuCM, mulV );
         
-        printf ( "\nCalculating IDT Matrix from Spectral Sensitivity ...\n\n" );
+        if (_opts.verbosity > 1)
+        	printf ( "Regressing IDT matrix coefficients ...\n" );
         
         _idt->setVerbosity(_opts.verbosity);
         if (_opts.use_mat == 0 &&
@@ -338,10 +339,12 @@ int AcesRender::prepareWB ( libraw_iparams_t P )
         // as-shot white balance coefficients
         _idt->chooseIllumType( illuCM, illumType );
         
-        printf ( "\nCalculating White Balance Coefficients "
-                "from Spectral Sensitivity...\n" );
-        printf ( "\nApplying Calculated White Balance "
-                 "Coefficients...\n\n" );
+        if (_opts.verbosity > 1) {
+        	printf ( "Calculating White Balance Coefficients "
+            	     "from Spectral Sensitivity ...\n" );
+        	printf ( "Applying Calculated White Balance "
+             	     "Coefficients ...\n" );
+        }
         
         _wbv = _idt->getWB();
         
@@ -577,7 +580,8 @@ float * AcesRender::renderNonDNG_IDT ()
     
     FORI(total) aces[i] = static_cast <float> (pixels[i]);
     
-    printf ( "\nApplying IDT Matrix ...\n\n" );
+    if (_opts.verbosity > 1)
+    	printf ( "Applying IDT Matrix ...\n" );
     
     applyIDT ( aces, _image->colors, total );
     

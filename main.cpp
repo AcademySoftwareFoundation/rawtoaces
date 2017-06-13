@@ -400,10 +400,19 @@ int main(int argc, char *argv[])
                     aces = Render.renderNonDNG_IDT();
                 else
                     aces = Render.renderNonDNG();
-            	
-            	if (opts.verbosity) 
+                
+                if (opts.verbosity) {
+                    if (opts.use_mat) {
+                        vector <vector < double > > camXYZ(3, vector< double >(3, 1.0));
+                        FORIJ(3,3) camXYZ[i][j] = C.cam_xyz[i][j];
+                        vector <vector < double > > camcat = mulVector(camXYZ, Render.getCATMatrix());
+                        
+                        printf("The IDT matrix is ...\n");
+                        FORI(3) printf("   %f, %f, %f\n", camcat[i][0], camcat[i][1], camcat[i][2]);
+                    }
             		printf ( "Writing ACES file to %s ...\n", outfn );
-            		
+                }
+        
                 Render.acesWrite ( outfn, aces );
             }
         

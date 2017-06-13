@@ -59,17 +59,22 @@ AcesRender::AcesRender(){
     
     _idtm.resize(3);
     _wbv.resize(3);
+    _catm.resize(3);
     
     FORI(3) {
         _idtm[i].resize(3);
+        _catm[i].resize(3);
+        
         _wbv[i] = 1.0;
         FORJ(3) _idtm[i][j] = neutral3[i][j];
+        FORJ(3) _catm[i][j] = neutral3[i][j];
     }
 }
 
 AcesRender::~AcesRender(){
     delete _idt;
     vector < vector<double> >().swap(_idtm);
+    vector < vector<double> >().swap(_catm);
     vector < double >().swap(_wbv);
 }
 
@@ -369,7 +374,7 @@ int AcesRender::prepareWB ( libraw_iparams_t P )
 //		N/A              : pixel values modified by mutiplying white
 //                         balance coefficients
 
-void AcesRender::applyWB ( float * pixels, int bits, uint32_t total ) const
+void AcesRender::applyWB ( float * pixels, int bits, uint32_t total )
 {
     double min_wb = * min_element ( _wbv.begin(), _wbv.end() );
     double target = 1.0;
@@ -447,7 +452,7 @@ void AcesRender::applyIDT ( float * pixels, int channel, uint32_t total )
 //	outputs:
 //		N/A       : pixel values modified by mutiplying CAT matrix
 
-void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total ) const
+void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total )
 {
     assert(pixels);
     
@@ -461,10 +466,12 @@ void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total ) const
     vector < double > dIV (d50, d50 + 3);
     vector < double > dOV (d60, d60 + 3);
     
+    _catm = _idt->calCAT(dIV, dOV);
+
     pixels = mulVectorArray ( pixels,
                               total,
                               channel,
-                              _idt->calCAT(dIV, dOV) );
+                              _catm );
 }
 
 
@@ -477,7 +484,7 @@ void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total ) const
 //	outputs:
 //		float * : an array of converted aces values
 
-float * AcesRender::renderDNG ( vector < float > cameraToDisplayMtx ) const
+float * AcesRender::renderDNG ( vector < float > cameraToDisplayMtx )
 {
     assert(_image);
     
@@ -531,7 +538,7 @@ float * AcesRender::renderDNG ( vector < float > cameraToDisplayMtx ) const
 //	outputs:
 //		float * : an array of converted aces code values
 
-float * AcesRender::renderNonDNG () const
+float * AcesRender::renderNonDNG ()
 {
     assert(_image);
 
@@ -541,8 +548,10 @@ float * AcesRender::renderNonDNG () const
     
     FORI(total) aces[i] = static_cast <float> (pixels[i]);
     
-    if(_opts.use_mat == 2) applyCAT(aces, _image->colors, total);
-        
+    if(_opts.use_mat > 0) {
+        applyCAT(aces, _image->colors, total);
+    }
+    
     vector < vector< double> > XYZ_acesrgb( _image->colors,
                                             vector < double > (_image->colors));
     if (_image->colors == 3) {
@@ -709,6 +718,18 @@ void AcesRender::acesWrite ( const char * name, float *  aces ) const
 
 const vector < vector < double > > AcesRender::getIDTMatrix ( ) const {
     return _idtm;
+
+//	=====================================================================
+//	Get CAT matrix
+//
+//	inputs:
+//      N/A
+//
+//	outputs:
+//      vector < vector < double > > : _catm (3x3) values
+
+const vector < vector < double > > AcesRender::getCATMatrix ( ) const {
+    return static_cast< const vector< vector < double > > > (_catm);
 }
 
 //	=====================================================================

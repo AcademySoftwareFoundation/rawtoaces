@@ -621,6 +621,7 @@ void AcesRender::acesWrite ( const char * name, float *  aces ) const
     halfBytes *halfIn = new (std::nothrow) halfBytes[channels * width * height];
     
     FORI ( channels * width * height ){
+    // TODO : opts.scale * ratio of the largest to the smallest white balance channel multiplier.
         if ( bits == 8 )
             aces[i] = (double) aces[i] * INV_255 * (_opts.scale);
         else if ( bits == 16 )

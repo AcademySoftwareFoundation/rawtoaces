@@ -94,7 +94,7 @@ void usage(const char *prog)
             "                            (default = 0)\n"
             "  --ss-path <path>        Specify the path to camera sensitivity data\n"
             "                            (default = /usr/local/include/rawtoaces/data/camera)\n"
-            "  --exp-comp float        Set exposure compensation factor (default = 1.0)\n"
+            "  --aces-gain float       Set ACES conversion gain factor (default = 6.0)\n"
             "  --cameras               Show a list of supported cameras\n"
             "\n"
             "Raw conversion options:\n"
@@ -147,7 +147,7 @@ void create_key()
     keys["--wb-method"] = 'R';
     keys["--mat-method"] = 'p';
     keys["--ss-path"] = 'Q';
-    keys["--exp-comp"] = 'M';
+    keys["--aces-gain"] = 'M';
     keys["--valid-illum"] = 'z';
     keys["-c"] = 'c';
     keys["-C"] = 'C';
@@ -194,7 +194,7 @@ void initialize (option &opts)
     opts.use_mat         = 0;
     opts.use_wb          = 0;
     opts.highlight       = 0;
-    opts.scale           = 1.0;
+    opts.scale           = 6.0;
     
     struct stat st;
     dataPath dp = pathsFinder ();

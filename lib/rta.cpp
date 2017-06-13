@@ -1088,7 +1088,7 @@ namespace rta {
 
     
     const vector< vector<double> > Idt::getIDT() const {
-        return static_cast< vector< vector < double > > > (_idt);
+        return static_cast< const vector< vector < double > > > (_idt);
     }
     
     //	=====================================================================
@@ -1101,7 +1101,7 @@ namespace rta {
     //      const vector< double >: _wb vector (1 x 3)
     
     const vector< double > Idt::getWB() const {
-        return static_cast< vector < double > > (_wb);
+        return static_cast< const vector < double > > (_wb);
     }
 }
 

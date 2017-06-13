@@ -717,7 +717,8 @@ void AcesRender::acesWrite ( const char * name, float *  aces ) const
 //      vector < vector < double > > : _idtm (3x3) values
 
 const vector < vector < double > > AcesRender::getIDTMatrix ( ) const {
-    return _idtm;
+    return static_cast< const vector< vector < double > > > (_idtm);
+}
 
 //	=====================================================================
 //	Get CAT matrix
@@ -742,6 +743,6 @@ const vector < vector < double > > AcesRender::getCATMatrix ( ) const {
 //      vector < double >  : _wbv (1x3) values
 
 const vector < double > AcesRender::getWB ( ) const {
-    return _wbv;
+    return static_cast< const vector< double > > (_wbv);
 }
 

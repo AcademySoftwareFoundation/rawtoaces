@@ -314,7 +314,7 @@ int main(int argc, char *argv[])
         
 //          Set parameters for --mat-method
             switch ( opts.use_mat ) {
-                case 0 :
+                case 0 : {
                     OUT.output_color = 0;
 //          Set four_color_rgb to 0 when half_size is set to 1
                     if ( OUT.half_size == 1 )
@@ -326,6 +326,7 @@ int main(int argc, char *argv[])
                     }
                     
                     break;
+                }
                 case 1 :
                     OUT.use_camera_matrix = 0;
                     

@@ -335,8 +335,7 @@ int configureSetting ( int argc,
                         opts.illumType = (char *)(argv[arg++]);
                     }
                     else {
-                        fprintf( stderr,"\nError: Please specify an "
-                                 		"illuminant\n" );
+                        fprintf( stderr,"\nError: white balance method 1 requires an illuminant be specified" );
                         exit(-1);
                     }
                 }
@@ -416,8 +415,7 @@ int configureSetting ( int argc,
     
     if ( opts.use_wb == 1 &&
         opts.use_illum != 1 ) {
-        fprintf( stderr, "\nError: Please specify a "
-                 		 "desirable illuminant to proceed.\n" );
+        fprintf( stderr, "\nError: white balance method 1 requires an illuminant be specified.\n" );
         exit(-1);
     }
     

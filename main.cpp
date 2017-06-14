@@ -413,7 +413,10 @@ int main(int argc, char *argv[])
             		printf ( "Writing ACES file to %s ...\n", outfn );
                 }
         
-                Render.acesWrite ( outfn, aces );
+                float ratio = (*(std::max_element(C.pre_mul, C.pre_mul+3)) /
+                               *(std::min_element(C.pre_mul, C.pre_mul+3)));
+                
+                Render.acesWrite ( outfn, aces, ratio );
             }
         
 #ifndef WIN32

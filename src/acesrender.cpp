@@ -609,7 +609,7 @@ float * AcesRender::renderNonDNG_IDT ()
 //		N/A                        : an aces file should be generated in
 //                                   the same folder
 
-void AcesRender::acesWrite ( const char * name, float *  aces ) const
+void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) const
 {
     assert(_image);
 
@@ -621,11 +621,10 @@ void AcesRender::acesWrite ( const char * name, float *  aces ) const
     halfBytes *halfIn = new (std::nothrow) halfBytes[channels * width * height];
     
     FORI ( channels * width * height ){
-    // TODO : opts.scale * ratio of the largest to the smallest white balance channel multiplier.
         if ( bits == 8 )
-            aces[i] = (double) aces[i] * INV_255 * (_opts.scale);
+            aces[i] = (double) aces[i] * INV_255 * (_opts.scale) * ratio;
         else if ( bits == 16 )
-            aces[i] = (double) aces[i] * INV_65535 * (_opts.scale);
+            aces[i] = (double) aces[i] * INV_65535 * (_opts.scale) * ratio;
         
         half tmpV ( aces[i] );
         halfIn[i] = tmpV.bits();

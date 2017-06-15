@@ -92,7 +92,8 @@ void usage(const char *prog)
             "                            2=Use adobe coeffs included in libraw\n"
             // Future feature ? "        3=Use custom matrix <m1r m1g m1b m2r m2g m2b m3r m3g m3b>\n"
             "                            (default = 0)\n"
-            "  --ss-path <path>        Specify the path to camera sensitivity data\n"
+            // Depreciatd in the new version
+            //"  --ss-path <path>        Specify the path to camera sensitivity data\n"
             "                            (default = /usr/local/include/rawtoaces/data/camera)\n"
             "  --aces-gain float       Set ACES conversion gain factor (default = 6.0)\n"
             "  --cameras               Show a list of supported cameras\n"
@@ -187,15 +188,15 @@ void initialize (option &opts)
 {
     opts.use_bigfile     = 0;
     opts.use_timing      = 0;
-    opts.use_camera_path = 0;
     opts.use_illum       = 0;
-    opts.use_Mul         = 0;
+    opts.use_mul         = 0;
     opts.verbosity       = 0;
-    opts.use_mat         = 0;
-    opts.use_wb          = 0;
+    opts.mat_method      = 0;
+    opts.wb_method       = 0;
     opts.highlight       = 0;
-    opts.scale           = 6.0;
-    
+    opts.scale           = 1.0;
+//    opts.use_external_camera_data = 0;
+
     struct stat st;
     dataPath dp = pathsFinder ();
 
@@ -299,18 +300,13 @@ int configureSetting ( int argc,
                 break;
             }
             case 'p': {
-                opts.use_mat = atoi(argv[arg++]);
-                if ( opts.use_mat > 2
-                     || opts.use_mat < -1) {
+                opts.mat_method = atoi(argv[arg++]);
+                if ( opts.mat_method > 2
+                     || opts.mat_method < -1) {
                     fprintf (stderr, "\nError: Invalid argument to "
                                      "\"%s\" \n", key.c_str());
                     exit(-1);
                 }
-                break;
-            }
-            case 'Q': {
-                opts.use_camera_path = 1;
-                opts.cameraSenPath = (char *)(argv[arg++]);
                 break;
             }
             case 'T': {
@@ -330,51 +326,69 @@ int configureSetting ( int argc,
                     }
                 }
                 
-                opts.use_wb = atoi(argv[arg++]);
+                opts.wb_method = atoi(argv[arg++]);
                 
-                if ( opts.use_wb == 1 ) {
+                if ( opts.wb_method == 1 ) {
                     if ( isalnum(argv[arg][0]) )
                     {
                         opts.use_illum = 1;
                         opts.illumType = (char *)(argv[arg++]);
+                        lowerCase ( opts.illumType );
+
+                        // to be updated for new functions to calculate for day-light and black-body
+                        bool illumCmp = 0;
+                        string strIllm (opts.illumType);
+                        FORI ( vls.size() ) {
+                            if ( strIllm.compare(vls[i]) == 0 ) {
+                                illumCmp = 1;
+                                break;
+                            }
+                        }
+
+                        if ( !illumCmp ) {
+                            fprintf ( stderr, "\nError: Unknown light source - %s.\n"
+                                              "Please use \"--valid-illum\" to see a "
+                                              "list of available light sources.\n",
+                                      strIllm.c_str());
+                            exit(-1);
+                        }
                     }
                     else {
-                        fprintf( stderr,"\nError: white balance method 1 requires an illuminant be specified" );
+                        fprintf( stderr, "\nError: white balance method 1 requires an "
+                                         "illuminant be specified\n" );
                         exit(-1);
                     }
                 }
-                if ( opts.use_wb == 3 ) {
+                if ( opts.wb_method == 3 ) {
                     FORI(4) {
                         if ( !isdigit(argv[arg][0]) )
                         {
                             fprintf (stderr, "\nError: Non-numeric argument to "
                                              "\"%s %i\" \n",
                                              key.c_str(),
-                                             opts.use_wb);
+                                             opts.wb_method);
                             exit(-1);
                         }
                         OUT.greybox[i] = (float)atof(argv[arg++]);
                     }
                 }
-                else if ( opts.use_wb == 4 ) {
-                    opts.use_Mul = 1;
+                else if ( opts.wb_method == 4 ) {
+                    opts.use_mul = 1;
                     FORI(4) {
                         if ( !isdigit(argv[arg][0]) )
                         {
                             fprintf (stderr, "\nError: Non-numeric argument to "
                                              "\"%s %i\" \n",
                                              key.c_str(),
-                                             opts.use_wb);
+                                             opts.wb_method);
                             exit(-1);
                         }
                         OUT.user_mul[i] = (float)atof(argv[arg++]);
                     }
                 }
-                else if ( opts.use_wb > 4
-                         || opts.use_wb < -1) {
-                    fprintf (stderr, "\nError: Invalid argument to "
-                                     "\"%s\" \n",
-                                     key.c_str());
+                else if ( opts.wb_method > 4 || opts.wb_method < -1) {
+                    fprintf (stderr, "\nError: Invalid argument to \"%s\" \n",
+                             key.c_str());
                     exit(-1);
                 }
                 break;
@@ -386,51 +400,6 @@ int configureSetting ( int argc,
                 fprintf ( stderr, "\nError: Unknown option \"%s\".\n", key.c_str() );
                 exit(-1);
         }
-    }
-    
-    if ( opts.use_camera_path ) {
-        string cameraSenPathS( opts.cameraSenPath );
-        if ( cameraSenPathS.find("_380_780") == std::string::npos ) {
-            fprintf( stderr,"\nError: Cannot locate camera "
-                     "sensitivity data in the file.\n" );
-            exit(-1);
-        }
-    }
-    
-    if ( opts.use_illum ) {
-        lowerCase ( opts.illumType );
-        bool illumCmp = 0;
-        string strIllm (opts.illumType);
-        FORI ( vls.size() ) {
-            if ( strIllm.compare(vls[i]) == 0 ) {
-                illumCmp = 1;
-                break;
-            }
-        }
-        
-        if ( !illumCmp ) {
-            fprintf ( stderr, "\nError: Unknown light source - %s.\n"
-                      		  "Please use \"--valid-illum\" to see a "
-                      		  "list of available light sources.\n",
-                      		  strIllm.c_str());
-            exit(-1);
-        }
-    }
-    
-    if ( opts.use_wb == 1 &&
-        opts.use_illum != 1 ) {
-        fprintf( stderr, "\nError: white balance method 1 requires an illuminant be specified.\n" );
-        exit(-1);
-    }
-    
-    if ( opts.use_camera_path
-        && (opts.use_wb || opts.use_mat)) {
-        fprintf ( stderr, "\n\"Warning: --wb-method\" and/or \"--mat-method\" "
-                          "will be forced be 0 when the external "
-                          "camera spectral data is used.\n\n");
-        
-        opts.use_wb = 0;
-        opts.use_mat = 0;
     }
     
     return arg;

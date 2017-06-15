@@ -79,6 +79,46 @@ using namespace ceres;
 using namespace boost::property_tree;
 
 namespace rta {
+    struct CIEXYZ {
+        CIEXYZ() {};
+        CIEXYZ( double X, double Y, double Z ) : Xt(X),
+                                                 Yt(Y),
+                                                 Zt(Z){ };
+        double Xt;
+        double Yt;
+        double Zt;
+    };
+
+    struct trainSpec {
+        uint16_t wl;
+        vector <double> data;
+    };
+
+    struct CMF {
+        uint16_t wl;
+        double xbar;
+        double ybar;
+        double zbar;
+    };
+
+    struct RGBSen {
+        RGBSen() {};
+        RGBSen( double r, double g, double b ) : RSen(r),
+                                                 GSen(g),
+                                                 BSen(b){ };
+        double RSen;
+        double GSen;
+        double BSen;
+    };
+
+    struct Illum {
+        string path;
+        string type;
+        uint8_t inc;
+        double index;
+        vector <double> data;
+    };
+
     class Idt;
     class Spst {
         friend class Idt;
@@ -97,6 +137,11 @@ namespace rta {
                                             _rgbsen(rgbsen){ };
         
             ~Spst();
+
+            void setBrand ( const char * brand );
+            void setModel ( const char * model );
+            void setWLIncrement ( const uint8_t inc );
+            void setSensitivity ( const vector < RGBSen > rgbsen );
         
             const char * getBrand() const;
             const char * getModel() const;
@@ -105,19 +150,14 @@ namespace rta {
         
             char * getBrand();
             char * getModel();
-            uint8_t getWLIncrement();
+            int getWLIncrement();
             vector < RGBSen > & getSensitivity();
-        
-            void setBrand ( const char * brand );
-            void setModel ( const char * model );
-            void setWLIncrement ( const uint8_t inc );
-            void setSensitivity ( const vector < RGBSen > rgbsen );
-        
+
         private:
             char * _brand;
             char * _model;
-            uint8_t _increment;
-            uint8_t _spstMaxCol;
+            int _increment;
+            int _spstMaxCol;
             vector < RGBSen > _rgbsen;
     };
 
@@ -128,10 +168,10 @@ namespace rta {
         
             int loadCameraSpst( const string &path,
                                 const char * maker,
-                                const char * model,
-                                const int ss_path);
+                                const char * model
+                                );
             int loadIlluminant( const string &path,
-                                const string type="unknown");
+                                const string type="na");
             void loadTrainingData( const string &path );
             void loadCMF( const string &path );
         
@@ -140,11 +180,10 @@ namespace rta {
                                  vector<double>& src );
             void chooseIllumType( map < string,
                                   vector<double> >& illuCM,
-                                  const string type );
+                                  const char * type );
             void setVerbosity( int verbosity );
             void scaleLSC();
         
-//            vector< double > calWB();
             vector< double > calCM();
             vector< vector<double> > calTI() const;
             vector< vector<double> > calCAT( vector<double> src,
@@ -159,18 +198,18 @@ namespace rta {
             int calIDT();
         
             const Spst getCameraSpst() const;
-            const illum getIlluminant() const;
+            const Illum getIlluminant() const;
             const int getVerbosity() const;
             const vector< vector <double> > getIDT() const;
             const vector< double > getWB() const;
-        
+
             Spst getCameraSpst();
-            illum getIlluminant();
+            Illum getIlluminant();
             int getVerbosity();
         
         private:
             Spst    _cameraSpst;
-            illum   _Illuminant;
+            Illum   _Illuminant;
             string  _bestIllum;
             int     _verbosity;
         

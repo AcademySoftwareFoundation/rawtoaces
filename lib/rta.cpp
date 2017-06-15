@@ -70,7 +70,7 @@ namespace rta {
         assert ( spstobject._brand != null_ptr
                 && spstobject._model != null_ptr );
         
-        uint8_t lenb = strlen(spstobject._brand);
+        size_t lenb = strlen(spstobject._brand);
         assert(lenb < 64);
         
         if(lenb > 64)
@@ -80,8 +80,8 @@ namespace rta {
         memset(_brand, 0x0, lenb);
         memcpy(_brand, spstobject._brand, lenb);
         _brand[lenb] = '\0';
-        
-        uint8_t lenm = strlen(spstobject._model);
+
+        size_t lenm = strlen(spstobject._model);
         assert(lenm < 64);
         
         if(lenm > 64)
@@ -193,7 +193,7 @@ namespace rta {
     //	    uint8_t: Wavelength increment value (e.g., 5nm, 10nm) of the
     //               camera's sensitivity
 
-    uint8_t Spst::getWLIncrement() {
+    int Spst::getWLIncrement() {
         return _increment;
     }
     
@@ -222,7 +222,7 @@ namespace rta {
     
     void Spst::setBrand ( const char * brand ) {
         assert(brand != null_ptr);
-        uint8_t len = strlen(brand);
+        size_t len = strlen(brand);
         
         assert(len < 64);
         
@@ -248,7 +248,7 @@ namespace rta {
     
     void Spst::setModel ( const char * model ) {
         assert(model != null_ptr);
-        uint8_t len = strlen(model);
+        size_t len = strlen(model);
         
         assert(len < 64);
         
@@ -330,7 +330,7 @@ namespace rta {
         assert(_cameraSpst._spstMaxCol >= 0
                && (_Illuminant.data).size() != 0);
         
-        uint16_t size =_cameraSpst._rgbsen.size();
+        int size =_cameraSpst._rgbsen.size();
         vector < double > colMax(size, 1.0);
         switch (_cameraSpst._spstMaxCol){
             case 0:
@@ -365,8 +365,9 @@ namespace rta {
     
     int Idt::loadCameraSpst ( const string & path,
                               const char * maker,
-                              const char * model,
-                              const int ss_path ) {
+                              const char * model ) {
+        assert (strlen(path.c_str()) > 0);
+        
         vector <RGBSen> rgbsen;
         vector <double> max(3, dmin);
         
@@ -377,11 +378,13 @@ namespace rta {
             read_json ( path, pt );
             
             const char * cmaker = (pt.get<string>( "header.manufacturer" )).c_str();
-            if (!ss_path && cmp_str(maker, cmaker)) return 0;
-                _cameraSpst.setBrand(cmaker);
+//            if (!use_external_camera_data && cmp_str(maker, cmaker)) return 0;
+            if ( cmp_str(maker, cmaker) ) return 0;
+            _cameraSpst.setBrand(cmaker);
             
             const char * cmodel = (pt.get<string>( "header.model" )).c_str();
-            if (!ss_path && cmp_str(model, cmodel)) return 0;
+//            if (!use_external_camera_data && cmp_str(model, cmodel)) return 0;
+            if ( cmp_str(model, cmodel) ) return 0;
                 _cameraSpst.setModel(cmaker);
             
             vector <int> wavs;
@@ -463,7 +466,6 @@ namespace rta {
         
         if ((_Illuminant.data).size() != 0) {
             _Illuminant.type = "";
-            _Illuminant.inc = 5;
             _Illuminant.data.clear();
         }
         
@@ -473,9 +475,10 @@ namespace rta {
             ptree pt;
             read_json ( path, pt );
             
+            
             const string stype = pt.get<string>( "header.illuminant" );
             if ( type.compare(stype) != 0
-                 && type.compare("unknown") != 0 )
+                 && type.compare("na") != 0 )
             {
                 return 0;
             }
@@ -509,9 +512,12 @@ namespace rta {
                     if ( wavs[wavs.size()-1] == 550 )
                         _Illuminant.index = cell.second.get_value<double>();
                 }
-
+                
 //                printf("\"%i\": [ %18.13f ], \n", wavs[wavs.size()-1], _Illuminant.data[_Illuminant.data.size()-1] );
             }
+            
+            _Illuminant.inc = inc;
+
         }
         catch ( std::exception const& e )
         {
@@ -700,7 +706,7 @@ namespace rta {
     //		illum: the best _Illuminant
     
     void Idt::chooseIllumType ( map < string, vector<double> >& illuCM,
-                                const string type ) {
+                                const char * type ) {
         
         _bestIllum = illuCM.begin()->first;
         _wb = illuCM.begin()->second;
@@ -899,7 +905,6 @@ namespace rta {
             colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
         }
         
-//        vector< vector<double> > RGB = transposeVec(mulVector(colRGB, transTI));
         vector< vector<double> > RGB = mulVector(transTI, colRGB);
 
         FORI(RGB.size())
@@ -930,13 +935,9 @@ namespace rta {
                         double * B ) {
         Problem problem;
         vector < vector <double> > outLAB = XYZtoLAB(XYZ);
-        
-//        CostFunction* cost_function =
-//                new NumericDiffCostFunction<Objfun, CENTRAL, 190, 6>(new Objfun(RGB, XYZ, M),
-//                                                                     TAKE_OWNERSHIP);
-        
+
         CostFunction* cost_function =
-            new AutoDiffCostFunction<Objfun, DYNAMIC, 6>(new Objfun(RGB, outLAB), RGB.size()*(RGB[0].size()));
+            new AutoDiffCostFunction<Objfun, DYNAMIC, 6>(new Objfun(RGB, outLAB), int(RGB.size()*(RGB[0].size())));
         
         problem.AddResidualBlock ( cost_function,
                                    NULL,
@@ -957,9 +958,9 @@ namespace rta {
         ceres::Solve(options, &problem, &summary);
 
         if (_verbosity > 1)
-            std::cout << summary.BriefReport() << "\n";
+            std::cout << summary.BriefReport() << std::endl;
         else if (_verbosity >= 2)
-            std::cout << summary.FullReport() << "\n";
+            std::cout << summary.FullReport() << std::endl;
         
         if (summary.num_successful_steps) {
             _idt[0][0] = B[0];
@@ -974,13 +975,7 @@ namespace rta {
             
             if (_verbosity > 1) {
                 printf("The IDT matrix is ...\n");
-
-                FORI(3) {
-                    FORJ(3) {
-                        printf("   %f", _idt[i][j]);
-                    }
-                printf("\n");
-                }
+                FORI(3) printf("   %f %f %f\n", _idt[i][0], _idt[i][1], _idt[i][2]);
             }
             
             return 1;
@@ -1018,7 +1013,7 @@ namespace rta {
     //      const Spst: camera sensitivity data that was loaded from the file
     
     const Spst Idt::getCameraSpst() const {
-        return static_cast<const Spst>(_cameraSpst);
+        return _cameraSpst;
     }
     
     //	=====================================================================
@@ -1030,8 +1025,8 @@ namespace rta {
     //	outputs:
     //      const illum: Illuminant data that was loaded from the file
 
-    const illum Idt::getIlluminant() const {
-        return static_cast<const illum>(_Illuminant);
+    const Illum Idt::getIlluminant() const {
+        return _Illuminant;
     }
     
     //	=====================================================================
@@ -1044,7 +1039,7 @@ namespace rta {
     //		int: _verbosity (const)
     
     const int Idt::getVerbosity() const {
-        return static_cast<const int>(_verbosity);
+        return _verbosity;
     }
     
     //	=====================================================================
@@ -1069,7 +1064,7 @@ namespace rta {
     //	outputs:
     //         illum: Illuminant data that was loaded from the file
     
-    illum Idt::getIlluminant() {
+    Illum Idt::getIlluminant() {
         return _Illuminant;
     }
     
@@ -1097,7 +1092,7 @@ namespace rta {
 
     
     const vector< vector<double> > Idt::getIDT() const {
-        return static_cast< const vector< vector < double > > > (_idt);
+        return _idt;
     }
     
     //	=====================================================================
@@ -1110,7 +1105,7 @@ namespace rta {
     //      const vector< double >: _wb vector (1 x 3)
     
     const vector< double > Idt::getWB() const {
-        return static_cast< const vector < double > > (_wb);
+        return _wb;
     }
 }
 

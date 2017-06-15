@@ -209,23 +209,21 @@ int AcesRender::readIlluminant( map < string, vector < double > > & illuCM,
 
 int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
 {
-    const char * cameraSenPath = static_cast <const char *> (_opts.cameraSenPath);
-    const char * illumType = static_cast <const char *> (_opts.illumType);
-
-    int read = readCameraSenPath( cameraSenPath, P );
+    int read = readCameraSenPath( P );
     
-    if ( !read &&
-         !_opts.use_camera_path ) {
+//    if ( !read && !_opts.use_external_camera_data ) {
+    if ( !read ) {
         fprintf( stderr, "\nError: No matching cameras found. "
                          "Please use other options for "
                          "\"--mat-method\" and/or \"--wb-method\".\n");
         exit (-1);
     }
 
-    if ( !illumType ) illumType = "unknown";
-    
     map < string, vector < double > > illuCM;
-    read = readIlluminant( illumType, illuCM );
+    if (!_opts.illumType)
+        read = readIlluminant( illuCM );
+    else
+        read = readIlluminant( illuCM,  _opts.illumType );
     
     if( !read ) {
         fprintf( stderr, "\nError: No matching light source. "
@@ -254,8 +252,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
         	printf ( "Regressing IDT matrix coefficients ...\n" );
         
         _idt->setVerbosity(_opts.verbosity);
-        if (_opts.use_mat == 0 &&
-            !_opts.verbosity )
+        if (_opts.mat_method == 0 && !_opts.verbosity )
             _idt->setVerbosity(1);
         
         if ( _idt->calIDT() )  {
@@ -286,26 +283,22 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
 
 int AcesRender::prepareWB ( libraw_iparams_t P )
 {
-    const char * cameraSenPath = static_cast <const char *> (_opts.cameraSenPath);
-    const char * illumType = static_cast <const char *> (_opts.illumType);
-    
-    int read = readCameraSenPath ( cameraSenPath, P );
-    
-    if ( !read &&
-         !_opts.use_camera_path ) {
-        fprintf( stderr, "\nError: No matching cameras found. "
+    int read = readCameraSenPath ( P );
+
+    if ( !read ) {
+            fprintf( stderr, "\nError: No matching cameras found. "
                          "Please use other options for "
                          "\"--wb-method\".\n");
         exit (-1);
     }
-        
+
     map < string, vector < double > > illuCM;
-    read = readIlluminant( illumType, illuCM );
-    
+    read = readIlluminant( illuCM, _opts.illumType );
+
     if( !read ) {
         fprintf( stderr, "\nError: No matching light source. "
-                "Please use other options for "
-                "\"--mat-method\" or \"--wb-method\".\n");
+                         "Please use other options for "
+                         "\"--mat-method\" or \"--wb-method\".\n");
         exit (-1);
     }
     else
@@ -313,27 +306,27 @@ int AcesRender::prepareWB ( libraw_iparams_t P )
         // loading training data (190 patches)
         _idt->loadTrainingData ( static_cast < string > ( FILEPATH )
                                 +"/training/training_spectral.json" );
-        
+
         // loading color matching function
         _idt->loadCMF ( static_cast < string > ( FILEPATH )
                       +"/cmf/cmf_1931.json" );
-        
+
         // choose the best light source based on
         // as-shot white balance coefficients
-        _idt->chooseIllumType( illuCM, illumType );
-        
-        if (_opts.verbosity > 1) {
-        	printf ( "Calculating White Balance Coefficients "
-            	     "from Spectral Sensitivity ...\n" );
-        	printf ( "Applying Calculated White Balance "
-             	     "Coefficients ...\n" );
-        }
-        
-        _wbv = _idt->getWB();
-        
-        return 1;
+       _idt->chooseIllumType( illuCM, _opts.illumType );
+
+       if (_opts.verbosity > 1) {
+           printf ( "Calculating White Balance Coefficients "
+                    "from Spectral Sensitivity ...\n" );
+           printf ( "Applying Calculated White Balance "
+                    "Coefficients ...\n" );
+       }
+
+       _wbv = _idt->getWB();
+
+       return 1;
     }
-    
+
     return 0;
 }
 
@@ -349,8 +342,8 @@ int AcesRender::prepareWB ( libraw_iparams_t P )
 //      uint32_t         : the size of pixels
 //
 //	outputs:
-//		N/A              : pixel values modified by mutiplying white
-//                         balance coefficients
+//		N/A              : pixel values modified by multiplying
+//                         white balance coefficients
 
 void AcesRender::applyWB ( float * pixels, int bits, uint32_t total )
 {
@@ -526,7 +519,7 @@ float * AcesRender::renderNonDNG ()
     
     FORI(total) aces[i] = static_cast <float> (pixels[i]);
     
-    if(_opts.use_mat > 0) {
+    if(_opts.mat_method > 0) {
         applyCAT(aces, _image->colors, total);
     }
     
@@ -695,7 +688,7 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
 //      vector < vector < double > > : _idtm (3x3) values
 
 const vector < vector < double > > AcesRender::getIDTMatrix ( ) const {
-    return static_cast< const vector< vector < double > > > (_idtm);
+    return _idtm;
 }
 
 //	=====================================================================
@@ -708,7 +701,7 @@ const vector < vector < double > > AcesRender::getIDTMatrix ( ) const {
 //      vector < vector < double > > : _catm (3x3) values
 
 const vector < vector < double > > AcesRender::getCATMatrix ( ) const {
-    return static_cast< const vector< vector < double > > > (_catm);
+    return _catm;
 }
 
 //	=====================================================================
@@ -721,6 +714,6 @@ const vector < vector < double > > AcesRender::getCATMatrix ( ) const {
 //      vector < double >  : _wbv (1x3) values
 
 const vector < double > AcesRender::getWB ( ) const {
-    return static_cast< const vector< double > > (_wbv);
+    return _wbv;
 }
 

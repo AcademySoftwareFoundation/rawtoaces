@@ -124,64 +124,23 @@ struct option {
     int ret;
     int use_bigfile;
     int use_timing;
-    int use_camera_path;
+//    int use_external_camera_data;
     int use_illum;
-    int use_Mul;
-    int use_mat;
-    int use_wb;
+    int use_mul;
     int use_mmap;
     int msize;
+    int mat_method;
+    int wb_method;
     int verbosity;
     int highlight;
     
-    char * cameraSenPath;
+//    char * cameraSenPath;
     char * illumType;
     
     float scale;
-    vector <string> EnvPaths, cEnvPaths, iEnvPaths;
+    vector <string> EnvPaths;
+
     vector <string> cameraListLR;
-};
-
-struct CIEXYZ {
-    double Xt;
-    double Yt;
-    double Zt;
-    
-    CIEXYZ() {};
-    CIEXYZ( double X, double Y, double Z ) : Xt(X),
-                                             Yt(Y),
-                                             Zt(Z){ };
-};
-
-struct trainSpec {
-    uint16_t wl;
-    vector <double> data;
-};
-
-struct CMF {
-    uint16_t wl;
-    double xbar;
-    double ybar;
-    double zbar;
-};
-
-struct RGBSen {
-    double RSen;
-    double GSen;
-    double BSen;
-    
-    RGBSen() {};
-    RGBSen( double r, double g, double b ) : RSen(r),
-                                             GSen(g),
-                                             BSen(b){ };
-};
-
-struct illum {
-    string path;
-    string type;
-    uint8_t inc;
-    double index;
-    vector <double> data;
 };
 
 struct dataPath {

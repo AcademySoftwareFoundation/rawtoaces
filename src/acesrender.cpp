@@ -123,39 +123,20 @@ void AcesRender::setPixels (libraw_processed_image_t * image) {
 //                         sensitivity data successfully;
 //                         "0" means error in reading/injecting data
 
-int AcesRender::readCameraSenPath( const char * cameraSenPath,
-                                   libraw_iparams_t P )
+int AcesRender::readCameraSenPath( libraw_iparams_t P )
 {
     int readC = 0;
-    struct stat st;
     
-    if ( cameraSenPath )  {
-        if ( stat( static_cast< const char * >( cameraSenPath ), &st ) )  {
-            fprintf ( stderr, "The camera sensitivity file does "
-                              "not seem to exist. Please use other"
-                              "options for \"mat-method\".\n" );
-            exit (1);
-        }
-        
-        readC = _idt->loadCameraSpst( cameraSenPath,
-                                      static_cast <const char *> (P.make),
-                                      static_cast <const char *> (P.model),
-                                      _opts.use_camera_path );
-    }
-    else  {
-        FORI (_opts.EnvPaths.size()) {
-            vector<string> cFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
+    FORI (_opts.EnvPaths.size()) {
+        vector<string> cFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
                                               +"/camera" );
-
-            for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
-                string fn( *file );
-                if ( fn.find(".json") == std::string::npos ) continue;
-                readC = _idt->loadCameraSpst( fn,
-                                              static_cast <const char *> (P.make),
-                                              static_cast <const char *> (P.model),
-                                              _opts.use_camera_path );
-                if ( readC ) return 1;
-            }
+        for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
+            string fn( *file );
+            if ( fn.find(".json") == std::string::npos ) continue;
+            readC = _idt->loadCameraSpst( fn,
+                                          static_cast <const char *> (P.make),
+                                          static_cast <const char *> (P.model) );
+            if ( readC ) return 1;
         }
     }
     
@@ -180,12 +161,11 @@ int AcesRender::readCameraSenPath( const char * cameraSenPath,
 //            white balance coefficients will also be calculated in the meantime.
 //            "0" means error in reading/ injecting data
 
-int AcesRender::readIlluminant( const char * illumType,
-                                map < string, vector < double > > & illuCM )
+int AcesRender::readIlluminant( map < string, vector < double > > & illuCM,
+                                const char * illumType )
 {
     int readI = 0;
-    struct stat st;
-    
+
     FORI (_opts.EnvPaths.size()) {
         vector<string> iFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
                                          +"/illuminant" );
@@ -194,11 +174,9 @@ int AcesRender::readIlluminant( const char * illumType,
             string fn( *file );
             if ( fn.find(".json") == std::string::npos ) continue;
             
-            string strType(illumType);
-            const char * illumC = static_cast< const char * >( illumType );
-
-            if ( strType.compare("unknown") != 0 ) {
-                readI = _idt->loadIlluminant( fn, illumC );
+            string strillumType(illumType);
+            if ( strillumType.compare("na") != 0 ) {
+                readI = _idt->loadIlluminant( fn, illumType );
                 if ( readI )
                 {
                     illuCM[fn] = _idt->calWB( _opts.highlight );
@@ -206,7 +184,7 @@ int AcesRender::readIlluminant( const char * illumType,
                 }
             }
             else {
-                readI = _idt->loadIlluminant( fn, illumC );
+                readI = _idt->loadIlluminant( fn );
                 if ( readI ) illuCM[fn] = _idt->calWB( _opts.highlight );
             }
         }

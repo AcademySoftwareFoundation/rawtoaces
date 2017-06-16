@@ -233,10 +233,10 @@ int main(int argc, char *argv[])
                 case 0 : {
                     opts.use_Mul = 1;
                     vector < double > mulV (C.cam_mul, C.cam_mul+3);
-                    if( !opts.highlight )
-                        scaleVectorMin (mulV);
-                    else
-                        scaleVectorMax (mulV);
+//                    if( !opts.highlight )
+//                        scaleVectorMin (mulV);
+//                    else
+//                        scaleVectorMax (mulV);
                     
                     FORI(3) OUT.user_mul[i] = mulV[i];
                     
@@ -363,8 +363,9 @@ int main(int argc, char *argv[])
             }
         
 //          Use the final wb factors to otbain IDT matrix
-            if ( opts.use_mat == 0 )
+            if ( opts.use_mat == 0 ) {
                 Render.prepareIDT ( P1, C.pre_mul );
+            }
 
             if ( opts.use_timing )
                 timerprint ( "LibRaw::dcraw_process()", raw );

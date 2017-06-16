@@ -662,8 +662,7 @@ namespace rta {
             double tmp = calSSE(it->second, src);
             
 //            printf ("%s, %f\n", it->first.c_str(), tmp);
-//            FORI(3) printf ("%f, ", it->second[i]);
-//            printf ("\n");
+//            printf ("%f, %f, %f\n ", it->second[0], it->second[1], it->second[2]);
             
             if (sse > tmp) {
                 sse = tmp;
@@ -678,6 +677,11 @@ namespace rta {
 
         if ( loadIlluminant( _bestIllum ) )
             scaleLSC();
+        
+        // scale back the WB factor
+        double factor = _wb[1];
+        assert (factor != 0.0 );
+        FORI(_wb.size()) _wb[i] /= factor;
         
         return;
     }
@@ -702,11 +706,16 @@ namespace rta {
         _wb = illuCM.begin()->second;
 
 		if (_verbosity > 1)
-        printf ( "The specified light source is: %s\n",
-                 _bestIllum.c_str() );
+            printf ( "The specified light source is: %s\n",
+                     _bestIllum.c_str() );
         
         if ( loadIlluminant( _bestIllum, type ) )
             scaleLSC();
+        
+        // scale back the WB factor
+        double factor = _wb[1];
+        assert (factor != 0.0 );
+        FORI(_wb.size()) _wb[i] /= factor;
         
         return;
     }

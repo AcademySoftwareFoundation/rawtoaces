@@ -258,10 +258,10 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
     else
     {
         vector < double > mulV (M, M+3);
-        if( !_opts.highlight )
-            scaleVectorMin (mulV);
-        else
-            scaleVectorMax (mulV);
+//        if( !_opts.highlight )
+//            scaleVectorMin (mulV);
+//        else
+//            scaleVectorMax (mulV);
         
         // loading training data (190 patches)
         _idt->loadTrainingData ( static_cast < string > ( FILEPATH )

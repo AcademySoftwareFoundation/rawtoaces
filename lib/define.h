@@ -124,7 +124,6 @@ struct option {
     int ret;
     int use_bigfile;
     int use_timing;
-//    int use_external_camera_data;
     int use_illum;
     int use_mul;
     int use_mmap;
@@ -134,12 +133,10 @@ struct option {
     int verbosity;
     int highlight;
     
-//    char * cameraSenPath;
     char * illumType;
     
     float scale;
     vector <string> EnvPaths;
-
     vector <string> cameraListLR;
 };
 

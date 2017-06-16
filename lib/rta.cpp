@@ -378,12 +378,10 @@ namespace rta {
             read_json ( path, pt );
             
             const char * cmaker = (pt.get<string>( "header.manufacturer" )).c_str();
-//            if (!use_external_camera_data && cmp_str(maker, cmaker)) return 0;
             if ( cmp_str(maker, cmaker) ) return 0;
             _cameraSpst.setBrand(cmaker);
             
             const char * cmodel = (pt.get<string>( "header.model" )).c_str();
-//            if (!use_external_camera_data && cmp_str(model, cmodel)) return 0;
             if ( cmp_str(model, cmodel) ) return 0;
                 _cameraSpst.setModel(cmaker);
             
@@ -399,8 +397,8 @@ namespace rta {
                 else if ( wavs.size() > 2 &&
                           wavs[wavs.size()-1] - wavs[wavs.size()-2] != inc ) {
                     fprintf(stderr, "Please double check the Camera "
-                            "Sensitivity data (e.g. the increment "
-                            "should be uniform from 380nm to 780nm).\n");
+                                    "Sensitivity data (e.g. the increment "
+                                    "should be uniform from 380nm to 780nm).\n");
                     exit(1);
                 }
                 

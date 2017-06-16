@@ -76,7 +76,7 @@ void usage(const char *prog)
     printf ( "  %s --help\n", prog );
     printf ( "  %s --version\n", prog );
     printf ( "\n");
-    printf ( "IDT options:\n"
+    printf ("IDT options:\n"
             "  --help                  Show this screen\n"
             "  --version               Show version\n"
             "  --wb-method [0-4]       White balance factor calculation method\n"
@@ -195,7 +195,6 @@ void initialize (option &opts)
     opts.wb_method       = 0;
     opts.highlight       = 0;
     opts.scale           = 1.0;
-//    opts.use_external_camera_data = 0;
 
     struct stat st;
     dataPath dp = pathsFinder ();
@@ -320,8 +319,8 @@ int configureSetting ( int argc,
                 std::string flag = std::string(argv[arg]);
                 FORI ( flag.size() ) {
                     if ( !isdigit (flag[i]) ) {
-                        fprintf (stderr,"\nNon-recognizable argument to "
-                                        "\"--wb-method\".\n");
+                        fprintf (stderr, "\nNon-recognizable argument to "
+                                         "\"--wb-method\".\n");
                         exit(-1);
                     }
                 }
@@ -408,8 +407,7 @@ int configureSetting ( int argc,
 int my_progress_callback ( void *d,
                            enum LibRaw_progress p,
                            int iteration,
-                           int expected
-                          )
+                           int expected )
 {
     char * passed  = ( char* ) (d ? d:"default string");
     

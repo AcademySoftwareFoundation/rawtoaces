@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 	// Start rawtoaces
 	if ( opts.verbosity )
 		printf( "\nStarting rawtoaces ...\n");
-
+    
 #ifdef LIBRAW_USE_OPENMP
    if( opts.verbosity )
        printf ( "Using %d threads\n", omp_get_max_threads() );
@@ -413,11 +413,14 @@ int main(int argc, char *argv[])
                     }
             		printf ( "Writing ACES file to %s ...\n", outfn );
                 }
-        
-                float ratio = (*(std::max_element(C.pre_mul, C.pre_mul+3)) /
-                               *(std::min_element(C.pre_mul, C.pre_mul+3)));
                 
-                Render.acesWrite ( outfn, aces, ratio );
+                if ( opts.highlight > 0 ) {
+                    float ratio = ( *(std::max_element(C.pre_mul, C.pre_mul+3)) /
+                                    *(std::min_element(C.pre_mul, C.pre_mul+3)) );
+                    Render.acesWrite ( outfn, aces, ratio );
+                }
+                else
+                    Render.acesWrite ( outfn, aces );
             }
         
 #ifndef WIN32

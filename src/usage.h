@@ -284,7 +284,6 @@ int configureSetting ( int argc,
             case 't':  OUT.user_flip   = atoi(argv[arg++]);  break;
             case 'q':  OUT.user_qual   = atoi(argv[arg++]);  break;
             case 'm':  OUT.med_passes  = atoi(argv[arg++]);  break;
-            case 'H':  OUT.highlight   = atoi(argv[arg++]);  break;
             case 'h':  OUT.half_size         = 1;
                 // no break:  "-h" implies "-f"
             case 'f':  OUT.four_color_rgb      = 1;            break;
@@ -294,6 +293,11 @@ int configureSetting ( int argc,
             case 'F':  opts.use_bigfile        = 1;  break;
             case 'd':  opts.use_timing         = 1;  break;
             case 'z':  printVS(vls);                 break;
+            case 'H':  {
+                OUT.highlight   = atoi(argv[arg++]);
+                opts.highlight  = OUT.highlight;
+                break;
+            }
             case 'p': {
                 opts.use_mat = atoi(argv[arg++]);
                 if ( opts.use_mat > 2

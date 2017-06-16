@@ -787,13 +787,13 @@ namespace rta {
                                            vector<double> des ) const {
         assert(src.size() == des.size());
         
-        vector < vector <double> > vect(3, vector<double>(3));
-        FORIJ(3, 3) vect[i][j] = cat02[i][j];
+        vector < vector <double> > vcat(3, vector<double>(3));
+        FORIJ(3, 3) vcat[i][j] = cat02[i][j];
         
-        vector< double > wSRC = mulVector ( src, vect );
-        vector< double > wDES = mulVector ( des, vect );
-        vector< vector<double> > vkm = solveVM(vect, diagVM ( divVectorElement (wDES, wSRC) ));
-        vkm = mulVector(vkm, transposeVec(vect));
+        vector< double > wSRC = mulVector ( src, vcat );
+        vector< double > wDES = mulVector ( des, vcat );
+        vector< vector<double> > vkm = solveVM(vcat, diagVM ( divVectorElement (wDES, wSRC) ));
+        vkm = mulVector(vkm, transposeVec(vcat));
         
         clearVM (wSRC);
         clearVM (wDES);

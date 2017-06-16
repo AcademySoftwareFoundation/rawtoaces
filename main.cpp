@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
                 
                 int pgsz = getpagesize();
                 opts.msize = (( st.st_size+pgsz-1 ) / pgsz ) * pgsz;
-                iobuffer = mmap ( NULL, opts.msize, PROT_READ, MAP_PRIVATE, file, 0 );
+                iobuffer = mmap ( NULL, size_t(opts.msize), PROT_READ, MAP_PRIVATE, file, 0 );
                 if( !iobuffer )
                 {
                     fprintf ( stderr, "\nError: Cannot mmap %s: %s\n\n",
@@ -229,16 +229,16 @@ int main(int argc, char *argv[])
             
         
 //          Set parameters for White Balance method is 
-            switch ( opts.use_wb ) {
+            switch ( opts.wb_method ) {
                 case 0 : {
-                    opts.use_Mul = 1;
+                    opts.use_mul = 1;
                     vector < double > mulV (C.cam_mul, C.cam_mul+3);
 //                    if( !opts.highlight )
 //                        scaleVectorMin (mulV);
 //                    else
 //                        scaleVectorMax (mulV);
                     
-                    FORI(3) OUT.user_mul[i] = mulV[i];
+                    FORI(3) OUT.user_mul[i] = static_cast<float>(mulV[i]);
                     
                     if (opts.verbosity > 1 ) {
                     	printf ( "White Balance method is 0 - ");
@@ -251,9 +251,9 @@ int main(int argc, char *argv[])
                     int gotWB = Render.prepareWB ( P1 );
                     
                     if ( gotWB ) {
-                        opts.use_Mul = 1;
+                        opts.use_mul = 1;
                         vector < double > wbv = Render.getWB();
-                        FORI(3) OUT.user_mul[i] = wbv[i];
+                        FORI(3) OUT.user_mul[i] = static_cast<float>(wbv[i]);
                     }
                     
                 	if (opts.verbosity > 1) {
@@ -285,7 +285,7 @@ int main(int argc, char *argv[])
                     break;
                 }
                 case 4 : {
-                    opts.use_Mul = 1;
+                    opts.use_mul = 1;
                     double sc = dmax;
                     
                     FORI(P1.colors){
@@ -363,9 +363,8 @@ int main(int argc, char *argv[])
             }
         
 //          Use the final wb factors to otbain IDT matrix
-            if ( opts.use_mat == 0 ) {
+            if ( opts.mat_method == 0 )
                 Render.prepareIDT ( P1, C.pre_mul );
-            }
 
             if ( opts.use_timing )
                 timerprint ( "LibRaw::dcraw_process()", raw );
@@ -404,7 +403,7 @@ int main(int argc, char *argv[])
                     aces = Render.renderNonDNG();
                 
                 if (opts.verbosity) {
-                    if (opts.use_mat) {
+                    if (opts.mat_method) {
                         vector <vector < double > > camXYZ(3, vector< double >(3, 1.0));
                         FORIJ(3,3) camXYZ[i][j] = C.cam_xyz[i][j];
                         vector <vector < double > > camcat = mulVector(camXYZ, Render.getCATMatrix());
@@ -427,7 +426,7 @@ int main(int argc, char *argv[])
 #ifndef WIN32
             if ( opts.use_mmap && iobuffer )
             {
-                munmap ( iobuffer, opts.msize );
+                munmap ( iobuffer, size_t(opts.msize) );
                 iobuffer = 0;
             }
 #endif

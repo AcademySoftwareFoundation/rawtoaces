@@ -94,6 +94,9 @@ class AcesRender {
         float * renderNonDNG ();
         float * renderNonDNG_IDT ();
     
+        void gatherSupportedIllum ();
+        vector < const char * > getSupportedIllum ();
+
         const vector< vector < double > > getIDTMatrix () const;
         const vector< vector < double > > getCATMatrix () const;
         const vector< double > getWB () const;
@@ -104,6 +107,7 @@ class AcesRender {
         vector < vector < double > > _idtm;
         vector < vector < double > > _catm;
         vector < double > _wbv;
+        vector < const char * > _illuminant;
         option _opts;
 };
 #endif

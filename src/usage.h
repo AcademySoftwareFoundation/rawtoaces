@@ -147,7 +147,6 @@ void create_key()
     keys["--cameras"] = 'T';
     keys["--wb-method"] = 'R';
     keys["--mat-method"] = 'p';
-    keys["--ss-path"] = 'Q';
     keys["--aces-gain"] = 'M';
     keys["--valid-illum"] = 'z';
     keys["-c"] = 'c';
@@ -194,7 +193,8 @@ void initialize (option &opts)
     opts.mat_method      = 0;
     opts.wb_method       = 0;
     opts.highlight       = 0;
-    opts.scale           = 1.0;
+    opts.scale           = 6.0;
+    opts.highlight       = 0;
 
     struct stat st;
     dataPath dp = pathsFinder ();

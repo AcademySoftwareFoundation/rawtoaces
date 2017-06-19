@@ -590,7 +590,7 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
     uint8_t  bits      = _image->bits;
     
     halfBytes *halfIn = new (std::nothrow) halfBytes[channels * width * height];
-    
+        
     FORI ( channels * width * height ){
         if ( bits == 8 )
             aces[i] = (double) aces[i] * INV_255 * (_opts.scale) * ratio;

@@ -312,10 +312,7 @@ int main(int argc, char *argv[])
             switch ( opts.mat_method ) {
                 case 0 : {
                     OUT.output_color = 0;
-//          Set four_color_rgb to 0 when half_size is set to 1
-                    if ( OUT.half_size == 1 )
-                        OUT.four_color_rgb = 0;
-                        
+                    
                     if (opts.verbosity > 1) {
                     	printf ( "IDT matrix calculation method is 0 - ");
                     	printf ( "Calculating IDT matrix using camera spec sens ...\n" );
@@ -347,6 +344,9 @@ int main(int argc, char *argv[])
             }
         
             Render.setOptions(opts);
+
+//          Set four_color_rgb to 0 when half_size is set to 1
+            if ( OUT.half_size == 1 ) OUT.four_color_rgb = 0;
 
 //          Start the dcraw_process()
             timerstart_timeval();

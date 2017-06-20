@@ -259,7 +259,6 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
 {
     int read = readCameraSenPath( P );
     
-//    if ( !read && !_opts.use_external_camera_data ) {
     if ( !read ) {
         fprintf( stderr, "\nError: No matching cameras found. "
                          "Please use other options for "

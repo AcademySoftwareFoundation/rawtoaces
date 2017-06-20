@@ -364,10 +364,6 @@ int main(int argc, char *argv[])
 
             if ( opts.use_timing )
                 timerprint ( "LibRaw::dcraw_process()", raw );
-//         
-//         	if (opts.verbosity) {
-//             	printf ( "Applying IDT ...\n" );
-//             }
         
             Render.setOptions(opts);
         

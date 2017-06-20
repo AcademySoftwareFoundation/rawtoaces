@@ -233,10 +233,6 @@ int main(int argc, char *argv[])
                 case 0 : {
                     opts.use_mul = 1;
                     vector < double > mulV (C.cam_mul, C.cam_mul+3);
-//                    if( !opts.highlight )
-//                        scaleVectorMin (mulV);
-//                    else
-//                        scaleVectorMax (mulV);
                     
                     FORI(3) OUT.user_mul[i] = static_cast<float>(mulV[i]);
                     

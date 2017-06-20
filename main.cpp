@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
                     continue;
                 }
                 
-                if( fstat ( file,&st ) )
+                if( fstat ( file, &st ) )
                 {
                     fprintf ( stderr, "\nError: Cannot stat %s: %s\n\n",
                               raw, strerror(errno) );
@@ -345,6 +345,12 @@ int main(int argc, char *argv[])
         
             Render.setOptions(opts);
 
+// gather a list of illumiants supported - for testing purpose
+            Render.gatherSupportedIllum();
+            vector < string > list = Render.getSupportedIllum();
+//            FORI(list.size())
+//                printf("%s \n", ((string)list[i]).c_str());
+        
 //          Set four_color_rgb to 0 when half_size is set to 1
             if ( OUT.half_size == 1 ) OUT.four_color_rgb = 0;
 

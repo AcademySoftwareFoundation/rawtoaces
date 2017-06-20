@@ -330,8 +330,8 @@ int AcesRender::prepareWB ( libraw_iparams_t P )
 
     if ( !read ) {
             fprintf( stderr, "\nError: No matching cameras found. "
-                         "Please use other options for "
-                         "\"--wb-method\".\n");
+                             "Please use other options for "
+                             "\"--wb-method\".\n");
         exit (-1);
     }
 

@@ -134,8 +134,8 @@ struct option {
     int highlight;
     
     char * illumType;
-    
     float scale;
+    
     vector <string> EnvPaths;
     vector <string> cameraListLR;
 };

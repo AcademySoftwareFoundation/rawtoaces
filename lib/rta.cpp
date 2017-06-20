@@ -473,7 +473,6 @@ namespace rta {
             ptree pt;
             read_json ( path, pt );
             
-            
             const string stype = pt.get<string>( "header.illuminant" );
             if ( type.compare(stype) != 0
                  && type.compare("na") != 0 )

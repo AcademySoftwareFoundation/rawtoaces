@@ -60,6 +60,7 @@ AcesRender::AcesRender(){
     _idtm.resize(3);
     _wbv.resize(3);
     _catm.resize(3);
+    _illuminant.resize(2);
     
     FORI(3) {
         _idtm[i].resize(3);
@@ -76,6 +77,7 @@ AcesRender::~AcesRender(){
     vector < vector<double> >().swap(_idtm);
     vector < vector<double> >().swap(_catm);
     vector < double >().swap(_wbv);
+    vector < string >().swap(_illuminant);
 }
 
 //	=====================================================================
@@ -106,6 +108,52 @@ void AcesRender::setPixels (libraw_processed_image_t * image) {
     _image = image;
 }
 
+
+//	=====================================================================
+//	Gather supported Illuminants by reading from JSON files
+//
+//	inputs:
+//      N/A
+//
+//	outputs:
+//      N/A        : _illuminant be filled
+
+void AcesRender::gatherSupportedIllum ( ) {
+    
+    if (_illuminant.size() != 0)
+        _illuminant.clear();
+    
+    _illuminant.push_back( "Day-light (e.g., D60)" );
+    _illuminant.push_back( "Blackbody (e.g., 3200K)" );
+    
+    std::map < string, int > record;
+    
+    FORI (_opts.EnvPaths.size()) {
+        vector<string> iFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
+                                         +"/illuminant" );
+        
+        for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
+            string path( *file );
+            try
+            {
+                ptree pt;
+                read_json (path, pt);
+                string tmp = pt.get<string>( "header.illuminant" );
+                
+                if ( record.find(tmp) != record.end() )
+                    continue;
+                else {
+                    _illuminant.push_back (tmp);
+                    record[tmp] = 1;
+                }
+            }
+            catch( std::exception const& e )
+            {
+                std::cerr << e.what() << std::endl;
+            }
+        }
+    }
+}
 
 //	=====================================================================
 //	Read camera spectral sensitivity data from path
@@ -565,6 +613,9 @@ float * AcesRender::renderNonDNG_IDT ()
 };
 
 
+
+
+
 //	=====================================================================
 //  Write processed image file to an aces-compliant openexr file
 //
@@ -673,6 +724,18 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
     x.saveImageObject ( );
 }
 
+//	=====================================================================
+//	Get a list of Supported Illuminants
+//
+//	inputs:
+//      N/A
+//
+//	outputs:
+//      vector < vector < const char * > > : _illuminant values
+
+const vector < string > AcesRender::getSupportedIllum ( ) const {
+    return _illuminant;
+}
 
 //	=====================================================================
 //	Get IDT matrix

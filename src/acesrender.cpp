@@ -77,6 +77,7 @@ AcesRender::~AcesRender(){
     vector < vector<double> >().swap(_catm);
     vector < double >().swap(_wbv);
     vector < string >().swap(_illuminants);
+    vector < string >().swap(_cameras);
 }
 
 //	=====================================================================
@@ -153,6 +154,51 @@ void AcesRender::gatherSupportedIllums ( ) {
         }
     }
 }
+
+
+//	=====================================================================
+//	Gather supported cameras by reading from JSON files
+//
+//	inputs:
+//      N/A
+//
+//	outputs:
+//      N/A        : _cameras be filled
+
+void AcesRender::gatherSupportedCameras ( ) {
+    
+    if (_cameras.size() != 0)
+        _cameras.clear();
+    
+    std::map < string, int > record;
+    
+    FORI (_opts.EnvPaths.size()) {
+        vector<string> iFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
+                                         +"/camera" );
+        for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
+            string path( *file );
+            try
+            {
+                ptree pt;
+                read_json (path, pt);
+                string tmp = pt.get<string>( "header.manufacturer" );
+                tmp += ( " / " + pt.get<string>( "header.model" ) );
+                
+                if ( record.find(tmp) != record.end() )
+                    continue;
+                else {
+                    _cameras.push_back (tmp);
+                    record[tmp] = 1;
+                }
+            }
+            catch( std::exception const & e )
+            {
+                std::cerr << e.what() << std::endl;
+            }
+        }
+    }
+}
+
 
 //	=====================================================================
 //	Read camera spectral sensitivity data from path
@@ -735,9 +781,19 @@ const vector < string > AcesRender::getSupportedIllums ( ) const {
     return _illuminants;
 }
 
-const vector < string > AcesRender::getSupportedIllum ( ) const {
-    return _illuminant;
+//	=====================================================================
+//	Get a list of Supported Cameras
+//
+//	inputs:
+//      N/A
+//
+//	outputs:
+//      vector < string > : _cameras values
+
+const vector < string > AcesRender::getSupportedCameras ( ) const {
+    return _cameras;
 }
+
 
 //	=====================================================================
 //	Get IDT matrix

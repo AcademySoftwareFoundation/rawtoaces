@@ -133,6 +133,7 @@ struct option {
     int verbosity;
     int highlight;
     int get_illums;
+    int get_cameras;
     
     char * illumType;
     float scale;

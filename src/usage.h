@@ -148,6 +148,7 @@ void create_key()
     keys["--wb-method"] = 'R';
     keys["--mat-method"] = 'p';
     keys["--aces-gain"] = 'M';
+    keys["--valid-cameras"] = 'Q';
     keys["--valid-illum"] = 'z';
     keys["-c"] = 'c';
     keys["-C"] = 'C';
@@ -196,6 +197,7 @@ void initialize (option &opts)
     opts.scale           = 6.0;
     opts.highlight       = 0;
     opts.get_illums      = 0;
+    opts.get_cameras     = 0;
 
     struct stat st;
     dataPath dp = pathsFinder ();
@@ -291,6 +293,7 @@ int configureSetting ( int argc,
             case 'W':  OUT.no_auto_bright      = 1;  break;
             case 'F':  opts.use_bigfile        = 1;  break;
             case 'd':  opts.use_timing         = 1;  break;
+            case 'Q':  opts.get_cameras        = 1;  break;
             case 'z':  opts.get_illums         = 1;  break;
             case 'H':  {
                 OUT.highlight   = atoi(argv[arg++]);

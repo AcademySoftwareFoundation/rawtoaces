@@ -106,6 +106,13 @@ int main(int argc, char *argv[])
         FORI(ilist.size()) printf("%s \n", ilist[i].c_str());
     }
     
+// gather a list of cameras supported - for testing purpose
+    if (opts.get_cameras) {
+        Render.gatherSupportedCameras();
+        vector < string > clist = Render.getSupportedCameras();
+        printf("\nThe following cameras' sensitivity data is available:\n\n");
+        FORI(clist.size()) printf("%s \n", clist[i].c_str());
+    }
     
    if ( opts.verbosity > 2 )
        RawProcessor.set_progress_handler ( my_progress_callback,

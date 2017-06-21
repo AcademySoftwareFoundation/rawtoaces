@@ -131,7 +131,6 @@ void AcesRender::gatherSupportedIllums ( ) {
     FORI (_opts.EnvPaths.size()) {
         vector<string> iFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
                                          +"/illuminant" );
-        
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string path( *file );
             try
@@ -143,11 +142,11 @@ void AcesRender::gatherSupportedIllums ( ) {
                 if ( record.find(tmp) != record.end() )
                     continue;
                 else {
-                    _illuminant.push_back (tmp);
+                    _illuminants.push_back (tmp);
                     record[tmp] = 1;
                 }
             }
-            catch( std::exception const& e )
+            catch( std::exception const & e )
             {
                 std::cerr << e.what() << std::endl;
             }
@@ -374,9 +373,9 @@ int AcesRender::prepareWB ( libraw_iparams_t P )
     int read = readCameraSenPath ( P );
 
     if ( !read ) {
-            fprintf( stderr, "\nError: No matching cameras found. "
-                             "Please use other options for "
-                             "\"--wb-method\".\n");
+        fprintf( stderr, "\nError: No matching cameras found. "
+                         "Please use other options for "
+                         "\"--wb-method\".\n");
         exit (-1);
     }
 
@@ -655,9 +654,6 @@ float * AcesRender::renderNonDNG_IDT ()
     
     return aces;
 };
-
-
-
 
 
 //	=====================================================================

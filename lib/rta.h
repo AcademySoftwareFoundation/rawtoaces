@@ -120,6 +120,7 @@ namespace rta {
     };
 
     class Idt;
+    
     class Spst {
         friend class Idt;
         

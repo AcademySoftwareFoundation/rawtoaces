@@ -85,7 +85,7 @@ class AcesRender {
     
         void setOptions (option opts);
         void setPixels (libraw_processed_image_t * image);
-        void gatherSupportedIllum ();
+        void gatherSupportedIllums ();
         void applyWB  ( float * pixels, int bits, uint32_t total );
         void applyIDT ( float * pixels, int bits, uint32_t total );
         void applyCAT ( float * pixels, int channel, uint32_t total );
@@ -95,8 +95,7 @@ class AcesRender {
         float * renderNonDNG ();
         float * renderNonDNG_IDT ();
     
-    
-        const vector < string > getSupportedIllum () const;
+        const vector < string > getSupportedIllums () const;
         const vector< vector < double > > getIDTMatrix () const;
         const vector< vector < double > > getCATMatrix () const;
         const vector< double > getWB () const;
@@ -107,7 +106,7 @@ class AcesRender {
         vector < vector < double > > _idtm;
         vector < vector < double > > _catm;
         vector < double > _wbv;
-        vector < string > _illuminant;
+        vector < string > _illuminants;
         option _opts;
 };
 #endif

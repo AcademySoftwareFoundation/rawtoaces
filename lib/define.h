@@ -132,6 +132,7 @@ struct option {
     int wb_method;
     int verbosity;
     int highlight;
+    int get_illums;
     
     char * illumType;
     float scale;

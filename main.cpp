@@ -98,6 +98,15 @@ int main(int argc, char *argv[])
 // Fetch conditions and conduct some pre-processing
    int arg = configureSetting (argc, argv, opts, OUT);
     
+// gather a list of illuminants supported - for testing purpose
+    if (opts.get_illums) {
+        Render.gatherSupportedIllums();
+        vector < string > ilist = Render.getSupportedIllums();
+        printf("\nThe following illuminants are available:\n\n");
+        FORI(ilist.size()) printf("%s \n", ilist[i].c_str());
+    }
+    
+    
    if ( opts.verbosity > 2 )
        RawProcessor.set_progress_handler ( my_progress_callback,
                                           ( void * )"Sample data passed" );
@@ -345,12 +354,6 @@ int main(int argc, char *argv[])
         
             Render.setOptions(opts);
 
-// gather a list of illumiants supported - for testing purpose
-            Render.gatherSupportedIllum();
-            vector < string > list = Render.getSupportedIllum();
-//            FORI(list.size())
-//                printf("%s \n", ((string)list[i]).c_str());
-        
 //          Set four_color_rgb to 0 when half_size is set to 1
             if ( OUT.half_size == 1 ) OUT.four_color_rgb = 0;
 

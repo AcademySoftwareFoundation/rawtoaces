@@ -195,6 +195,7 @@ void initialize (option &opts)
     opts.highlight       = 0;
     opts.scale           = 6.0;
     opts.highlight       = 0;
+    opts.get_illums      = 0;
 
     struct stat st;
     dataPath dp = pathsFinder ();
@@ -232,8 +233,6 @@ int configureSetting ( int argc,
     
     char *cp, *sp;
     int arg;
-    
-    vector < string > vls (lightS, lightS + sizeof(lightS) / sizeof(char *));
     argv[argc] = (char *)"";
     
     for ( arg = 1; arg < argc; )
@@ -292,7 +291,7 @@ int configureSetting ( int argc,
             case 'W':  OUT.no_auto_bright      = 1;  break;
             case 'F':  opts.use_bigfile        = 1;  break;
             case 'd':  opts.use_timing         = 1;  break;
-            case 'z':  printVS(vls);                 break;
+            case 'z':  opts.get_illums         = 1;  break;
             case 'H':  {
                 OUT.highlight   = atoi(argv[arg++]);
                 opts.highlight  = OUT.highlight;
@@ -333,24 +332,6 @@ int configureSetting ( int argc,
                         opts.use_illum = 1;
                         opts.illumType = (char *)(argv[arg++]);
                         lowerCase ( opts.illumType );
-
-                        // to be updated for new functions to calculate for day-light and black-body
-                        bool illumCmp = 0;
-                        string strIllm (opts.illumType);
-                        FORI ( vls.size() ) {
-                            if ( strIllm.compare(vls[i]) == 0 ) {
-                                illumCmp = 1;
-                                break;
-                            }
-                        }
-
-                        if ( !illumCmp ) {
-                            fprintf ( stderr, "\nError: Unknown light source - %s.\n"
-                                              "Please use \"--valid-illum\" to see a "
-                                              "list of available light sources.\n",
-                                      strIllm.c_str());
-                            exit(-1);
-                        }
                     }
                     else {
                         fprintf( stderr, "\nError: white balance method 1 requires an "

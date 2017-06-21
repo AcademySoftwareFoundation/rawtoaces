@@ -60,7 +60,6 @@ AcesRender::AcesRender(){
     _idtm.resize(3);
     _wbv.resize(3);
     _catm.resize(3);
-    _illuminant.resize(2);
     
     FORI(3) {
         _idtm[i].resize(3);
@@ -77,7 +76,7 @@ AcesRender::~AcesRender(){
     vector < vector<double> >().swap(_idtm);
     vector < vector<double> >().swap(_catm);
     vector < double >().swap(_wbv);
-    vector < string >().swap(_illuminant);
+    vector < string >().swap(_illuminants);
 }
 
 //	=====================================================================
@@ -116,15 +115,15 @@ void AcesRender::setPixels (libraw_processed_image_t * image) {
 //      N/A
 //
 //	outputs:
-//      N/A        : _illuminant be filled
+//      N/A        : _illuminants be filled
 
-void AcesRender::gatherSupportedIllum ( ) {
+void AcesRender::gatherSupportedIllums ( ) {
     
-    if (_illuminant.size() != 0)
-        _illuminant.clear();
+    if (_illuminants.size() != 0)
+        _illuminants.clear();
     
-    _illuminant.push_back( "Day-light (e.g., D60)" );
-    _illuminant.push_back( "Blackbody (e.g., 3200K)" );
+    _illuminants.push_back( "Day-light (e.g., D60)" );
+    _illuminants.push_back( "Blackbody (e.g., 3200K)" );
     
     std::map < string, int > record;
     
@@ -274,8 +273,8 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
     
     if( !read ) {
         fprintf( stderr, "\nError: No matching light source. "
-                         "Please use other options for "
-                         "\"--mat-method\" or \"--wb-method\".\n");
+                         "Please find available options by "
+                         "\"rawtoaces --valid-illum\".\n");
         exit (-1);
     }
     else
@@ -340,8 +339,8 @@ int AcesRender::prepareWB ( libraw_iparams_t P )
 
     if( !read ) {
         fprintf( stderr, "\nError: No matching light source. "
-                         "Please use other options for "
-                         "\"--mat-method\" or \"--wb-method\".\n");
+                         "Please find available options by "
+                         "\"rawtoaces --valid-illum\".\n");
         exit (-1);
     }
     else
@@ -730,7 +729,11 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
 //      N/A
 //
 //	outputs:
-//      vector < vector < const char * > > : _illuminant values
+//      vector < vector < string > > : _illuminant values
+
+const vector < string > AcesRender::getSupportedIllums ( ) const {
+    return _illuminants;
+}
 
 const vector < string > AcesRender::getSupportedIllum ( ) const {
     return _illuminant;

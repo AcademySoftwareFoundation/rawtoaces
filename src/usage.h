@@ -92,8 +92,6 @@ void usage(const char *prog)
             "                            2=Use adobe coeffs included in libraw\n"
             // Future feature ? "        3=Use custom matrix <m1r m1g m1b m2r m2g m2b m3r m3g m3b>\n"
             "                            (default = 0)\n"
-            // Depreciatd in the new version
-            //"  --ss-path <path>        Specify the path to camera sensitivity data\n"
             "                            (default = /usr/local/include/rawtoaces/data/camera)\n"
             "  --aces-gain float       Set ACES conversion gain factor (default = 6.0)\n"
             "  --cameras               Show a list of supported cameras\n"
@@ -201,7 +199,6 @@ void initialize (option &opts)
 
     struct stat st;
     dataPath dp = pathsFinder ();
-
     FORI ( dp.paths.size() ) {
         if ( !stat( (dp.paths)[i].c_str(), &st ) )
             opts.EnvPaths.push_back((dp.paths)[i]);

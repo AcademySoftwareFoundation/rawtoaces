@@ -59,6 +59,7 @@ int main(int argc, char *argv[])
     if ( argc == 1 ) usage( argv[0] );
     
     LibRawAces RawProcessor;
+    AcesRender Render;
     option opts;
     struct stat st;
     
@@ -96,7 +97,8 @@ int main(int argc, char *argv[])
         opts.cameraListLR.push_back(string(*cl++));
 
 // Fetch conditions and conduct some pre-processing
-   int arg = configureSetting (argc, argv, opts, OUT);
+    int arg = configureSetting (argc, argv, opts, OUT);
+    Render.setOptions(opts);
     
 // gather a list of illuminants supported - for testing purpose
     if (opts.get_illums) {
@@ -158,7 +160,7 @@ int main(int argc, char *argv[])
         	printf ( "Processing %s ...\n", raw );
         
         char outfn[1024];
-        AcesRender Render;
+//        AcesRender Render;
         Render.setOptions(opts);
         
         timerstart_timeval();

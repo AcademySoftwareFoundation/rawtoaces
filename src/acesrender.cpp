@@ -225,9 +225,7 @@ int AcesRender::readCameraSenPath( libraw_iparams_t P )
         for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
             string fn( *file );
             if ( fn.find(".json") == std::string::npos ) continue;
-            readC = _idt->loadCameraSpst( fn,
-                                          static_cast <const char *> (P.make),
-                                          static_cast <const char *> (P.model) );
+            readC = _idt->loadCameraSpst( fn, P.make, P.model );
             if ( readC ) return 1;
         }
     }

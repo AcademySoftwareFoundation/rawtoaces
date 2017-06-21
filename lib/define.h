@@ -156,10 +156,6 @@ static map < const string, char > keys;
 static const double XYZ_w[3] = {0.952646074569846, 1.0, 1.00882518435159};
 static const double d50[3] = {0.9642, 1.0000, 0.8250};
 static const double d60[3] = {0.952646074569846, 1.0000, 1.00882518435159};
-static const char *lightS[12] = { "3200k", "cie15-a", "cie15-c",
-                                  "cie15-d50", "cie15-d55", "cie15-d65",
-                                  "cie15-d75", "d40", "d45",
-                                  "d50", "d60", "iso7589" };
 
 static const double neutral3[3][3] = {
     {1.0, 0.0, 0.0},
@@ -226,15 +222,6 @@ inline vector<string> openDir (string path = ".") {
 template<typename T>
 inline void clearVM (vector<T> vct) {
     vector< T >().swap(vct);
-};
-
-// Function to print out the version number
-inline void printVS (const vector <string> vs) {
-    assert (vs.size() > 0);
-    printf("\nThe following options are available:\n\n");
-    
-    FORI ( vs.size() ) printf("%s\n", vs[i].c_str());
-    printf ("\n");
 };
 
 // Function to covert upper-case to lower-case

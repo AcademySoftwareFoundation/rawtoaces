@@ -206,7 +206,6 @@ int main(int argc, char *argv[])
                                       libraw_strerror(opts.ret) );
                     continue;
                 }
-
             }
             else
 #endif
@@ -440,8 +439,11 @@ int main(int argc, char *argv[])
                 iobuffer = 0;
             }
 #endif
-            RawProcessor.recycle();
-        }
+//            RawProcessor.recycle();
+    }
+
+    RawProcessor.recycle();
+    
     if (opts.verbosity)
     	printf ("Finished\n\n");
 

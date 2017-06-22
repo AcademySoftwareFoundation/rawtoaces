@@ -6,6 +6,9 @@ set( RAWTOACES_MINOR_VERSION 1 )
 set( RAWTOACES_PATCH_VERSION 0 )
 set( RAWTOACES_VERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${RAWTOACES_PATCH_VERSION} )
 
+set(RAWTOACESLIB "rawtoaces_util")
+set(RAWTOACESLIB ${RAWTOACESLIB}.${RAWTOACES_VERSION})
+
 set( CMAKE_MACOSX_RPATH 1 )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -15,6 +18,10 @@ endif()
 if (NOT CONFIGURED_ONCE)
 	set(CMAKE_CXX_FLAGS "${warnings}")
 	set(CMAKE_C_FLAGS "${warnings}")
+endif()
+
+if ( UNIX AND NOT APPLE )
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
 endif()
 
 ## Make install directories overridable
@@ -99,7 +106,6 @@ if ( NOT IlmBase_FOUND )
       	BUILD_COMMAND cmake "${ilmbase_EXTERNAL_BUILD}" && make -s "${ilmbase_EXTERNAL_BUILD}/build"
     )
 
-
   endif ()
 
   set (IlmBase_FOUND TRUE)
@@ -177,7 +183,7 @@ include_directories( "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" )
 
 add_definitions( -DPACKAGE="RAWTOACES" -DVERSION="${RAWTOACES_VERSION}" )
 add_subdirectory(lib)
-# add_subdirectory(src)
+add_subdirectory(src)
 
 # enable_testing()
 # add_subdirectory(unittest)
@@ -216,55 +222,18 @@ if ( APPLE OR UNIX )
 endif()
 
 ### to build rawtoaces ###
-if ( IlmBase_FOUND )
-  add_definitions( -DHAVE_IlmBase=1 )
-  include_directories( ${IlmBase_INCLUDE_DIRS} )
-#  link_directories( {$IlmBase_LIBRARY_DIRS} ) 
-endif()
-
-if ( AcesContainer_FOUND )
-  add_definitions( -DHAVE_ACESFILE=1 )
-  include_directories( ${AcesContainer_INCLUDE_DIRS} )
-  link_directories( ${AcesContainer_LIBRARY_DIRS} )
-endif()
-
 if ( libraw_FOUND )
   add_definitions (-DHAVE_LIBRAW=1 )
   include_directories( ${libraw_INCLUDE_DIRS} )
   link_directories( ${libraw_LIBRARY_DIRS} ) 
 endif() 
 
-if ( Ceres_FOUND )
-  add_definitions( -DHAVE_Ceres=1 )
-  include_directories( ${CERES_INCLUDE_DIRS} )
-  link_directories( ${CERES_LIBRARY_DIRS} ) 
-endif()
-
-if ( Boost_FOUND )
-  add_definitions( -DHAVE_Boost=1 )
-  include_directories( ${Boost_INCLUDE_DIRS} )
-  link_directories( ${Boost_LIBRARY_DIRS} ) 
-endif()
-
-# include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" "${IlmBase_INCLUDE_DIRS}" "${AcesContainer_INCLUDE_DIRS}" "${libraw_INCLUDE_DIRS}")
-
+include_directories( ${CERES_INCLUDE_DIRS} )
 add_executable( rawtoaces
-  
-  src/acesrender.cpp
-  main.cpp
+    main.cpp
 )
 
-target_link_libraries(rawtoaces rawtoacesIDT)
-
-if ( IlmBase_FOUND )
- target_link_libraries( rawtoaces ${IlmBase_LIBRARIES} )
- target_link_libraries( rawtoaces ${IlmBase_LDFLAGS_OTHER} )
-endif()
-
-if ( AcesContainer_FOUND )
-  target_link_libraries( rawtoaces ${AcesContainer_LIBRARIES} )
-  target_link_libraries( rawtoaces ${AcesContainer_LDFLAGS_OTHER} )
-endif()
+target_link_libraries(rawtoaces ${RAWTOACESLIB})
 
 if ( libraw_FOUND )
   target_link_libraries( rawtoaces ${libraw_LIBRARIES} )
@@ -272,7 +241,6 @@ if ( libraw_FOUND )
 endif()
 
 install( TARGETS rawtoaces DESTINATION bin )
-
 
 # uninstall target
 configure_file(

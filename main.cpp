@@ -247,7 +247,8 @@ int main(int argc, char *argv[])
         
 //          Set parameters for White Balance method is 
             switch ( opts.wb_method ) {
-                case 0 : {
+                // 0
+                case wbMethod0 : {
                     opts.use_mul = 1;
                     vector < double > mulV (C.cam_mul, C.cam_mul+3);
                     
@@ -260,7 +261,8 @@ int main(int argc, char *argv[])
                     }
                     break;
                 }
-                case 1 : {
+                // 1
+                case wbMethod1 : {
                     int gotWB = Render.prepareWB ( P1 );
                     
                     if ( gotWB ) {
@@ -277,7 +279,8 @@ int main(int argc, char *argv[])
                     
                     break;
                 }
-                case 2 : {
+                // 2
+                case wbMethod2 : {
                     OUT.use_auto_wb = 1;
                     
                     if (opts.verbosity > 1) {
@@ -288,7 +291,8 @@ int main(int argc, char *argv[])
                     
                     break;
                 }
-                case 3 : {
+                // 3
+                case wbMethod3 : {
                 	if (opts.verbosity > 1) {
                 		printf ( "White Balance calculation method is 3 - ");
                     	printf ( "Using white balance factors calculated by "
@@ -297,7 +301,8 @@ int main(int argc, char *argv[])
                     
                     break;
                 }
-                case 4 : {
+                // 4
+                case wbMethod4 : {
                     opts.use_mul = 1;
                     double sc = dmax;
                     
@@ -321,13 +326,15 @@ int main(int argc, char *argv[])
                 default: {
                     fprintf ( stderr, "White Balance method is must be 0, 1, 2, 3, "
                                       "or 4 \n" );
+                    exit(-1);
                     break;
                 }
             }
         
 //          Set parameters for --mat-method
             switch ( opts.mat_method ) {
-                case 0 : {
+                // 0
+                case matMethod0 : {
                     OUT.output_color = 0;
                     
                     if (opts.verbosity > 1) {
@@ -337,7 +344,8 @@ int main(int argc, char *argv[])
                     
                     break;
                 }
-                case 1 :
+                // 1
+                case matMethod1 :
                     OUT.use_camera_matrix = 0;
                     
                     if (opts.verbosity > 1) {
@@ -346,7 +354,8 @@ int main(int argc, char *argv[])
                     }
                     
                     break;
-                case 2 :
+                // 2
+                case matMethod2 :
                     OUT.use_camera_matrix = 3;
                     
                     if (opts.verbosity > 1) {
@@ -357,6 +366,7 @@ int main(int argc, char *argv[])
                     break;
                 default:
                     fprintf ( stderr, "IDT matrix calculation method is must be 0, 1, 2 \n" );
+                    exit(-1);
                     break;
             }
         
@@ -376,7 +386,8 @@ int main(int argc, char *argv[])
             }
         
 //          Use the final wb factors to otbain IDT matrix
-            if ( opts.mat_method == 0 )
+            // 0
+            if ( opts.mat_method == matMethod0 )
                 Render.prepareIDT ( P1, C.pre_mul );
 
             if ( opts.use_timing )

@@ -120,6 +120,9 @@ using ceres::Problem;
 using ceres::Solve;
 using ceres::Solver;
 
+enum matMethods_t { matMethod0, matMethod1, matMethod2 };
+enum wbMethods_t { wbMethod0, wbMethod1, wbMethod2, wbMethod3, wbMethod4 };
+
 struct option {
     int ret;
     int use_bigfile;
@@ -128,12 +131,13 @@ struct option {
     int use_mul;
     int use_mmap;
     int msize;
-    int mat_method;
-    int wb_method;
     int verbosity;
     int highlight;
     int get_illums;
     int get_cameras;
+    
+    matMethods_t mat_method;
+    wbMethods_t wb_method;
     
     char * illumType;
     float scale;

@@ -192,8 +192,8 @@ void initialize (option &opts)
     opts.use_illum       = 0;
     opts.use_mul         = 0;
     opts.verbosity       = 0;
-    opts.mat_method      = 0;
-    opts.wb_method       = 0;
+    opts.mat_method      = matMethod0;
+    opts.wb_method       = wbMethod0;
     opts.highlight       = 0;
     opts.scale           = 6.0;
     opts.highlight       = 0;
@@ -301,9 +301,9 @@ int configureSetting ( int argc,
                 break;
             }
             case 'p': {
-                opts.mat_method = atoi(argv[arg++]);
+                opts.mat_method = matMethods_t(atoi(argv[arg++]));
                 if ( opts.mat_method > 2
-                     || opts.mat_method < -1) {
+                     || opts.mat_method < 0 ) {
                     fprintf (stderr, "\nError: Invalid argument to "
                                      "\"%s\" \n", key.c_str());
                     exit(-1);
@@ -327,9 +327,10 @@ int configureSetting ( int argc,
                     }
                 }
                 
-                opts.wb_method = atoi(argv[arg++]);
+                opts.wb_method = wbMethods_t(atoi(argv[arg++]));
                 
-                if ( opts.wb_method == 1 ) {
+                // 1
+                if ( opts.wb_method == wbMethod1 ) {
                     if ( isalnum(argv[arg][0]) )
                     {
                         opts.use_illum = 1;
@@ -342,7 +343,8 @@ int configureSetting ( int argc,
                         exit(-1);
                     }
                 }
-                if ( opts.wb_method == 3 ) {
+                // 3
+                if ( opts.wb_method == wbMethod3 ) {
                     FORI(4) {
                         if ( !isdigit(argv[arg][0]) )
                         {
@@ -355,7 +357,8 @@ int configureSetting ( int argc,
                         OUT.greybox[i] = (float)atof(argv[arg++]);
                     }
                 }
-                else if ( opts.wb_method == 4 ) {
+                // 4
+                else if ( opts.wb_method == wbMethod4 ) {
                     opts.use_mul = 1;
                     FORI(4) {
                         if ( !isdigit(argv[arg][0]) )
@@ -369,7 +372,7 @@ int configureSetting ( int argc,
                         OUT.user_mul[i] = (float)atof(argv[arg++]);
                     }
                 }
-                else if ( opts.wb_method > 4 || opts.wb_method < -1) {
+                else if ( opts.wb_method > 4 || opts.wb_method < 0 ) {
                     fprintf (stderr, "\nError: Invalid argument to \"%s\" \n",
                              key.c_str());
                     exit(-1);

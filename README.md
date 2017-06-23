@@ -290,7 +290,7 @@ Ceres Solver is an open source library for solving Non-linear Least Squares prob
 	```
 	
 
-The default process will install `librawtoacesIDT.dylib` to `/usr/local/lib`, a few header files to `/usr/local/include/rawtoaces` and a number of data files into `/usr/local/include/rawtoaces/data`.
+The default process will install `librawtoaces_idt_${rawtoaces_version}.dylib` and `librawtoaces_util_${rawtoaces_version}.dylib` to `/usr/local/lib`, a few header files to `/usr/local/include/rawtoaces/include` and a number of data files into `/usr/local/include/rawtoaces/data`.
 	
 ## Usage
 

@@ -395,11 +395,6 @@ int main(int argc, char *argv[])
         
             Render.setOptions(opts);
         
-        	if (opts.verbosity > 1) {
-            	printf ("The final white balance coefficients are ...\n");
-            	printf ("   %f   %f   %f\n", C.pre_mul[0], C.pre_mul[1], C.pre_mul[2]);
-            }
-        
             char * cp;
             if (( cp = strrchr ( (char *)((RAWs[i]).c_str()), '.' ))) *cp = 0;
 
@@ -422,7 +417,7 @@ int main(int argc, char *argv[])
                 else
                     aces = Render.renderNonDNG();
                 
-                if (opts.verbosity) {
+                if ( opts.verbosity > 1 ) {
                     if (opts.mat_method) {
                         vector <vector < double > > camXYZ(3, vector< double >(3, 1.0));
                         FORIJ(3,3) camXYZ[i][j] = C.cam_xyz[i][j];
@@ -431,6 +426,11 @@ int main(int argc, char *argv[])
                         printf("The IDT matrix is ...\n");
                         FORI(3) printf("   %f, %f, %f\n", camcat[i][0], camcat[i][1], camcat[i][2]);
                     }
+                    
+                    // printing white balance coefficients
+                    printf ("The final white balance coefficients are ...\n");
+                    printf ("   %f   %f   %f\n", C.pre_mul[0], C.pre_mul[1], C.pre_mul[2]);
+                    
             		printf ( "Writing ACES file to %s ...\n", outfn );
                 }
                 

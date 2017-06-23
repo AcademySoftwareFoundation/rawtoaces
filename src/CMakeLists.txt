@@ -22,7 +22,7 @@ add_library( ${RAWTOACESLIB} SHARED
 )
 
 target_link_libraries( ${RAWTOACESLIB} 
-                       rawtoacesIDT )
+                       ${RAWTOACESIDTLIB} )
 
 if ( IlmBase_FOUND )
  target_link_libraries( ${RAWTOACESLIB} ${IlmBase_LIBRARIES} )

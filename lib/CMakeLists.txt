@@ -7,19 +7,21 @@ if ( Boost_FOUND )
   link_directories( ${Boost_LIBRARY_DIRS} ) 
 endif()
 
-add_library( rawtoacesIDT SHARED
+add_library( ${RAWTOACESIDTLIB} SHARED
     	     rta.cpp 
 )
 
-target_link_libraries( rawtoacesIDT 
+target_link_libraries( ${RAWTOACESIDTLIB} 
                        ${Boost_LIBRARIES}
-		               ${CERES_LIBRARIES} )
+		                   ${CERES_LIBRARIES} )
 
 install(FILES
-	 define.h
-	 mathOps.h
-     rta.h	
+	      define.h
+	      mathOps.h
+        rta.h	
     	
  	DESTINATION include/rawtoaces/include
 )
+
+install( TARGETS ${RAWTOACESIDTLIB} DESTINATION lib )
 

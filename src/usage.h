@@ -94,7 +94,10 @@ void usage(const char *prog)
             "                            (default = 0)\n"
             "                            (default = /usr/local/include/rawtoaces/data/camera)\n"
             "  --aces-gain float       Set ACES conversion gain factor (default = 6.0)\n"
-            "  --cameras               Show a list of supported cameras\n"
+            "  --cameras               Show a list of supported cameras/models by LibRaw\n"
+            "  --valid-illums          Show a list of illuminants\n"
+            "  --valid-cameras         Show a list of cameras/models with available "
+            "                          spectral sensitivity datasets\n"
             "\n"
             "Raw conversion options:\n"
             "  -c float                Set adjust maximum threshold (default = 0.75)\n"
@@ -146,8 +149,8 @@ void create_key()
     keys["--wb-method"] = 'R';
     keys["--mat-method"] = 'p';
     keys["--aces-gain"] = 'M';
+    keys["--valid-illums"] = 'z';
     keys["--valid-cameras"] = 'Q';
-    keys["--valid-illum"] = 'z';
     keys["-c"] = 'c';
     keys["-C"] = 'C';
     keys["-P"] = 'P';

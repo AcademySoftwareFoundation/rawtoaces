@@ -60,7 +60,6 @@
 #include <ctype.h>
 #include <stdexcept>
 #include <vector>
-#include <map>
 #include <unordered_map>
 #include <numeric>
 #include <limits>

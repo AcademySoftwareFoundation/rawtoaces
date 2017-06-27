@@ -126,7 +126,7 @@ void AcesRender::gatherSupportedIllums ( ) {
     _illuminants.push_back( "Day-light (e.g., D60)" );
     _illuminants.push_back( "Blackbody (e.g., 3200K)" );
     
-    std::map < string, int > record;
+    std::unordered_map < string, int > record;
     
     FORI (_opts.EnvPaths.size()) {
         vector<string> iFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
@@ -169,7 +169,7 @@ void AcesRender::gatherSupportedCameras ( ) {
     if (_cameras.size() != 0)
         _cameras.clear();
     
-    std::map < string, int > record;
+    std::unordered_map < string, int > record;
     
     FORI (_opts.EnvPaths.size()) {
         vector<string> iFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
@@ -241,7 +241,7 @@ int AcesRender::readCameraSenPath( libraw_iparams_t P )
 //      const char *  : type of light source ("unknown" if not specified)
 //                      (in the environment variable of "AMPAS_ILLUMINANT_PATH"
 //                       such as "/usr/local/include/rawtoaces/data/Illuminant")
-//      map <string, vector <double>> : key is the path (string) to each
+//      unordered_map <string, vector <double>> : key is the path (string) to each
 //                                      light source; value is calculated
 //                                      white balance coefficients (vector)
 //                                      for each light source
@@ -251,7 +251,7 @@ int AcesRender::readCameraSenPath( libraw_iparams_t P )
 //            white balance coefficients will also be calculated in the meantime.
 //            "0" means error in reading/ injecting data
 
-int AcesRender::readIlluminant( map < string, vector < double > > & illuCM,
+int AcesRender::readIlluminant( unordered_map < string, vector < double > > & illuCM,
                                 const char * illumType )
 {
     int readI = 0;
@@ -315,7 +315,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
         exit (-1);
     }
 
-    map < string, vector < double > > illuCM;
+    unordered_map < string, vector < double > > illuCM;
     if (!_opts.illumType)
         read = readIlluminant( illuCM );
     else
@@ -384,7 +384,7 @@ int AcesRender::prepareWB ( libraw_iparams_t P )
         exit (-1);
     }
 
-    map < string, vector < double > > illuCM;
+    unordered_map < string, vector < double > > illuCM;
     read = readIlluminant( illuCM, _opts.illumType );
 
     if( !read ) {

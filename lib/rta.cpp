@@ -657,11 +657,11 @@ namespace rta {
     //	outputs:
     //		Illum: the best _Illuminant
     
-    void Idt::chooseIllumSrc ( map < string, vector<double> >& illuCM,
+    void Idt::chooseIllumSrc ( unordered_map < string, vector<double> >& illuCM,
                                vector<double>& src) {
         double sse = dmax;
         
-        for ( map< string, vector<double> >::iterator it = illuCM.begin(); it != illuCM.end(); ++it ) {
+        for ( unordered_map < string, vector<double> >::iterator it = illuCM.begin(); it != illuCM.end(); ++it ) {
             double tmp = calSSE(it->second, src);
             
 //            printf ("%s, %f\n", it->first.c_str(), tmp);
@@ -702,7 +702,7 @@ namespace rta {
     //	outputs:
     //		Illum: the best _Illuminant
     
-    void Idt::chooseIllumType ( map < string, vector<double> >& illuCM,
+    void Idt::chooseIllumType ( unordered_map < string, vector<double> >& illuCM,
                                 const char * type ) {
         
         _bestIllum = illuCM.begin()->first;

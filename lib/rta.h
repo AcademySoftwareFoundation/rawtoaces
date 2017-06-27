@@ -244,9 +244,9 @@ namespace rta {
             void loadTrainingData( const string &path );
             void loadCMF( const string &path );
         
-            void chooseIllumSrc( map < string, vector<double> >& illuCM,
+            void chooseIllumSrc( unordered_map < string, vector<double> >& illuCM,
                                  vector<double>& src );
-            void chooseIllumType( map < string, vector<double> >& illuCM,
+            void chooseIllumType( unordered_map < string, vector<double> >& illuCM,
                                   const char * type );
             void setVerbosity( int verbosity );
             void scaleLSC();

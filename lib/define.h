@@ -61,6 +61,7 @@
 #include <stdexcept>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <numeric>
 #include <limits>
 #include <string>
@@ -156,7 +157,7 @@ const double k = (24389.0/27.0)/116.0;
 const double dmin = numeric_limits<double>::min();
 const double dmax = numeric_limits<double>::max();
 
-static map < const string, char > keys;
+static unordered_map < string, char > keys;
 static const double XYZ_w[3] = {0.952646074569846, 1.0, 1.00882518435159};
 static const double d50[3] = {0.9642, 1.0000, 0.8250};
 static const double d60[3] = {0.952646074569846, 1.0000, 1.00882518435159};

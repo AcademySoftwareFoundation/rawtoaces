@@ -130,20 +130,20 @@ namespace rta {
             return xy;
         };
         
-        void getSPD ( const int cct ) {
-            assert(( s_series[53].wl - s_series[0].wl)%inc == 0 );
+        void calSPD ( const int cct ) {
+            assert(( s_series[53].wl - s_series[0].wl) % inc == 0 );
+            
+            if (data.size() > 0) data.clear();
             
             vector <int> wls0, wls1;
             vector <double> s00, s10, s20, s01, s11, s21;
             vector <double> xy = cctToxy (cct);
-        
-//            printf("%f, %f\n", xy[0], xy[1]);
             
             double m0 = 0.0241 + 0.2562*xy[0] - 0.7341*xy[1];
             double m1 = (-1.3515 - 1.7703*xy[0] + 5.9114*xy[1]) / m0;
             double m2 = (0.03000 - 31.4424*xy[0] + 30.0717*xy[1]) / m0;
             
-//            printf("%f, %f, %f\n", m0, m1, m2);
+//            printf("{%f, %f, %f},\n", m0, m1, m2);
             
             FORI(54) {
                 wls0.push_back(s_series[i].wl);
@@ -166,19 +166,24 @@ namespace rta {
             clearVM(wls0);
             clearVM(wls1);
             
-            
             FORI (size) {
                 data.push_back(s01[i] + m1 * s11[i] + m2 * s21[i]);
                 if ((s_series[0].wl+inc*i) == 550)
                     index = data[data.size()-1];
             }
             
-            FORI(data.size())
-                printf("%f\n", data[i]);
+//            printf("%i, { ", int(data.size()));
+//            FORI(data.size())
+//                printf("%f,\n", data[i]);
+//            printf(" }");
             
             clearVM(s01);
             clearVM(s11);
             clearVM(s21);
+        };
+        
+        const vector <double> getSPD() const {
+            return data;
         };
         
         string path;

@@ -791,7 +791,7 @@ const Illum AcesRender::calSPD ( const char * illumType, const int dis ) {
     size_t index = illumStr.find_last_not_of("0123456789");
     int cct = atoi(illumStr.substr(index + 1).c_str()) * 100;
     
-    illum.getSPD(cct);
+    illum.calSPD(cct);
     
     return illum;
 }

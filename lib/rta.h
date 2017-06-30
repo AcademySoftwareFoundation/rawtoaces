@@ -103,13 +103,13 @@ namespace rta {
     
     struct RGBSen {
         RGBSen() {};
-        RGBSen( double r, double g, double b ) : RSen(r),
-        GSen(g),
-        BSen(b){ };
+        RGBSen( double R, double G, double B ) : _RSen(R),
+                                                 _GSen(G),
+                                                 _BSen(B){ };
         
-        double RSen;
-        double GSen;
-        double BSen;
+        double _RSen;
+        double _GSen;
+        double _BSen;
     };
 
     

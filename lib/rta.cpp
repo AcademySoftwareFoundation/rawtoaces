@@ -435,7 +435,7 @@ namespace rta {
     //	outputs:
     //		const vector <RGBSen>: the sensitivity (in vector) of the camera
     
-    const vector <RGBSen> & Spst::getSensitivity() const {
+    const vector <RGBSen>  Spst::getSensitivity() const {
         return _rgbsen;
     }
     
@@ -588,7 +588,7 @@ namespace rta {
     //	outputs:
     //		vector <RGBSen>: the sensitivity (in vector) of the camera
     
-    vector <RGBSen> & Spst::getSensitivity() {
+    vector <RGBSen> Spst::getSensitivity() {
         return _rgbsen;
     }
     

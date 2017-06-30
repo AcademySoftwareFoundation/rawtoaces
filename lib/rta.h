@@ -166,7 +166,7 @@ namespace rta {
             const char * getBrand() const;
             const char * getModel() const;
             const uint8_t getWLIncrement() const;
-            const vector < RGBSen > & getSensitivity() const;
+            const vector < RGBSen > getSensitivity() const;
         
             char * getBrand();
             char * getModel();
@@ -175,8 +175,7 @@ namespace rta {
             int loadSpst( string path,
                           const char * maker,
                           const char * model );
-        
-            vector < RGBSen > & getSensitivity();
+            vector < RGBSen > getSensitivity();
 
         private:
             char * _brand;

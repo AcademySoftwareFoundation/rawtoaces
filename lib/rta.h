@@ -90,8 +90,8 @@ namespace rta {
     };
     
     struct trainSpec {
-        uint16_t wl;
-        vector <double> data;
+        uint16_t _wl;
+        vector <double> _data;
     };
     
     struct CMF {

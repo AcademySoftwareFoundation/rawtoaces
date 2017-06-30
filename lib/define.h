@@ -306,6 +306,38 @@ inline bool isNumeric ( const char * val )
     return (input.find_first_not_of(base.substr(0, base.size())) == string::npos);
 };
 
+// Function to check if a input is a alphabetic letter
+inline bool isLetter (const char c){
+    return (( c >= 'a' && c <= 'z' ) || ( c >= 'A' && c <= 'Z' ) );
+};
+
+// Function to check if a string is a valid input
+// to represent color temperature(s) (e.g., D60, 3200K)
+inline bool isValidCT ( string str )
+{
+    if ( str[0] != 'd'
+         && str[str.length() - 1] != 'k' )
+        return false;
+    else if ( str[0] == 'd'
+        && str[str.length() - 1] == 'k' )
+        return false;
+    else {
+        int i;
+        
+        while (str[i]) {
+            if (!isLetter(str[i]) && !isdigit(str[i]))
+                return false;
+            if ( isLetter(str[i]) &&
+                 (str[i] != 'd' && str[i] != 'k') )
+                return false;
+            
+            i++;
+        }
+    }
+    
+    return true;
+};
+
 // Function to get environment variable for camera data
 inline dataPath& pathsFinder ( )
 {

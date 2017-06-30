@@ -331,15 +331,13 @@ int configureSetting ( int argc,
                 
                 // 1
                 if ( opts.wb_method == wbMethod1 ) {
-                    if ( isalnum(argv[arg][0]) )
-                    {
-                        opts.use_illum = 1;
-                        opts.illumType = (char *)(argv[arg++]);
-                        lowerCase ( opts.illumType );
-                    }
-                    else {
-                        fprintf( stderr, "\nError: white balance method 1 requires an "
-                                         "illuminant be specified\n" );
+                    opts.use_illum = 1;
+                    opts.illumType = (char *)(argv[arg++]);
+                    lowerCase(opts.illumType);
+                    
+                    if (!isValidCT(string(opts.illumType))) {
+                        fprintf( stderr, "\nError: white balance method 1 requires a valid "
+                                "illuminant (e.g., D60, 3200K) to be specified\n" );
                         exit(-1);
                     }
                 }

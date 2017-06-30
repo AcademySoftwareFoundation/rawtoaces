@@ -95,10 +95,10 @@ namespace rta {
     };
     
     struct CMF {
-        uint16_t wl;
-        double xbar;
-        double ybar;
-        double zbar;
+        uint16_t _wl;
+        double _xbar;
+        double _ybar;
+        double _zbar;
     };
     
     struct RGBSen {

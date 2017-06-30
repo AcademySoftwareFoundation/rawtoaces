@@ -64,10 +64,10 @@ using namespace rta;
 
 BOOST_AUTO_TEST_CASE ( TestIllum_cctToxy ) {
     Illum illumObject;
-    
-    illumObject._type = "d50";
-    illumObject._inc = 5;
-    
+
+    illumObject.setIllumType( "d50" );
+    illumObject.setIllumInc( 5 );
+
     vector <double> xy = illumObject.cctToxy(5000);
     
     BOOST_CHECK_CLOSE ( xy[0], 0.3456619734948, 1e-9 );
@@ -77,11 +77,11 @@ BOOST_AUTO_TEST_CASE ( TestIllum_cctToxy ) {
 
 BOOST_AUTO_TEST_CASE ( TestIllum_calSPD ) {
     Illum illumObject;
+
+    illumObject.setIllumType( "d50" );
+    illumObject.setIllumInc( 5 );
     
-    illumObject._type = "d50";
-    illumObject._inc = 5;
-    
-    illumObject.calDayLightSPD(5000);
+    illumObject.loadDayLightSPD( 5000 );
     
     const double spd[107] = {   24.4978949755877,
                                 27.1891380970612,
@@ -165,9 +165,10 @@ BOOST_AUTO_TEST_CASE ( TestIllum_calSPD ) {
                                 80.5938616113981,
                                 78.2695414363022
     };
-    
-    FORI(illumObject._data.size())
-        BOOST_CHECK_CLOSE ( illumObject._data[i], spd[i], 1e-5 );
+
+    vector < double > data = illumObject.getIllumData();
+    FORI( data.size() )
+        BOOST_CHECK_CLOSE ( data[i], spd[i], 1e-5 );
     
 };
 

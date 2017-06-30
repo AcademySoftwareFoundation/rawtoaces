@@ -81,13 +81,12 @@ using namespace boost::property_tree;
 namespace rta {
     struct CIEXYZ {
         CIEXYZ() {};
-        CIEXYZ( double X, double Y, double Z ) : Xt(X),
-        Yt(Y),
-        Zt(Z){ };
-        
-        double Xt;
-        double Yt;
-        double Zt;
+        CIEXYZ( double X, double Y, double Z ) : _Xt(X),
+                                                 _Yt(Y),
+                                                 _Zt(Z){ };
+        double _Xt;
+        double _Yt;
+        double _Zt;
     };
     
     struct trainSpec {

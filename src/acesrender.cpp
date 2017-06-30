@@ -71,14 +71,17 @@ AcesRender::AcesRender(){
     }
 }
 
+
 AcesRender::~AcesRender(){
     delete _idt;
+    
     vector < vector<double> >().swap(_idtm);
     vector < vector<double> >().swap(_catm);
     vector < double >().swap(_wbv);
     vector < string >().swap(_illuminants);
     vector < string >().swap(_cameras);
 }
+
 
 //	=====================================================================
 //	Set option list
@@ -130,7 +133,7 @@ void AcesRender::gatherSupportedIllums ( ) {
     
     FORI (_opts.EnvPaths.size()) {
         vector<string> iFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
-                                         +"/illuminant" );
+                                          +"/illuminant" );
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string path( *file );
             try
@@ -173,7 +176,7 @@ void AcesRender::gatherSupportedCameras ( ) {
     
     FORI (_opts.EnvPaths.size()) {
         vector<string> iFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
-                                         +"/camera" );
+                                          +"/camera" );
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string path( *file );
             try
@@ -215,13 +218,13 @@ void AcesRender::gatherSupportedCameras ( ) {
 //                         sensitivity data successfully;
 //                         "0" means error in reading/injecting data
 
-int AcesRender::readCameraSenPath( libraw_iparams_t P )
+int AcesRender::fetchCameraSenPath( libraw_iparams_t P )
 {
     int readC = 0;
     
     FORI (_opts.EnvPaths.size()) {
         vector<string> cFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
-                                              +"/camera" );
+                                          +"/camera" );
         for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
             string fn( *file );
             if ( fn.find(".json") == std::string::npos ) continue;
@@ -233,63 +236,36 @@ int AcesRender::readCameraSenPath( libraw_iparams_t P )
     return readC;
 }
 
-
 //	=====================================================================
-//	Read light source data to calcuate white balance coefficients
+//	Fetch light source data to calcuate white balance coefficients
 //
 //	inputs:
 //      const char *  : type of light source ("unknown" if not specified)
 //                      (in the environment variable of "AMPAS_ILLUMINANT_PATH"
 //                       such as "/usr/local/include/rawtoaces/data/Illuminant")
-//      unordered_map <string, vector <double>> : key is the path (string) to each
-//                                      light source; value is calculated
-//                                      white balance coefficients (vector)
-//                                      for each light source
 //
 //	outputs:
-//		int : "1" means loading/injecting light source data successfully;
-//            white balance coefficients will also be calculated in the meantime.
-//            "0" means error in reading/ injecting data
+//		int : "1" means loading/injecting light source datasets successfully,
+//            "0" means error / no illumiant data has been loaded
 
-int AcesRender::readIlluminant( unordered_map < string, vector < double > > & illuCM,
-                                const char * illumType )
+
+// To be updated
+int AcesRender::fetchIlluminant ( const char * illumType )
 {
-    int readI = 0;
+    vector <string> paths;
 
-    FORI (_opts.EnvPaths.size()) {
-        vector<string> iFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
-                                         +"/illuminant" );
-        
+    FORI ( _opts.EnvPaths.size() ) {
+        vector <string> iFiles = openDir ( (_opts.EnvPaths)[i] + "/illuminant" );
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string fn( *file );
-            if ( fn.find(".json") == std::string::npos ) continue;
-            
-            string strillumType(illumType);
-            if ( strillumType.compare("na") != 0 ) {
-                readI = _idt->loadIlluminant( fn, illumType );
-                if ( readI )
-                {
-                    illuCM[fn] = _idt->calWB( _opts.highlight );
-                    return 1;
-                }
-            }
-            else {
-                readI = _idt->loadIlluminant( fn );
-                if ( readI ) illuCM[fn] = _idt->calWB( _opts.highlight );
-            }
+            if ( fn.find(".json") == std::string::npos )
+                continue;
+            paths.push_back(fn);
         }
     }
-    
-    // just for test calSPD
-//    calSPD("D40");
-//    calSPD("D55");
-    calSPD("D60");
-//    calSPD("D100");
-//    calSPD("D250");
 
-    return readI;
+    return _idt->loadIlluminant( paths, (string)illumType );
 }
-
 
 //	=====================================================================
 //  Calculate IDT matrix from camera spectral sensitivity data and the
@@ -306,7 +282,7 @@ int AcesRender::readIlluminant( unordered_map < string, vector < double > > & il
 
 int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
 {
-    int read = readCameraSenPath( P );
+    int read = fetchCameraSenPath( P );
     
     if ( !read ) {
         fprintf( stderr, "\nError: No matching cameras found. "
@@ -315,11 +291,10 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
         exit (-1);
     }
 
-    unordered_map < string, vector < double > > illuCM;
     if (!_opts.illumType)
-        read = readIlluminant( illuCM );
+        read = fetchIlluminant( );
     else
-        read = readIlluminant( illuCM,  _opts.illumType );
+        read = fetchIlluminant( _opts.illumType );
     
     if( !read ) {
         fprintf( stderr, "\nError: No matching light source. "
@@ -338,7 +313,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
         _idt->loadCMF ( static_cast < string > ( FILEPATH )
                         +"cmf/cmf_1931.json" );
         
-        _idt->chooseIllumSrc ( illuCM, mulV );
+        _idt->chooseIllumSrc ( mulV, _opts.highlight );
         
         if (_opts.verbosity > 1)
         	printf ( "Regressing IDT matrix coefficients ...\n" );
@@ -375,7 +350,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
 
 int AcesRender::prepareWB ( libraw_iparams_t P )
 {
-    int read = readCameraSenPath ( P );
+    int read = fetchCameraSenPath ( P );
 
     if ( !read ) {
         fprintf( stderr, "\nError: No matching cameras found. "
@@ -384,8 +359,7 @@ int AcesRender::prepareWB ( libraw_iparams_t P )
         exit (-1);
     }
 
-    unordered_map < string, vector < double > > illuCM;
-    read = readIlluminant( illuCM, _opts.illumType );
+    read = fetchIlluminant( _opts.illumType );
 
     if( !read ) {
         fprintf( stderr, "\nError: No matching light source. "
@@ -405,7 +379,7 @@ int AcesRender::prepareWB ( libraw_iparams_t P )
 
         // choose the best light source based on
         // as-shot white balance coefficients
-       _idt->chooseIllumType( illuCM, _opts.illumType );
+       _idt->chooseIllumType( _opts.illumType, _opts.highlight );
 
        if (_opts.verbosity > 1) {
            printf ( "Calculating White Balance Coefficients "
@@ -769,32 +743,6 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
     x.saveImageObject ( );
 }
 
-//	=====================================================================
-//	Calculate spectral power distribution(SPD) of CIE standard daylight
-//  illuminant based on the requested Correlated Color Temperature
-//
-//	inputs:
-//      const char * : type of illuminant (e.g. D60)
-//
-//	outputs:
-//      const Illum : Illuminant Object with calculated SPD
-
-const Illum AcesRender::calSPD ( const char * illumType, const int dis ) {
-    Illum illum;
-    
-    illum.path = "NA";
-    illum.type = illumType;
-    illum.inc = dis;
-    //    illum.index
-    
-    string illumStr(illumType);
-    size_t index = illumStr.find_last_not_of("0123456789");
-    int cct = atoi(illumStr.substr(index + 1).c_str()) * 100;
-    
-    illum.calSPD(cct);
-    
-    return illum;
-}
 
 //	=====================================================================
 //	Get a list of Supported Illuminants
@@ -809,6 +757,7 @@ const Illum AcesRender::calSPD ( const char * illumType, const int dis ) {
 const vector < string > AcesRender::getSupportedIllums ( ) const {
     return _illuminants;
 }
+
 
 //	=====================================================================
 //	Get a list of Supported Cameras

@@ -73,14 +73,10 @@ class AcesRender {
         AcesRender();
         ~AcesRender();
     
-        int readCameraSenPath( libraw_iparams_t P );
+        int fetchCameraSenPath( libraw_iparams_t P );
+        int fetchIlluminant( const char * illumType = "na" );
     
-        int readIlluminant( unordered_map < string, vector < double > > & illuCM,
-                            const char * illumType = "na" );
-    
-        //  LibRaw RawProcessor
-        int prepareIDT ( libraw_iparams_t P,
-                         float * M );
+        int prepareIDT ( libraw_iparams_t P, float * M );
         int prepareWB ( libraw_iparams_t P );
     
         void setOptions (option opts);
@@ -90,15 +86,14 @@ class AcesRender {
         void applyWB  ( float * pixels, int bits, uint32_t total );
         void applyIDT ( float * pixels, int bits, uint32_t total );
         void applyCAT ( float * pixels, int channel, uint32_t total );
-        void acesWrite ( const char * name, float *  aces, float ratio = 1.0) const;;
-    
+        void acesWrite ( const char * name, float *  aces, float ratio = 1.0) const;
+
         float * renderDNG ( vector < float > cameraToDisplayMtx );
         float * renderNonDNG ();
         float * renderNonDNG_IDT ();
     
         const vector < string > getSupportedIllums () const;
         const vector < string > getSupportedCameras () const;
-        const Illum calSPD ( const char * illumType, const int inc=5 );
         const vector< vector < double > > getIDTMatrix () const;
         const vector< vector < double > > getCATMatrix () const;
         const vector< double > getWB () const;

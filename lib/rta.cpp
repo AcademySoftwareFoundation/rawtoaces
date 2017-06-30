@@ -67,9 +67,55 @@ namespace rta {
     Illum::~Illum() {
         vector < double >().swap( _data );
     }
+
+    //	=====================================================================
+    //	Set the type of Illuminant
+    //
+    //	inputs:
+    //      const char *: type (from user input)
+    //
+    //	outputs:
+    //		void: _type will be assigned a value to (private member)
+
+    void Illum::setIllumType ( string type ) {
+        assert( !type.empty() );
+        _type = type;
+
+        return;
+    }
+
+    //	=====================================================================
+    //	Set the increment of Illuminant SPD
+    //
+    //	inputs:
+    //      int : inc
+    //
+    //	outputs:
+    //		void: _inc  will be assigned with a value (private member)
+
+    void Illum::setIllumInc ( int inc ) {
+        _inc = inc;
+
+        return;
+    }
+
+    //	=====================================================================
+    //	Set the index of Illuminant SPD
+    //
+    //	inputs:
+    //      int : index
+    //
+    //	outputs:
+    //		void: _index  will be assigned with a value (private member)
+
+    void Illum::setIllumIndex ( double index ) {
+        _index = index;
+
+        return;
+    }
     
     //	=====================================================================
-    //	Load the Illuminant data
+    //	Read the Illuminant data from JSON file(s)
     //
     //	inputs:
     //		string: path to the Illuminant data file
@@ -79,7 +125,7 @@ namespace rta {
     //		int: If successufully parsed, private data members (e.g., _data)
     //           will be filled and return 1; Otherwise, return 0
     
-    int Illum::loadSPD ( string path, string type ) {
+    int Illum::readSPD ( string path, string type ) {
         assert(path.length() > 0 && type.length() > 0 );
         
         try
@@ -148,13 +194,13 @@ namespace rta {
     }
 
     //	=====================================================================
-    //	Calculate the chromaticity based on cct
+    //	Calculate the chromaticity values based on cct
     //
     //	inputs:
     //      const int: cct / correlated color temperature
     //
     //	outputs:
-    //		vector <double>: xy / chromaticity data
+    //		vector <double>: xy / chromaticity values
     //
     
     vector <double> Illum::cctToxy ( const int cct ) const {
@@ -187,7 +233,7 @@ namespace rta {
     //		int: If successufully processed, private data members (e.g., _data)
     //           will be filled and return 1; Otherwise, return 0
     
-    void Illum::calDayLightSPD ( const int cct ) {
+    void Illum::loadDayLightSPD ( const int cct ) {
         assert(( s_series[53].wl - s_series[0].wl) % _inc == 0 );
         
         if (_data.size() > 0) _data.clear();
@@ -239,7 +285,60 @@ namespace rta {
         clearVM(s11);
         clearVM(s21);
     }
-    
+
+    //	=====================================================================
+    //	Fetch Illuminant SPD data
+    //
+    //	inputs:
+    //      N/A
+    //
+    //	outputs:
+    //		const vector < double > : the SPD data of the Illuminant
+
+    const vector < double > Illum::getIllumData() const {
+        return _data;
+    }
+
+    //	=====================================================================
+    //	Fetch the type of the Illuminant
+    //
+    //	inputs:
+    //      N/A
+    //
+    //	outputs:
+    //		const string _type : the type of Illuminant
+
+    const string Illum::getIllumType() const {
+        return _type;
+    }
+
+    //	=====================================================================
+    //	Fetch the increment of Illuminant SPD data
+    //
+    //	inputs:
+    //      N/A
+    //
+    //	outputs:
+    //		const int : the increment of the Illuminant SPD data
+
+    const int Illum::getIllumInc() const {
+        return _inc;
+    }
+
+    //	=====================================================================
+    //	Fetch the index of the Illuminant SPD data
+    //
+    //	inputs:
+    //      N/A
+    //
+    //	outputs:
+    //		const double : the index of the Illuminant SPD data
+
+    const double Illum::getIllumIndex() const {
+        return _index;
+    }
+
+
     Spst::Spst() {
         _brand = null_ptr;
         _model = null_ptr;
@@ -468,9 +567,9 @@ namespace rta {
         // it can be updated if there is a broader spectrum
         // (e.g., 300nm-800nm) or a smaller increment values (e.g, 1nm)
         if ( rgbsen.size() != 81 ) {
-            fprintf(stderr, "Please double check the Camera "
-                    "Sensitivity data (e.g. the increment "
-                    "should be uniform from 380nm to 780nm).\n");
+            fprintf( stderr, "Please double check the Camera "
+                     "Sensitivity data (e.g. the increment "
+                     "should be uniform from 380nm to 780nm).\n" );
             exit(-1);
         }
         
@@ -668,34 +767,44 @@ namespace rta {
         
         if (  type.compare("na") != 0 ) {
             // do something to process the type
-            // parse "type"
-            // determine if it is "daylight" or "blackbody"
-            // if it is one of them, use relevant functions
-            // to calculate
             
-            printf("%s", type.c_str());
+            // 1). parse "type"
+            // 2). determine if it is "daylight" or "blackbody"
+            // 3). if it is one of them, use relevant functions
+            //     to calculate
             
-            FORI ( paths.size() ) {
-                Illum IllumJson;
-                if ( IllumJson.loadSPD (paths[i], type) &&
-                     type.compare(IllumJson._type) == 0 ) {
-                        _Illuminants.push_back(IllumJson);
-                        return 1;
+            if ( type[0] == 'd' ) {
+                Illum illumDay;
+                illumDay.setIllumType(type);
+                illumDay.loadDayLightSPD(atoi(type.substr(1).c_str())*100);
+                _Illuminants.push_back(illumDay);
+                
+                return 1;
+            }
+//            else if ( type.at(0) == 'b' )
+            else {
+                FORI ( paths.size() ) {
+                    Illum IllumJson;
+                    if ( IllumJson.readSPD (paths[i], type) &&
+                        type.compare(IllumJson._type) == 0 ) {
+                            _Illuminants.push_back(IllumJson);
+                            return 1;
+                    }
                 }
             }
         }
         else {
             for ( int i = 4000; i <= 25000; i+=500 ) {
                 Illum illumDay;
-                illumDay._type = "d"+(to_string(i/100));
-                illumDay.calDayLightSPD(i);
+                illumDay.setIllumType("d"+(to_string(i/100)));
+                illumDay.loadDayLightSPD(i);
             
                 _Illuminants.push_back(illumDay);
             }
             
             FORI ( paths.size() ) {
                 Illum IllumJson;
-                if ( IllumJson.loadSPD (paths[i], type) )
+                if ( IllumJson.readSPD (paths[i], type) )
                     _Illuminants.push_back(IllumJson);
             }
         }

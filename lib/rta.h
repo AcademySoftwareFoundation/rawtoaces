@@ -123,15 +123,24 @@ namespace rta {
             Illum( string type );
             ~Illum();
 
-            int loadSPD( string path, string type );
-            vector <double> cctToxy( const int cct ) const;
-            void calDayLightSPD( const int cct );
-            
-//        private:
+            void setIllumType( string type );
+            void setIllumInc( int Inc );
+            void setIllumIndex( double index );
+
+            int readSPD( string path, string type );
+            void loadDayLightSPD( const int cct );
+            vector < double > cctToxy( const int cct ) const;
+
+            const vector < double > getIllumData() const;
+            const string getIllumType() const;
+            const int getIllumInc() const;
+            const double getIllumIndex() const;
+
+    private:
             string _type;
-            uint8_t _inc;
+            int _inc;
             double _index;
-            vector <double> _data;
+            vector < double > _data;
     };
     
     class Spst {
@@ -186,7 +195,7 @@ namespace rta {
                                 const char * maker,
                                 const char * model );
             int loadIlluminant( vector <string> paths, string type = "na" );
-        
+
             void loadTrainingData( string path );
             void loadCMF( string path );
             void chooseIllumSrc( vector <double> src, int highlight );

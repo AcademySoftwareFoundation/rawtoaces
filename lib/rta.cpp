@@ -383,7 +383,7 @@ namespace rta {
             
             const char * cmodel = (pt.get<string>( "header.model" )).c_str();
             if ( cmp_str(model, cmodel) ) return 0;
-                _cameraSpst.setModel(cmaker);
+                _cameraSpst.setModel(cmodel);
             
             vector <int> wavs;
             int inc;

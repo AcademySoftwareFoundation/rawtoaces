@@ -55,6 +55,191 @@
 #include "rta.h"
 
 namespace rta {
+    Illum::Illum() {
+        _inc = 5;
+    }
+    
+    Illum::Illum( string type ){
+        _type = type;
+        _inc = 5;
+    }
+    
+    Illum::~Illum() {
+        vector < double >().swap( _data );
+    }
+    
+    //	=====================================================================
+    //	Load the Illuminant data
+    //
+    //	inputs:
+    //		string: path to the Illuminant data file
+    //      const char *: type of light source if user specifies
+    //
+    //	outputs:
+    //		int: If successufully parsed, private data members (e.g., _data)
+    //           will be filled and return 1; Otherwise, return 0
+    
+    int Illum::loadSPD ( string path, string type ) {
+        assert(path.length() > 0 && type.length() > 0 );
+        
+        try
+        {
+            // using libraries from boost::property_tree
+            ptree pt;
+            read_json ( path, pt );
+            
+            const string stype = pt.get<string>( "header.illuminant" );
+            if ( type.compare(stype) != 0
+                 && type.compare("na") != 0 )
+                return 0;
+            
+            _type = stype;
+            
+            vector <int> wavs;
+            int dis;
+            
+            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "spectral_data.data.main" ) )
+            {
+                wavs.push_back(atoi((row.first).c_str()));
+                
+                if ( wavs.size() == 2 )
+                    dis = wavs[1] - wavs[0];
+                else if ( wavs.size() > 2 &&
+                         wavs[wavs.size()-1] - wavs[wavs.size()-2] != dis ) {
+                    fprintf ( stderr, "Please double check the Light "
+                             "Source data (e.g. the increment "
+                             "should be uniform from 380nm to 780nm).\n" );
+                    exit(-1);
+                }
+                
+                if ( wavs[wavs.size()-1] < 380 ||
+                    wavs[wavs.size()-1] % 5 )
+                    continue;
+                else if ( wavs[wavs.size()-1] > 780 )
+                    break;
+                
+                BOOST_FOREACH ( ptree::value_type &cell, row.second ) {
+                    _data.push_back(cell.second.get_value<double>());
+                    if ( wavs[wavs.size()-1] == 550 )
+                        _index = cell.second.get_value<double>();
+                }
+                
+//                printf ( "\"%i\": [ %18.13f ], \n",
+//                         wavs[wavs.size()-1],
+//                        _Illuminant._data[_Illuminant.data.size()-1] );
+            }
+            
+            _inc = dis;
+            
+        }
+        catch ( std::exception const& e )
+        {
+            std::cerr << e.what() << std::endl;
+        }
+        
+        if ( _data.size() != 81 ) {
+            fprintf ( stderr, "Please double check the Light "
+                     "Source data (e.g. the increment "
+                     "should be 5nm from 380nm to 780nm).\n" );
+            exit(1);
+        }
+        
+        return 1;
+    }
+
+    //	=====================================================================
+    //	Calculate the chromaticity based on cct
+    //
+    //	inputs:
+    //      const int: cct / correlated color temperature
+    //
+    //	outputs:
+    //		vector <double>: xy / chromaticity data
+    //
+    
+    vector <double> Illum::cctToxy ( const int cct ) const {
+        assert( cct >= 4000 && cct <= 25000 );
+        
+        double cctd = cct * 1.4387752 / 1.438;
+        vector <double> xy(2, 1.0);
+        if ( cctd >= 4002.15 && cctd <= 7003.77 )
+            xy[0] = ( 0.244063 + 99.11/cctd
+                     + 2.9678 * 1000000/(std::pow(cctd,2))
+                     - 4.6070 * 1000000000/(std::pow(cctd,3)) );
+        else
+            xy[0] = ( 0.237040 + 247.48/cctd
+                     + 1.9018*1000000/(std::pow(cctd,2))
+                     - 2.0064*1000000000/(std::pow(cctd,3)) );
+        
+        xy[1] = -3.0 * (std::pow(xy[0],2)) + 2.87 * xy[0] - 0.275;
+        
+        return xy;
+    }
+    
+    //	=====================================================================
+    //	Calculate spectral power distribution(SPD) of CIE standard daylight
+    //  illuminant based on the requested Correlated Color Temperature
+    //	inputs:
+    //
+    //      const int: cct / correlated color temperature
+    //
+    //	outputs:
+    //		int: If successufully processed, private data members (e.g., _data)
+    //           will be filled and return 1; Otherwise, return 0
+    
+    void Illum::calDayLightSPD ( const int cct ) {
+        assert(( s_series[53].wl - s_series[0].wl) % _inc == 0 );
+        
+        if (_data.size() > 0) _data.clear();
+        
+        vector <int> wls0, wls1;
+        vector <double> s00, s10, s20, s01, s11, s21;
+        vector <double> xy = cctToxy (cct);
+        
+        double m0 = 0.0241 + 0.2562*xy[0] - 0.7341*xy[1];
+        double m1 = (-1.3515 - 1.7703*xy[0] + 5.9114*xy[1]) / m0;
+        double m2 = (0.03000 - 31.4424*xy[0] + 30.0717*xy[1]) / m0;
+        
+        FORI (54) {
+            wls0.push_back(s_series[i].wl);
+            s00.push_back(s_series[i].RGB[0]);
+            s10.push_back(s_series[i].RGB[1]);
+            s20.push_back(s_series[i].RGB[2]);
+        }
+        
+        int size = (s_series[53].wl - s_series[0].wl)/_inc + 1;
+        FORI(size)
+            wls1.push_back(s_series[0].wl + _inc*i);
+        
+        s01 = interp1DLinear(wls0, wls1, s00);
+        clearVM(s00);
+        s11 = interp1DLinear(wls0, wls1, s10);
+        clearVM(s10);
+        s21 = interp1DLinear(wls0, wls1, s20);
+        clearVM(s20);
+        
+        clearVM(wls0);
+        clearVM(wls1);
+        
+        FORI (size) {
+            int index = s_series[0].wl + _inc * i;
+            if ( index >= 380 && index <= 780 ) {
+                _data.push_back(s01[i] + m1 * s11[i] + m2 * s21[i]);
+                if ( index == 550 )
+                    _index = _data[_data.size()-1];
+            }
+        }
+        
+//        printf("%i, ", int(_data.size()));
+//        FORI(_data.size())
+//            printf("  %18.13f,\n", _data[i]);
+//        printf(" }");
+        
+        clearVM(s01);
+        clearVM(s11);
+        clearVM(s21);
+    }
+    
     Spst::Spst() {
         _brand = null_ptr;
         _model = null_ptr;

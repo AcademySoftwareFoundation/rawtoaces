@@ -113,88 +113,26 @@ namespace rta {
         double BSen;
     };
 
-    struct Illum {
-        Illum() {};
-        vector <double> cctToxy ( const int cct ) const {
-            assert( cct >= 4000 && cct <= 25000 );
-            
-            double cctd = cct * 1.4387752 / 1.438;
-            vector <double> xy(2, 1.0);
-            if ( cctd >= 4002.15 && cctd <= 7003.77 )
-                xy[0] = ( 0.244063 + 99.11/cctd
-                          + 2.9678 * 1000000/(std::pow(cctd,2))
-                          - 4.6070 * 1000000000/(std::pow(cctd,3)) );
-            else
-                xy[0] = ( 0.237040 + 247.48/cctd
-                          + 1.9018*1000000/(std::pow(cctd,2))
-                          - 2.0064*1000000000/(std::pow(cctd,3)) );
-            
-            xy[1] = -3.0*(std::pow(xy[0],2))+2.87*xy[0]-0.275;
-            
-            return xy;
-        };
+    
+    class Idt;
+
+    class Illum {
+        friend class Idt;
         
-        void calSPD ( const int cct ) {
-            assert(( s_series[53].wl - s_series[0].wl) % inc == 0 );
+        public:
+            Illum();
+            Illum( string type );
+            ~Illum();
+
+            int loadSPD( string path, string type );
+            vector <double> cctToxy( const int cct ) const;
+            void calDayLightSPD( const int cct );
             
-            if (data.size() > 0) data.clear();
-            
-            vector <int> wls0, wls1;
-            vector <double> s00, s10, s20, s01, s11, s21;
-            vector <double> xy = cctToxy (cct);
-            
-            double m0 = 0.0241 + 0.2562*xy[0] - 0.7341*xy[1];
-            double m1 = (-1.3515 - 1.7703*xy[0] + 5.9114*xy[1]) / m0;
-            double m2 = (0.03000 - 31.4424*xy[0] + 30.0717*xy[1]) / m0;
-            
-//            printf("{%f, %f, %f},\n", m0, m1, m2);
-            
-            FORI(54) {
-                wls0.push_back(s_series[i].wl);
-                s00.push_back(s_series[i].RGB[0]);
-                s10.push_back(s_series[i].RGB[1]);
-                s20.push_back(s_series[i].RGB[2]);
-            }
-            
-            int size = (s_series[53].wl - s_series[0].wl)/inc + 1;
-            FORI(size)
-                wls1.push_back(s_series[0].wl + inc*i);
-            
-            s01 = interp1DLinear(wls0, wls1, s00);
-            clearVM(s00);
-            s11 = interp1DLinear(wls0, wls1, s10);
-            clearVM(s10);
-            s21 = interp1DLinear(wls0, wls1, s20);
-            clearVM(s20);
-            
-            clearVM(wls0);
-            clearVM(wls1);
-            
-            FORI (size) {
-                data.push_back(s01[i] + m1 * s11[i] + m2 * s21[i]);
-                if ((s_series[0].wl+inc*i) == 550)
-                    index = data[data.size()-1];
-            }
-            
-//            printf("%i, { ", int(data.size()));
-//            FORI(data.size())
-//                printf("%f,\n", data[i]);
-//            printf(" }");
-            
-            clearVM(s01);
-            clearVM(s11);
-            clearVM(s21);
-        };
-        
-        const vector <double> getSPD() const {
-            return data;
-        };
-        
-        string path;
-        string type;
-        uint8_t inc;
-        double index;
-        vector <double> data;
+//        private:
+            string _type;
+            uint8_t _inc;
+            double _index;
+            vector <double> _data;
     };
     
     class Idt;

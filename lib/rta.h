@@ -134,8 +134,6 @@ namespace rta {
             vector <double> _data;
     };
     
-    class Idt;
-    
     class Spst {
         friend class Idt;
         
@@ -184,54 +182,52 @@ namespace rta {
             Idt();
             ~Idt();
         
-            int loadCameraSpst( const string &path,
+            int loadCameraSpst( string path,
                                 const char * maker,
                                 const char * model );
-            int loadIlluminant( const string &path,
-                                const string type="na" );
-            void loadTrainingData( const string &path );
-            void loadCMF( const string &path );
+            int loadIlluminant( vector <string> paths, string type = "na" );
         
-            void chooseIllumSrc( unordered_map < string, vector<double> >& illuCM,
-                                 vector<double>& src );
-            void chooseIllumType( unordered_map < string, vector<double> >& illuCM,
-                                  const char * type );
+            void loadTrainingData( string path );
+            void loadCMF( string path );
+            void chooseIllumSrc( vector <double> src, int highlight );
+            void chooseIllumType( const char * type, int highlight );
+            void setIlluminants( Illum Illuminant );
             void setVerbosity( int verbosity );
-            void scaleLSC();
+            void scaleLSC( Illum & Illuminant );
         
-            vector< double > calCM();
-            vector< vector<double> > calTI() const;
-            vector< double > calWB( int highlight );
-            vector< vector<double> > calCAT( vector<double> src,
-                                             vector<double> des ) const;
-            vector< vector<double> > calXYZ( vector< vector<double> > TI ) const;
-            vector< vector<double> > calRGB( vector< vector<double> > TI ) const;
+            vector < double > calCM();
+            vector < double > calWB( Illum & Illuminant, int highlight );
+            vector < vector <double> > calTI() const;
+            vector < vector <double> > calCAT( vector <double> src,
+                                              vector <double> des ) const;
+            vector < vector<double> > calXYZ( vector < vector<double> > TI ) const;
+            vector < vector<double> > calRGB( vector < vector<double> > TI ) const;
         
-            int curveFit( vector< vector<double> > RGB,
-                          vector< vector<double> > XYZ,
+            int curveFit( vector < vector<double> > RGB,
+                          vector < vector<double> > XYZ,
                           double * BStart );
             int calIDT();
         
             const Spst getCameraSpst() const;
-            const Illum getIlluminant() const;
+            const vector < Illum > getIlluminants() const;
             const int getVerbosity() const;
-            const vector< vector <double> > getIDT() const;
-            const vector< double > getWB() const;
+            const vector < vector <double> > getIDT() const;
+            const vector < double > getWB() const;
 
             Spst getCameraSpst();
-            Illum getIlluminant();
+            vector < Illum > getIlluminants();
             int getVerbosity();
         
         private:
             Spst    _cameraSpst;
             Illum   _Illuminant;
-            string  _bestIllum;
             int     _verbosity;
         
             vector < CMF > _cmf;
             vector < trainSpec > _trainingSpec;
             vector < double > _wb;
             vector < vector< double > > _idt;
+            vector < Illum > _Illuminants;
     };
     
     

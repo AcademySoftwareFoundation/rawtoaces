@@ -576,7 +576,6 @@ namespace rta {
     }
     
     Idt::Idt() {
-        _bestIllum = "";
         _verbosity = 0;
         
         FORI(81) {
@@ -594,6 +593,7 @@ namespace rta {
     }
     
     Idt::~Idt() {
+        vector < Illum >().swap(_Illuminants);
         vector < CMF >().swap(_cmf);
         vector < trainSpec >().swap(_trainingSpec);
         vector < double >().swap(_wb);
@@ -604,237 +604,125 @@ namespace rta {
     //	Scale the Illuminant data using the max element of RGB code values
     //
     //	inputs:
-    //		N/A
+    //		Illum & Illuminant
     //	
     //	outputs:
-    //		scaled _Illuminant data set
+    //		scaled Illuminant data set
     
-    void Idt::scaleLSC() {
-        assert(_cameraSpst._spstMaxCol >= 0
-               && (_Illuminant.data).size() != 0);
+    void Idt::scaleLSC(Illum & Illuminant) {
+        assert( _cameraSpst._spstMaxCol >= 0
+                && (Illuminant._data).size() != 0);
         
         int size =_cameraSpst._rgbsen.size();
         vector < double > colMax(size, 1.0);
         switch (_cameraSpst._spstMaxCol){
             case 0:
-                FORI(size) colMax[i] = _cameraSpst._rgbsen[i].RSen;
+                FORI(size) colMax[i] = _cameraSpst._rgbsen[i]._RSen;
                 break;
             case 1:
-                FORI(size) colMax[i] = _cameraSpst._rgbsen[i].GSen;
+                FORI(size) colMax[i] = _cameraSpst._rgbsen[i]._GSen;
                 break;
             case 2:
-                FORI(size) colMax[i] = _cameraSpst._rgbsen[i].BSen;
+                FORI(size) colMax[i] = _cameraSpst._rgbsen[i]._BSen;
                 break;
             default:
                 return;
         }
         
-        scaleVector(_Illuminant.data,
-                    1.0/sumVector(mulVectorElement(_Illuminant.data, colMax)));
+        scaleVector(Illuminant._data,
+                    1.0/sumVector(mulVectorElement(Illuminant._data, colMax)));
     }
     
     //	=====================================================================
     //	Load the Camera Sensitivty data
     //
     //	inputs:
-    //		const string: path to the camera sensitivity file
+    //		string: path to the camera sensitivity file
     //      const char *: camera maker  (from libraw)
     //      const char *: camera model  (from libraw)
-    //      const int: ss_path  (from user input "--ss-path")
     //
     //	outputs:
     //		boolean: If successufully parsed, _cameraSpst will be filled and return 1;
     //               Otherwise, return 0
     
-    int Idt::loadCameraSpst ( const string & path,
+    int Idt::loadCameraSpst ( string path,
                               const char * maker,
                               const char * model ) {
-        assert (strlen(path.c_str()) > 0);
         
-        vector <RGBSen> rgbsen;
-        vector <double> max(3, dmin);
-        
-        try
-        {
-            // using libraries from boost::property_tree
-            ptree pt;
-            read_json ( path, pt );
-            
-            const char * cmaker = (pt.get<string>( "header.manufacturer" )).c_str();
-            if ( cmp_str(maker, cmaker) ) return 0;
-            _cameraSpst.setBrand(cmaker);
-            
-            const char * cmodel = (pt.get<string>( "header.model" )).c_str();
-            if ( cmp_str(model, cmodel) ) return 0;
-                _cameraSpst.setModel(cmodel);
-            
-            vector <int> wavs;
-            int inc;
-
-            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "spectral_data.data.main" ) )
-            {
-                wavs.push_back(atoi((row.first).c_str()));
-
-                if ( wavs.size() == 2 )
-                    inc = wavs[1] - wavs[0];
-                else if ( wavs.size() > 2 &&
-                          wavs[wavs.size()-1] - wavs[wavs.size()-2] != inc ) {
-                    fprintf(stderr, "Please double check the Camera "
-                                    "Sensitivity data (e.g. the increment "
-                                    "should be uniform from 380nm to 780nm).\n");
-                    exit(1);
-                }
-                
-                if ( wavs[wavs.size()-1] < 380 ||
-                     wavs[wavs.size()-1] % 5 )
-                    continue;
-                else if ( wavs[wavs.size()-1] > 780 )
-                    break;
-
-                vector < double > data;
-                BOOST_FOREACH ( ptree::value_type &cell, row.second )
-                    data.push_back ( cell.second.get_value<double>() );
-                
-                // ensure there are three components
-                assert(data.size() == 3);
-                
-                RGBSen tmp_sen ( data[0], data[1], data[2] );
-                
-                if (tmp_sen.RSen > max[0]) max[0] = tmp_sen.RSen;
-                if (tmp_sen.GSen > max[1]) max[1] = tmp_sen.GSen;
-                if (tmp_sen.BSen > max[2]) max[2] = tmp_sen.BSen;
-                
-//                printf("\"%i\": [ %18.13f,  %18.13f,  %18.13f ], \n", wavs[wavs.size()-1], data[0], data[1], data[2] );
-                
-                rgbsen.push_back (tmp_sen);
-            }
-            _cameraSpst.setWLIncrement (inc);
-        }
-        catch ( std::exception const& e )
-        {
-            std::cerr << e.what() << std::endl;
-        }
-        
-        // it can be updated if there is a broader spectrum
-        // (e.g., 300nm-800nm) or a smaller increment values (e.g, 1nm)
-        if ( rgbsen.size() != 81 ) {
-            fprintf(stderr, "Please double check the Camera "
-                            "Sensitivity data (e.g. the increment "
-                            "should be uniform from 380nm to 780nm).\n");
-            exit(-1);
-        }
-        
-        _cameraSpst._spstMaxCol = max_element (max.begin(), max.end()) - max.begin();
-        _cameraSpst.setSensitivity (rgbsen);
-        
-        return 1;
+        return _cameraSpst.loadSpst (path, maker, model);
     }
     
     //	=====================================================================
     //	Load the Illuminant data
     //
     //	inputs:
-    //		const string: path to the Illuminant data file
-    //      const char *: type of light source if user specifies
+    //		string: paths to various Illuminant data files
+    //      string: type of light source if user specifies
     //
     //	outputs:
-    //		boolean: If successufully parsed, _Illuminant will be filled and return 1;
+    //		int: If successufully parsed, _Illuminant will be filled and return 1;
     //               Otherwise, return 0
 
-    
-    int Idt::loadIlluminant ( const string &path,
-                              const string type ) {
+    int Idt::loadIlluminant ( vector <string> paths, string type ) {
+        assert ( paths.size() > 0 && !type.empty() );
         
-        if ((_Illuminant.data).size() != 0) {
-            _Illuminant.type = "";
-            _Illuminant.data.clear();
-        }
-        
-        try
-        {
-            // using libraries from boost::property_tree
-            ptree pt;
-            read_json ( path, pt );
+        if (  type.compare("na") != 0 ) {
+            // do something to process the type
+            // parse "type"
+            // determine if it is "daylight" or "blackbody"
+            // if it is one of them, use relevant functions
+            // to calculate
             
-            const string stype = pt.get<string>( "header.illuminant" );
-            if ( type.compare(stype) != 0
-                 && type.compare("na") != 0 )
-            {
-                return 0;
+            printf("%s", type.c_str());
+            
+            FORI ( paths.size() ) {
+                Illum IllumJson;
+                if ( IllumJson.loadSPD (paths[i], type) &&
+                     type.compare(IllumJson._type) == 0 ) {
+                        _Illuminants.push_back(IllumJson);
+                        return 1;
+                }
             }
-            _Illuminant.type = stype;
+        }
+        else {
+            for ( int i = 4000; i <= 25000; i+=500 ) {
+                Illum illumDay;
+                illumDay._type = "d"+(to_string(i/100));
+                illumDay.calDayLightSPD(i);
             
-            vector <int> wavs;
-            int inc;
-            
-            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "spectral_data.data.main" ) )
-            {
-                wavs.push_back(atoi((row.first).c_str()));
-                
-                if ( wavs.size() == 2 )
-                    inc = wavs[1] - wavs[0];
-                else if ( wavs.size() > 2 &&
-                         wavs[wavs.size()-1] - wavs[wavs.size()-2] != inc ) {
-                    fprintf ( stderr, "Please double check the Light "
-                                      "Source data (e.g. the increment "
-                                      "should be uniform from 380nm to 780nm).\n" );
-                    exit(-1);
-                }
-                
-                if ( wavs[wavs.size()-1] < 380 ||
-                     wavs[wavs.size()-1] % 5 )
-                    continue;
-                else if ( wavs[wavs.size()-1] > 780 )
-                    break;
-
-                BOOST_FOREACH ( ptree::value_type &cell, row.second ) {
-                    _Illuminant.data.push_back(cell.second.get_value<double>());
-                    if ( wavs[wavs.size()-1] == 550 )
-                        _Illuminant.index = cell.second.get_value<double>();
-                }
-                
-//                printf("\"%i\": [ %18.13f ], \n", wavs[wavs.size()-1], _Illuminant.data[_Illuminant.data.size()-1] );
+                _Illuminants.push_back(illumDay);
             }
             
-            _Illuminant.inc = inc;
-
-        }
-        catch ( std::exception const& e )
-        {
-            std::cerr << e.what() << std::endl;
-        }
-        
-        if ( _Illuminant.data.size() != 81 ) {
-            fprintf ( stderr, "Please double check the Light "
-                              "Source data (e.g. the increment "
-                              "should be 5nm from 380nm to 780nm).\n" );
-            exit(1);
+            FORI ( paths.size() ) {
+                Illum IllumJson;
+                if ( IllumJson.loadSPD (paths[i], type) )
+                    _Illuminants.push_back(IllumJson);
+            }
         }
         
-        return 1;
+        return (_Illuminants.size() > 0);
     }
     
     //	=====================================================================
     //	Load the 190-patch training data
     //
     //	inputs:
-    //		path to the 190-patch training data
+    //		string : path to the 190-patch training data
     //
     //	outputs:
     //		_trainingSpec: If successufully parsed, _trainingSpec will be filled
     
-    void Idt::loadTrainingData ( const string &path ) {
+    void Idt::loadTrainingData ( string path ) {
         struct stat st;
         assert (!stat( path.c_str(), &st ));
         
         if ( _trainingSpec.size() > 0 ) {
             FORI (_trainingSpec.size())
-                _trainingSpec[i].data.clear();
+                _trainingSpec[i]._data.clear();
         }
         
         try
         {
-            // using libraries from boost::property_tree
             ptree pt;
             read_json ( path, pt );
             
@@ -842,16 +730,12 @@ namespace rta {
             
             BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "spectral_data.data.main" ) )
             {
-                _trainingSpec[i].wl = atoi((row.first).c_str());
+                _trainingSpec[i]._wl = atoi((row.first).c_str());
 
                 BOOST_FOREACH ( ptree::value_type &cell, row.second )
-                    _trainingSpec[i].data.push_back(cell.second.get_value<double>());
+                    _trainingSpec[i]._data.push_back(cell.second.get_value<double>());
                 
-                assert(_trainingSpec[i].data.size() == 190);
-                
-//                printf("\"%i\": [", _trainingSpec[i].wl);
-//                FORJ (190) printf("%18.13f,", _trainingSpec[i].data[j] );
-//                printf("], \n");
+                assert(_trainingSpec[i]._data.size() == 190);
                 
                 i += 1;
             }
@@ -866,12 +750,12 @@ namespace rta {
     //	Load the CIE 1931 Color Matching Functions data
     //
     //	inputs:
-    //		path to the CIE 1931 Color Matching Functions data
+    //		string : path to the CIE 1931 Color Matching Functions data
     //
     //	outputs:
     //		_cmf: If successufully parsed, _cmf will be filled
     
-    void Idt::loadCMF ( const string &path ) {
+    void Idt::loadCMF ( string path ) {
         struct stat st;
         assert (!stat( path.c_str(), &st ));
         
@@ -880,19 +764,18 @@ namespace rta {
         
         try
         {
-            // using libraries from boost::property_tree
             ptree pt;
             read_json ( path, pt );
             
             int i = 0;
             BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "spectral_data.data.main" ) )
             {
-                _cmf[i].wl = atoi((row.first).c_str());
+                _cmf[i]._wl = atoi((row.first).c_str());
                 
-                if ( _cmf[i].wl < 380 ||
-                    _cmf[i].wl % 5 )
+                if ( _cmf[i]._wl < 380 ||
+                    _cmf[i]._wl % 5 )
                      continue;
-                else if ( _cmf[i].wl > 780 )
+                else if ( _cmf[i]._wl > 780 )
                     break;
                 
                 vector < double > data;
@@ -900,11 +783,9 @@ namespace rta {
                     data.push_back ( cell.second.get_value<double>() );
                 
                 assert(data.size() == 3);
-                _cmf[i].xbar = data[0];
-                _cmf[i].ybar = data[1];
-                _cmf[i].zbar = data[2];
-                
-//                printf("\"%i\": [ %18.13f,  %18.13f,  %18.13f ], \n", _cmf[i].wl, data[0], data[1], data[2] );
+                _cmf[i]._xbar = data[0];
+                _cmf[i]._ybar = data[1];
+                _cmf[i]._zbar = data[2];
                 
                 i += 1;
             }
@@ -913,6 +794,19 @@ namespace rta {
         {
             std::cerr << e.what() << std::endl;
         }
+    }
+    
+    //	=====================================================================
+    //	Push new Illuminant to further process Spectral Power Data
+    //
+    //	inputs:
+    //      Illum: Illuminant
+    //
+    //	outputs:
+    //		N/A:   _Illuminants should have one more element
+    
+    void Idt::setIlluminants ( Illum Illuminant ) {
+        _Illuminants.push_back(Illuminant);
     }
     
     //	=====================================================================
@@ -940,29 +834,26 @@ namespace rta {
     //	outputs:
     //		Illum: the best _Illuminant
     
-    void Idt::chooseIllumSrc ( unordered_map < string, vector<double> >& illuCM,
-                               vector<double>& src) {
+    void Idt::chooseIllumSrc ( vector <double> src, int highlight ) {
         double sse = dmax;
         
-        for ( unordered_map < string, vector<double> >::iterator it = illuCM.begin(); it != illuCM.end(); ++it ) {
-            double tmp = calSSE(it->second, src);
+        FORI ( _Illuminants.size() ) {
+            vector < double > wb_tmp = calWB(_Illuminants[i], highlight);
+            double sse_tmp = calSSE(wb_tmp, src);
             
-//            printf ("%s, %f\n", it->first.c_str(), tmp);
-//            printf ("%f, %f, %f\n ", it->second[0], it->second[1], it->second[2]);
+//            printf ("%s, %f \n", _Illuminants[i]._type.c_str(), sse_tmp);
+//            printf ("%f, %f, %f\n ", wb_tmp[0], wb_tmp[1], wb_tmp[2]);
             
-            if (sse > tmp) {
-                sse = tmp;
-                _bestIllum = it->first;
-                _wb = it->second;
+            if ( sse_tmp < sse ) {
+                sse = sse_tmp;
+                _Illuminant = _Illuminants[i] ;
+                _wb = wb_tmp;
             }
         }
         
         if (_verbosity > 1)
         	printf ( "The illuminant calculated to be the best match to the camera metadata is %s\n",
-                	 _bestIllum.c_str() );
-
-        if ( loadIlluminant( _bestIllum ) )
-            scaleLSC();
+                	 _Illuminant._type.c_str() );
         
         // scale back the WB factor
         double factor = _wb[1];
@@ -971,7 +862,6 @@ namespace rta {
         
         return;
     }
-    
     
     //	=====================================================================
     //	Choose the best Light Source based on White Balance Coefficients from
@@ -985,23 +875,20 @@ namespace rta {
     //	outputs:
     //		Illum: the best _Illuminant
     
-    void Idt::chooseIllumType ( unordered_map < string, vector<double> >& illuCM,
-                                const char * type ) {
+    void Idt::chooseIllumType ( const char * type, int highlight ) {
+        assert( cmp_str(type, _Illuminants[0]._type.c_str()) == 0 );
         
-        _bestIllum = illuCM.begin()->first;
-        _wb = illuCM.begin()->second;
+        _Illuminant = _Illuminants[0];
+        _wb = calWB(_Illuminant, highlight);
 
 		if (_verbosity > 1)
             printf ( "The specified light source is: %s\n",
-                     _bestIllum.c_str() );
-        
-        if ( loadIlluminant( _bestIllum, type ) )
-            scaleLSC();
+                     _Illuminant._type.c_str() );
         
         // scale back the WB factor
         double factor = _wb[1];
         assert (factor != 0.0 );
-        FORI(_wb.size()) _wb[i] /= factor;
+        FORI (_wb.size()) _wb[i] /= factor;
         
         return;
     }
@@ -1016,17 +903,17 @@ namespace rta {
     //	outputs:
     //		vector < double >: scaled vector by its maximum value
 
-    vector<double> Idt::calCM() {
+    vector <double> Idt::calCM() {
         vector < RGBSen > rgbsen = _cameraSpst.getSensitivity();
         vector< vector < double > > rgbsenV (3, vector < double > ( rgbsen.size(), 1.0));
         
         FORI( rgbsen.size() ){
-            rgbsenV[0][i] = rgbsen[i].RSen;
-            rgbsenV[1][i] = rgbsen[i].GSen;
-            rgbsenV[2][i] = rgbsen[i].BSen;
+            rgbsenV[0][i] = rgbsen[i]._RSen;
+            rgbsenV[1][i] = rgbsen[i]._GSen;
+            rgbsenV[2][i] = rgbsen[i]._BSen;
         }
         
-        vector<double> CM = mulVector ( rgbsenV, _Illuminant.data );
+        vector<double> CM = mulVector ( rgbsenV, _Illuminant._data );
         scaleVectorD(CM);
         
         return CM;
@@ -1042,13 +929,13 @@ namespace rta {
     //	outputs:
     //		vector < vector<double> >: 2D vector (81 x 190)
     
-    vector< vector<double> > Idt::calTI() const {
-        assert(_Illuminant.data.size() == 81 &&
-               _trainingSpec[0].data.size() == 190);
+    vector < vector<double> > Idt::calTI() const {
+        assert( _Illuminant._data.size() == 81 &&
+                _trainingSpec[0]._data.size() == 190 );
 
-        vector< vector<double> > TI(_Illuminant.data.size(), vector<double>(190));
-        FORIJ(_Illuminant.data.size(), _trainingSpec[0].data.size())
-            TI[i][j] = _Illuminant.data[i] * (_trainingSpec[i].data)[j];
+        vector < vector<double> > TI(_Illuminant._data.size(), vector<double>(190));
+        FORIJ(_Illuminant._data.size(), _trainingSpec[0]._data.size())
+            TI[i][j] = _Illuminant._data[i] * (_trainingSpec[i]._data)[j];
         
         return TI;
     }
@@ -1065,7 +952,7 @@ namespace rta {
     //	outputs:
     //		vector < vector<double> >: 2D vector (3 x 3)
     
-    vector< vector<double> > Idt::calCAT ( vector<double> src,
+    vector < vector<double> > Idt::calCAT ( vector<double> src,
                                            vector<double> des ) const {
         assert(src.size() == des.size());
         
@@ -1084,30 +971,31 @@ namespace rta {
     }
     
     //	=====================================================================
-    //	Calculate White Balance based on the best Illuminant data and
+    //	Calculate White Balance based on the Illuminant data and
     //  highlight mode used in pre-processing with "libraw"
     //
     //	inputs:
+    //      Illum: Illuminant
     //      int: highlight
     //
     //	outputs:
     //		vector: wb(R, G, B)
     
-    vector < double > Idt::calWB( int highlight ) {
-        assert( _Illuminant.data.size() == 81
-               && _cameraSpst._rgbsen.size() > 0 );
+    vector < double > Idt::calWB( Illum & Illuminant, int highlight ) {
+        assert( Illuminant._data.size() == 81
+                && _cameraSpst._rgbsen.size() > 0 );
         
-        scaleLSC();
+        scaleLSC (Illuminant);
         
-        vector < vector < double > > colRGB (3, vector <double> (_Illuminant.data.size(), 1.0));
+        vector < vector < double > > colRGB (3, vector <double> (Illuminant._data.size(), 1.0));
         
-        FORI(_Illuminant.data.size()) {
-            colRGB[0][i] = _cameraSpst._rgbsen[i].RSen;
-            colRGB[1][i] = _cameraSpst._rgbsen[i].GSen;
-            colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
+        FORI (Illuminant._data.size()) {
+            colRGB[0][i] = _cameraSpst._rgbsen[i]._RSen;
+            colRGB[1][i] = _cameraSpst._rgbsen[i]._GSen;
+            colRGB[2][i] = _cameraSpst._rgbsen[i]._BSen;
         }
         
-        vector< double > wb = mulVector ( colRGB, _Illuminant.data );
+        vector< double > wb = mulVector ( colRGB, Illuminant._data );
         clearVM(colRGB);
         
         FORI(wb.size()) wb[i] = invertD(wb[i]);
@@ -1138,9 +1026,9 @@ namespace rta {
         vector< vector<double> > colXYZ(3, vector<double>(TI.size(), 1.0));
 
         FORI(TI.size()){
-            colXYZ[0][i] = _cmf[i].xbar;
-            colXYZ[1][i] = _cmf[i].ybar;
-            colXYZ[2][i] = _cmf[i].zbar;
+            colXYZ[0][i] = _cmf[i]._xbar;
+            colXYZ[1][i] = _cmf[i]._ybar;
+            colXYZ[2][i] = _cmf[i]._zbar;
         }
         
         vector< vector<double> > XYZ = transposeVec(mulVector(colXYZ,
@@ -1148,9 +1036,9 @@ namespace rta {
         
         FORI(XYZ.size())
             scaleVector(XYZ[i],
-                        1.0 / sumVector(mulVectorElement(colXYZ[1],_Illuminant.data)));
+                        1.0 / sumVector(mulVectorElement(colXYZ[1],_Illuminant._data)));
         
-        vector <double> ww = mulVector(colXYZ, _Illuminant.data);
+        vector <double> ww = mulVector(colXYZ, _Illuminant._data);
         scaleVector(ww, (1.0/ww[1]));
         vector <double> w(XYZ_w, XYZ_w+3);
 
@@ -1180,9 +1068,9 @@ namespace rta {
         vector< vector<double> > colRGB(3, vector<double>(TI.size(), 1.0));
         
         FORI(TI.size()) {
-            colRGB[0][i] = _cameraSpst._rgbsen[i].RSen;
-            colRGB[1][i] = _cameraSpst._rgbsen[i].GSen;
-            colRGB[2][i] = _cameraSpst._rgbsen[i].BSen;
+            colRGB[0][i] = _cameraSpst._rgbsen[i]._RSen;
+            colRGB[1][i] = _cameraSpst._rgbsen[i]._GSen;
+            colRGB[2][i] = _cameraSpst._rgbsen[i]._BSen;
         }
         
         vector< vector<double> > RGB = mulVector(transTI, colRGB);
@@ -1305,8 +1193,8 @@ namespace rta {
     //	outputs:
     //      const illum: Illuminant data that was loaded from the file
 
-    const Illum Idt::getIlluminant() const {
-        return _Illuminant;
+    const vector < Illum > Idt::getIlluminants() const {
+        return _Illuminants;
     }
     
     //	=====================================================================
@@ -1344,8 +1232,8 @@ namespace rta {
     //	outputs:
     //         Illum: Illuminant data that was loaded from the file
     
-    Illum Idt::getIlluminant() {
-        return _Illuminant;
+    vector < Illum > Idt::getIlluminants() {
+        return _Illuminants;
     }
     
     //	=====================================================================

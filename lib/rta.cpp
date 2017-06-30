@@ -253,13 +253,12 @@ namespace rta {
     
     Spst::Spst ( const Spst& spstobject ) {
         assert ( spstobject._brand != null_ptr
-                && spstobject._model != null_ptr );
+                 && spstobject._model != null_ptr );
         
         size_t lenb = strlen(spstobject._brand);
         assert(lenb < 64);
         
-        if(lenb > 64)
-            lenb = 64;
+        if(lenb > 64) lenb = 64;
         
         _brand = (char *) malloc(lenb+1);
         memset(_brand, 0x0, lenb);
@@ -269,8 +268,7 @@ namespace rta {
         size_t lenm = strlen(spstobject._model);
         assert(lenm < 64);
         
-        if(lenm > 64)
-            lenm = 64;
+        if(lenm > 64) lenm = 64;
         
         _model = (char *) malloc(lenm+1);
         memset(_model, 0x0, lenm);
@@ -386,6 +384,106 @@ namespace rta {
     //	Fetch the sensitivity data of the camera (reading from the file)
     //
     //	inputs:
+    //		string: path to the camera sensitivity file
+    //      const char *: camera maker  (from libraw)
+    //      const char *: camera model  (from libraw)
+    //
+    //	outputs:
+    //		int : the private data members (e.g., _rgbsen) will be filled
+    
+    int Spst::loadSpst ( string path,
+                         const char * maker,
+                         const char * model ) {
+        assert( path.length() > 0
+                && maker != null_ptr
+                && model != null_ptr );
+        
+        vector <RGBSen> rgbsen;
+        vector <double> max(3, dmin);
+        
+        try
+        {
+            ptree pt;
+            read_json ( path, pt );
+            
+            const char * cmaker = (pt.get<string>( "header.manufacturer" )).c_str();
+            if ( cmp_str(maker, cmaker) ) return 0;
+            setBrand(cmaker);
+            
+            const char * cmodel = (pt.get<string>( "header.model" )).c_str();
+            if ( cmp_str(model, cmodel) ) return 0;
+            setModel(cmodel);
+            
+            vector <int> wavs;
+            int inc;
+            
+            BOOST_FOREACH ( ptree::value_type &row, pt.get_child ( "spectral_data.data.main" ) )
+            {
+                wavs.push_back(atoi((row.first).c_str()));
+                
+                if ( wavs.size() == 2 )
+                    inc = wavs[1] - wavs[0];
+                else if ( wavs.size() > 2 &&
+                         wavs[wavs.size()-1] - wavs[wavs.size()-2] != inc ) {
+                    fprintf(stderr, "Please double check the Camera "
+                            "Sensitivity data (e.g. the increment "
+                            "should be uniform from 380nm to 780nm).\n");
+                    exit(1);
+                }
+                
+                if ( wavs[wavs.size()-1] < 380 ||
+                    wavs[wavs.size()-1] % 5 )
+                    continue;
+                else if ( wavs[wavs.size()-1] > 780 )
+                    break;
+                
+                vector < double > data;
+                BOOST_FOREACH ( ptree::value_type &cell, row.second )
+                data.push_back ( cell.second.get_value<double>() );
+                
+                // ensure there are three components
+                assert(data.size() == 3);
+                
+                RGBSen tmp_sen ( data[0], data[1], data[2] );
+                
+                if (tmp_sen._RSen > max[0]) max[0] = tmp_sen._RSen;
+                if (tmp_sen._GSen > max[1]) max[1] = tmp_sen._GSen;
+                if (tmp_sen._BSen > max[2]) max[2] = tmp_sen._BSen;
+                
+//                printf( "\"%i\": [ %18.13f,  %18.13f,  %18.13f ], \n",
+//                        wavs[wavs.size()-1],
+//                        data[0],
+//                        data[1],
+//                        data[2] );
+//                
+                rgbsen.push_back(tmp_sen);
+            }
+            setWLIncrement(inc);
+        }
+        catch ( std::exception const& e )
+        {
+            std::cerr << e.what() << std::endl;
+        }
+        
+        // it can be updated if there is a broader spectrum
+        // (e.g., 300nm-800nm) or a smaller increment values (e.g, 1nm)
+        if ( rgbsen.size() != 81 ) {
+            fprintf(stderr, "Please double check the Camera "
+                    "Sensitivity data (e.g. the increment "
+                    "should be uniform from 380nm to 780nm).\n");
+            exit(-1);
+        }
+        
+        _spstMaxCol = max_element (max.begin(), max.end()) - max.begin();
+        setSensitivity (rgbsen);
+        
+        return 1;
+    }
+    
+    //	=====================================================================
+    //	Fetch the sensitivity data of the camera (reading from the file)
+    //
+    //	inputs:
     //      N/A
     //
     //	outputs:
@@ -406,7 +504,7 @@ namespace rta {
     //		void: _brand (private member)
     
     void Spst::setBrand ( const char * brand ) {
-        assert(brand != null_ptr);
+        assert( brand != null_ptr );
         size_t len = strlen(brand);
         
         assert(len < 64);
@@ -432,7 +530,7 @@ namespace rta {
     //		void: _brand (private member)
     
     void Spst::setModel ( const char * model ) {
-        assert(model != null_ptr);
+        assert ( model != null_ptr );
         size_t len = strlen(model);
         
         assert(len < 64);

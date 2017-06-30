@@ -142,9 +142,7 @@ namespace rta {
         
         public:
             Spst();
-        
             Spst( const Spst& spstobject );
-
             Spst( char * brand,
                   char * model,
                   uint8_t increment,
@@ -152,7 +150,6 @@ namespace rta {
                                             _model(model),
                                             _increment(increment),
                                             _rgbsen(rgbsen){ };
-        
             ~Spst();
 
             void setBrand ( const char * brand );
@@ -167,7 +164,12 @@ namespace rta {
         
             char * getBrand();
             char * getModel();
+        
             int getWLIncrement();
+            int loadSpst( string path,
+                          const char * maker,
+                          const char * model );
+        
             vector < RGBSen > & getSensitivity();
 
         private:

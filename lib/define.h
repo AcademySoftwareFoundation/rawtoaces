@@ -147,8 +147,20 @@ struct dataPath {
     vector <string> paths;
 };
 
-const double e = 216.0/24389.0;
-const double k = (24389.0/27.0)/116.0;
+const double pi = 3.1416;
+// 216.0/24389.0
+const double e = 0.008856451679;
+// (24389.0/27.0)/116.0
+const double k = 7.787037037037;
+
+// Planck's constant ([J*s] Joule-seconds)
+const double bh = 6.626176 * 1e-34;
+// Boltzmann constant ([J/K] Joules per Kelvin)
+const double bk = 1.380662 * 1e-23 ;
+// Speed of light ([m/s] meters per second)
+const double bc = 2.99792458 * 1e8 ;
+
+
 const double dmin = numeric_limits<double>::min();
 const double dmax = numeric_limits<double>::max();
 

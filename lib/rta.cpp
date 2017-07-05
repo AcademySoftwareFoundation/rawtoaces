@@ -335,17 +335,31 @@ namespace rta {
         return _inc;
     }
 
+    
     //	=====================================================================
-    //	Fetch the index value of the Illuminant SPD data
+    //    Generates blackbody curve(s) of a given temperature
     //
-    //	inputs:
-    //      N/A
+    //      const int: temp / temperature
     //
     //	outputs:
-    //		const double : the index value of the Illuminant SPD data
-
-    const double Illum::getIllumIndex() const {
-        return _index;
+    //		int: If successufully processed, private data members (e.g., _data)
+    //           will be filled and return 1; Otherwise, return 0
+    
+    void Illum::calBlackBodySPD ( const int temp ) {
+        if (temp < 2500 || temp > 4000) {
+            fprintf ( stderr, "The range of Color Temperature for BlackBody "
+                              "should be from 2500 to 4000. \n");
+            exit(1);
+        }
+        
+        if (_data.size() > 0) _data.clear();
+        
+        for ( int wav = 380; wav <= 780; wav+=5 ) {
+            double lambda = wav / 1e9;
+            double c1 = 2 * bh * (std::pow(bc, 2));
+            double c2 = ( bh * bc ) / ( bk * lambda * temp);
+            _data.push_back(c1 * pi / (std::pow(lambda, 5) * (std::exp(c2) - 1)));
+        }
     }
 
 

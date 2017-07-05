@@ -135,6 +135,8 @@ namespace rta {
             const string getIllumType() const;
             const int getIllumInc() const;
             const double getIllumIndex() const;
+            void calBlackBodySPD( const int temp );
+        
 
     private:
             string _type;

@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE ( TestIllum_cctToxy ) {
 };
 
 
-BOOST_AUTO_TEST_CASE ( TestIllum_calSPD ) {
+BOOST_AUTO_TEST_CASE ( TestIllum_calDayLightSPD ) {
     Illum illumObject;
 
     illumObject.setIllumType( "d50" );

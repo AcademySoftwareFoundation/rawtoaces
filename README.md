@@ -336,7 +336,7 @@ A help message with a description of all command line options can be obtained by
 	                            (default = 0)
 	  --ss-path <path>        Specify the path to camera sensitivity data
 	                            (default = /usr/local/include/RAWTOACES/data/camera)
-	  --aces-gain float       Set ACES conversion gain factor (default = 6.0)
+	  --headroom float        Set highlight headroom factor (default = 6.0)
 	  --cameras               Show a list of supported cameras/models by LibRaw
 	  --valid-illums          Show a list of illuminants
 	  --valid-cameras         Show a list of cameras/models with available 

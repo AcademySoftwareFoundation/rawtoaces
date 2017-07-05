@@ -93,7 +93,7 @@ void usage(const char *prog)
             // Future feature ? "        3=Use custom matrix <m1r m1g m1b m2r m2g m2b m3r m3g m3b>\n"
             "                            (default = 0)\n"
             "                            (default = /usr/local/include/rawtoaces/data/camera)\n"
-            "  --aces-gain float       Set ACES conversion gain factor (default = 6.0)\n"
+            "  --headroom float        Set highlight headroom factor (default = 6.0)\n"
             "  --cameras               Show a list of supported cameras/models by LibRaw\n"
             "  --valid-illums          Show a list of illuminants\n"
             "  --valid-cameras         Show a list of cameras/models with available "
@@ -148,7 +148,7 @@ void create_key()
     keys["--cameras"] = 'T';
     keys["--wb-method"] = 'R';
     keys["--mat-method"] = 'p';
-    keys["--aces-gain"] = 'M';
+    keys["--headroom"] = 'M';
     keys["--valid-illums"] = 'z';
     keys["--valid-cameras"] = 'Q';
     keys["-c"] = 'c';

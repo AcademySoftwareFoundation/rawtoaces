@@ -96,7 +96,7 @@ void usage(const char *prog)
             "  --headroom float        Set highlight headroom factor (default = 6.0)\n"
             "  --cameras               Show a list of supported cameras/models by LibRaw\n"
             "  --valid-illums          Show a list of illuminants\n"
-            "  --valid-cameras         Show a list of cameras/models with available "
+            "  --valid-cameras         Show a list of cameras/models with available\n"
             "                          spectral sensitivity datasets\n"
             "\n"
             "Raw conversion options:\n"

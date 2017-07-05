@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE ( TestIllum_calSPD ) {
     illumObject.setIllumType( "d50" );
     illumObject.setIllumInc( 5 );
     
-    illumObject.loadDayLightSPD( 5000 );
+    illumObject.calDayLightSPD( 5000 );
     
     const double spd[107] = {   24.4978949755877,
                                 27.1891380970612,

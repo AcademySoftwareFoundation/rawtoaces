@@ -313,26 +313,26 @@ namespace rta {
     }
 
     //	=====================================================================
-    //	Fetch the increment of Illuminant SPD data
+    //	Fetch the interval/increment of Illuminant SPD data
     //
     //	inputs:
     //      N/A
     //
     //	outputs:
-    //		const int : the increment of the Illuminant SPD data
+    //		const int : the interval/increment of the Illuminant SPD data
 
     const int Illum::getIllumInc() const {
         return _inc;
     }
 
     //	=====================================================================
-    //	Fetch the index of the Illuminant SPD data
+    //	Fetch the index value of the Illuminant SPD data
     //
     //	inputs:
     //      N/A
     //
     //	outputs:
-    //		const double : the index of the Illuminant SPD data
+    //		const double : the index value of the Illuminant SPD data
 
     const double Illum::getIllumIndex() const {
         return _index;
@@ -759,29 +759,27 @@ namespace rta {
     //      string: type of light source if user specifies
     //
     //	outputs:
-    //		int: If successufully parsed, _Illuminant will be filled and return 1;
+    //		int: If successufully parsed, _bestIllum will be filled and return 1;
     //               Otherwise, return 0
 
     int Idt::loadIlluminant ( vector <string> paths, string type ) {
         assert ( paths.size() > 0 && !type.empty() );
         
         if (  type.compare("na") != 0 ) {
-            // do something to process the type
             
-            // 1). parse "type"
-            // 2). determine if it is "daylight" or "blackbody"
-            // 3). if it is one of them, use relevant functions
-            //     to calculate
-            
+            // Daylight
             if ( type[0] == 'd' ) {
                 Illum illumDay;
                 illumDay.setIllumType(type);
-                illumDay.loadDayLightSPD(atoi(type.substr(1).c_str())*100);
+                illumDay.calDayLightSPD(atoi(type.substr(1).c_str())*100);
                 _Illuminants.push_back(illumDay);
                 
                 return 1;
             }
-//            else if ( type.at(0) == 'b' )
+            // Blackbody
+            else if ( type[type.length()-1] == 'b' ){
+                printf("Blackbody funciton coming soon\n" );
+            }
             else {
                 FORI ( paths.size() ) {
                     Illum IllumJson;
@@ -794,10 +792,11 @@ namespace rta {
             }
         }
         else {
+            // Daylight - pre-calculate
             for ( int i = 4000; i <= 25000; i+=500 ) {
                 Illum illumDay;
                 illumDay.setIllumType("d"+(to_string(i/100)));
-                illumDay.loadDayLightSPD(i);
+                illumDay.calDayLightSPD(i);
             
                 _Illuminants.push_back(illumDay);
             }

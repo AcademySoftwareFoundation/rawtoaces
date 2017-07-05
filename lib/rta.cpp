@@ -367,8 +367,9 @@ namespace rta {
             _data.push_back(c1 * pi / (std::pow(lambda, 5) * (std::exp(c2) - 1)));
         }
     }
-
-
+    
+    // ------------------------------------------------------//
+                            
     Spst::Spst() {
         _brand = null_ptr;
         _model = null_ptr;
@@ -799,6 +800,8 @@ namespace rta {
     int Idt::loadIlluminant ( vector <string> paths, string type ) {
         assert ( paths.size() > 0 && !type.empty() );
         
+        if (_Illuminants.size() > 0) _Illuminants.clear();
+
         if (  type.compare("na") != 0 ) {
             
             // Daylight
@@ -811,8 +814,14 @@ namespace rta {
                 return 1;
             }
             // Blackbody
-            else if ( type[type.length()-1] == 'b' ){
-                printf("Blackbody funciton coming soon\n" );
+            else if ( type[type.length()-1] == 'k' ){
+                Illum illumBB;
+                illumBB.setIllumType(type);
+                illumBB.calBlackBodySPD(atoi(type.substr(0, type.length()-1).c_str()));
+                _Illuminants.push_back(illumBB);
+                
+                return 1;
+
             }
             else {
                 FORI ( paths.size() ) {
@@ -820,6 +829,7 @@ namespace rta {
                     if ( IllumJson.readSPD (paths[i], type) &&
                         type.compare(IllumJson._type) == 0 ) {
                             _Illuminants.push_back(IllumJson);
+                        
                             return 1;
                     }
                 }
@@ -833,6 +843,15 @@ namespace rta {
                 illumDay.calDayLightSPD(i);
             
                 _Illuminants.push_back(illumDay);
+            }
+            
+            // Blackbody - pre-calculate
+            for ( int i = 2500; i < 4000; i+=500 ) {
+                Illum illumBB;
+                illumBB.setIllumType((to_string(i)+"k"));
+                illumBB.calBlackBodySPD(i);
+                
+                _Illuminants.push_back(illumBB);
             }
             
             FORI ( paths.size() ) {

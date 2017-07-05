@@ -233,6 +233,12 @@ namespace rta {
     //           will be filled and return 1; Otherwise, return 0
     
     void Illum::calDayLightSPD ( const int cct ) {
+        if (cct < 4000 || cct > 25000) {
+            fprintf ( stderr, "The range of Correlated Color Temperature for "
+                              "Day Light should be from 4000 to 25000. \n");
+            exit(1);
+        }
+
         assert(( s_series[53].wl - s_series[0].wl) % _inc == 0 );
         
         double cctd = 1.0;

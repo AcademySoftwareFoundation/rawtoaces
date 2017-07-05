@@ -228,14 +228,14 @@ namespace rta {
         
         private:
             Spst    _cameraSpst;
-            Illum   _Illuminant;
+            Illum   _bestIllum;
             int     _verbosity;
         
             vector < CMF > _cmf;
             vector < trainSpec > _trainingSpec;
+            vector < Illum > _Illuminants;
             vector < double > _wb;
             vector < vector< double > > _idt;
-            vector < Illum > _Illuminants;
     };
     
     

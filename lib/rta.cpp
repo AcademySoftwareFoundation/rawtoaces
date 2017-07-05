@@ -172,7 +172,7 @@ namespace rta {
                 
 //                printf ( "\"%i\": [ %18.13f ], \n",
 //                         wavs[wavs.size()-1],
-//                        _Illuminant._data[_Illuminant.data.size()-1] );
+//                        _bestIllum._data[_bestIllum.data.size()-1] );
             }
             
             _inc = dis;
@@ -233,7 +233,7 @@ namespace rta {
     //		int: If successufully processed, private data members (e.g., _data)
     //           will be filled and return 1; Otherwise, return 0
     
-    void Illum::loadDayLightSPD ( const int cct ) {
+    void Illum::calDayLightSPD ( const int cct ) {
         assert(( s_series[53].wl - s_series[0].wl) % _inc == 0 );
         
         if (_data.size() > 0) _data.clear();
@@ -955,14 +955,14 @@ namespace rta {
             
             if ( sse_tmp < sse ) {
                 sse = sse_tmp;
-                _Illuminant = _Illuminants[i] ;
+                _bestIllum = _Illuminants[i] ;
                 _wb = wb_tmp;
             }
         }
         
         if (_verbosity > 1)
         	printf ( "The illuminant calculated to be the best match to the camera metadata is %s\n",
-                	 _Illuminant._type.c_str() );
+                	 _bestIllum._type.c_str() );
         
         // scale back the WB factor
         double factor = _wb[1];
@@ -987,12 +987,12 @@ namespace rta {
     void Idt::chooseIllumType ( const char * type, int highlight ) {
         assert( cmp_str(type, _Illuminants[0]._type.c_str()) == 0 );
         
-        _Illuminant = _Illuminants[0];
-        _wb = calWB(_Illuminant, highlight);
+        _bestIllum = _Illuminants[0];
+        _wb = calWB(_bestIllum, highlight);
 
 		if (_verbosity > 1)
             printf ( "The specified light source is: %s\n",
-                     _Illuminant._type.c_str() );
+                     _bestIllum._type.c_str() );
         
         // scale back the WB factor
         double factor = _wb[1];
@@ -1022,7 +1022,7 @@ namespace rta {
             rgbsenV[2][i] = rgbsen[i]._BSen;
         }
         
-        vector<double> CM = mulVector ( rgbsenV, _Illuminant._data );
+        vector<double> CM = mulVector ( rgbsenV, _bestIllum._data );
         scaleVectorD(CM);
         
         return CM;
@@ -1039,12 +1039,12 @@ namespace rta {
     //		vector < vector<double> >: 2D vector (81 x 190)
     
     vector < vector<double> > Idt::calTI() const {
-        assert( _Illuminant._data.size() == 81 &&
+        assert( _bestIllum._data.size() == 81 &&
                 _trainingSpec[0]._data.size() == 190 );
 
-        vector < vector<double> > TI(_Illuminant._data.size(), vector<double>(190));
-        FORIJ(_Illuminant._data.size(), _trainingSpec[0]._data.size())
-            TI[i][j] = _Illuminant._data[i] * (_trainingSpec[i]._data)[j];
+        vector < vector<double> > TI(_bestIllum._data.size(), vector<double>(190));
+        FORIJ(_bestIllum._data.size(), _trainingSpec[0]._data.size())
+            TI[i][j] = _bestIllum._data[i] * (_trainingSpec[i]._data)[j];
         
         return TI;
     }
@@ -1145,9 +1145,9 @@ namespace rta {
         
         FORI(XYZ.size())
             scaleVector(XYZ[i],
-                        1.0 / sumVector(mulVectorElement(colXYZ[1],_Illuminant._data)));
+                        1.0 / sumVector(mulVectorElement(colXYZ[1], _bestIllum._data)));
         
-        vector <double> ww = mulVector(colXYZ, _Illuminant._data);
+        vector <double> ww = mulVector(colXYZ, _bestIllum._data);
         scaleVector(ww, (1.0/ww[1]));
         vector <double> w(XYZ_w, XYZ_w+3);
 

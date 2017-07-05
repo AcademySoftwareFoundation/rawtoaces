@@ -303,33 +303,57 @@ inline bool isNumeric ( const char * val )
 };
 
 // Function to check if a input is a alphabetic letter
-inline bool isLetter (const char c){
-    return (( c >= 'a' && c <= 'z' ) || ( c >= 'A' && c <= 'Z' ) );
+inline bool isCTLetterDigit (const char c){
+    return ( ( c >= 'a' && c <= 'z' )
+             || ( c >= 'A' && c <= 'Z' )
+             || ( c == '-')
+             || isdigit(c) );
 };
 
 // Function to check if a string is a valid input
 // to represent color temperature(s) (e.g., D60, 3200K)
 inline bool isValidCT ( string str )
 {
+    int i = 0;
+    int length = str.length();
+    
+    if (length == 0)
+        return false;
+    
+    // other light sources
     if ( str[0] != 'd'
-         && str[str.length() - 1] != 'k' )
-        return false;
-    else if ( str[0] == 'd'
-        && str[str.length() - 1] == 'k' )
-        return false;
-    else {
-        int i;
-        
+         && str[length-1] != 'k' ) {
         while (str[i]) {
-            if (!isLetter(str[i]) && !isdigit(str[i]))
+            if (!isCTLetterDigit(str[i]))
                 return false;
-            if ( isLetter(str[i]) &&
-                 (str[i] != 'd' && str[i] != 'k') )
-                return false;
-            
             i++;
         }
     }
+    // daylight ("D" + Numeric values)
+    else if ( str[0] == 'd'
+              && str[length-1] != 'k' ) {
+        i = 1;
+        while (str[i]) {
+            if (!isdigit(str[i]))
+                return false;
+            i++;
+        }
+    }
+    // daylight (Numeric values + "K")
+    else if ( str[0] != 'd'
+              && str[length-1] == 'k' ) {
+        while (str[i] && i < str.length()-1) {
+            if (!isdigit(str[i]))
+                return false;
+            i++;
+        }
+    }
+    // It is rarely for "D" and "K" appear
+    // together as the first letter and
+    // the last letter of the string
+    else if ( str[0] == 'd'
+              && str[length-1] == 'k' )
+        return false;
     
     return true;
 };

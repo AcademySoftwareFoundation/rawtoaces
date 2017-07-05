@@ -224,7 +224,7 @@ namespace rta {
     //	=====================================================================
     //	Calculate spectral power distribution(SPD) of CIE standard daylight
     //  illuminant based on the requested Correlated Color Temperature
-    //	inputs:
+    //	input value(s):
     //
     //      const int: cct / correlated color temperature
     //
@@ -697,6 +697,10 @@ namespace rta {
         
         return;
     }
+    
+    
+    // ------------------------------------------------------//
+
     
     Idt::Idt() {
         _verbosity = 0;

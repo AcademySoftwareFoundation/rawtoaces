@@ -129,7 +129,7 @@ namespace rta {
 
             int readSPD( string path, string type );
             void calDayLightSPD( const int cct );
-            vector < double > cctToxy( const int cct ) const;
+            vector < double > cctToxy( const double cct ) const;
 
             const vector < double > getIllumData() const;
             const string getIllumType() const;

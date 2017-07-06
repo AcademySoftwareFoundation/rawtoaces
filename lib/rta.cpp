@@ -203,10 +203,9 @@ namespace rta {
     //		vector <double>: xy / chromaticity values
     //
     
-    vector <double> Illum::cctToxy ( const int cct ) const {
-        assert( cct >= 4000 && cct <= 25000 );
+    vector <double> Illum::cctToxy ( const double cctd ) const {
+//        assert( cctd >= 4000 && cct <= 25000 );
         
-        double cctd = cct * 1.4387752 / 1.438;
         vector <double> xy(2, 1.0);
         if ( cctd >= 4002.15 && cctd <= 7003.77 )
             xy[0] = ( 0.244063 + 99.11/cctd
@@ -236,11 +235,22 @@ namespace rta {
     void Illum::calDayLightSPD ( const int cct ) {
         assert(( s_series[53].wl - s_series[0].wl) % _inc == 0 );
         
+        double cctd = 1.0;
+        if (cct >= 40 && cct <= 250)
+            cctd = cct * 100 * 1.4387752 / 1.438;
+        else if (cct >= 4000 && cct <= 25000)
+            cctd = cct * 1.0;
+        else {
+            fprintf ( stderr, "The range of Correlated Color Temperature for "
+                     "Day Light should be from 4000 to 25000. \n");
+            exit(1);
+        }
+        
         if (_data.size() > 0) _data.clear();
         
         vector <int> wls0, wls1;
         vector <double> s00, s10, s20, s01, s11, s21;
-        vector <double> xy = cctToxy (cct);
+        vector <double> xy = cctToxy (cctd);
         
         double m0 = 0.0241 + 0.2562*xy[0] - 0.7341*xy[1];
         double m1 = (-1.3515 - 1.7703*xy[0] + 5.9114*xy[1]) / m0;
@@ -771,7 +781,7 @@ namespace rta {
             if ( type[0] == 'd' ) {
                 Illum illumDay;
                 illumDay.setIllumType(type);
-                illumDay.calDayLightSPD(atoi(type.substr(1).c_str())*100);
+                illumDay.calDayLightSPD(atoi(type.substr(1).c_str()));
                 _Illuminants.push_back(illumDay);
                 
                 return 1;

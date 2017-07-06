@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE ( TestIllum_cctToxy ) {
     illumObject.setIllumType( "d50" );
     illumObject.setIllumInc( 5 );
 
-    vector <double> xy = illumObject.cctToxy(5000);
+    vector <double> xy = illumObject.cctToxy(5000 * 1.4387752 / 1.438);
     
     BOOST_CHECK_CLOSE ( xy[0], 0.3456619734948, 1e-9 );
     BOOST_CHECK_CLOSE ( xy[1], 0.3586032641691, 1e-9 );
@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE ( TestIllum_calSPD ) {
     illumObject.setIllumType( "d50" );
     illumObject.setIllumInc( 5 );
     
-    illumObject.calDayLightSPD( 5000 );
+    illumObject.calDayLightSPD( 50 );
     
     const double spd[107] = {   24.4978949755877,
                                 27.1891380970612,

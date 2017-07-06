@@ -314,13 +314,10 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
                         +"cmf/cmf_1931.json" );
         
         _idt->chooseIllumSrc ( mulV, _opts.highlight );
+        _idt->setVerbosity(_opts.verbosity);
         
         if (_opts.verbosity > 1)
         	printf ( "Regressing IDT matrix coefficients ...\n" );
-        
-        _idt->setVerbosity(_opts.verbosity);
-        if (_opts.mat_method == 0 && !_opts.verbosity )
-            _idt->setVerbosity(1);
         
         if ( _idt->calIDT() )  {
             _idtm = _idt->getIDT();
@@ -359,6 +356,7 @@ int AcesRender::prepareWB ( libraw_iparams_t P )
         exit (-1);
     }
 
+    assert(_opts.illumType);
     read = fetchIlluminant( _opts.illumType );
 
     if( !read ) {

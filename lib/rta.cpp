@@ -999,9 +999,9 @@ namespace rta {
         _bestIllum = _Illuminants[0];
         _wb = calWB(_bestIllum, highlight);
 
-		if (_verbosity > 1)
-            printf ( "The specified light source is: %s\n",
-                     _bestIllum._type.c_str() );
+//		if (_verbosity > 1)
+//            printf ( "The specified light source is: %s\n",
+//                     _bestIllum._type.c_str() );
         
         // scale back the WB factor
         double factor = _wb[1];

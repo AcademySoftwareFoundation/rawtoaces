@@ -304,7 +304,6 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
     }
     else
     {
-        vector < double > mulV (M, M+3);
         
         // loading training data (190 patches)
         _idt->loadTrainingData ( static_cast < string > ( FILEPATH )
@@ -313,8 +312,13 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
         _idt->loadCMF ( static_cast < string > ( FILEPATH )
                         +"cmf/cmf_1931.json" );
         
-        _idt->chooseIllumSrc ( mulV, _opts.highlight );
         _idt->setVerbosity(_opts.verbosity);
+        if ( _opts.illumType )
+            _idt->chooseIllumType( _opts.illumType, _opts.highlight );
+        else {
+            vector < double > mulV (M, M+3);
+            _idt->chooseIllumSrc ( mulV, _opts.highlight );
+        }
         
         if (_opts.verbosity > 1)
         	printf ( "Regressing IDT matrix coefficients ...\n" );

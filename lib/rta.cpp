@@ -346,9 +346,9 @@ namespace rta {
     //           will be filled and return 1; Otherwise, return 0
     
     void Illum::calBlackBodySPD ( const int temp ) {
-        if (temp < 2500 || temp > 4000) {
+        if (temp < 1500 || temp >= 4000) {
             fprintf ( stderr, "The range of Color Temperature for BlackBody "
-                              "should be from 2500 to 4000. \n");
+                              "should be from 1500 to 3999. \n");
             exit(1);
         }
         

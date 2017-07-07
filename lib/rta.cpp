@@ -840,7 +840,7 @@ namespace rta {
             }
             
             // Blackbody - pre-calculate
-            for ( int i = 2500; i < 4000; i+=500 ) {
+            for ( int i = 1500; i < 4000; i+=500 ) {
                 Illum illumBB;
                 illumBB.setIllumType((to_string(i)+"k"));
                 illumBB.calBlackBodySPD(i);

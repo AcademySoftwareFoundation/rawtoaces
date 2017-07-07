@@ -127,18 +127,11 @@ namespace rta {
             void setIllumInc( int Inc );
             void setIllumIndex( double index );
 
-<<<<<<< HEAD
-            int readSPD( string path, string type );
-            void calDayLightSPD( const int cct );
-            vector < double > cctToxy( const double cct ) const;
-
-=======
->>>>>>> rearranges the order of methods in "Illum" class
             const vector < double > getIllumData() const;
             const string getIllumType() const;
             const int getIllumInc() const;
             const double getIllumIndex() const;
-            vector < double > cctToxy( const int cct ) const;
+            vector < double > cctToxy( const double cctd ) const;
         
             int readSPD( string path, string type );
             void calDayLightSPD( const int cct );

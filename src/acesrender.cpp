@@ -82,6 +82,63 @@ AcesRender::~AcesRender(){
     vector < string >().swap(_cameras);
 }
 
+//	=====================================================================
+//	Initialize the only one instance of the "AcesRender" class
+//
+//	inputs:
+//      N/A
+//
+//	outputs:
+//      static AcesRender &  : the referece to the only instance
+//      of "AcesRender" class
+
+AcesRender & AcesRender::getInstance(){
+    mutex mtx;
+    mtx.lock();
+    static AcesRender acesrender;
+    mtx.unlock();
+    
+    return acesrender;
+}
+
+
+//	=====================================================================
+//	Operator = overloading in "AcesRender" class
+//
+//	inputs:
+//      const AcesRender & : acesrender
+//
+//	outputs:
+//      const AcesRender & : current instance filled with data from
+//      acesrender
+
+const AcesRender & AcesRender::operator=( const AcesRender& acesrender ) {
+    if ( this != &acesrender ) {
+        if (_idt) delete _idt;
+        if (_image) delete _image;
+    
+        clearVM(_idtm);
+        clearVM(_catm);
+        clearVM(_wbv);
+        clearVM(_illuminants);
+        clearVM(_cameras);
+        
+        _idt = new Idt();
+        _idt = acesrender._idt;
+        
+        _image = new libraw_processed_image_t;
+        _image = acesrender._image;
+
+        _idtm = acesrender._idtm;
+        _catm = acesrender._catm;
+        _wbv = acesrender._wbv;
+        _illuminants = acesrender._illuminants;
+        _cameras = acesrender._cameras;
+        _opts = acesrender._opts;
+    }
+    
+    return *this;
+}
 
 //	=====================================================================
 //	Set option list

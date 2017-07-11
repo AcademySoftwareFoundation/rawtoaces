@@ -70,8 +70,7 @@ class LibRawAces : virtual public LibRaw {
 
 class AcesRender {
     public:
-        AcesRender();
-        ~AcesRender();
+        static AcesRender & getInstance();
     
         int fetchCameraSenPath( libraw_iparams_t P );
         int fetchIlluminant( const char * illumType = "na" );
@@ -99,6 +98,11 @@ class AcesRender {
         const vector < double > getWB () const;
     
     private:
+        AcesRender();
+        ~AcesRender();
+    
+        const AcesRender & operator=( const AcesRender& acesrender );
+    
         Idt * _idt;
         libraw_processed_image_t * _image;
         vector < vector < double > > _idtm;

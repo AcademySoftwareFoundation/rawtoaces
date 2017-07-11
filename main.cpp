@@ -58,10 +58,11 @@ int main(int argc, char *argv[])
 {
     if ( argc == 1 ) usage( argv[0] );
     
-    LibRawAces RawProcessor;
-    AcesRender Render;
     option opts;
     struct stat st;
+    
+    LibRawAces RawProcessor;
+    AcesRender & Render = AcesRender::getInstance();
     
 #ifndef WIN32
     void *iobuffer=0;
@@ -151,6 +152,20 @@ int main(int argc, char *argv[])
         }
     }
     
+// Load in illuminant data now
+    int read = 0;
+    if (!opts.illumType)
+        read = Render.fetchIlluminant( );
+    else
+        read = Render.fetchIlluminant( opts.illumType );
+    
+    if( !read ) {
+        fprintf( stderr, "\nError: No matching light source. "
+                         "Please find available options by "
+                         "\"rawtoaces --valid-illum\".\n");
+        exit (-1);
+    }
+    
 // Process RAW files ...
     FORI ( RAWs.size() )
     {
@@ -160,7 +175,6 @@ int main(int argc, char *argv[])
         	printf ( "Processing %s ...\n", raw );
         
         char outfn[1024];
-//        AcesRender Render;
         Render.setOptions(opts);
         
         timerstart_timeval();

@@ -352,45 +352,30 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
                          "\"--mat-method\" and/or \"--wb-method\".\n");
         exit (-1);
     }
-
-    if (!_opts.illumType)
-        read = fetchIlluminant( );
-    else
-        read = fetchIlluminant( _opts.illumType );
     
-    if( !read ) {
-        fprintf( stderr, "\nError: No matching light source. "
-                         "Please find available options by "
-                         "\"rawtoaces --valid-illum\".\n");
-        exit (-1);
+    // loading training data (190 patches)
+    _idt->loadTrainingData ( static_cast < string > ( FILEPATH )
+                             +"training/training_spectral.json" );
+    // loading color matching function
+    _idt->loadCMF ( static_cast < string > ( FILEPATH )
+                    +"cmf/cmf_1931.json" );
+    
+    _idt->setVerbosity(_opts.verbosity);
+    if ( _opts.illumType )
+        _idt->chooseIllumType( _opts.illumType, _opts.highlight );
+    else {
+        vector < double > mulV (M, M+3);
+        _idt->chooseIllumSrc ( mulV, _opts.highlight );
     }
-    else
-    {
+    
+    if (_opts.verbosity > 1)
+    	printf ( "Regressing IDT matrix coefficients ...\n" );
+    
+    if ( _idt->calIDT() )  {
+        _idtm = _idt->getIDT();
+        _wbv = _idt->getWB();
         
-        // loading training data (190 patches)
-        _idt->loadTrainingData ( static_cast < string > ( FILEPATH )
-                                 +"training/training_spectral.json" );
-        // loading color matching function
-        _idt->loadCMF ( static_cast < string > ( FILEPATH )
-                        +"cmf/cmf_1931.json" );
-        
-        _idt->setVerbosity(_opts.verbosity);
-        if ( _opts.illumType )
-            _idt->chooseIllumType( _opts.illumType, _opts.highlight );
-        else {
-            vector < double > mulV (M, M+3);
-            _idt->chooseIllumSrc ( mulV, _opts.highlight );
-        }
-        
-        if (_opts.verbosity > 1)
-        	printf ( "Regressing IDT matrix coefficients ...\n" );
-        
-        if ( _idt->calIDT() )  {
-            _idtm = _idt->getIDT();
-            _wbv = _idt->getWB();
-            
-            return 1;
-        }
+        return 1;
     }
     
     return 0;

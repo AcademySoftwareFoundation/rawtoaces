@@ -56,6 +56,7 @@
 
 AcesRender::AcesRender(){
     _idt = new Idt();
+    _image = new libraw_processed_image_t;
     
     _idtm.resize(3);
     _wbv.resize(3);
@@ -74,6 +75,7 @@ AcesRender::AcesRender(){
 
 AcesRender::~AcesRender(){
     delete _idt;
+    delete _image;
     
     vector < vector<double> >().swap(_idtm);
     vector < vector<double> >().swap(_catm);
@@ -165,6 +167,9 @@ void AcesRender::setOptions (option opts) {
 
 void AcesRender::setPixels (libraw_processed_image_t * image) {
     assert(image);
+    
+    if (_image) delete _image;
+    _image = new libraw_processed_image_t;
     _image = image;
 }
 

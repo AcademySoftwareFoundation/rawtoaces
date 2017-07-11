@@ -78,8 +78,8 @@ class AcesRender {
         int prepareIDT ( libraw_iparams_t P, float * M );
         int prepareWB ( libraw_iparams_t P );
     
-        void setOptions (option opts);
-        void setPixels (libraw_processed_image_t * image);
+        void setOptions ( option opts );
+        void setPixels ( libraw_processed_image_t * image );
         void gatherSupportedIllums ();
         void gatherSupportedCameras ();
         void applyWB  ( float * pixels, int bits, uint32_t total );

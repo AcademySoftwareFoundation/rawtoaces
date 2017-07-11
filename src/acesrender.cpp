@@ -77,8 +77,8 @@ AcesRender::~AcesRender(){
     delete _idt;
     delete _image;
     
-    vector < vector<double> >().swap(_idtm);
-    vector < vector<double> >().swap(_catm);
+    vector < vector < double > >().swap(_idtm);
+    vector < vector < double > >().swap(_catm);
     vector < double >().swap(_wbv);
     vector < string >().swap(_illuminants);
     vector < string >().swap(_cameras);
@@ -151,7 +151,7 @@ const AcesRender & AcesRender::operator=( const AcesRender& acesrender ) {
 //	outputs:
 //      N/A        : _opts will be filled
 
-void AcesRender::setOptions (option opts) {
+void AcesRender::setOptions ( option opts ) {
     _opts = opts;
 }
 
@@ -165,7 +165,7 @@ void AcesRender::setOptions (option opts) {
 //	outputs:
 //      N/A        : _image will point to the address of image
 
-void AcesRender::setPixels (libraw_processed_image_t * image) {
+void AcesRender::setPixels ( libraw_processed_image_t * image ) {
     assert(image);
     
     if (_image) delete _image;

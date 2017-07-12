@@ -63,6 +63,9 @@ using namespace rta;
 
 class LibRawAces : virtual public LibRaw {
     public:
+        LibRawAces() {};
+        ~LibRawAces() {};
+    
         void show () {
             printf ("I am here with LibRawAces.\n");
         }
@@ -105,6 +108,7 @@ class AcesRender {
     
         Idt * _idt;
         libraw_processed_image_t * _image;
+        LibRawAces * _rawProcessor;
         vector < vector < double > > _idtm;
         vector < vector < double > > _catm;
         vector < double > _wbv;

@@ -57,6 +57,7 @@
 AcesRender::AcesRender(){
     _idt = new Idt();
     _image = new libraw_processed_image_t;
+    _rawProcessor = new LibRawAces();
     
     _idtm.resize(3);
     _wbv.resize(3);
@@ -154,7 +155,6 @@ const AcesRender & AcesRender::operator=( const AcesRender& acesrender ) {
 void AcesRender::setOptions ( option opts ) {
     _opts = opts;
 }
-
 
 //	=====================================================================
 //	Set processed image buffer from libraw

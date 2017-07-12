@@ -5,6 +5,12 @@ if ( IlmBase_FOUND )
   include_directories( ${IlmBase_INCLUDE_DIRS} )
 endif()
 
+if ( libraw_FOUND )
+  add_definitions (-DHAVE_LIBRAW=1 )
+  include_directories( ${libraw_INCLUDE_DIRS} )
+  link_directories( ${libraw_LIBRARY_DIRS} ) 
+endif() 
+
 if ( Ceres_FOUND )
   add_definitions( -DHAVE_Ceres=1 )
   include_directories( ${CERES_INCLUDE_DIRS} )
@@ -27,6 +33,11 @@ target_link_libraries( ${RAWTOACESLIB}
 if ( IlmBase_FOUND )
  target_link_libraries( ${RAWTOACESLIB} ${IlmBase_LIBRARIES} )
  target_link_libraries( ${RAWTOACESLIB} ${IlmBase_LDFLAGS_OTHER} )
+endif()
+
+if ( libraw_FOUND )
+  target_link_libraries( ${RAWTOACESLIB} ${libraw_LIBRARIES} )
+  target_link_libraries( ${RAWTOACESLIB} ${libraw_LDFLAGS_OTHER} )
 endif()
 
 if ( AcesContainer_FOUND )

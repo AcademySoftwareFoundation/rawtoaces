@@ -265,6 +265,74 @@ void AcesRender::gatherSupportedCameras ( ) {
 
 
 //	=====================================================================
+//  Open the RAW file
+//
+//	inputs:
+//      const char *       : path to the raw file
+//
+//	outputs:
+//		int                : "1" means raw file successfully opened;
+//                           "0" means error when opening the file
+
+int AcesRender::openRaw ( const char * pathToRaw ) {
+#ifndef WIN32
+    void *iobuffer=0;
+    struct stat st;
+    
+    if ( _opts.use_mmap )
+    {
+        int file = open ( pathToRaw, O_RDONLY );
+        
+        if( file < 0 )
+        {
+            fprintf ( stderr, "\nError: Cannot open %s: %s\n\n",
+                      pathToRaw, strerror(errno) );
+        }
+        
+        if( fstat ( file, &st ) )
+        {
+            fprintf ( stderr, "\nError: Cannot stat %s: %s\n\n",
+                      pathToRaw, strerror(errno) );
+            close( file );
+            _opts.ret = 0;
+            
+            return 0;
+        }
+        
+        int pgsz = getpagesize();
+        _opts.msize = (( st.st_size+pgsz-1 ) / pgsz ) * pgsz;
+        iobuffer = mmap ( NULL, size_t(_opts.msize), PROT_READ, MAP_PRIVATE, file, 0 );
+        if( !iobuffer )
+        {
+            fprintf ( stderr, "\nError: Cannot mmap %s: %s\n\n",
+                      pathToRaw, strerror(errno) );
+            close( file );
+            _opts.ret = 0;
+            
+            return 0;
+        }
+        
+        close( file );
+        if (( _opts.ret = _rawProcessor->open_buffer( iobuffer,st.st_size ) != LIBRAW_SUCCESS ))
+        {
+            fprintf ( stderr, "\nError: Cannot open_buffer %s: %s\n\n",
+                      pathToRaw, libraw_strerror(_opts.ret) );
+        }
+    }
+    else
+#endif
+    {
+        if ( _opts.use_bigfile )
+            _opts.ret = _rawProcessor->open_file ( pathToRaw, 1 );
+        else
+            _opts.ret = _rawProcessor->open_file ( pathToRaw );
+    }
+    
+    return _opts.ret;
+}
+
+
+//	=====================================================================
 //	Read camera spectral sensitivity data from path
 //
 //	inputs:
@@ -819,6 +887,22 @@ const vector < string > AcesRender::getSupportedIllums ( ) const {
 
 const vector < string > AcesRender::getSupportedCameras ( ) const {
     return _cameras;
+}
+
+
+//	=====================================================================
+//	Print a list of Cameras Supported by LibRaw
+//
+//	inputs:
+//      N/A
+//
+//	outputs:
+//      N/A
+
+void AcesRender::printLibRawCameras () {
+    const char ** cl = _rawProcessor->cameraList();
+    while (*(cl+1) != NULL)
+        printf ("%s\n", *cl++);
 }
 
 //	=====================================================================

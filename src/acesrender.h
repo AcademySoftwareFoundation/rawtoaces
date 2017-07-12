@@ -75,8 +75,10 @@ class AcesRender {
     public:
         static AcesRender & getInstance();
     
-        int fetchCameraSenPath( libraw_iparams_t P );
-        int fetchIlluminant( const char * illumType = "na" );
+        int openRaw ( const char * pathToRaw );
+    
+        int fetchCameraSenPath ( libraw_iparams_t P );
+        int fetchIlluminant ( const char * illumType = "na" );
     
         int prepareIDT ( libraw_iparams_t P, float * M );
         int prepareWB ( libraw_iparams_t P );
@@ -85,6 +87,7 @@ class AcesRender {
         void setPixels ( libraw_processed_image_t * image );
         void gatherSupportedIllums ();
         void gatherSupportedCameras ();
+        void printLibRawCameras ();
         void applyWB  ( float * pixels, int bits, uint32_t total );
         void applyIDT ( float * pixels, int bits, uint32_t total );
         void applyCAT ( float * pixels, int channel, uint32_t total );

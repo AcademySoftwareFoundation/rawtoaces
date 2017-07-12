@@ -187,18 +187,20 @@ void create_key()
 
 void initialize (option &opts)
 {
-    opts.use_bigfile     = 0;
-    opts.use_timing      = 0;
-    opts.use_illum       = 0;
-    opts.use_mul         = 0;
-    opts.verbosity       = 0;
-    opts.mat_method      = matMethod0;
-    opts.wb_method       = wbMethod0;
-    opts.highlight       = 0;
-    opts.scale           = 6.0;
-    opts.highlight       = 0;
-    opts.get_illums      = 0;
-    opts.get_cameras     = 0;
+    opts.use_bigfile        = 0;
+    opts.use_timing         = 0;
+    opts.use_illum          = 0;
+    opts.use_mul            = 0;
+    opts.verbosity          = 0;
+    opts.mat_method         = matMethod0;
+    opts.wb_method          = wbMethod0;
+    opts.highlight          = 0;
+    opts.scale              = 6.0;
+    opts.highlight          = 0;
+    opts.get_illums         = 0;
+    opts.get_cameras        = 0;
+    opts.get_libraw_cameras = 0;
+    opts.ret                = 1;
 
     struct stat st;
     dataPath dp = pathsFinder ();
@@ -295,6 +297,8 @@ int configureSetting ( int argc,
             case 'd':  opts.use_timing         = 1;  break;
             case 'Q':  opts.get_cameras        = 1;  break;
             case 'z':  opts.get_illums         = 1;  break;
+            case 'T':  opts.get_libraw_cameras = 1;  break;
+            case 'M':  opts.scale = atof(argv[arg++]); break;
             case 'H':  {
                 OUT.highlight   = atoi(argv[arg++]);
                 opts.highlight  = OUT.highlight;
@@ -310,13 +314,6 @@ int configureSetting ( int argc,
                 }
                 break;
             }
-            case 'T': {
-                printf ("\nThere are %i cameras supported by LibRaw in total:\n\n",
-                         int(opts.cameraListLR.size()));
-                FORI (opts.cameraListLR.size())
-                    printf ("%s\n", opts.cameraListLR[i].c_str());
-            }
-            case 'M':  opts.scale = atof(argv[arg++]); break;
             case 'R': {
                 std::string flag = std::string(argv[arg]);
                 FORI ( flag.size() ) {

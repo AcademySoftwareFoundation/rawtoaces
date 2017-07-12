@@ -135,15 +135,14 @@ struct option {
     int highlight;
     int get_illums;
     int get_cameras;
+    int get_libraw_cameras;
     
     matMethods_t mat_method;
     wbMethods_t wb_method;
     
     char * illumType;
     float scale;
-    
     vector <string> EnvPaths;
-    vector <string> cameraListLR;
 };
 
 struct dataPath {

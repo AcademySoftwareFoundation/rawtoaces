@@ -92,16 +92,17 @@ int main(int argc, char *argv[])
     OUT.no_auto_bright    = 1;
     OUT.use_camera_wb     = 0;
     OUT.use_auto_wb       = 0;
-    
-    const char ** cl = RawProcessor.cameraList();
-    while (*(cl+1) != NULL)
-        opts.cameraListLR.push_back(string(*cl++));
 
 // Fetch conditions and conduct some pre-processing
     int arg = configureSetting (argc, argv, opts, OUT);
     Render.setOptions(opts);
     
-// gather a list of illuminants supported - for testing purpose
+// print a list of cameras supported by LibRaw
+    if (opts.get_libraw_cameras) {
+        Render.printLibRawCameras();
+    }
+    
+// gather a list of illuminants supported
     if (opts.get_illums) {
         Render.gatherSupportedIllums();
         vector < string > ilist = Render.getSupportedIllums();
@@ -109,7 +110,7 @@ int main(int argc, char *argv[])
         FORI(ilist.size()) printf("%s \n", ilist[i].c_str());
     }
     
-// gather a list of cameras supported - for testing purpose
+// gather a list of cameras supported
     if (opts.get_cameras) {
         Render.gatherSupportedCameras();
         vector < string > clist = Render.getSupportedCameras();
@@ -119,7 +120,7 @@ int main(int argc, char *argv[])
     
    if ( opts.verbosity > 2 )
        RawProcessor.set_progress_handler ( my_progress_callback,
-                                          ( void * )"Sample data passed" );
+                                           ( void * )"Sample data passed" );
 
 	// Start rawtoaces
 	if ( opts.verbosity )

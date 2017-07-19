@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
         if ( opts.use_timing )
             timerprint( "AcesRender::renderACES()", raw);
         
-        Render.outputACES (raw);
+        Render.outputACES ();
         if ( opts.use_timing )
             timerprint( "AcesRender::outputACES()", raw);
 

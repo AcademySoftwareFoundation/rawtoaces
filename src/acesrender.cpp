@@ -75,11 +75,25 @@ AcesRender::AcesRender() {
 
 
 AcesRender::~AcesRender() {
-    if (_pathToRaw) delete _pathToRaw;
+    if (_pathToRaw) {
+       delete _pathToRaw;
+        _pathToRaw = nullptr;
+    }
 
-    if (_idt) delete _idt;
-    if (_image) delete _image;
-    if (_rawProcessor) delete _rawProcessor;
+    if (_idt) {
+        delete _idt;
+        _idt = nullptr;
+    }
+    
+    if (_image) {
+       delete _image;
+        _image = nullptr;
+    }
+    
+    if (_rawProcessor) {
+        delete _rawProcessor;
+        _rawProcessor = nullptr;
+    }
     
     vector < vector < double > >().swap(_idtm);
     vector < vector < double > >().swap(_catm);

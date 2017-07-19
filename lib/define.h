@@ -123,7 +123,7 @@ using ceres::Solver;
 enum matMethods_t { matMethod0, matMethod1, matMethod2 };
 enum wbMethods_t { wbMethod0, wbMethod1, wbMethod2, wbMethod3, wbMethod4 };
 
-struct option {
+struct Option {
     int ret;
     int use_bigfile;
     int use_timing;
@@ -143,6 +143,11 @@ struct option {
     char * illumType;
     float scale;
     vector <string> EnvPaths;
+    
+#ifndef WIN32
+    void *iobuffer;
+#endif
+    
 };
 
 struct dataPath {

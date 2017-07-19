@@ -185,7 +185,7 @@ void create_key()
 //	outputs:
 //		N/A : opts should be initialized
 
-void initialize (option &opts)
+void initialize (Option &opts)
 {
     opts.use_bigfile        = 0;
     opts.use_timing         = 0;
@@ -200,7 +200,10 @@ void initialize (option &opts)
     opts.get_illums         = 0;
     opts.get_cameras        = 0;
     opts.get_libraw_cameras = 0;
-    opts.ret                = 1;
+    
+#ifndef WIN32
+    opts.iobuffer = 0;
+#endif
 
     struct stat st;
     dataPath dp = pathsFinder ();
@@ -229,7 +232,7 @@ void initialize (option &opts)
 
 int configureSetting ( int argc,
                        char * argv[],
-                       option &opts,
+                       Option &opts,
                        libraw_output_params_t &OUT )
 {
     create_key();

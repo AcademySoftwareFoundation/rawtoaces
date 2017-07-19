@@ -87,7 +87,7 @@ class AcesRender {
         int preprocessRaw ( const char * pathToRaw );
         int postprocessRaw ( );
         float * renderACES ( );
-        void outputACES ( const char * name );
+        void outputACES ( );
 
         void setSettings ( Option opts, libraw_output_params_t params );
         void setPixels ( libraw_processed_image_t * image );
@@ -116,6 +116,7 @@ class AcesRender {
     
         const AcesRender & operator=( const AcesRender& acesrender );
     
+        char * _pathToRaw;
         Idt * _idt;
         libraw_processed_image_t * _image;
         LibRawAces * _rawProcessor;

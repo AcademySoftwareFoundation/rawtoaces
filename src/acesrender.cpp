@@ -54,7 +54,7 @@
 
 #include "acesrender.h"
 
-AcesRender::AcesRender(){
+AcesRender::AcesRender() {
     _idt = new Idt();
     _image = new libraw_processed_image_t();
     _rawProcessor = new LibRawAces();
@@ -74,10 +74,12 @@ AcesRender::AcesRender(){
 }
 
 
-AcesRender::~AcesRender(){
-    delete _idt;
-    delete _image;
-    delete _rawProcessor;
+AcesRender::~AcesRender() {
+    if (_pathToRaw) delete _pathToRaw;
+
+    if (_idt) delete _idt;
+    if (_image) delete _image;
+    if (_rawProcessor) delete _rawProcessor;
     
     vector < vector < double > >().swap(_idtm);
     vector < vector < double > >().swap(_catm);
@@ -169,7 +171,7 @@ void AcesRender::setSettings ( Option opts, libraw_output_params_t params ) {
     OUT.green_matching = params.green_matching;
     OUT.adjust_maximum_thr   = params.adjust_maximum_thr;
     OUT.threshold   = params.threshold;
-    OUT.bright      = params.bright;
+//    OUT.bright      = params.bright;
     OUT.bad_pixels  = params.bad_pixels;
     OUT.dark_frame  = params.dark_frame;
     OUT.user_black  = params.user_black ;
@@ -182,6 +184,9 @@ void AcesRender::setSettings ( Option opts, libraw_output_params_t params ) {
     OUT.use_fuji_rotate     = params.use_fuji_rotate;
     OUT.no_auto_bright      = params.no_auto_bright;
     OUT.highlight   = params.highlight;
+//    OUT.aber[0] = params.aber[0];
+//    OUT.aber[0] = params.aber[2];
+
     OUT.cropbox[0]  = params.cropbox[0];
     OUT.cropbox[1]  = params.cropbox[1];
     OUT.cropbox[2]  = params.cropbox[2];
@@ -189,7 +194,6 @@ void AcesRender::setSettings ( Option opts, libraw_output_params_t params ) {
 
     FORI(4) {
 //        OUT.cropbox[i]  = params.cropbox[i];
-        OUT.aber[i] = params.aber[i];
         OUT.greybox[i] = params.greybox[i];
         OUT.user_mul[i] = params.user_mul[i];
     }
@@ -625,6 +629,12 @@ int AcesRender::dcraw ( ) {
 
 int AcesRender::preprocessRaw ( const char * pathToRaw ) {
     assert ( pathToRaw != nullptr );
+    
+    size_t len = strlen(pathToRaw);
+    _pathToRaw = (char *) malloc(len+1);
+    memset(_pathToRaw, 0x0, len);
+    memcpy(_pathToRaw, pathToRaw, len);
+    _pathToRaw[len] = '\0';
 
    // if ( _opts.verbosity > 2 )
    //     _rawProcessor->set_progress_handler ( my_progress_callback,
@@ -838,24 +848,24 @@ float * AcesRender::renderACES ( ) {
 }
 
 
-void AcesRender::outputACES ( const char * raw ) {
+void AcesRender::outputACES ( ) {
 #ifdef C
 #undef C
 #endif
 
 #define C   _rawProcessor->imgdata.color
 
-    assert(raw != nullptr);
+    assert(_pathToRaw != nullptr);
 
     char * cp;
-    if (( cp = strrchr ( raw, '.' ))) *cp = 0;
+    if (( cp = strrchr ( _pathToRaw, '.' ))) *cp = 0;
     
     char outfn[1024];
     
     snprintf( outfn,
              sizeof(outfn),
              "%s%s",
-             raw,
+             _pathToRaw,
              "_aces.exr" );
     
     if ( _opts.verbosity > 1 ) {
@@ -879,7 +889,7 @@ void AcesRender::outputACES ( const char * raw ) {
     
     if ( _opts.highlight > 0 ) {
         float ratio = ( *(std::max_element ( C.pre_mul, C.pre_mul+3)) /
-                       *(std::min_element ( C.pre_mul, C.pre_mul+3)) );
+                        *(std::min_element ( C.pre_mul, C.pre_mul+3)) );
         acesWrite ( outfn, aces, ratio );
     }
     else

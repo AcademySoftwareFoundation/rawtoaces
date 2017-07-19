@@ -75,15 +75,21 @@ class AcesRender {
     public:
         static AcesRender & getInstance();
     
-        int openRaw ( const char * pathToRaw );
+        int openRawPath ( const char * pathToRaw );
+        int unpack ( const char * pathToRaw );
+        int dcraw ( );
     
         int fetchCameraSenPath ( libraw_iparams_t P );
         int fetchIlluminant ( const char * illumType = "na" );
     
         int prepareIDT ( libraw_iparams_t P, float * M );
         int prepareWB ( libraw_iparams_t P );
-    
-        void setOptions ( option opts );
+        int preprocessRaw ( const char * pathToRaw );
+        int postprocessRaw ( );
+        float * renderACES ( );
+        void outputACES ( const char * name );
+
+        void setSettings ( Option opts, libraw_output_params_t params );
         void setPixels ( libraw_processed_image_t * image );
         void gatherSupportedIllums ();
         void gatherSupportedCameras ();
@@ -102,6 +108,7 @@ class AcesRender {
         const vector < vector < double > > getIDTMatrix () const;
         const vector < vector < double > > getCATMatrix () const;
         const vector < double > getWB () const;
+        const libraw_processed_image_t * getImageBuffer() const;
     
     private:
         AcesRender();
@@ -112,11 +119,12 @@ class AcesRender {
         Idt * _idt;
         libraw_processed_image_t * _image;
         LibRawAces * _rawProcessor;
+    
+        Option _opts;
         vector < vector < double > > _idtm;
         vector < vector < double > > _catm;
         vector < double > _wbv;
         vector < string > _illuminants;
         vector < string > _cameras;
-        option _opts;
 };
 #endif

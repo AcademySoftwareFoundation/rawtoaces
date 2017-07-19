@@ -225,23 +225,14 @@ if ( APPLE OR UNIX )
 endif()
 
 ### to build rawtoaces ###
-if ( libraw_FOUND )
-  add_definitions (-DHAVE_LIBRAW=1 )
-  include_directories( ${libraw_INCLUDE_DIRS} )
-  link_directories( ${libraw_LIBRARY_DIRS} ) 
-endif() 
-
+link_directories( ${AcesContainer_LIBRARY_DIRS} )
 include_directories( ${CERES_INCLUDE_DIRS} )
+
 add_executable( rawtoaces
     main.cpp
 )
 
-target_link_libraries(rawtoaces ${RAWTOACESLIB})
-
-if ( libraw_FOUND )
-  target_link_libraries( rawtoaces ${libraw_LIBRARIES} )
-  target_link_libraries( rawtoaces ${libraw_LDFLAGS_OTHER} )
-endif()
+target_link_libraries(rawtoaces ${RAWTOACESLIB} ${libraw_LIBRARIES} ${libraw_LDFLAGS_OTHER} )
 
 install( TARGETS rawtoaces DESTINATION bin )
 
@@ -253,6 +244,5 @@ configure_file(
 
 add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
-
 
 

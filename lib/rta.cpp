@@ -335,6 +335,19 @@ namespace rta {
         return _inc;
     }
 
+       //   =====================================================================
+    //  Fetch the index value of Illuminant SPD data at 550nm
+    //
+    //  inputs:
+    //      N/A
+    //
+    //  outputs:
+    //      const int : the index value of the Illuminant SPD data at 550nm
+
+    const double Illum::getIllumIndex() const {
+        return _index;
+    }
+
     
     //	=====================================================================
     //    Generates blackbody curve(s) of a given temperature

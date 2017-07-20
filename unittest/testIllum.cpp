@@ -62,18 +62,159 @@
 using namespace std;
 using namespace rta;
 
+
+BOOST_AUTO_TEST_CASE ( TestIllum_DefaultConstructor ) {
+    Illum * illumObject = new Illum();
+    
+    BOOST_CHECK_EQUAL ( illumObject->getIllumInc(), 5 );
+};
+
+BOOST_AUTO_TEST_CASE ( TestIllum_DefaultConstructor2 ) {
+    Illum * illumObject = new Illum("d50");
+
+    BOOST_CHECK_EQUAL ( illumObject->getIllumType(), "d50" );
+    BOOST_CHECK_EQUAL ( illumObject->getIllumInc(),  5 );
+};
+
+BOOST_AUTO_TEST_CASE ( TestIllum_IllumType ) {
+    Illum * illumObject = new Illum("d50");
+    
+    illumObject->setIllumType( "3200k" );
+    BOOST_CHECK_EQUAL( std::strcmp( illumObject->getIllumType().c_str(), "3200k" ), 0 );
+};
+
+BOOST_AUTO_TEST_CASE ( TestIllum_IllumInc ) {
+    Illum * illumObject = new Illum();
+    
+    illumObject->setIllumInc( 10 );
+    BOOST_CHECK_EQUAL ( illumObject->getIllumInc(), 10 );
+};
+
+BOOST_AUTO_TEST_CASE ( TestIllum_IllumIndex ) {
+    Illum * illumObject = new Illum();
+    
+    illumObject->setIllumIndex( 10.99999 );
+
+    BOOST_CHECK_CLOSE ( illumObject->getIllumIndex(), 10.99999, 1e-5 );
+};
+
 BOOST_AUTO_TEST_CASE ( TestIllum_cctToxy ) {
     Illum illumObject;
-
+    
     illumObject.setIllumType( "d50" );
-    illumObject.setIllumInc( 5 );
-
+    
     vector <double> xy = illumObject.cctToxy(5000 * 1.4387752 / 1.438);
     
     BOOST_CHECK_CLOSE ( xy[0], 0.3456619734948, 1e-9 );
     BOOST_CHECK_CLOSE ( xy[1], 0.3586032641691, 1e-9 );
 };
 
+BOOST_AUTO_TEST_CASE ( TestIllum_readSPD ) {
+    Illum illumObject;
+    
+    string illumPath;
+    struct stat st;
+    dataPath dp = pathsFinder ();
+    FORI ( dp.paths.size() ) {
+        illumPath = dp.paths[i]+"/illuminant/iso7589_stutung_380_780_5.json";
+        if ( !stat( illumPath.c_str(), &st ) )
+            break;
+    }
+    
+    if (!illumPath.empty())
+        illumObject.readSPD ( illumPath, "iso7589" );
+    
+    double iso7589[81] = {
+        0.0400000000000,
+        0.0500000000000,
+        0.0600000000000,
+        0.0700000000000,
+        0.0800000000000,
+        0.0900000000000,
+        0.1000000000000,
+        0.1100000000000,
+        0.1200000000000,
+        0.1325000000000,
+        0.1450000000000,
+        0.1575000000000,
+        0.1700000000000,
+        0.1800000000000,
+        0.1900000000000,
+        0.2025000000000,
+        0.2150000000000,
+        0.2275000000000,
+        0.2400000000000,
+        0.2525000000000,
+        0.2650000000000,
+        0.2800000000000,
+        0.2950000000000,
+        0.3075000000000,
+        0.3200000000000,
+        0.3350000000000,
+        0.3500000000000,
+        0.3650000000000,
+        0.3800000000000,
+        0.3925000000000,
+        0.4050000000000,
+        0.4225000000000,
+        0.4400000000000,
+        0.4550000000000,
+        0.4700000000000,
+        0.4850000000000,
+        0.5000000000000,
+        0.5125000000000,
+        0.5250000000000,
+        0.5400000000000,
+        0.5550000000000,
+        0.5675000000000,
+        0.5800000000000,
+        0.5950000000000,
+        0.6100000000000,
+        0.6225000000000,
+        0.6350000000000,
+        0.6475000000000,
+        0.6600000000000,
+        0.6750000000000,
+        0.6900000000000,
+        0.7025000000000,
+        0.7150000000000,
+        0.7275000000000,
+        0.7400000000000,
+        0.7525000000000,
+        0.7650000000000,
+        0.7750000000000, 
+        0.7850000000000, 
+        0.7975000000000, 
+        0.8100000000000, 
+        0.8225000000000, 
+        0.8350000000000, 
+        0.8475000000000, 
+        0.8600000000000, 
+        0.8700000000000, 
+        0.8800000000000, 
+        0.8900000000000, 
+        0.9000000000000, 
+        0.9100000000000, 
+        0.9200000000000, 
+        0.9275000000000, 
+        0.9350000000000, 
+        0.9450000000000, 
+        0.9550000000000, 
+        0.9650000000000, 
+        0.9750000000000, 
+        0.9800000000000, 
+        0.9850000000000, 
+        0.9925000000000, 
+        1.0000000000000
+    };
+    
+    BOOST_CHECK_EQUAL( illumObject.getIllumType(), "iso7589" );
+    BOOST_CHECK_EQUAL( illumObject.getIllumInc(), 5 );
+
+    vector <double> illumTestData = illumObject.getIllumData();
+    BOOST_CHECK_EQUAL( int( illumTestData.size() ), 81 );
+    FORI (81) BOOST_CHECK_CLOSE ( illumTestData[i], iso7589[i], 1e-5);
+};
 
 BOOST_AUTO_TEST_CASE ( TestIllum_calDayLightSPD ) {
     Illum illumObject;

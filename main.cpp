@@ -52,13 +52,13 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
+#include "src/acesrender.h"
 #include "src/usage.h"
 
 int main(int argc, char *argv[])
 {
     if ( argc == 1 ) usage( argv[0] );
     
-    struct Option opts;
     struct stat st;
     libraw_output_params_t OUT;
     
@@ -71,35 +71,10 @@ int main(int argc, char *argv[])
 #endif
 
 // Fetch conditions and conduct some pre-processing
-    int arg = configureSetting (argc, argv, opts, OUT);
-    Render.setSettings(opts, OUT);
-    
-// print a list of cameras supported by LibRaw
-    if (opts.get_libraw_cameras) {
-        Render.printLibRawCameras();
-    }
-    
-// gather a list of illuminants supported
-    if (opts.get_illums) {
-        Render.gatherSupportedIllums();
-        vector < string > ilist = Render.getSupportedIllums();
-        printf("\nThe following illuminants are available:\n\n");
-        FORI(ilist.size()) printf("%s \n", ilist[i].c_str());
-    }
-    
-// gather a list of cameras supported
-    if (opts.get_cameras) {
-        Render.gatherSupportedCameras();
-        vector < string > clist = Render.getSupportedCameras();
-        printf("\nThe following cameras' sensitivity data is available:\n\n");
-        FORI(clist.size()) printf("%s \n", clist[i].c_str());
-    }
-    
-//   if ( opts.verbosity > 2 )
-//       RawProcessor.set_progress_handler ( my_progress_callback,
-//                                           ( void * )"Sample data passed" );
-    
-    // Gather all the raw images from arg list
+    Render.initialize ( pathsFinder() );
+    int arg = Render.configureSettings (argc, argv);
+
+// Gather all the raw images from arg list
     vector < string > RAWs;
     for ( ; arg < argc; arg++ ) {
         if( stat( argv[arg], &st) != 0 ) {
@@ -121,8 +96,9 @@ int main(int argc, char *argv[])
         }
     }
     
-// Load in illuminant data now
+// Load illuminant dataset(s)
     int read = 0;
+    Option opts = Render.getSettings();
     if (!opts.illumType)
         read = Render.fetchIlluminant( );
     else
@@ -143,21 +119,7 @@ int main(int argc, char *argv[])
         
         Render.preprocessRaw (raw);
 
-//// dcraw_processing
-////          Start the dcraw_process()
-            timerstart_timeval();
-//            if ( LIBRAW_SUCCESS != ( opts.ret = RawProcessor.dcraw_process() ) ) {
-//                
-//                fprintf ( stderr, "Error: Cannot do postpocessing on %s: %s\n\n",
-//                          raw,libraw_strerror(opts.ret) );
-//                if ( LIBRAW_FATAL_ERROR( opts.ret ) )
-//                    continue;
-//            }
-        
-//          Use the final wb factors to otbain IDT matrix
-            // 0
-//            if ( opts.mat_method == matMethod0 )
-//                Render.prepareIDT ( P1, C.pre_mul );
+        timerstart_timeval();
         
         Render.postprocessRaw ();
 

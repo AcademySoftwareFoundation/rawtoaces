@@ -269,7 +269,7 @@ const AcesRender & AcesRender::operator=( const AcesRender& acesrender ) {
         memcpy(_idt, acesrender._idt, sizeof(Idt));
         
         if (_rawProcessor) delete _rawProcessor;
-        _rawProcessor = (LibRawAces *) malloc(sizeof(_rawProcessor));
+        _rawProcessor = (LibRawAces *) malloc(sizeof(LibRawAces));
         memcpy((void*)_rawProcessor, (void*)acesrender._rawProcessor, sizeof(LibRawAces));
         
         if (_image) delete _image;

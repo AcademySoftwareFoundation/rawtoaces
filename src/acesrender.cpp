@@ -329,6 +329,22 @@ void AcesRender::initialize ( dataPath dp ) {
     _opts.use_mmap=0;
 #endif
     
+#ifdef OUT
+#undef OUT
+#endif
+    
+#define OUT _rawProcessor->imgdata.params
+    
+    //  General set-up for _rawProcessor->imgdata.params
+    OUT.output_color      = 5;
+    OUT.output_bps        = 16;
+    OUT.highlight         = 0;
+    OUT.use_camera_matrix = 0;
+    OUT.gamm[0]           = 1.0;
+    OUT.gamm[1]           = 1.0;
+    OUT.no_auto_bright    = 1;
+    OUT.use_camera_wb     = 0;
+    OUT.use_auto_wb       = 0;
 }
 
 //	=====================================================================
@@ -1000,17 +1016,6 @@ int AcesRender::postprocessRaw ( ) {
 #define OUT _rawProcessor->imgdata.params
 #define P  _rawProcessor->imgdata.idata
 #define C   _rawProcessor->imgdata.color
-    
-//  General set-up
-    OUT.output_color      = 5;
-    OUT.output_bps        = 16;
-    OUT.highlight         = 0;
-    OUT.use_camera_matrix = 0;
-    OUT.gamm[0]           = 1.0;
-    OUT.gamm[1]           = 1.0;
-    OUT.no_auto_bright    = 1;
-    OUT.use_camera_wb     = 0;
-    OUT.use_auto_wb       = 0;
 
     if (_opts.verbosity > 1)
         printf ( "The camera has been identified as a %s %s ...\n", P.make, P.model );

@@ -54,6 +54,129 @@
 
 #include "acesrender.h"
 
+//  =====================================================================
+//  Prepare the matching between string flags and single character flag
+//
+//  inputs:
+//      N/A
+//
+//  outputs:
+//      N/A : keys should be prepared and loaded
+
+void create_key ( unordered_map < string, char >& keys ) {
+    keys["--help"] = 'I';
+    keys["--version"] = 'V';
+    keys["--cameras"] = 'T';
+    keys["--wb-method"] = 'R';
+    keys["--mat-method"] = 'p';
+    keys["--headroom"] = 'M';
+    keys["--valid-illums"] = 'z';
+    keys["--valid-cameras"] = 'Q';
+    keys["-c"] = 'c';
+    keys["-C"] = 'C';
+    keys["-P"] = 'P';
+    keys["-K"] = 'K';
+    keys["-k"] = 'k';
+    keys["-S"] = 'S';
+    keys["-n"] = 'n';
+    keys["-H"] = 'H';
+    keys["-t"] = 't';
+    keys["-j"] = 'j';
+    keys["-W"] = 'W';
+    keys["-b"] = 'b';
+    keys["-q"] = 'q';
+    keys["-h"] = 'h';
+    keys["-f"] = 'f';
+    keys["-m"] = 'm';
+    keys["-s"] = 's';
+    keys["-G"] = 'G';
+    keys["-B"] = 'B';
+    keys["-v"] = 'v';
+    keys["-F"] = 'F';
+    keys["-d"] = 'd';
+    keys["-E"] = 'E';
+    keys["-I"] = 'I';
+    keys["-V"] = 'V';
+};
+
+
+//  =====================================================================
+//  Print usage / help message
+//
+//  inputs:
+//      const char * : name of the program (i.e., rawtoaces)
+//
+//  outputs:
+//      N/A
+
+void usage ( const char *prog ) {
+    printf ( "%s - convert RAW digital camera files to ACES\n", prog);
+    printf ( "\n");
+    printf ( "Usage:\n");
+    printf ( "  %s file ...\n", prog );
+    printf ( "  %s [options] file\n", prog );
+    printf ( "  %s --help\n", prog );
+    printf ( "  %s --version\n", prog );
+    printf ( "\n");
+    printf ("IDT options:\n"
+            "  --help                  Show this screen\n"
+            "  --version               Show version\n"
+            "  --wb-method [0-4]       White balance factor calculation method\n"
+            "                            0=white balance using file metadata \n"
+            "                            1=white balance using user specified illuminant [str] \n"
+            "                            2=Average the whole image for white balance\n"
+            "                            3=Average a grey box for white balance <x y w h>\n"
+            "                            4=Use custom white balance  <r g b g>\n"
+            "                            (default = 0)\n"
+            "  --mat-method [0-2]      IDT matrix calculation method\n"
+            "                            0=Calculate matrix from camera spec sens\n"
+            "                            1=Use file metadata color matrix\n"
+            "                            2=Use adobe coeffs included in libraw\n"
+            // Future feature ? "        3=Use custom matrix <m1r m1g m1b m2r m2g m2b m3r m3g m3b>\n"
+            "                            (default = 0)\n"
+            "                            (default = /usr/local/include/rawtoaces/data/camera)\n"
+            "  --headroom float        Set highlight headroom factor (default = 6.0)\n"
+            "  --cameras               Show a list of supported cameras/models by LibRaw\n"
+            "  --valid-illums          Show a list of illuminants\n"
+            "  --valid-cameras         Show a list of cameras/models with available\n"
+            "                          spectral sensitivity datasets\n"
+            "\n"
+            "Raw conversion options:\n"
+            "  -c float                Set adjust maximum threshold (default = 0.75)\n"
+            "  -C <r b>                Correct chromatic aberration\n"
+            "  -P <file>               Fix the dead pixels listed in this file\n"
+            "  -K <file>               Subtract dark frame (16-bit raw PGM)\n"
+            "  -k <num>                Set the darkness level\n"
+            "  -S <num>                Set the saturation level\n"
+            "  -n <num>                Set threshold for wavelet denoising\n"
+            "  -H [0-9]                Highlight mode (0=clip, 1=unclip, 2=blend, 3+=rebuild) (default = 0)\n"
+            "  -t [0-7]                Flip image (0=none, 3=180, 5=90CCW, 6=90CW)\n"
+            "  -j                      Don't stretch or rotate raw pixels\n"
+            "  -W                      Don't automatically brighten the image\n"
+            "  -b <num>                Adjust brightness (default = 1.0)\n"
+            "  -q [0-3]                Set the interpolation quality\n"
+            "  -h                      Half-size color image (twice as fast as \"-q 0\")\n"
+            "  -f                      Interpolate RGGB as four colors\n"
+            "  -m <num>                Apply a 3x3 median filter to R-G and B-G\n"
+            "  -s [0..N-1]             Select one raw image from input file\n"
+            "  -G                      Use green_matching() filter\n"
+            "  -B <x y w h>            Use cropbox\n"
+            "\n"
+            "Benchmarking options:\n"
+            "  -v                      Verbose: print progress messages (repeated -v will add verbosity)\n"
+            "  -F                      Use FILE I/O instead of streambuf API\n"
+            "  -d                      Detailed timing report\n"
+#ifndef WIN32
+            "  -E                      Use mmap()-ed buffer instead of plain FILE I/O\n"
+#endif
+            );
+    exit(-1);
+};
+
+
+//  =====================================================================
+
+
 AcesRender::AcesRender() {
     _idt = new Idt();
     _image = new libraw_processed_image_t();
@@ -72,7 +195,6 @@ AcesRender::AcesRender() {
         FORJ(3) _catm[i][j] = neutral3[i][j];
     }
 }
-
 
 AcesRender::~AcesRender() {
     if (_pathToRaw) {
@@ -162,57 +284,222 @@ const AcesRender & AcesRender::operator=( const AcesRender& acesrender ) {
     return *this;
 }
 
-//	=====================================================================
-//	Set option list
-//
-//	inputs:
-//      option     : a list of initial options specified by users
-//
-//	outputs:
-//      N/A        : _opts will be filled
 
-void AcesRender::setSettings ( Option opts, libraw_output_params_t params ) {
-    _opts = opts;
-//    *(&(_rawProcessor->imgdata.params)) = OUT;
-//    memcpy(&(_rawProcessor->imgdata.params), &OUT, sizeof(libraw_output_params_t));
+void AcesRender::initialize ( dataPath dp ) {
+    _opts.use_bigfile        = 0;
+    _opts.use_timing         = 0;
+    _opts.use_illum          = 0;
+    _opts.use_mul            = 0;
+    _opts.verbosity          = 0;
+    _opts.mat_method         = matMethod0;
+    _opts.wb_method          = wbMethod0;
+    _opts.highlight          = 0;
+    _opts.scale              = 6.0;
+    _opts.highlight          = 0;
+    _opts.get_illums         = 0;
+    _opts.get_cameras        = 0;
+    _opts.get_libraw_cameras = 0;
     
+#ifndef WIN32
+    _opts.iobuffer = 0;
+#endif
+    
+    struct stat st;
+    FORI ( dp.paths.size() ) {
+        if ( !stat( (dp.paths)[i].c_str(), &st ) )
+            _opts.envPaths.push_back((dp.paths)[i]);
+    }
+    
+#ifndef WIN32
+    _opts.msize = 0;
+    _opts.use_mmap=0;
+#endif
+    
+}
+
+
+int AcesRender::configureSettings ( int argc, char * argv[] )
+{
 #ifdef OUT
 #undef OUT
 #endif
     
 #define OUT _rawProcessor->imgdata.params
+        
+    char *cp, *sp;
+    int arg;
+    argv[argc] = (char *)"";
     
-    OUT.green_matching = params.green_matching;
-    OUT.adjust_maximum_thr   = params.adjust_maximum_thr;
-    OUT.threshold   = params.threshold;
-//    OUT.bright      = params.bright;
-    OUT.bad_pixels  = params.bad_pixels;
-    OUT.dark_frame  = params.dark_frame;
-    OUT.user_black  = params.user_black ;
-    OUT.user_sat    = params.user_sat;
-    OUT.user_flip   = params.user_flip;
-    OUT.user_qual   = params.user_qual;
-    OUT.med_passes  = params.med_passes;
-    OUT.half_size   = params.half_size;
-    OUT.four_color_rgb      = params.four_color_rgb;
-    OUT.use_fuji_rotate     = params.use_fuji_rotate;
-    OUT.no_auto_bright      = params.no_auto_bright;
-    OUT.highlight   = params.highlight;
-//    OUT.aber[0] = params.aber[0];
-//    OUT.aber[0] = params.aber[2];
+    for ( arg = 1; arg < argc; )
+    {
+        string key(argv[arg]);
+        
+        if ( key[0] != '-' ) {
+            break;
+        }
+        
+        arg++;
 
-    OUT.cropbox[0]  = params.cropbox[0];
-    OUT.cropbox[1]  = params.cropbox[1];
-    OUT.cropbox[2]  = params.cropbox[2];
-//    OUT.cropbox[3]  = params.cropbox[3];
+        static unordered_map < string, char > keys;
+        create_key ( keys );
 
-    FORI(4) {
-//        OUT.cropbox[i]  = params.cropbox[i];
-        OUT.greybox[i] = params.greybox[i];
-        OUT.user_mul[i] = params.user_mul[i];
+        char opt = keys[key];
+        
+        if (!opt) {
+            fprintf (stderr,"\nNon-recognizable flag - \"%s\"\n", key.c_str());
+            exit(-1);
+        }
+        
+        if (( cp = strchr ( sp = (char*)"HcnbksStqmBC", opt )) != 0 ) {
+            for (int i=0; i < "111111111142"[cp-sp]-'0'; i++) {
+                if (!isdigit(argv[arg+i][0]))
+                {
+                    fprintf ( stderr, "\nError: Non-numeric argument to "
+                                      "\"%s\"\n", key.c_str() );
+                    exit(-1);
+                }
+            }
+        }
+        
+        switch ( opt )
+        {
+            case 'I':  usage( argv[0] );  break;
+            case 'V':  printf ( "%s\n", VERSION );  break;
+            case 'v':  _opts.verbosity++;  break;
+            case 'G':  OUT.green_matching = 1; break;
+            case 'c':  OUT.adjust_maximum_thr   = (float)atof(argv[arg++]);  break;
+            case 'n':  OUT.threshold   = (float)atof(argv[arg++]);  break;
+            case 'b':  OUT.bright      = (float)atof(argv[arg++]);  break;
+            case 'P':  OUT.bad_pixels  = argv[arg++];        break;
+            case 'K':  OUT.dark_frame  = argv[arg++];        break;
+            case 'C': {
+                OUT.aber[0] = 1.0 / atof(argv[arg++]);
+                OUT.aber[2] = 1.0 / atof(argv[arg++]);
+                break;
+            }
+            case 'k':  OUT.user_black  = atoi(argv[arg++]);  break;
+            case 'S':  OUT.user_sat    = atoi(argv[arg++]);  break;
+            case 't':  OUT.user_flip   = atoi(argv[arg++]);  break;
+            case 'q':  OUT.user_qual   = atoi(argv[arg++]);  break;
+            case 'm':  OUT.med_passes  = atoi(argv[arg++]);  break;
+            case 'h':  OUT.half_size         = 1;
+                // no break:  "-h" implies "-f"
+            case 'f':  OUT.four_color_rgb      = 1;            break;
+            case 'B':  FORI(4) OUT.cropbox[i]  = atoi(argv[arg++]); break;
+            case 'j':  OUT.use_fuji_rotate     = 0;  break;
+            case 'W':  OUT.no_auto_bright      = 1;  break;
+            case 'F':  _opts.use_bigfile        = 1;  break;
+            case 'd':  _opts.use_timing         = 1;  break;
+            case 'Q':  _opts.get_cameras        = 1;  {
+                // gather a list of cameras supported
+                gatherSupportedCameras();
+                vector < string > clist = getSupportedCameras();
+                printf("\nThe following cameras' sensitivity data is available:\n\n");
+                FORI(clist.size()) printf("%s \n", clist[i].c_str());
+
+                break;
+            }
+            case 'z':  _opts.get_illums         = 1;  {
+                // gather a list of illuminants supported
+                gatherSupportedIllums();
+                vector < string > ilist = getSupportedIllums();
+                printf("\nThe following illuminants are available:\n\n");
+                FORI(ilist.size()) printf("%s \n", ilist[i].c_str());
+
+                break;
+            }
+            case 'T':  _opts.get_libraw_cameras = 1;  {
+                // print a list of cameras supported by LibRaw
+                printLibRawCameras();
+                break;
+            }
+            case 'M':  _opts.scale = atof(argv[arg++]); break;
+            case 'H':  {
+                OUT.highlight   = atoi(argv[arg++]);
+                _opts.highlight  = OUT.highlight;
+                break;
+            }
+            case 'p': {
+                _opts.mat_method = matMethods_t(atoi(argv[arg++]));
+                if ( _opts.mat_method > 2
+                    || _opts.mat_method < 0 ) {
+                    fprintf (stderr, "\nError: Invalid argument to "
+                             "\"%s\" \n", key.c_str());
+                    exit(-1);
+                }
+                break;
+            }
+            case 'R': {
+                std::string flag = std::string(argv[arg]);
+                FORI ( flag.size() ) {
+                    if ( !isdigit (flag[i]) ) {
+                        fprintf (stderr, "\nNon-recognizable argument to "
+                                 "\"--wb-method\".\n");
+                        exit(-1);
+                    }
+                }
+                
+                _opts.wb_method = wbMethods_t(atoi(argv[arg++]));
+                
+                // 1
+                if ( _opts.wb_method == wbMethod1 ) {
+                    _opts.use_illum = 1;
+                    _opts.illumType = (char *)(argv[arg++]);
+                    lowerCase(_opts.illumType);
+                    
+                    if (!isValidCT(string(_opts.illumType))) {
+                        fprintf( stderr, "\nError: white balance method 1 requires a valid "
+                                "illuminant (e.g., D60, 3200K) to be specified\n" );
+                        exit(-1);
+                    }
+                }
+                // 3
+                if ( _opts.wb_method == wbMethod3 ) {
+                    FORI(4) {
+                        if ( !isdigit(argv[arg][0]) )
+                        {
+                            fprintf (stderr, "\nError: Non-numeric argument to "
+                                     "\"%s %i\" \n",
+                                     key.c_str(),
+                                     _opts.wb_method);
+                            exit(-1);
+                        }
+                        OUT.greybox[i] = (float)atof(argv[arg++]);
+                    }
+                }
+                // 4
+                else if ( _opts.wb_method == wbMethod4 ) {
+                    _opts.use_mul = 1;
+                    FORI(4) {
+                        if ( !isdigit(argv[arg][0]) )
+                        {
+                            fprintf (stderr, "\nError: Non-numeric argument to "
+                                     "\"%s %i\" \n",
+                                     key.c_str(),
+                                     _opts.wb_method);
+                            exit(-1);
+                        }
+                        OUT.user_mul[i] = (float)atof(argv[arg++]);
+                    }
+                }
+                else if ( _opts.wb_method > 4 || _opts.wb_method < 0 ) {
+                    fprintf (stderr, "\nError: Invalid argument to \"%s\" \n",
+                             key.c_str());
+                    exit(-1);
+                }
+                break;
+            }
+#ifndef WIN32
+            case 'E':  _opts.use_mmap = 1;  break;
+#endif
+            default:
+                fprintf ( stderr, "\nError: Unknown option \"%s\".\n", key.c_str() );
+                exit(-1);
+        }
     }
+    
+    return arg;
 }
-
 
 //	=====================================================================
 //	Set processed image buffer from libraw
@@ -254,8 +541,8 @@ void AcesRender::gatherSupportedIllums ( ) {
     
     std::unordered_map < string, int > record;
     
-    FORI (_opts.EnvPaths.size()) {
-        vector<string> iFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
+    FORI (_opts.envPaths.size()) {
+        vector<string> iFiles = openDir ( static_cast< string >( (_opts.envPaths)[i] )
                                           +"/illuminant" );
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string path( *file );
@@ -296,10 +583,9 @@ void AcesRender::gatherSupportedCameras ( ) {
         _cameras.clear();
     
     std::unordered_map < string, int > record;
-    printf("%s\n", _opts.EnvPaths[0].c_str());
     
-    FORI (_opts.EnvPaths.size()) {
-        vector<string> iFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
+    FORI (_opts.envPaths.size()) {
+        vector<string> iFiles = openDir ( static_cast< string >( (_opts.envPaths)[i] )
                                           +"/camera" );
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string path( *file );
@@ -441,8 +727,8 @@ int AcesRender::fetchCameraSenPath( libraw_iparams_t P )
 {
     int readC = 0;
     
-    FORI (_opts.EnvPaths.size()) {
-        vector<string> cFiles = openDir ( static_cast< string >( (_opts.EnvPaths)[i] )
+    FORI (_opts.envPaths.size()) {
+        vector<string> cFiles = openDir ( static_cast< string >( (_opts.envPaths)[i] )
                                           +"/camera" );
         for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {
             string fn( *file );
@@ -470,13 +756,12 @@ int AcesRender::fetchCameraSenPath( libraw_iparams_t P )
 //            "0" means error / no illumiant data has been loaded
 
 
-// To be updated
 int AcesRender::fetchIlluminant ( const char * illumType )
 {
     vector <string> paths;
     
-    FORI ( _opts.EnvPaths.size() ) {
-        vector <string> iFiles = openDir ( (_opts.EnvPaths)[i] + "/illuminant" );
+    FORI ( _opts.envPaths.size() ) {
+        vector <string> iFiles = openDir ( (_opts.envPaths)[i] + "/illuminant" );
         for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end(); ++file ) {
             string fn( *file );
             if ( fn.find(".json") == std::string::npos )
@@ -1368,5 +1653,18 @@ const libraw_processed_image_t * AcesRender::getImageBuffer() const {
     assert(_image);
     
     return _image;
+}
+
+//	=====================================================================
+//	Fetch user option list
+//
+//	inputs:
+//      NA
+//
+//	outputs:
+//      Options   :  _opts will be returned
+
+const struct Option AcesRender::getSettings ( ) const {
+    return _opts;
 }
 

@@ -61,6 +61,9 @@
 
 using namespace rta;
 
+void create_key ( unordered_map < string, char >& keys );
+void usage ( const char *prog );
+
 class LibRawAces : virtual public LibRaw {
     public:
         LibRawAces() {};
@@ -75,21 +78,22 @@ class AcesRender {
     public:
         static AcesRender & getInstance();
     
-        int openRawPath ( const char * pathToRaw );
-        int unpack ( const char * pathToRaw );
-        int dcraw ( );
-    
+        int configureSettings ( int argc, char * argv[] );
         int fetchCameraSenPath ( libraw_iparams_t P );
         int fetchIlluminant ( const char * illumType = "na" );
     
+        int openRawPath ( const char * pathToRaw );
+        int unpack ( const char * pathToRaw );
+        int dcraw ( );
+
         int prepareIDT ( libraw_iparams_t P, float * M );
         int prepareWB ( libraw_iparams_t P );
         int preprocessRaw ( const char * pathToRaw );
         int postprocessRaw ( );
         float * renderACES ( );
         void outputACES ( );
-
-        void setSettings ( Option opts, libraw_output_params_t params );
+    
+        void initialize ( dataPath dp );
         void setPixels ( libraw_processed_image_t * image );
         void gatherSupportedIllums ();
         void gatherSupportedCameras ();
@@ -109,7 +113,8 @@ class AcesRender {
         const vector < vector < double > > getCATMatrix () const;
         const vector < double > getWB () const;
         const libraw_processed_image_t * getImageBuffer() const;
-    
+        const struct Option getSettings ( ) const;
+
     private:
         AcesRender();
         ~AcesRender();

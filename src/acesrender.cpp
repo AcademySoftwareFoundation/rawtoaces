@@ -175,7 +175,7 @@ void usage ( const char *prog ) {
 
 
 //  =====================================================================
-
+//	Defaul Constructor
 
 AcesRender::AcesRender() {
     _idt = new Idt();
@@ -195,6 +195,9 @@ AcesRender::AcesRender() {
         FORJ(3) _catm[i][j] = neutral3[i][j];
     }
 }
+
+//  =====================================================================
+//	Defaul Destructor
 
 AcesRender::~AcesRender() {
     if (_pathToRaw) {
@@ -225,7 +228,7 @@ AcesRender::~AcesRender() {
 }
 
 //	=====================================================================
-//	Initialize the only instance of the "AcesRender" class
+//	Initialize the single instance of the "AcesRender" class
 //
 //	inputs:
 //      N/A
@@ -284,6 +287,17 @@ const AcesRender & AcesRender::operator=( const AcesRender& acesrender ) {
     return *this;
 }
 
+//	=====================================================================
+//	Initialize the process by first setting up default values for "_opts"
+//  and some flags for "_rawProcessor"
+//
+//	inputs:
+//      struct dataPath : data path of the processed environment variable
+//
+//	outputs:
+//      N/A : _opts will be set up by the default values;
+//            A few parameters of "_rawProcessor" (imgdata.params)
+//            will be given a set of initial values
 
 void AcesRender::initialize ( dataPath dp ) {
     _opts.use_bigfile        = 0;
@@ -317,6 +331,17 @@ void AcesRender::initialize ( dataPath dp ) {
     
 }
 
+//	=====================================================================
+//	Configure settings by taking in user specified options
+//
+//	inputs:
+//      int argc        : number of user input
+//      char * argv[]   : an array of user input
+//
+//	outputs:
+//      N/A : _opts will be ready by digesting the user input;
+//            _rawProcessor (imgdata.params) will take initial
+//            set of values from user inputs
 
 int AcesRender::configureSettings ( int argc, char * argv[] )
 {

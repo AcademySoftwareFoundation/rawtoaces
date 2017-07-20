@@ -304,11 +304,23 @@ BOOST_AUTO_TEST_CASE ( TestIDT_LoadSpst ) {
     model[len] = '\0';
     
     Idt * idtTest = new Idt();
-    const char * path = "../data/camera/arri_d21_380_780_5.json";
-    char * real_path = realpath( path, NULL );
+//    const char * path = "../data/camera/arri_d21_380_780_5.json";
+//    char * real_path = realpath( path, NULL );
+//    
+//    idtTest->loadCameraSpst ( string(real_path), brand, model );
+//    free ( real_path );
     
-    idtTest->loadCameraSpst ( string(real_path), brand, model );
-    free ( real_path );
+    string cameraPath;
+    struct stat st;
+    dataPath dp = pathsFinder ();
+    FORI ( dp.paths.size() ) {
+        cameraPath = dp.paths[i]+"/camera/arri_d21_380_780_5.json";
+        if ( !stat( cameraPath.c_str(), &st ) )
+            break;
+    }
+    
+    if (!cameraPath.empty())
+        idtTest->loadCameraSpst ( cameraPath, brand, model );
     
     const Spst spstTest = idtTest->getCameraSpst();
     const vector <RGBSen> rgbsenTest = spstTest.getSensitivity();
@@ -413,13 +425,18 @@ BOOST_AUTO_TEST_CASE ( TestIDT_LoadSpst ) {
 BOOST_AUTO_TEST_CASE ( TestIDT_LoadIllum) {
     Idt * idtTest = new Idt();
     
-    const char * path = "../data/illuminant/iso7589_stutung_380_780_5.json";
-    char * real_path = realpath ( path, NULL );
-    vector < string > paths;
-    paths.push_back (string (real_path));
-    
-    idtTest->loadIlluminant ( paths, "iso7589" );
-    free (real_path);
+    vector < string > illumPaths;
+    struct stat st;
+    dataPath dp = pathsFinder ();
+    FORI ( dp.paths.size() ) {
+        string illumPath = dp.paths[i]+"/illuminant/iso7589_stutung_380_780_5.json";
+        if ( !stat( illumPath.c_str(), &st ) ) {
+            illumPaths.push_back(illumPath);
+            break;
+        }
+    }
+
+    idtTest->loadIlluminant ( illumPaths, "iso7589" );
     
     Illum illumTest = (idtTest->getIlluminants())[0];
     

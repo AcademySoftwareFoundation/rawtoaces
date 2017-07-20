@@ -108,7 +108,6 @@
 #define FORJ(val) for (int j=0; j < val; j++)
 #define FORIJ(val1, val2) for (int i=0; i < val1; i++) for (int j=0; j < val2; j++)
 
-//typedef half   float16_t;
 typedef float  float32_t;
 typedef double float64_t;
 
@@ -142,7 +141,7 @@ struct Option {
     
     char * illumType;
     float scale;
-    vector <string> EnvPaths;
+    vector <string> envPaths;
     
 #ifndef WIN32
     void *iobuffer;
@@ -168,11 +167,9 @@ const double bk = 1.380662 * 1e-23 ;
 // Speed of light ([m/s] meters per second)
 const double bc = 2.99792458 * 1e8 ;
 
-
 const double dmin = numeric_limits<double>::min();
 const double dmax = numeric_limits<double>::max();
 
-static unordered_map < string, char > keys;
 static const double XYZ_w[3] = {0.952646074569846, 1.0, 1.00882518435159};
 static const double d50[3] = {0.9642, 1.0000, 0.8250};
 static const double d60[3] = {0.952646074569846, 1.0000, 1.00882518435159};

@@ -115,24 +115,26 @@ int main(int argc, char *argv[])
     FORI ( RAWs.size() )
     {
         const char * raw = (RAWs[i]).c_str();
-        timerstart_timeval();
         
+        timerstart_timeval();
         Render.preprocessRaw (raw);
+        if ( opts.use_timing )
+             timerprint ( "AcesRender::preprocessRaw()", raw );
 
         timerstart_timeval();
-        
         Render.postprocessRaw ();
-
         if ( opts.use_timing )
-            timerprint ( "AcesRender::postprocessRaw()", raw );
+             timerprint ( "AcesRender::postprocessRaw()", raw );
         
+        timerstart_timeval();
         Render.renderACES ();
         if ( opts.use_timing )
-            timerprint( "AcesRender::renderACES()", raw);
+             timerprint( "AcesRender::renderACES()", raw);
         
+        timerstart_timeval();
         Render.outputACES ();
         if ( opts.use_timing )
-            timerprint( "AcesRender::outputACES()", raw);
+             timerprint( "AcesRender::outputACES()", raw);
 
     }
 

@@ -485,10 +485,10 @@ int AcesRender::configureSettings ( int argc, char * argv[] )
                 // 1
                 if ( _opts.wb_method == wbMethod1 ) {
                     _opts.use_illum = 1;
-                    _opts.illumType = (char *)(argv[arg++]);
-                    lowerCase(_opts.illumType);
+                    _opts.illumType = ( char * )(argv[arg++]);
+                    lowerCase ( _opts.illumType );
                     
-                    if (!isValidCT(string(_opts.illumType))) {
+                    if ( !isValidCT ( string ( _opts.illumType )) ) {
                         fprintf( stderr, "\nError: white balance method 1 requires a valid "
                                 "illuminant (e.g., D60, 3200K) to be specified\n" );
                         exit(-1);

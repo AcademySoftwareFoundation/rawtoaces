@@ -750,7 +750,7 @@ namespace rta {
     //	outputs:
     //		scaled Illuminant data set
     
-    void Idt::scaleLSC(Illum & Illuminant) {
+    void Idt::scaleLSC (Illum & Illuminant) {
         assert( _cameraSpst._spstMaxCol >= 0
                 && (Illuminant._data).size() != 0);
         

@@ -54,6 +54,7 @@
 
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/test/floating_point_comparison.hpp>
 
 #include "../lib/mathOps.h"
@@ -112,17 +113,9 @@ BOOST_AUTO_TEST_CASE ( TestIllum_cctToxy ) {
 BOOST_AUTO_TEST_CASE ( TestIllum_readSPD ) {
     Illum illumObject;
     
-    string illumPath;
-    struct stat st;
-    dataPath dp = pathsFinder ();
-    FORI ( dp.paths.size() ) {
-        illumPath = dp.paths[i]+"/illuminant/iso7589_stutung_380_780_5.json";
-        if ( !stat( illumPath.c_str(), &st ) )
-            break;
-    }
-    
-    if (!illumPath.empty())
-        illumObject.readSPD ( illumPath, "iso7589" );
+    boost::filesystem::path illumPath = boost::filesystem::absolute \
+                                        ("../../data/illuminant/iso7589_stutung_380_780_5.json");
+    illumObject.readSPD ( illumPath.string(), "iso7589" );
     
     double iso7589[81] = {
         0.0400000000000,

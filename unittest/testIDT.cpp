@@ -54,6 +54,7 @@
 
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/test/floating_point_comparison.hpp>
 
 #include "../lib/mathOps.h"
@@ -304,23 +305,10 @@ BOOST_AUTO_TEST_CASE ( TestIDT_LoadSpst ) {
     model[len] = '\0';
     
     Idt * idtTest = new Idt();
-//    const char * path = "../data/camera/arri_d21_380_780_5.json";
-//    char * real_path = realpath( path, NULL );
-//    
-//    idtTest->loadCameraSpst ( string(real_path), brand, model );
-//    free ( real_path );
+    boost::filesystem::path absolutePath = boost::filesystem::absolute \
+                                           ("../../data/camera/arri_d21_380_780_5.json");
     
-    string cameraPath;
-    struct stat st;
-    dataPath dp = pathsFinder ();
-    FORI ( dp.paths.size() ) {
-        cameraPath = dp.paths[i]+"/camera/arri_d21_380_780_5.json";
-        if ( !stat( cameraPath.c_str(), &st ) )
-            break;
-    }
-    
-    if (!cameraPath.empty())
-        idtTest->loadCameraSpst ( cameraPath, brand, model );
+    idtTest->loadCameraSpst ( absolutePath.string(), brand, model );
     
     const Spst spstTest = idtTest->getCameraSpst();
     const vector <RGBSen> rgbsenTest = spstTest.getSensitivity();
@@ -426,15 +414,9 @@ BOOST_AUTO_TEST_CASE ( TestIDT_LoadIllum) {
     Idt * idtTest = new Idt();
     
     vector < string > illumPaths;
-    struct stat st;
-    dataPath dp = pathsFinder ();
-    FORI ( dp.paths.size() ) {
-        string illumPath = dp.paths[i]+"/illuminant/iso7589_stutung_380_780_5.json";
-        if ( !stat( illumPath.c_str(), &st ) ) {
-            illumPaths.push_back(illumPath);
-            break;
-        }
-    }
+    boost::filesystem::path absolutePath = boost::filesystem::absolute\
+                                           ("../../data/illuminant/iso7589_stutung_380_780_5.json");
+    illumPaths.push_back(absolutePath.string());
 
     idtTest->loadIlluminant ( illumPaths, "iso7589" );
     

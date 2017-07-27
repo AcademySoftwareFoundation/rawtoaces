@@ -205,7 +205,7 @@ BOOST_AUTO_TEST_CASE ( TestIllum_readSPD ) {
     BOOST_CHECK_EQUAL( illumObject.getIllumInc(), 5 );
 
     vector <double> illumTestData = illumObject.getIllumData();
-    BOOST_CHECK_EQUAL( int( illumTestData.size() ), 81 );
+    BOOST_CHECK_EQUAL( illumTestData.size(), 81 );
     FORI (81) BOOST_CHECK_CLOSE ( illumTestData[i], iso7589[i], 1e-5);
 };
 

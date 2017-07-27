@@ -226,6 +226,9 @@ namespace rta {
 
             Spst getCameraSpst();
             vector < Illum > getIlluminants();
+            vector < trainSpec > getTrainingSpec();
+            vector < CMF > getCMF();
+        
             int getVerbosity();
         
         private:

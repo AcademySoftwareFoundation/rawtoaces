@@ -927,8 +927,8 @@ namespace rta {
         struct stat st;
         assert (!stat( path.c_str(), &st ));
         
-        if ( _cmf.size() > 0 )
-            _cmf.clear();
+//        if ( _cmf.size() > 0 )
+//            _cmf.clear();
         
         try
         {
@@ -1364,7 +1364,7 @@ namespace rta {
     const vector < Illum > Idt::getIlluminants() const {
         return _Illuminants;
     }
-    
+
     //	=====================================================================
     //	Get Verbosity value for the length of IDT generation status message
     //
@@ -1403,6 +1403,35 @@ namespace rta {
     vector < Illum > Idt::getIlluminants() {
         return _Illuminants;
     }
+    
+    //	=====================================================================
+    //  Get Spectral Training Data that was loaded from the file
+    //
+    //	inputs:
+    //         N/A
+    //
+    //	outputs:
+    //      const trainSpec: Spectral Training data that was loaded from
+    //      the file
+    
+    vector < trainSpec > Idt::getTrainingSpec() {
+        return _trainingSpec;
+    }
+    
+    //	=====================================================================
+    //  Get Color Matching Function Data that was loaded from the file
+    //
+    //	inputs:
+    //         N/A
+    //
+    //	outputs:
+    //      const CMF: Color Matching Function data that was loaded from
+    //      the file
+    
+    vector < CMF > Idt::getCMF() {
+        return _cmf;
+    }
+
     
     //	=====================================================================
     //	Get Verbosity value for the length of IDT generation status message

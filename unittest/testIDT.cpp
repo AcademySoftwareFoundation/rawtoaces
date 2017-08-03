@@ -979,7 +979,7 @@ BOOST_AUTO_TEST_CASE ( TestIDT_scaleLSC ) {
     illumTest->readSPD ( pathIllum.string(), "iso7589" );
     
     boost::filesystem::path pathSpst = boost::filesystem::absolute \
-                                       ("../../data/camera/Nikon_D200_380_780_5.json");
+                                       ("../../data/camera/nikon_D200_380_780_5.json");
     idtTest->loadCameraSpst ( pathSpst.string(), brand, model );
     
     idtTest->scaleLSC ( *illumTest );
@@ -1074,7 +1074,84 @@ BOOST_AUTO_TEST_CASE ( TestIDT_scaleLSC ) {
     BOOST_CHECK_EQUAL( illumTest->getIllumType(), "iso7589" );
     BOOST_CHECK_EQUAL( illumTest->getIllumInc(), 5 );
     FORI (81) BOOST_CHECK_CLOSE ( illumDataScaled[i], scaledIllum[i], 1e-5);
-}
+};
 
+BOOST_AUTO_TEST_CASE ( TestIDT_CalCM ) {
+    Idt * idtTest = new Idt ();
+    
+    uint8_t len = 6;
+    char * brand = (char *) malloc(len+1);
+    
+    memset(brand, 0x0, len);
+    memcpy(brand, "nikon", len);
+    brand[len] = '\0';
+    
+    char * model = (char *) malloc(len+1);
+    memset(model, 0x0, len);
+    memcpy(model, "d200", len);
+    model[len] = '\0';
+
+    boost::filesystem::path pathSpst = boost::filesystem::absolute \
+    ("../../data/camera/nikon_D200_380_780_5.json");
+    idtTest->loadCameraSpst ( pathSpst.string(), brand, model );
+    
+    boost::filesystem::path pathIllum = boost::filesystem::absolute \
+    ("../../data/illuminant/iso7589_stutung_380_780_5.json");
+    vector < string > illumPaths;
+    illumPaths.push_back( pathIllum.string() );
+    idtTest->loadIlluminant ( illumPaths, "iso7589" );
+    
+    // need to choose the best illuminant
+    idtTest->chooseIllumType("iso7589", 0);
+    vector < double > CM = idtTest->calCM();
+
+    vector < RGBSen > rgbsen = (idtTest->getCameraSpst()).getSensitivity();
+    vector< vector < double > > rgbsenV (3, vector < double > ( rgbsen.size(), 1.0));
+
+    FORI( rgbsen.size() ){
+        rgbsenV[0][i] = rgbsen[i]._RSen;
+        rgbsenV[1][i] = rgbsen[i]._GSen;
+        rgbsenV[2][i] = rgbsen[i]._BSen;
+    }
+
+    Illum bestIllum = (idtTest->getIlluminants())[0];
+    vector < double > CM_test = mulVector ( rgbsenV, bestIllum.getIllumData() );
+    scaleVectorD ( CM_test );
+    
+    FORI ( CM.size() ) {
+        printf ("%lf, %lf\n", CM[i], CM_test[i]);
+        FORI(3) BOOST_CHECK_CLOSE ( CM[i], CM_test[i], 1e-5 );
+    }
+};
+
+BOOST_AUTO_TEST_CASE ( TestIDT_CalWB ) {
+    Idt * idtTest = new Idt ();
+    
+    uint8_t len = 6;
+    char * brand = (char *) malloc(len+1);
+    
+    memset(brand, 0x0, len);
+    memcpy(brand, "nikon", len);
+    brand[len] = '\0';
+    
+    char * model = (char *) malloc(len+1);
+    memset(model, 0x0, len);
+    memcpy(model, "d200", len);
+    model[len] = '\0';
+    
+    boost::filesystem::path pathSpst = boost::filesystem::absolute \
+    ("../../data/camera/nikon_D200_380_780_5.json");
+    idtTest->loadCameraSpst ( pathSpst.string(), brand, model );
+    
+    boost::filesystem::path pathIllum = boost::filesystem::absolute \
+    ("../../data/illuminant/iso7589_stutung_380_780_5.json");
+    vector < string > illumPaths;
+    illumPaths.push_back( pathIllum.string() );
+    idtTest->loadIlluminant ( illumPaths, "iso7589" );
+    
+    Illum bestIllum = (idtTest->getIlluminants())[0];
+    vector < double > wb_tmp = idtTest->calWB( bestIllum, 0 );
+    
+};
 
 

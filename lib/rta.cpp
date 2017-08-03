@@ -1071,7 +1071,7 @@ namespace rta {
     //	outputs:
     //		vector < double >: scaled vector by its maximum value
 
-    vector <double> Idt::calCM() {
+    vector < double > Idt::calCM() {
         vector < RGBSen > rgbsen = _cameraSpst.getSensitivity();
         vector< vector < double > > rgbsenV (3, vector < double > ( rgbsen.size(), 1.0));
         
@@ -1083,6 +1083,8 @@ namespace rta {
         
         vector<double> CM = mulVector ( rgbsenV, _bestIllum._data );
         scaleVectorD(CM);
+        
+        
         
         return CM;
     }

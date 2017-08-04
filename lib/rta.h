@@ -209,7 +209,7 @@ namespace rta {
             vector < double > calWB( Illum & Illuminant, int highlight );
             vector < vector <double> > calTI() const;
             vector < vector <double> > calCAT( vector <double> src,
-                                              vector <double> des ) const;
+                                               vector <double> des ) const;
             vector < vector<double> > calXYZ( vector < vector<double> > TI ) const;
             vector < vector<double> > calRGB( vector < vector<double> > TI ) const;
         

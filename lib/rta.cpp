@@ -1084,8 +1084,6 @@ namespace rta {
         vector<double> CM = mulVector ( rgbsenV, _bestIllum._data );
         scaleVectorD(CM);
         
-        
-        
         return CM;
     }
     
@@ -1123,7 +1121,7 @@ namespace rta {
     //		vector < vector<double> >: 2D vector (3 x 3)
     
     vector < vector<double> > Idt::calCAT ( vector<double> src,
-                                           vector<double> des ) const {
+                                            vector<double> des ) const {
         assert(src.size() == des.size());
         
         vector < vector <double> > vcat(3, vector<double>(3));
@@ -1189,7 +1187,7 @@ namespace rta {
     //	outputs:
     //		vector < vector<double> >: 2D vector (190 x 3)
     
-    vector< vector<double> > Idt::calXYZ (vector < vector < double > > TI ) const {
+    vector< vector < double > > Idt::calXYZ (vector < vector < double > > TI ) const {
         assert(TI.size() == 81);
         
         vector< vector<double> > transTI = transposeVec(TI);
@@ -1231,7 +1229,7 @@ namespace rta {
     //	outputs:
     //		vector < vector<double> >: 2D vector (190 x 3)
     
-    vector< vector<double> > Idt::calRGB ( vector < vector< double > > TI ) const {
+    vector< vector < double > > Idt::calRGB ( vector < vector< double > > TI ) const {
         assert(TI.size() == 81);
         
         vector< vector<double> > transTI = transposeVec(TI);

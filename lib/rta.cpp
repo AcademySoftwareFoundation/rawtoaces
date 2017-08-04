@@ -1269,7 +1269,7 @@ namespace rta {
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::DENSE_QR;
         options.parameter_tolerance = 1e-17;
-        options.gradient_tolerance = 1e-17;
+//        options.gradient_tolerance = 1e-17;
         options.function_tolerance = 1e-17;
         options.min_line_search_step_size = 1e-17;
         options.max_num_iterations = 300;

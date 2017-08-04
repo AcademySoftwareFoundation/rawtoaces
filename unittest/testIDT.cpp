@@ -1925,15 +1925,69 @@ BOOST_AUTO_TEST_CASE ( TestIDT_CalRGB ) {
     };
     
     FORI(190) {
-//        printf(" { %13.10lf, %13.10lf, %13.10lf },\n", RGB_test[i][0], RGB_test[i][1], RGB_test[i][2] );
         BOOST_CHECK_CLOSE ( RGB[i][0], RGB_test[i][0], 1e-5 );
         BOOST_CHECK_CLOSE ( RGB[i][1], RGB_test[i][1], 1e-5 );
         BOOST_CHECK_CLOSE ( RGB[i][2], RGB_test[i][2], 1e-5 );
     }
 };
 
-
-
+BOOST_AUTO_TEST_CASE ( TestIDT_CurveFit ) {
+    uint8_t len = 6;
+    char * brand = (char *) malloc(len+1);
+    
+    memset(brand, 0x0, len);
+    memcpy(brand, "nikon", len);
+    brand[len] = '\0';
+    
+    char * model = (char *) malloc(len+1);
+    memset(model, 0x0, len);
+    memcpy(model, "d200", len);
+    model[len] = '\0';
+    
+    Idt * idtTest = new Idt();
+    
+    boost::filesystem::path pathSpst = boost::filesystem::absolute \
+    ("../../data/camera/nikon_d200_380_780_5.json");
+    idtTest->loadCameraSpst ( pathSpst.string(), brand, model );
+    
+    boost::filesystem::path pathIllum = boost::filesystem::absolute \
+    ("../../data/illuminant/iso7589_stutung_380_780_5.json");
+    vector < string > illumPaths;
+    illumPaths.push_back( pathIllum.string() );
+    idtTest->loadIlluminant ( illumPaths, "iso7589" );
+    
+    boost::filesystem::path pathTS = boost::filesystem::absolute\
+    ("../../data/training/training_spectral.json");
+    idtTest->loadTrainingData ( pathTS.string() );
+    
+    boost::filesystem::path absolutePath = boost::filesystem::absolute\
+    ("../../data/cmf/cmf_1931.json");
+    idtTest->loadCMF ( absolutePath.string() );
+    
+    idtTest->chooseIllumType("iso7589", 0);
+    vector < vector < double > > TI = idtTest->calTI();
+    vector < vector < double > > XYZ_test = idtTest->calXYZ(TI);
+    vector < vector < double > > RGB_test = idtTest->calRGB(TI);
+    double BStart[6] = {1.0, 0.0, 0.0, 1.0, 0.0, 0.0};
+    
+    int succeed = idtTest->curveFit(RGB_test, XYZ_test, BStart);
+    vector < vector < double > > IDT_test;
+    if ( succeed )
+        IDT_test = idtTest->getIDT();
+    
+    float IDT[3][3] = {
+        {  0.7447691479,  0.1434200377,  0.1118108144 },
+        {  0.0451759890,  1.0082622042, -0.0534381932 },
+        {  0.0247144012, -0.1245524896,  1.0998380884 }
+    };
+    
+    FORI(3) {
+//        printf(" { %13.10lf, %13.10lf, %13.10lf },\n", IDT_test[i][0], IDT_test[i][1], IDT_test[i][2] );
+        BOOST_CHECK_CLOSE ( IDT[i][0], IDT_test[i][0], 1e-5 );
+        BOOST_CHECK_CLOSE ( IDT[i][1], IDT_test[i][1], 1e-5 );
+        BOOST_CHECK_CLOSE ( IDT[i][2], IDT_test[i][2], 1e-5 );
+    }
+};
 
 
 

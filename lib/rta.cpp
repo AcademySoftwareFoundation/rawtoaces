@@ -1456,7 +1456,7 @@ namespace rta {
     //      const vector< vector < double > >: _idt matrix (3 x 3)
 
     
-    const vector< vector<double> > Idt::getIDT() const {
+    const vector < vector < double > > Idt::getIDT() const {
         return _idt;
     }
     
@@ -1469,7 +1469,7 @@ namespace rta {
     //	outputs:
     //      const vector< double >: _wb vector (1 x 3)
     
-    const vector< double > Idt::getWB() const {
+    const vector < double > Idt::getWB() const {
         return _wb;
     }
 }

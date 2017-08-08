@@ -938,9 +938,6 @@ namespace rta {
         struct stat st;
         assert (!stat( path.c_str(), &st ));
         
-//        if ( _cmf.size() > 0 )
-//            _cmf.clear();
-        
         try
         {
             ptree pt;
@@ -1370,10 +1367,27 @@ namespace rta {
     //         N/A
     //
     //	outputs:
-    //      const illum: Illuminant data that was loaded from the file
+    //      const vector < illum >: Illuminant data that was loaded from
+    //      the file
 
     const vector < Illum > Idt::getIlluminants() const {
         return _Illuminants;
+    }
+    
+    //	=====================================================================
+    //  Get the Best Illuminant data / light source that was loaded from
+    //  the file
+    //
+    //	inputs:
+    //         N/A
+    //
+    //	outputs:
+    //      const illum: Illuminant data that has the closest match
+    
+    const Illum Idt::getBestIllum() const {
+        assert ( (_bestIllum.getIllumData()).size() != 0 );
+        
+        return _bestIllum;
     }
 
     //	=====================================================================
@@ -1390,42 +1404,16 @@ namespace rta {
     }
     
     //	=====================================================================
-    //  Get camera sensitivity data that was loaded from the file
-    //
-    //	inputs:
-    //         N/A
-    //
-    //	outputs:
-    //         Spst: camera sensitivity data that was loaded from the file
-    
-    Spst Idt::getCameraSpst() {
-        return _cameraSpst;
-    }
-    
-    //	=====================================================================
-    //  Get Illuminant data / light source that was loaded from the file
-    //
-    //	inputs:
-    //         N/A
-    //
-    //	outputs:
-    //         Illum: Illuminant data that was loaded from the file
-    
-    vector < Illum > Idt::getIlluminants() {
-        return _Illuminants;
-    }
-    
-    //	=====================================================================
     //  Get Spectral Training Data that was loaded from the file
     //
     //	inputs:
     //         N/A
     //
     //	outputs:
-    //      const trainSpec: Spectral Training data that was loaded from
-    //      the file
+    //      const vector < trainSpec >: Spectral Training data that was loaded
+    //      from the file
     
-    vector < trainSpec > Idt::getTrainingSpec() {
+    const vector < trainSpec > Idt::getTrainingSpec() const {
         return _trainingSpec;
     }
     
@@ -1439,22 +1427,8 @@ namespace rta {
     //      const CMF: Color Matching Function data that was loaded from
     //      the file
     
-    vector < CMF > Idt::getCMF() {
+    const vector < CMF > Idt::getCMF() const {
         return _cmf;
-    }
-
-    
-    //	=====================================================================
-    //	Get Verbosity value for the length of IDT generation status message
-    //
-    //	inputs:
-    //      N/A
-    //
-    //	outputs:
-    //		int: _verbosity
-    
-    int Idt::getVerbosity() {
-        return _verbosity;
     }
 
     //	=====================================================================

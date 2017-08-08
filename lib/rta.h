@@ -199,7 +199,7 @@ namespace rta {
 
             void loadTrainingData( string path );
             void loadCMF( string path );
-            void chooseIllumSrc( vector <double> src, int highlight );
+            void chooseIllumSrc( vector < double > src, int highlight );
             void chooseIllumType( const char * type, int highlight );
             void setIlluminants( Illum Illuminant );
             void setVerbosity( int verbosity );
@@ -219,18 +219,14 @@ namespace rta {
             int calIDT();
         
             const Spst getCameraSpst() const;
+            const Illum getBestIllum() const;
+            const vector < trainSpec > getTrainingSpec() const;
             const vector < Illum > getIlluminants() const;
-            const int getVerbosity() const;
-            const vector < vector <double> > getIDT() const;
+            const vector < CMF > getCMF() const;
+            const vector < vector < double > > getIDT() const;
             const vector < double > getWB() const;
+            const int getVerbosity() const;
 
-            Spst getCameraSpst();
-            vector < Illum > getIlluminants();
-            vector < trainSpec > getTrainingSpec();
-            vector < CMF > getCMF();
-        
-            int getVerbosity();
-        
         private:
             Spst    _cameraSpst;
             Illum   _bestIllum;

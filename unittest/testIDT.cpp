@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE( TestIDT_DataAccess ) {
     }
 };
 
-BOOST_AUTO_TEST_CASE ( TestIDT_LoadSpst ) {
+BOOST_AUTO_TEST_CASE ( TestIDT_LoadCameraSpst ) {
     uint8_t len = 6;
     char * brand = (char *) malloc(len+1);
 
@@ -410,7 +410,7 @@ BOOST_AUTO_TEST_CASE ( TestIDT_LoadSpst ) {
 };
 
 
-BOOST_AUTO_TEST_CASE ( TestIDT_LoadIllum ) {
+BOOST_AUTO_TEST_CASE ( TestIDT_LoadIlluminant ) {
     Idt * idtTest = new Idt();
     
     vector < string > illumPaths;
@@ -515,7 +515,7 @@ BOOST_AUTO_TEST_CASE ( TestIDT_LoadIllum ) {
 };
 
 
-BOOST_AUTO_TEST_CASE ( TestIDT_LoadTS ) {
+BOOST_AUTO_TEST_CASE ( TestIDT_LoadTrainingData ) {
     Idt * idtTest = new Idt();
     
     boost::filesystem::path absolutePath = boost::filesystem::absolute\
@@ -1316,6 +1316,240 @@ BOOST_AUTO_TEST_CASE ( TestIDT_CalWB ) {
     }
 };
 
+BOOST_AUTO_TEST_CASE ( TestIDT_SetIlluminants ) {
+    Idt * idtTest = new Idt ();
+    Illum * illumTest1 = new Illum();
+    Illum * illumTest2 = new Illum("d50");
+    Illum * illumTest3 = new Illum("3200k");
+    
+    boost::filesystem::path pathIllum = boost::filesystem::absolute \
+    ("../../data/illuminant/iso7589_stutung_380_780_5.json");
+    illumTest1->readSPD ( pathIllum.string(), "iso7589" );
+    
+    illumTest2->calDayLightSPD(50);
+    illumTest3->calBlackBodySPD(3200);
+    
+    idtTest->setIlluminants (*illumTest1);
+    idtTest->setIlluminants (*illumTest2);
+    idtTest->setIlluminants (*illumTest3);
+    
+    vector < Illum > illumTests = idtTest->getIlluminants();
+    
+    BOOST_CHECK_EQUAL ( illumTests[0].getIllumType(), "iso7589" );
+    BOOST_CHECK_EQUAL ( illumTests[1].getIllumType(), "d50" );
+    BOOST_CHECK_EQUAL ( illumTests[2].getIllumType(), "3200k" );
+    
+    const double daylight[81] = {   24.4978949755877,
+        27.1891380970612,
+        29.8803812185346,
+        39.6005856124086,
+        49.3207900062826,
+        52.9234909452740,
+        56.5261918842655,
+        58.2863692933629,
+        60.0465467024602,
+        58.9374754654423,
+        57.8284042284244,
+        66.3321986672105,
+        74.8359931059968,
+        81.0470608788071,
+        87.2581286516173,
+        88.9401444234118,
+        90.6221601952063,
+        90.9994142932283,
+        91.3766683912501,
+        93.2463519723246,
+        95.1160355533991,
+        93.5424463111289,
+        91.9688570688586,
+        93.8487650824512,
+        95.7286730960438,
+        96.1730210585583,
+        96.6173690210728,
+        96.8745483082553,
+        97.1317275954378,
+        99.6163972828030,
+        102.1010669701683,
+        101.4285401947830,
+        100.7560134193976,
+        101.5368117967032,
+        102.3176101740087,
+        101.1588050870044,
+        100.0000000000000,
+        98.8672487920966,
+        97.7344975841932,
+        98.3256924971888,
+        98.9168874101845,
+        96.2071139031367,
+        93.4973403960889,
+        95.5913911756801,
+        97.6854419552712,
+        98.4757935279747,
+        99.2661451006782,
+        99.1520792059532,
+        99.0380133112281,
+        97.3779908297348,
+        95.7179683482415,
+        97.2852940116115,
+        98.8526196749816,
+        97.2575832997790,
+        95.6625469245764,
+        96.9235194654881,
+        98.1844920063998,
+        100.5908749767109,
+        102.9972579470220,
+        101.0620719501407,
+        99.1268859532593,
+        93.2512715124010,
+        87.3756570715427,
+        89.4866296124544,
+        91.5976021533661,
+        92.2403288193421,
+        92.8830554853180,
+        84.8664480824888,
+        76.8498406796596,
+        81.6780321648151,
+        86.5062236499707,
+        89.5403942033879,
+        92.5745647568050,
+        85.4000426306844,
+        78.2255205045638,
+        67.9569774467047,
+        57.6884343888457,
+        70.3033080876698,
+        82.9181817864939,
+        80.5938616113981,
+        78.2695414363022
+    };
+
+    const double blackbody[81] = {
+        0.3431975190,
+        0.3748818425,
+        0.4082252416,
+        0.4432167268,
+        0.4798395347,
+        0.5180713262,
+        0.5578844164,
+        0.5992460295,
+        0.6421185769,
+        0.6864599527,
+        0.7322238438,
+        0.7793600511,
+        0.8278148175,
+        0.8775311606,
+        0.9284492064,
+        0.9805065220,
+        1.0336384449,
+        1.0877784058,
+        1.1428582447,
+        1.1988085174,
+        1.2555587916,
+        1.3130379308,
+        1.3711743665,
+        1.4298963557,
+        1.4891322260,
+        1.5488106048,
+        1.6088606344,
+        1.6692121729,
+        1.7297959793,
+        1.7905438844,
+        1.8513889471,
+        1.9122655966,
+        1.9731097607,
+        2.0338589799,
+        2.0944525099,
+        2.1548314100,
+        2.2149386205,
+        2.2747190285,
+        2.3341195224,
+        2.3930890364,
+        2.4515785855,
+        2.5095412906,
+        2.5669323963,
+        2.6237092793,
+        2.6798314508,
+        2.7352605507,
+        2.7899603370,
+        2.8438966678,
+        2.8970374799,
+        2.9493527605,
+        3.0008145169,
+        3.0513967400,
+        3.1010753667,
+        3.1498282370,
+        3.1976350505,
+        3.2444773190,
+        3.2903383182,
+        3.3352030371,
+        3.3790581264,
+        3.4218918459,
+        3.4636940107,
+        3.5044559371,
+        3.5441703881,
+        3.5828315187,
+        3.6204348211,
+        3.6569770704,
+        3.6924562703,
+        3.7268715994,
+        3.7602233581,
+        3.7925129165,
+        3.8237426623,
+        3.8539159505,
+        3.8830370536,
+        3.9111111129,
+        3.9381440909,
+        3.9641427249,
+        3.9891144819,
+        4.0130675142,
+        4.0360106171,
+        4.0579531872,
+        4.0789051818
+    };
+    
+    vector < double > daylight_Test = illumTest2->getIllumData();
+    vector < double > blackbody_Test = illumTest3->getIllumData();
+    
+    FORI( blackbody_Test.size() ) {
+        BOOST_CHECK_CLOSE ( daylight[i], daylight_Test[i], 1e-5 );
+        BOOST_CHECK_CLOSE ( blackbody[i], blackbody_Test[i] * 1e-12, 1e-5 );
+    }
+};
+
+BOOST_AUTO_TEST_CASE ( TestIDT_ChooseIllumSrc ) {
+    Idt * idtTest = new Idt ();
+    
+    uint8_t len = 6;
+    char * brand = (char *) malloc(len+1);
+    memset(brand, 0x0, len);
+    memcpy(brand, "nikon", len);
+    brand[len] = '\0';
+    
+    char * model = (char *) malloc(len+1);
+    memset(model, 0x0, len);
+    memcpy(model, "d200", len);
+    model[len] = '\0';
+    
+    boost::filesystem::path pathSpst = boost::filesystem::absolute \
+    ("../../data/camera/nikon_d200_380_780_5.json");
+    idtTest->loadCameraSpst ( pathSpst.string(), brand, model );
+    
+    boost::filesystem::path pathIllum = boost::filesystem::absolute \
+    ("../../data/illuminant/iso7589_stutung_380_780_5.json");
+    vector < string > illumPaths;
+    illumPaths.push_back( pathIllum.string() );
+    idtTest->loadIlluminant ( illumPaths, "na" );
+    
+    boost::filesystem::path absolutePath = boost::filesystem::absolute\
+    ("../../data/training/training_spectral.json");
+    idtTest->loadTrainingData ( absolutePath.string() );
+    
+    float M[3] = { 1.0, 1.0, 1.0 };
+    vector < double > mulV (M, M+3);
+    idtTest->chooseIllumSrc ( mulV, 1 );
+    
+    
+};
+
 BOOST_AUTO_TEST_CASE ( TestIDT_CalTI ) {
     Idt * idtTest = new Idt ();
     
@@ -1982,13 +2216,64 @@ BOOST_AUTO_TEST_CASE ( TestIDT_CurveFit ) {
     };
     
     FORI(3) {
-//        printf(" { %13.10lf, %13.10lf, %13.10lf },\n", IDT_test[i][0], IDT_test[i][1], IDT_test[i][2] );
         BOOST_CHECK_CLOSE ( IDT[i][0], IDT_test[i][0], 1e-5 );
         BOOST_CHECK_CLOSE ( IDT[i][1], IDT_test[i][1], 1e-5 );
         BOOST_CHECK_CLOSE ( IDT[i][2], IDT_test[i][2], 1e-5 );
     }
 };
 
+BOOST_AUTO_TEST_CASE ( TestIDT_CalIDT ) {
+    uint8_t len = 6;
+    char * brand = (char *) malloc(len+1);
+    
+    memset(brand, 0x0, len);
+    memcpy(brand, "arri", len);
+    brand[len] = '\0';
+    
+    char * model = (char *) malloc(len+1);
+    memset(model, 0x0, len);
+    memcpy(model, "d21", len);
+    model[len] = '\0';
+    
+    Idt * idtTest = new Idt();
+    
+    boost::filesystem::path pathSpst = boost::filesystem::absolute \
+    ("../../data/camera/arri_d21_380_780_5.json");
+    idtTest->loadCameraSpst ( pathSpst.string(), brand, model );
+    
+    boost::filesystem::path pathIllum = boost::filesystem::absolute \
+    ("../../data/illuminant/iso7589_stutung_380_780_5.json");
+    vector < string > illumPaths;
+    illumPaths.push_back( pathIllum.string() );
+    idtTest->loadIlluminant ( illumPaths, "iso7589" );
+    
+    boost::filesystem::path pathTS = boost::filesystem::absolute\
+    ("../../data/training/training_spectral.json");
+    idtTest->loadTrainingData ( pathTS.string() );
+    
+    boost::filesystem::path absolutePath = boost::filesystem::absolute\
+    ("../../data/cmf/cmf_1931.json");
+    idtTest->loadCMF ( absolutePath.string() );
+    
+    idtTest->chooseIllumType("iso7589", 0);
+    int succeed = idtTest->calIDT();
+    vector < vector < double > > IDT_test;
+    if ( succeed )
+        IDT_test = idtTest->getIDT();
+    
+    float IDT[3][3] = {
+        {  1.0915120600, -0.2516916464,  0.1601795864 },
+        { -0.0089998772,  1.2147199060, -0.2057200288 },
+        { -0.1312667887, -0.7361633199,  1.8674301085 }
+    };
+    
+    FORI(3) {
+//                printf(" { %13.10lf, %13.10lf, %13.10lf },\n", IDT_test[i][0], IDT_test[i][1], IDT_test[i][2] );
+        BOOST_CHECK_CLOSE ( IDT[i][0], IDT_test[i][0], 1e-5 );
+        BOOST_CHECK_CLOSE ( IDT[i][1], IDT_test[i][1], 1e-5 );
+        BOOST_CHECK_CLOSE ( IDT[i][2], IDT_test[i][2], 1e-5 );
+    }
+};
 
 
 

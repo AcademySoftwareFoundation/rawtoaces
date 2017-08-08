@@ -247,6 +247,11 @@ namespace rta {
         }
         
         if (_data.size() > 0) _data.clear();
+        if (!_type.size()) {
+            char buffer[10];
+            snprintf(buffer, 10, "%d", cct);
+            _type = "d" + string(buffer);
+        }
         
         vector <int> wls0, wls1;
         vector <double> s00, s10, s20, s01, s11, s21;
@@ -358,22 +363,28 @@ namespace rta {
     //		int: If successufully processed, private data members (e.g., _data)
     //           will be filled and return 1; Otherwise, return 0
     
-    void Illum::calBlackBodySPD ( const int temp ) {
-        if (temp < 1500 || temp >= 4000) {
+    void Illum::calBlackBodySPD ( const int cct ) {
+        if (cct < 1500 || cct >= 4000) {
             fprintf ( stderr, "The range of Color Temperature for BlackBody "
                               "should be from 1500 to 3999. \n");
             exit(1);
         }
         
         if (_data.size() > 0) _data.clear();
+        if (!_type.size()) {
+            char buffer[10];
+            snprintf(buffer, 10, "%d", cct);
+            _type = string(buffer) + "k";
+        }
         
         for ( int wav = 380; wav <= 780; wav+=5 ) {
             double lambda = wav / 1e9;
             double c1 = 2 * bh * (std::pow(bc, 2));
-            double c2 = ( bh * bc ) / ( bk * lambda * temp);
+            double c2 = ( bh * bc ) / ( bk * lambda * cct);
             _data.push_back(c1 * pi / (std::pow(lambda, 5) * (std::exp(c2) - 1)));
         }
     }
+    
     
     // ------------------------------------------------------//
                             
@@ -1455,7 +1466,6 @@ namespace rta {
     //	outputs:
     //      const vector< vector < double > >: _idt matrix (3 x 3)
 
-    
     const vector < vector < double > > Idt::getIDT() const {
         return _idt;
     }

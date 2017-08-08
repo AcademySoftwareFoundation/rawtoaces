@@ -64,7 +64,7 @@
 #include <stdexcept>
 #include <stdint.h>
 #include <math.h>
-#include <cstring>
+#include <string>
 #include <half.h>
 #include <ctype.h>
 #include <stdlib.h>
@@ -135,7 +135,7 @@ namespace rta {
         
             int readSPD( string path, string type );
             void calDayLightSPD( const int cct );
-            void calBlackBodySPD( const int temp );
+            void calBlackBodySPD( const int cct );
         
 
     private:

@@ -60,8 +60,8 @@
 //using namespace Eigen;
 
 // Non-class functions
-inline double invertD (double val) {
-    assert (val != 0.0);
+inline double invertD ( double val ) {
+    assert ( fabs ( val - 0.0 ) >= DBL_EPSILON );
     
     return 1.0/val;
 };

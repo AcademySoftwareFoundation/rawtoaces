@@ -60,7 +60,7 @@
 
 using namespace std;
 
-BOOST_AUTO_TEST_CASE ( Test_invertD ) {
+BOOST_AUTO_TEST_CASE ( Test_InvertD ) {
     double a = 1.0;
     BOOST_CHECK_CLOSE ( invertD(a), 1.0, 1e-9 );
     
@@ -71,20 +71,18 @@ BOOST_AUTO_TEST_CASE ( Test_invertD ) {
     BOOST_CHECK_CLOSE ( invertD(c), 0.000001, 1e-9 );
 };
 
-
-BOOST_AUTO_TEST_CASE ( Test_clip ) {
+BOOST_AUTO_TEST_CASE ( Test_Clip ) {
     double a = 254.9;
-    BOOST_CHECK_CLOSE ( clip(a, 255.0), a, 1e-1 );
+    BOOST_CHECK_CLOSE ( clip(a, 255.0), a, 1e-5 );
     
     double b = 255.1;
-    BOOST_CHECK_CLOSE ( clip(b, 255.0), b, 1e-1 );
+    BOOST_CHECK_CLOSE ( clip(b, 255.0), 255.0, 1e-5 );
     
     double c = 63355.0;
-    BOOST_CHECK_CLOSE ( clip(c, 63355.0), c, 1e-1 );
+    BOOST_CHECK_CLOSE ( clip(c, 63355.0), c, 1e-5 );
 };
 
-
-BOOST_AUTO_TEST_CASE ( Test_isSquare ) {
+BOOST_AUTO_TEST_CASE ( Test_IsSquare ) {
     vector < vector < double > > a;
     a.resize(2);
     FORI(2) a[i].resize(2);
@@ -94,5 +92,79 @@ BOOST_AUTO_TEST_CASE ( Test_isSquare ) {
     BOOST_CHECK_EQUAL ( isSquare(a), 0 );
 };
 
+BOOST_AUTO_TEST_CASE ( Test_Cross ) {
+    double a[2] = { 1.0, 3.0 };
+    double b[2] = { 1.0, 6.5 };
+    
+    vector < double > av(a, a+2);
+    vector < double > bv(b, b+2);
 
+    double cross_test = cross(av, bv);
+    BOOST_CHECK_CLOSE ( cross_test, 3.50, 1e-5 );
+};
 
+BOOST_AUTO_TEST_CASE ( Test_InvertVM ) {
+    double M[3][3] = {
+        { 0.0188205,  8.59E-03,   9.58E-03 },
+        { 0.0440222,  0.0166118,  0.0258734 },
+        { 0.1561591,  0.046321,   0.1181466 }
+    };
+    double M_Inverse[3][3] = {
+        { -844.264597,  631.004958,  -69.728531 },
+        { 1282.403375,  -803.858096,  72.055546 },
+        { 613.114494,  -518.860936,  72.376689 }
+    };
+    
+    vector < vector < double > > MV(3, vector < double > ( 3 ));
+    FORIJ(3, 3) MV[i][j] = M[i][j];
+    
+    vector < vector < double > > MV_Inverse = invertVM (MV);
+    
+    FORI(3) {
+        BOOST_CHECK_CLOSE ( MV_Inverse[i][0], M_Inverse[i][0], 1e-5 );
+        BOOST_CHECK_CLOSE ( MV_Inverse[i][1], M_Inverse[i][1], 1e-5 );
+        BOOST_CHECK_CLOSE ( MV_Inverse[i][2], M_Inverse[i][2], 1e-5 );
+    }
+};
+
+BOOST_AUTO_TEST_CASE ( Test_DiagVM ) {
+    double M[3][3] = {
+        { 1.0, 0.0, 0.0 },
+        { 0.0, 2.0, 0.0 },
+        { 0.0, 0.0, 3.0 }
+    };
+    
+    double vd[3] = { 1.0, 2.0, 3.0 };
+    vector < double > MV(vd, vd+3);
+    vector < vector < double > > MVD = diagVM (MV);
+    
+    FORI(3) {
+        BOOST_CHECK_CLOSE ( MVD[i][0], M[i][0], 1e-5 );
+        BOOST_CHECK_CLOSE ( MVD[i][1], M[i][1], 1e-5 );
+        BOOST_CHECK_CLOSE ( MVD[i][2], M[i][2], 1e-5 );
+    }
+};
+
+BOOST_AUTO_TEST_CASE ( Test_TransposeVec ) {
+    double M[6][3] = {
+        { 1.0, 0.0, 0.0 },
+        { 0.0, 2.0, 0.0 },
+        { 0.0, 0.0, 3.0 },
+        { 1.0, 1.0, 2.0 },
+        { 2.0, 2.0, 3.0 },
+        { 3.0, 3.0, 4.0 }
+    };
+
+    double MT[3][6] = {
+        { 1.0000000000,  0.0000000000,  0.0000000000,  1.0000000000,  2.0000000000,  3.0000000000 },
+        { 0.0000000000,  2.0000000000,  0.0000000000,  1.0000000000,  2.0000000000,  3.0000000000 },
+        { 0.0000000000,  0.0000000000,  3.0000000000,  2.0000000000,  3.0000000000,  4.0000000000 }
+    };
+    
+    vector < vector < double > > MV(6, vector < double > ( 3 ));
+    FORIJ(6, 3) MV[i][j] = M[i][j];
+    vector < vector < double > > MVT = transposeVec (MV);
+    
+    FORIJ(3, 6)
+        BOOST_CHECK_CLOSE ( MVT[i][j], MT[i][j], 1e-5 );
+};

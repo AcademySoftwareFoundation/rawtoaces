@@ -168,3 +168,31 @@ BOOST_AUTO_TEST_CASE ( Test_TransposeVec ) {
     FORIJ(3, 6)
         BOOST_CHECK_CLOSE ( MVT[i][j], MT[i][j], 1e-5 );
 };
+
+BOOST_AUTO_TEST_CASE ( Test_SumVector ) {
+    double M[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
+    vector < double > MV(M, M+10);
+    
+    double sum = sumVector(MV);
+    BOOST_CHECK_CLOSE ( sum, 55.0000, 1e-5 );
+};
+
+BOOST_AUTO_TEST_CASE ( Test_ScaleVectorMax ) {
+    double M[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
+    double M_Scaled[10] = { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 };
+    vector < double > MV(M, M+10);
+    
+    scaleVectorMax (MV);
+    FORI(MV.size())
+        BOOST_CHECK_CLOSE ( M_Scaled[i], MV[i], 1e-5 );
+};
+
+BOOST_AUTO_TEST_CASE ( Test_ScaleVectorMin ) {
+    double M[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
+    vector < double > MV(M, M+10);
+    
+    scaleVectorMin (MV);
+    FORI(MV.size())
+        BOOST_CHECK_CLOSE ( M[i], MV[i], 1e-5 );
+};
+

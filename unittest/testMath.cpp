@@ -196,3 +196,142 @@ BOOST_AUTO_TEST_CASE ( Test_ScaleVectorMin ) {
         BOOST_CHECK_CLOSE ( M[i], MV[i], 1e-5 );
 };
 
+BOOST_AUTO_TEST_CASE ( Test_scaleVectorD ) {
+    double M[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
+    double M_Scaled[10] = { 10.0000000000,  5.0000000000,  3.3333333333,  2.5000000000,  2.0000000000,  1.6666666667,  1.4285714286,  1.2500000000,  1.1111111111,  1.0000000000 };
+    vector < double > MV(M, M+10);
+    
+    scaleVectorD (MV);
+    FORI(MV.size())
+        BOOST_CHECK_CLOSE ( MV[i], M_Scaled[i], 1e-5 );
+};
+
+BOOST_AUTO_TEST_CASE ( Test_MulVectorElement ) {
+    double M1[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
+    double M2[10] = { 10.0000000000,  5.0000000000,  3.3333333333,  2.5000000000,  2.0000000000,  1.6666666667,  1.4285714286,  1.2500000000,  1.1111111111,  1.0000000000 };
+    vector < double > MV1(M1, M1+10);
+    vector < double > MV2(M2, M2+10);
+    
+    vector < double > MV3 = mulVectorElement ( MV1, MV2 );
+    FORI(MV3.size())
+        BOOST_CHECK_CLOSE ( MV3[i], 10.0000000000, 1e-5 );
+};
+
+BOOST_AUTO_TEST_CASE ( Test_DivVectorElement ) {
+    double M1[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
+    double M2[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
+    
+    vector < double > MV1(M1, M1+10);
+    vector < double > MV2(M2, M2+10);
+    
+    vector < double > MV3 = divVectorElement ( MV1, MV2 );
+    FORI(MV3.size())
+        BOOST_CHECK_CLOSE ( MV3[i], 1.0000000000, 1e-5 );
+};
+
+BOOST_AUTO_TEST_CASE ( Test_MulVector1 ) {
+    double M1[3][3] = {
+        { 1.0, 0.0, 0.0 },
+        { 0.0, 2.0, 0.0 },
+        { 0.0, 0.0, 3.0 }
+    };
+    double M2[3][3] = {
+        { 1.0000000000, 0.0000000000, 0.0000000000 },
+        { 0.0000000000, 0.5000000000, 0.0000000000 },
+        { 0.0000000000, 0.0000000000, 0.3333333333 }
+        
+    };
+    double M3[3][3] = {
+        { 1.0000000000, 0.0000000000, 0.0000000000 },
+        { 0.0000000000, 1.0000000000, 0.0000000000 },
+        { 0.0000000000, 0.0000000000, 1.0000000000 }
+        
+    };
+    
+    vector < vector < double > > MV1( 3, vector < double > (3) );
+    vector < vector < double > > MV2( 3, vector < double > (3) );
+    FORIJ( 3, 3 ) {
+        MV1[i][j] = M1[i][j];
+        MV2[i][j] = M2[i][j];
+    }
+    
+    vector < vector < double > > MV3 = mulVector ( MV1, MV2 );
+    FORIJ( 3, 3 )
+        BOOST_CHECK_CLOSE ( MV3[i][j], M3[i][j], 1e-5 );
+};
+
+BOOST_AUTO_TEST_CASE ( Test_MulVector2 ) {
+    double M1[3][3] = {
+        { 1.0000000000, 0.0000000000, 0.0000000000 },
+        { 0.0000000000, 0.5000000000, 0.0000000000 },
+        { 0.0000000000, 0.0000000000, 0.3333333333 }
+        
+    };
+    double M2[3] = { 1.0000000000, 0.0000000000, 0.0000000000 };
+    
+    vector < vector < double > > MV1( 3, vector < double > (3) );
+    vector < double > MV2( M2, M2+3 );
+    FORIJ( 3, 3 ) {
+        MV1[i][j] = M1[i][j];
+    }
+    
+    vector < double > MV3 = mulVector ( MV1, MV2 );
+    FORI ( 3 )
+        BOOST_CHECK_CLOSE ( MV3[i], M2[i], 1e-5 );
+};
+
+BOOST_AUTO_TEST_CASE ( Test_MulVectorArray ) {
+    double data[9] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 };
+    double M[3][3] = {
+        { 1.0000000000, 0.0000000000, 0.0000000000 },
+        { 0.0000000000, 2.0000000000, 0.0000000000 },
+        { 0.0000000000, 0.0000000000, 3.0000000000 }
+        
+    };
+    
+    double data_test[9] = { 1.0000000000,  4.0000000000,  9.0000000000,  4.0000000000, 10.0000000000, 18.0000000000,  7.0000000000, 16.0000000000, 27.0000000000 };
+
+    vector < vector < double > > MV( 3, vector < double > (3) );
+    FORIJ( 3, 3 )
+        MV[i][j] = M[i][j];
+    
+    mulVectorArray( data, 9, 3, MV );
+    FORI ( 9 )
+        BOOST_CHECK_CLOSE ( data[i], data_test[i], 1e-5 );
+};
+
+BOOST_AUTO_TEST_CASE ( Test_SolveVM ) {
+    double M1[3][3] = {
+        { 1.0000000000, 0.0000000000, 0.0000000000 },
+        { 0.0000000000, 2.0000000000, 0.0000000000 },
+        { 0.0000000000, 0.0000000000, 3.0000000000 }
+        
+    };
+    double M2[3][3] = {
+        { 1.0000000000, 0.0000000000, 0.0000000000 },
+        { 0.0000000000, 1.0000000000, 0.0000000000 },
+        { 0.0000000000, 0.0000000000, 1.0000000000 }
+        
+    };
+    
+    double M3_test[3][3] = {
+        { 1.0000000000, 0.0000000000, 0.0000000000 },
+        { 0.0000000000, 0.5000000000, 0.0000000000 },
+        { 0.0000000000, 0.0000000000, 0.3333333333 }
+        
+    };
+    
+    vector < vector < double > > MV1( 3, vector < double > (3) );
+    vector < vector < double > > MV2( 3, vector < double > (3) );
+
+    FORIJ( 3, 3 ) {
+        MV1[i][j] = M1[i][j];
+        MV2[i][j] = M2[i][j];
+    }
+    
+    vector < vector < double > > MV3 = solveVM (MV1, MV2);
+    FORIJ( 3, 3 )
+        BOOST_CHECK_CLOSE ( MV3[i][j], M3_test[i][j], 1e-5 );
+};
+
+

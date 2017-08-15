@@ -361,9 +361,9 @@ T calSSE ( vector <T> & tcp, vector <T> & src ) {
 };
 
 template <typename T>
-T findIndexInterp1 ( T val, vector <T> x, T size ) {
-    T dist = T(1000);
-    T index = T(-1);
+int findIndexInterp1 ( T val, vector <T> x, int size ) {
+    T dist = T(1e9);
+    int index = -1;
     
     FORI(size) {
         T tmp = val - x[i];

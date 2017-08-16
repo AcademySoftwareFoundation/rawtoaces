@@ -437,8 +437,9 @@ vector < vector<T> > XYZtoLAB ( const vector < vector<T> >& XYZ ) {
 
 template<typename T>
 vector< vector<T> > getCalcXYZt ( const vector < vector<T> > RGB,
-                                  const T *  B ) {
-    assert(RGB.size() == 190);
+                                  const T B[6] ) {
+    assert( RGB.size() == 190 );
+    
     vector < vector<T> > BV (3, vector < T >(3));
     vector < vector <T> > M (3, vector < T >(3));
     

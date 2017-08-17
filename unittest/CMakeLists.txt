@@ -35,19 +35,6 @@ target_link_libraries ( Test_IDT
 )
 
 add_executable (
-	Test_Math
-	testMath.cpp
-)
-
-target_link_libraries ( Test_Math
-						${RAWTOACESLIB}
-						${Boost_FILESYSTEM_LIBRARY}
-                        ${Boost_SYSTEM_LIBRARY}
-                        ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
- 						${CERES_LIBRARIES}
-)
-
-add_executable (
 	Test_Illum
 	testIllum.cpp
 )
@@ -58,8 +45,33 @@ target_link_libraries ( Test_Illum
                         ${Boost_SYSTEM_LIBRARY}
                         ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
 )
+
+add_executable (
+	Test_Math
+	testMath.cpp
+)
+
+target_link_libraries ( Test_Math
+						${Boost_FILESYSTEM_LIBRARY}
+                        ${Boost_SYSTEM_LIBRARY}
+                        ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+ 						${CERES_LIBRARIES}
+)
+
+add_executable (
+	Test_Misc
+	testMisc.cpp
+)
+
+target_link_libraries ( Test_Misc
+						${Boost_FILESYSTEM_LIBRARY}
+                        ${Boost_SYSTEM_LIBRARY}
+                        ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+)
 					  
 add_test (NAME Test_IDT COMMAND Test_IDT)
 add_test (NAME Test_Illum COMMAND Test_Illum)
 add_test (NAME Test_Math COMMAND Test_Math)
+add_test (NAME Test_Misc COMMAND Test_Misc)
+
 

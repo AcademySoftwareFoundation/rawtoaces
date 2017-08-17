@@ -271,7 +271,7 @@ static const double cat02[3][3] = {
 };
 
 // Function to Open Directories
-inline vector<string> openDir (string path = ".") {
+inline vector < string > openDir ( string path = "." ) {
     DIR *    dir;
     dirent * pDir;
     struct stat fStat;
@@ -293,12 +293,12 @@ inline vector<string> openDir (string path = ".") {
 
 // Function to clear the memories occupied by vectors
 template<typename T>
-inline void clearVM (vector<T> vct) {
+inline void clearVM ( vector<T> vct ) {
     vector< T >().swap(vct);
 };
 
 // Function to covert upper-case to lower-case
-inline void lowerCase (char * tex)
+inline void lowerCase ( char * tex )
 {
     string tmp(tex);
     
@@ -316,7 +316,7 @@ inline bool isNumeric ( const char * val )
 };
 
 // Function to check if a input is a alphabetic letter
-inline bool isCTLetterDigit (const char c){
+inline bool isCTLetterDigit ( const char c ){
     return ( ( c >= 'a' && c <= 'z' )
              || ( c >= 'A' && c <= 'Z' )
              || ( c == '-')
@@ -372,7 +372,7 @@ inline bool isValidCT ( string str )
 };
 
 // Function to get environment variable for camera data
-inline dataPath& pathsFinder ( )
+inline dataPath& pathsFinder ()
 {
     static dataPath cdp;
     static bool firstTime = 1;

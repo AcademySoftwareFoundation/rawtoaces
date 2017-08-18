@@ -55,7 +55,6 @@
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/test/floating_point_comparison.hpp>
 
 #include "../lib/define.h"
 
@@ -136,6 +135,13 @@ BOOST_AUTO_TEST_CASE ( Test_IsValidCT ) {
     
     string val9 = "d65k";
     BOOST_CHECK_EQUAL( false, isValidCT(val9) );
+};
+
+BOOST_AUTO_TEST_CASE ( Test_PathsFinder ) {
+    dataPath dps = pathsFinder();
+    string first = "/usr/local/include/rawtoaces/data";
     
+    vector < string >::iterator it = dps.paths.begin();
+    BOOST_CHECK_EQUAL(first, *it);
 };
 

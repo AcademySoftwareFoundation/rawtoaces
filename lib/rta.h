@@ -112,7 +112,6 @@ namespace rta {
         double _BSen;
     };
 
-    
     class Idt;
 
     class Illum {
@@ -177,6 +176,7 @@ namespace rta {
             int loadSpst( string path,
                           const char * maker,
                           const char * model );
+        
             vector < RGBSen > getSensitivity();
 
         private:

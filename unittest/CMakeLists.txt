@@ -19,6 +19,18 @@ link_directories ( ${AcesContainer_LIBRARY_DIRS} ${libraw_LIBRARY_DIRS} ${CERES_
 add_definitions (-DBOOST_TEST_DYN_LINK)
 
 add_executable (
+	Test_Spst
+	testSpst.cpp
+)
+
+target_link_libraries ( Test_Spst
+						${RAWTOACESLIB}
+						${Boost_FILESYSTEM_LIBRARY}
+                        ${Boost_SYSTEM_LIBRARY}
+                        ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+)
+
+add_executable (
 	Test_IDT
 	testIDT.cpp
 )
@@ -68,7 +80,8 @@ target_link_libraries ( Test_Misc
                         ${Boost_SYSTEM_LIBRARY}
                         ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
 )
-					  
+
+add_test (NAME Test_Spst COMMAND Test_Spst)			  
 add_test (NAME Test_IDT COMMAND Test_IDT)
 add_test (NAME Test_Illum COMMAND Test_Illum)
 add_test (NAME Test_Math COMMAND Test_Math)

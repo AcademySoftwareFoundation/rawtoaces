@@ -72,7 +72,7 @@ T clip ( T val, T target ) {
 };
 
 template<typename T>
-int isSquare ( const vector< vector<T> > vm ) {
+int isSquare ( const vector < vector < T > > & vm ) {
     FORI(vm.size()){
         if (vm[i].size() != vm.size())
             return 0;
@@ -83,13 +83,13 @@ int isSquare ( const vector< vector<T> > vm ) {
 
 // This is not the typical "cross" product
 template <typename T>
-T cross ( const vector <T> &vectorA, const vector <T> &vectorB ) {
+T cross ( const vector <T> &vectorA, const vector < T > & vectorB ) {
     assert (vectorA.size() == 2 && vectorB.size() == 2 );
     return vectorA[0] * vectorB[1] - vectorA[1] * vectorB[0];
 };
 
 template <typename T>
-vector< vector<T> > invertVM ( const vector < vector <T> > &vMtx ) {
+vector< vector<T> > invertVM ( const vector < vector < T > > & vMtx ) {
     assert(isSquare(vMtx));
     
     Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic> m;
@@ -108,7 +108,7 @@ vector< vector<T> > invertVM ( const vector < vector <T> > &vMtx ) {
 };
 
 template <typename T>
-vector < vector<T> > diagVM ( const vector<T>& vct ) {
+vector < vector<T> > diagVM ( const vector < T > & vct ) {
     assert(vct.size() != 0);
     vector < vector<T> > vctdiag(vct.size(), vector<T>(vct.size(), T(0.0)));
     
@@ -117,7 +117,7 @@ vector < vector<T> > diagVM ( const vector<T>& vct ) {
 };
 
 template <typename T>
-vector< vector<T> > transposeVec ( const vector < vector<T> > vMtx ) {
+vector< vector<T> > transposeVec ( const vector < vector < T > > & vMtx ) {
     assert( vMtx.size() != 0
             && vMtx[0].size() != 0 );
 
@@ -134,7 +134,7 @@ vector< vector<T> > transposeVec ( const vector < vector<T> > vMtx ) {
 };
 
 template <typename T>
-T sumVector ( const vector<T>& vct ) {
+T sumVector ( const vector < T > & vct ) {
     Eigen::Matrix <T, Eigen::Dynamic, 1> v;
     v.resize(vct.size(), 1);
     FORI(v.rows()) v(i, 0) = vct[i];
@@ -143,7 +143,7 @@ T sumVector ( const vector<T>& vct ) {
 };
 
 template <typename T>
-void scaleVector ( vector<T>& vct, const T scale ) {
+void scaleVector ( vector < T > & vct, const T scale ) {
     Eigen::Matrix <T, Eigen::Dynamic, 1> v;
     v.resize(vct.size(), 1);
     
@@ -156,7 +156,7 @@ void scaleVector ( vector<T>& vct, const T scale ) {
 };
 
 template <typename T>
-void scaleVectorMax ( vector<T>& vct ) {
+void scaleVectorMax ( vector < T > & vct ) {
     Eigen::Matrix <T, Eigen::Dynamic, 1> v;
     v.resize(vct.size(), 1);
     
@@ -169,7 +169,7 @@ void scaleVectorMax ( vector<T>& vct ) {
 };
 
 template <typename T>
-void scaleVectorMin ( vector<T>& vct ) {
+void scaleVectorMin ( vector < T > & vct ) {
     Eigen::Matrix <T, Eigen::Dynamic, 1> v;
     v.resize(vct.size(), 1);
     
@@ -182,7 +182,7 @@ void scaleVectorMin ( vector<T>& vct ) {
 };
 
 template <typename T>
-void scaleVectorD ( vector<T>& vct ) {
+void scaleVectorD ( vector < T > & vct ) {
     Eigen::Matrix <T, Eigen::Dynamic, 1> v;
     v.resize(vct.size(), 1);
 
@@ -193,8 +193,8 @@ void scaleVectorD ( vector<T>& vct ) {
 };
 
 template <typename T>
-vector<T> mulVectorElement ( const vector<T>& vct1,
-                             const vector<T>& vct2 ) {
+vector<T> mulVectorElement ( const vector < T > & vct1,
+                             const vector < T > & vct2 ) {
     assert(vct1.size() == vct2.size());
     
     Eigen::Array <T, Eigen::Dynamic, 1> a1, a2;
@@ -214,8 +214,8 @@ vector<T> mulVectorElement ( const vector<T>& vct1,
 };
 
 template <typename T>
-vector<T> divVectorElement ( const vector<T>& vct1,
-                             const vector<T>& vct2 ) {
+vector<T> divVectorElement ( const vector < T > & vct1,
+                             const vector < T > & vct2 ) {
     assert(vct1.size() == vct2.size());
 
     vector<T> vct2D (vct2.size(), T(1.0));
@@ -250,7 +250,7 @@ vector < vector<T> > mulVector ( const vector < vector < T > > & vct1,
 };
 
 template <typename T>
-vector < T > mulVector( const vector < vector<T> >& vct1,
+vector < T > mulVector( const vector < vector < T > > & vct1,
                         const vector < T > & vct2 ) {
     assert( vct1.size() != 0 &&
             (vct1[0]).size() == vct2.size() );
@@ -274,7 +274,7 @@ vector < T > mulVector( const vector < vector<T> >& vct1,
 
 template <typename T>
 vector < T > mulVector ( const vector < T > & vct1,
-                         const vector < vector<T> > & vct2 ) {
+                         const vector < vector < T > > & vct2 ) {
     return mulVector (vct2, vct1);
 };
 
@@ -282,7 +282,7 @@ template<typename T>
 T * mulVectorArray ( T * data,
                      const uint32_t total,
                      const uint8_t dim,
-                     const vector< vector < double > > vct ) {
+                     const vector < vector < double > > & vct ) {
     assert(vct.size() == dim
            && isSquare(vct));
     
@@ -327,8 +327,8 @@ T * mulVectorArray ( T * data,
 };
 
 template<typename T>
-vector < vector<T> > solveVM ( const vector < vector<T> >& vct1,
-                               const vector < vector<T> >& vct2 ) {
+vector < vector<T> > solveVM ( const vector < vector < T > > & vct1,
+                               const vector < vector < T > > & vct2 ) {
     
     Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic> m1, m2, m3;
     m1.resize(vct1.size(), vct1[0].size());
@@ -349,7 +349,7 @@ vector < vector<T> > solveVM ( const vector < vector<T> >& vct1,
 };
 
 template <typename T>
-T calSSE ( vector <T> & tcp, vector <T> & src ) {
+T calSSE ( const vector <T> & tcp, const vector <T> & src ) {
     assert(tcp.size() == src.size());
     vector<T> tmp(src.size());
     
@@ -361,7 +361,7 @@ T calSSE ( vector <T> & tcp, vector <T> & src ) {
 };
 
 template <typename T>
-int findIndexInterp1 ( T val, vector <T> x, int size ) {
+int findIndexInterp1 ( T val, const vector <T> & x, int size ) {
     T dist = T(1e9);
     int index = -1;
     
@@ -377,9 +377,9 @@ int findIndexInterp1 ( T val, vector <T> x, int size ) {
 };
 
 template <typename T>
-vector <T> interp1DLinear ( const vector <int> X0,
-                            const vector <int> X1,
-                            const vector <T> Y0 ) {
+vector <T> interp1DLinear ( const vector <int> & X0,
+                            const vector <int> & X1,
+                            const vector <T> & Y0 ) {
     assert (X0.size() == Y0.size());
     
     vector <T> slope, intercept, Y1;
@@ -407,7 +407,7 @@ vector <T> interp1DLinear ( const vector <int> X0,
 };
 
 template<typename T>
-vector < vector<T> > XYZtoLAB ( const vector < vector<T> >& XYZ ) {
+vector < vector<T> > XYZtoLAB ( const vector < vector < T > > & XYZ ) {
     assert(XYZ.size() == 190);
     T add = T(16.0/116.0);
     
@@ -436,7 +436,7 @@ vector < vector<T> > XYZtoLAB ( const vector < vector<T> >& XYZ ) {
 };
 
 template<typename T>
-vector< vector<T> > getCalcXYZt ( const vector < vector<T> > RGB,
+vector< vector<T> > getCalcXYZt ( const vector < vector < T > > & RGB,
                                   const T B[6] ) {
     assert( RGB.size() == 190 );
     

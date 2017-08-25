@@ -256,7 +256,7 @@ AcesRender & AcesRender::getInstance(){
 //      const AcesRender & : current instance filled with data from
 //      acesrender
 
-const AcesRender & AcesRender::operator=( const AcesRender& acesrender ) {
+const AcesRender & AcesRender::operator=( const AcesRender & acesrender ) {
     if ( this != &acesrender ) {
         clearVM(_idtm);
         clearVM(_catm);
@@ -299,7 +299,7 @@ const AcesRender & AcesRender::operator=( const AcesRender& acesrender ) {
 //            A few parameters of "_rawProcessor" (imgdata.params)
 //            will be given a set of initial values
 
-void AcesRender::initialize ( dataPath dp ) {
+void AcesRender::initialize ( const dataPath & dp ) {
     _opts.use_bigfile        = 0;
     _opts.use_timing         = 0;
     _opts.use_illum          = 0;
@@ -557,7 +557,7 @@ void AcesRender::setPixels ( libraw_processed_image_t * image ) {
 
 ////    Strange because memcpying on libraw_processed_image_t
 //    will generate an error
-//    if (_image) delete _image;
+//    if (_image != nullptr ) delete _image;
 //    _image = (libraw_processed_image_t *) malloc(sizeof(libraw_processed_image_t));
 //    memcpy(_image, image, sizeof(*image));
 }
@@ -764,7 +764,7 @@ int AcesRender::unpack ( const char * pathToRaw ) {
 //                         sensitivity data successfully;
 //                         "0" means error in reading/injecting data
 
-int AcesRender::fetchCameraSenPath( libraw_iparams_t P )
+int AcesRender::fetchCameraSenPath( const libraw_iparams_t & P )
 {
     int readC = 0;
     
@@ -827,7 +827,7 @@ int AcesRender::fetchIlluminant ( const char * illumType )
 //		int                           : "1" means IDT matrix generated;
 //                                      "0" means error in calculation.
 
-int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
+int AcesRender::prepareIDT ( const libraw_iparams_t & P, float * M )
 {
 // _rawProcessor->imgdata.idata
     int read = fetchCameraSenPath( P );
@@ -882,7 +882,7 @@ int AcesRender::prepareIDT ( libraw_iparams_t P, float * M )
 //		int                : "1" means white balance coefficients generated;
 //                           "0" means error during calculation
 
-int AcesRender::prepareWB ( libraw_iparams_t P )
+int AcesRender::prepareWB ( const libraw_iparams_t & P )
 {
     int read = fetchCameraSenPath ( P );
 
@@ -967,13 +967,13 @@ int AcesRender::dcraw ( ) {
 //      int                : "1" means raw file successfully pre-processed;
 //                           "0" means error when pre-processing the file
 
-int AcesRender::preprocessRaw ( const char * pathToRaw ) {
-    assert ( pathToRaw != nullptr );
+int AcesRender::preprocessRaw ( const char * path ) {
+    assert ( path != nullptr );
     
-    size_t len = strlen(pathToRaw);
+    size_t len = strlen(path);
     _pathToRaw = (char *) malloc(len+1);
     memset(_pathToRaw, 0x0, len);
-    memcpy(_pathToRaw, pathToRaw, len);
+    memcpy(_pathToRaw, path, len);
     _pathToRaw[len] = '\0';
 
    // if ( _opts.verbosity > 2 )
@@ -982,7 +982,7 @@ int AcesRender::preprocessRaw ( const char * pathToRaw ) {
     // Start rawtoaces
     if ( _opts.verbosity ) {
         printf( "\nStarting rawtoaces ...\n");
-        printf ( "Processing %s ...\n", pathToRaw );
+        printf ( "Processing %s ...\n", path );
     }
     
 #ifdef LIBRAW_USE_OPENMP
@@ -990,8 +990,8 @@ int AcesRender::preprocessRaw ( const char * pathToRaw ) {
        printf ( "Using %d threads\n", omp_get_max_threads() );
 #endif
     
-    if ( openRawPath ( pathToRaw ) )
-        unpack ( pathToRaw );
+    if ( openRawPath ( path ) )
+        unpack ( path );
     
     return _opts.ret;
 }
@@ -1363,7 +1363,7 @@ void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total )
 //	outputs:
 //		float * : an array of converted aces values
 
-float * AcesRender::renderDNG ( vector < float > cameraToDisplayMtx )
+float * AcesRender::renderDNG ( const vector < float > & cameraToDisplayMtx )
 {
     assert(_image);
     

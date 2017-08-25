@@ -61,8 +61,8 @@
 
 using namespace rta;
 
-void create_key ( unordered_map < string, char >& keys );
-void usage ( const char *prog );
+void create_key ( unordered_map < string, char > & keys );
+void usage ( const char * prog );
 
 class LibRawAces : virtual public LibRaw {
     public:
@@ -79,21 +79,20 @@ class AcesRender {
         static AcesRender & getInstance();
     
         int configureSettings ( int argc, char * argv[] );
-        int fetchCameraSenPath ( libraw_iparams_t P );
+        int fetchCameraSenPath ( const libraw_iparams_t & P );
         int fetchIlluminant ( const char * illumType = "na" );
     
         int openRawPath ( const char * pathToRaw );
         int unpack ( const char * pathToRaw );
         int dcraw ( );
 
-        int prepareIDT ( libraw_iparams_t P, float * M );
-        int prepareWB ( libraw_iparams_t P );
-        int preprocessRaw ( const char * pathToRaw );
+        int prepareIDT ( const libraw_iparams_t & P, float * M );
+        int prepareWB ( const libraw_iparams_t & P );
+        int preprocessRaw ( const char * path );
         int postprocessRaw ( );
-        float * renderACES ( );
         void outputACES ( );
     
-        void initialize ( dataPath dp );
+        void initialize ( const dataPath & dp );
         void setPixels ( libraw_processed_image_t * image );
         void gatherSupportedIllums ();
         void gatherSupportedCameras ();
@@ -102,8 +101,9 @@ class AcesRender {
         void applyIDT ( float * pixels, int bits, uint32_t total );
         void applyCAT ( float * pixels, int channel, uint32_t total );
         void acesWrite ( const char * name, float *  aces, float ratio = 1.0) const;
-
-        float * renderDNG ( vector < float > cameraToDisplayMtx );
+    
+        float * renderACES ( );
+        float * renderDNG ( const vector < float > & cameraToDisplayMtx );
         float * renderNonDNG ();
         float * renderNonDNG_IDT ();
     
@@ -119,7 +119,7 @@ class AcesRender {
         AcesRender();
         ~AcesRender();
     
-        const AcesRender & operator=( const AcesRender& acesrender );
+        const AcesRender & operator=( const AcesRender & acesrender );
     
         char * _pathToRaw;
         Idt * _idt;

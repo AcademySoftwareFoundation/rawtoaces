@@ -122,19 +122,20 @@ namespace rta {
             Illum( string type );
             ~Illum();
 
-            void setIllumType( string type );
-            void setIllumInc( int Inc );
-            void setIllumIndex( double index );
+            void setIllumType( const string & type );
+            void setIllumInc( const int & Inc );
+            void setIllumIndex( const double & index );
 
             const vector < double > getIllumData() const;
             const string getIllumType() const;
             const int getIllumInc() const;
             const double getIllumIndex() const;
-            vector < double > cctToxy( const double cctd ) const;
+            vector < double > cctToxy( const double & cctd ) const;
         
-            int readSPD( string path, string type );
-            void calDayLightSPD( const int cct );
-            void calBlackBodySPD( const int cct );
+            int readSPD( const string & path, const string & type );
+        
+            void calDayLightSPD( const int & cct );
+            void calBlackBodySPD( const int & cct );
         
 
     private:
@@ -161,8 +162,8 @@ namespace rta {
 
             void setBrand ( const char * brand );
             void setModel ( const char * model );
-            void setWLIncrement ( const uint8_t inc );
-            void setSensitivity ( const vector < RGBSen > rgbsen );
+            void setWLIncrement ( const int & inc );
+            void setSensitivity ( const vector < RGBSen > & rgbsen );
         
             const char * getBrand() const;
             const char * getModel() const;
@@ -173,7 +174,7 @@ namespace rta {
             char * getModel();
         
             int getWLIncrement();
-            int loadSpst( string path,
+            int loadSpst( const string & path,
                           const char * maker,
                           const char * model );
         
@@ -192,30 +193,30 @@ namespace rta {
             Idt();
             ~Idt();
         
-            int loadCameraSpst( string path,
+            int loadCameraSpst( const string & path,
                                 const char * maker,
                                 const char * model );
-            int loadIlluminant( vector <string> paths, string type = "na" );
+            int loadIlluminant( const vector <string> & paths, string type = "na" );
 
-            void loadTrainingData( string path );
-            void loadCMF( string path );
-            void chooseIllumSrc( vector < double > src, int highlight );
+            void loadTrainingData( const string & path );
+            void loadCMF( const string & path );
+            void chooseIllumSrc( const vector < double > & src, int highlight );
             void chooseIllumType( const char * type, int highlight );
-            void setIlluminants( Illum Illuminant );
-            void setVerbosity( int verbosity );
+            void setIlluminants( const Illum & Illuminant );
+            void setVerbosity( const int verbosity );
             void scaleLSC( Illum & Illuminant );
         
             vector < double > calCM();
             vector < double > calWB( Illum & Illuminant, int highlight );
             vector < vector <double> > calTI() const;
-            vector < vector <double> > calCAT( vector <double> src,
-                                               vector <double> des ) const;
-            vector < vector<double> > calXYZ( vector < vector<double> > TI ) const;
-            vector < vector<double> > calRGB( vector < vector<double> > TI ) const;
+            vector < vector <double> > calCAT( const vector < double > & src,
+                                               const vector < double > & des ) const;
+            vector < vector<double> > calXYZ( const vector < vector < double > > & TI ) const;
+            vector < vector<double> > calRGB( const vector < vector <double > > & TI ) const;
         
-            int curveFit( vector < vector<double> > RGB,
-                          vector < vector<double> > XYZ,
-                          double * BStart );
+            int curveFit( const vector < vector <double> > & RGB,
+                          const vector < vector <double> > & XYZ,
+                          double * B );
             int calIDT();
         
             const Spst getCameraSpst() const;
@@ -245,25 +246,25 @@ namespace rta {
             DNG();
             ~DNG();
         
-            vector<double> xyToXYZ( const vector<double>& xy );
-            vector<double> uvToXYZ( const vector<double>& uv );
-            vector<double> uvToxy( const vector<double>& uv );
-            vector<double> XYZTouv( const vector<double> &XYZ) ;
-            vector<double> XYZtoCameraWeightedMatrix( const float &mir,
-                                                      const float &mir1,
-                                                      const float &mir2 );
+            vector<double> xyToXYZ( const vector < double > & xy );
+            vector<double> uvToXYZ( const vector < double > & uv );
+            vector<double> uvToxy( const vector < double > & uv );
+            vector<double> XYZTouv( const vector < double > &XYZ) ;
+            vector<double> XYZtoCameraWeightedMatrix( const float & mir,
+                                                      const float & mir1,
+                                                      const float & mir2 );
             vector<double> colorTemperatureToXYZ( const double cct ) const;
-            vector<double> findXYZtoCameraMtx( const vector<double> neutralRGB ) const;
-            vector<double> matrixRGBtoXYZ( const vector< vector<double> > chromaticities ) const;
-            vector<double> matrixChromaticAdaptation( const vector<double> &whiteFrom,
-                                                      const vector<double> &whiteTo );
+            vector<double> findXYZtoCameraMtx( const vector < double > & neutralRGB ) const;
+            vector<double> matrixRGBtoXYZ( const vector < vector < double > > & chromaticities ) const;
+            vector<double> matrixChromaticAdaptation( const vector < double > & whiteFrom,
+                                                      const vector < double > & whiteTo );
         
 
             double ccttoMired( const double cct ) const;
-            double robertsonLength( const vector<double> &uv,
-                                    const vector<double>& uvt ) const;
+            double robertsonLength( const vector < double > & uv,
+                                    const vector < double > & uvt ) const;
             double lightSourceToColorTemp( const unsigned short tag ) const;
-            double XYZToColorTemperature( const vector<double> &XYZ );
+            double XYZToColorTemperature( const vector < double > & XYZ );
         
             void prepareMatrices();
             void getCameraXYZMtxAndWhitePoint( double baseExpo );
@@ -273,8 +274,8 @@ namespace rta {
     };
     
     struct Objfun {
-            Objfun(vector< vector<double> > RGB,
-                   vector< vector<double> > outLAB): _RGB(RGB), _outLAB(outLAB) { }
+            Objfun ( const vector < vector<double> > & RGB,
+                     const vector < vector<double> > & outLAB): _RGB(RGB), _outLAB(outLAB) { }
         
             template<typename T>
             bool operator() (const T* B,
@@ -289,8 +290,8 @@ namespace rta {
                 return true;
            }
         
-            const vector< vector<double> > _RGB;
-            const vector< vector<double> > _outLAB;
+            const vector< vector <double> > _RGB;
+            const vector< vector <double> > _outLAB;
    };
     
 }

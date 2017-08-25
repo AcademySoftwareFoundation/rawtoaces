@@ -77,7 +77,7 @@ namespace rta {
     //	outputs:
     //		void: _type will be assigned a value to (private member)
 
-    void Illum::setIllumType ( string type ) {
+    void Illum::setIllumType ( const string & type ) {
         assert( !type.empty() );
         _type = type;
 
@@ -93,7 +93,7 @@ namespace rta {
     //	outputs:
     //		void: _inc  will be assigned with a value (private member)
 
-    void Illum::setIllumInc ( int inc ) {
+    void Illum::setIllumInc ( const int & inc ) {
         _inc = inc;
 
         return;
@@ -108,7 +108,7 @@ namespace rta {
     //	outputs:
     //		void: _index  will be assigned with a value (private member)
 
-    void Illum::setIllumIndex ( double index ) {
+    void Illum::setIllumIndex ( const double & index ) {
         _index = index;
 
         return;
@@ -125,7 +125,7 @@ namespace rta {
     //		int: If successufully parsed, private data members (e.g., _data)
     //           will be filled and return 1; Otherwise, return 0
     
-    int Illum::readSPD ( string path, string type ) {
+    int Illum::readSPD ( const string & path, const string & type ) {
         assert(path.length() > 0 && type.length() > 0 );
         
         try
@@ -203,7 +203,7 @@ namespace rta {
     //		vector <double>: xy / chromaticity values
     //
     
-    vector <double> Illum::cctToxy ( const double cctd ) const {
+    vector <double> Illum::cctToxy ( const double & cctd ) const {
 //        assert( cctd >= 4000 && cct <= 25000 );
         
         vector <double> xy(2, 1.0);
@@ -232,7 +232,7 @@ namespace rta {
     //		int: If successufully processed, private data members (e.g., _data)
     //           will be filled and return 1; Otherwise, return 0
     
-    void Illum::calDayLightSPD ( const int cct ) {
+    void Illum::calDayLightSPD ( const int & cct ) {
         assert(( s_series[53].wl - s_series[0].wl) % _inc == 0 );
         
         double cctd = 1.0;
@@ -290,11 +290,6 @@ namespace rta {
                     _index = _data[_data.size()-1];
             }
         }
-        
-//        printf("%i, ", int(_data.size()));
-//        FORI(_data.size())
-//            printf("  %18.13f,\n", _data[i]);
-//        printf(" }");
         
         clearVM(s01);
         clearVM(s11);
@@ -363,7 +358,7 @@ namespace rta {
     //		int: If successufully processed, private data members (e.g., _data)
     //           will be filled and return 1; Otherwise, return 0
     
-    void Illum::calBlackBodySPD ( const int cct ) {
+    void Illum::calBlackBodySPD ( const int & cct ) {
         if (cct < 1500 || cct >= 4000) {
             fprintf ( stderr, "The range of Color Temperature for BlackBody "
                               "should be from 1500 to 3999. \n");
@@ -539,7 +534,7 @@ namespace rta {
     //	outputs:
     //		int : the private data members (e.g., _rgbsen) will be filled
     
-    int Spst::loadSpst ( string path,
+    int Spst::loadSpst ( const string & path,
                          const char * maker,
                          const char * model ) {
         assert( path.length() > 0
@@ -702,7 +697,7 @@ namespace rta {
     //	outputs:
     //		void: _increment (private member)
     
-    void Spst::setWLIncrement ( const uint8_t inc ) {
+    void Spst::setWLIncrement ( const int & inc ) {
         _increment = inc;
         
         return;
@@ -717,8 +712,8 @@ namespace rta {
     //	outputs:
     //		void: _rgbsen (private member)
 
-    void Spst::setSensitivity ( const vector<RGBSen> rgbsen ) {
-        FORI(rgbsen.size()) _rgbsen[i] = rgbsen[i];
+    void Spst::setSensitivity ( const vector < RGBSen > & rgbsen ) {
+        _rgbsen = rgbsen;
         
         return;
     }
@@ -797,7 +792,7 @@ namespace rta {
     //		boolean: If successufully parsed, _cameraSpst will be filled and return 1;
     //               Otherwise, return 0
     
-    int Idt::loadCameraSpst ( string path,
+    int Idt::loadCameraSpst ( const string & path,
                               const char * maker,
                               const char * model ) {
         
@@ -815,7 +810,7 @@ namespace rta {
     //		int: If successufully parsed, _bestIllum will be filled and return 1;
     //               Otherwise, return 0
 
-    int Idt::loadIlluminant ( vector <string> paths, string type ) {
+    int Idt::loadIlluminant ( const vector <string> & paths, string type ) {
         assert ( paths.size() > 0 && !type.empty() );
         
         if (_Illuminants.size() > 0) _Illuminants.clear();
@@ -891,7 +886,7 @@ namespace rta {
     //	outputs:
     //		_trainingSpec: If successufully parsed, _trainingSpec will be filled
     
-    void Idt::loadTrainingData ( string path ) {
+    void Idt::loadTrainingData ( const string & path ) {
         struct stat st;
         assert (!stat( path.c_str(), &st ));
         
@@ -934,7 +929,7 @@ namespace rta {
     //	outputs:
     //		_cmf: If successufully parsed, _cmf will be filled
     
-    void Idt::loadCMF ( string path ) {
+    void Idt::loadCMF ( const string & path ) {
         struct stat st;
         assert (!stat( path.c_str(), &st ));
         
@@ -981,7 +976,7 @@ namespace rta {
     //	outputs:
     //		N/A:   _Illuminants should have one more element
     
-    void Idt::setIlluminants ( Illum Illuminant ) {
+    void Idt::setIlluminants ( const Illum & Illuminant ) {
         _Illuminants.push_back(Illuminant);
     }
     
@@ -994,7 +989,7 @@ namespace rta {
     //	outputs:
     //		int: _verbosity
     
-    void Idt::setVerbosity ( int verbosity ) {
+    void Idt::setVerbosity ( const int verbosity ) {
         _verbosity = verbosity;
     }
     
@@ -1010,7 +1005,7 @@ namespace rta {
     //	outputs:
     //		Illum: the best _Illuminant
     
-    void Idt::chooseIllumSrc ( vector <double> src, int highlight ) {
+    void Idt::chooseIllumSrc ( const vector < double > & src, int highlight ) {
         double sse = dmax;
         
         FORI ( _Illuminants.size() ) {
@@ -1128,8 +1123,8 @@ namespace rta {
     //	outputs:
     //		vector < vector<double> >: 2D vector (3 x 3)
     
-    vector < vector<double> > Idt::calCAT ( vector<double> src,
-                                            vector<double> des ) const {
+    vector < vector<double> > Idt::calCAT ( const vector < double > & src,
+                                            const vector < double > & des ) const {
         assert(src.size() == des.size());
         
         vector < vector <double> > vcat(3, vector<double>(3));
@@ -1195,7 +1190,7 @@ namespace rta {
     //	outputs:
     //		vector < vector<double> >: 2D vector (190 x 3)
     
-    vector< vector < double > > Idt::calXYZ (vector < vector < double > > TI ) const {
+    vector< vector < double > > Idt::calXYZ (const vector < vector < double > > & TI ) const {
         assert(TI.size() == 81);
         
         vector< vector<double> > transTI = transposeVec(TI);
@@ -1237,7 +1232,7 @@ namespace rta {
     //	outputs:
     //		vector < vector<double> >: 2D vector (190 x 3)
     
-    vector< vector < double > > Idt::calRGB ( vector < vector< double > > TI ) const {
+    vector< vector < double > > Idt::calRGB ( const vector < vector < double > > & TI ) const {
         assert(TI.size() == 81);
         
         vector< vector<double> > transTI = transposeVec(TI);
@@ -1274,8 +1269,8 @@ namespace rta {
     //               that minimize the distance between RGB and XYZ
     //               through updated B.
     
-    int Idt::curveFit ( vector< vector<double> > RGB,
-                        vector< vector<double> > XYZ,
+    int Idt::curveFit ( const vector< vector < double > > & RGB,
+                        const vector< vector < double > > & XYZ,
                         double * B ) {
         Problem problem;
         vector < vector <double> > outLAB = XYZtoLAB(XYZ);

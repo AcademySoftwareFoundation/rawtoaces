@@ -264,15 +264,15 @@ const AcesRender & AcesRender::operator=( const AcesRender & acesrender ) {
         clearVM(_illuminants);
         clearVM(_cameras);
         
-        if (_idt) delete _idt;
+        if ( _idt != nullptr ) delete _idt;
         _idt = (Idt *) malloc(sizeof(Idt));
         memcpy(_idt, acesrender._idt, sizeof(Idt));
         
-        if (_rawProcessor) delete _rawProcessor;
+        if ( _rawProcessor != nullptr ) delete _rawProcessor;
         _rawProcessor = (LibRawAces *) malloc(sizeof(LibRawAces));
         memcpy((void*)_rawProcessor, (void*)acesrender._rawProcessor, sizeof(LibRawAces));
         
-        if (_image) delete _image;
+        if ( _image != nullptr ) delete _image;
         _image = (libraw_processed_image_t *) malloc(sizeof(libraw_processed_image_t));
         memcpy(_image, acesrender._image, sizeof(libraw_processed_image_t));
 
@@ -553,13 +553,14 @@ int AcesRender::configureSettings ( int argc, char * argv[] )
 
 void AcesRender::setPixels ( libraw_processed_image_t * image ) {
     assert(image);
+    if ( _image != nullptr ) delete _image;
     _image = image;
 
 ////    Strange because memcpying on libraw_processed_image_t
 //    will generate an error
 //    if (_image != nullptr ) delete _image;
 //    _image = (libraw_processed_image_t *) malloc(sizeof(libraw_processed_image_t));
-//    memcpy(_image, image, sizeof(*image));
+//    memcpy(_image, image, sizeof(libraw_processed_image_t));
 }
 
 

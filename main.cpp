@@ -60,8 +60,6 @@ int main(int argc, char *argv[])
     if ( argc == 1 ) usage( argv[0] );
     
     struct stat st;
-    libraw_output_params_t OUT;
-    
     AcesRender & Render = AcesRender::getInstance();
     
 #ifndef WIN32

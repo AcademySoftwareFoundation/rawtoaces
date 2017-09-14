@@ -1021,10 +1021,10 @@ int AcesRender::postprocessRaw ( ) {
     if (_opts.verbosity > 1)
         printf ( "The camera has been identified as a %s %s ...\n", P.make, P.model );
     
-    if ( P.dng_version ) {
-        fprintf(stderr, "\nCurrently does not support DNG files.\n");
-        exit(1);
-    }
+//    if ( P.dng_version ) {
+//        fprintf(stderr, "\nCurrently does not support DNG files.\n");
+//        exit(1);
+//    }
     
     switch ( _opts.wb_method ) {
     // 0

@@ -119,6 +119,7 @@ class AcesRender {
     private:
         AcesRender();
         ~AcesRender();
+        static AcesRender & getPrivateInstance();
     
         const AcesRender & operator=( const AcesRender & acesrender );
     

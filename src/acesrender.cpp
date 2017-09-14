@@ -228,7 +228,22 @@ AcesRender::~AcesRender() {
 }
 
 //	=====================================================================
-//	Initialize the single instance of the "AcesRender" class
+//	Get the only instance of the "AcesRender" class
+//
+//	inputs:
+//      N/A
+//
+//	outputs:
+//      static AcesRender & : the referece to the only instance by calling
+//      the private getPrivateInstance() function
+
+AcesRender & AcesRender::getInstance(){
+    
+    return getPrivateInstance();
+}
+
+//	=====================================================================
+//	Initialize the single instance of the "AcesRender" class privately
 //
 //	inputs:
 //      N/A
@@ -237,7 +252,8 @@ AcesRender::~AcesRender() {
 //      static AcesRender &  : the referece to the only instance
 //      of "AcesRender" class
 
-AcesRender & AcesRender::getInstance(){
+AcesRender & AcesRender::getPrivateInstance(){
+    
     mutex mtx;
     mtx.lock();
     static AcesRender acesrender;
@@ -245,6 +261,7 @@ AcesRender & AcesRender::getInstance(){
     
     return acesrender;
 }
+
 
 //	=====================================================================
 //	Operator = overloading in "AcesRender" class

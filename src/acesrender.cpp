@@ -281,15 +281,18 @@ const AcesRender & AcesRender::operator=( const AcesRender & acesrender ) {
         clearVM(_illuminants);
         clearVM(_cameras);
         
-        if ( _idt != nullptr ) delete _idt;
+        if ( _idt != nullptr )
+            delete _idt;
         _idt = (Idt *) malloc(sizeof(Idt));
         memcpy(_idt, acesrender._idt, sizeof(Idt));
         
-        if ( _rawProcessor != nullptr ) delete _rawProcessor;
+        if ( _rawProcessor != nullptr )
+            delete _rawProcessor;
         _rawProcessor = (LibRawAces *) malloc(sizeof(LibRawAces));
         memcpy((void*)_rawProcessor, (void*)acesrender._rawProcessor, sizeof(LibRawAces));
         
-        if ( _image != nullptr ) delete _image;
+        if ( _image != nullptr )
+            delete _image;
         _image = (libraw_processed_image_t *) malloc(sizeof(libraw_processed_image_t));
         memcpy(_image, acesrender._image, sizeof(libraw_processed_image_t));
 
@@ -1186,14 +1189,32 @@ int AcesRender::postprocessRaw ( ) {
     return _opts.ret;
 }
 
+//	=====================================================================
+//	Render ACES Buffer
+//
+//	inputs:
+//      N/A
+//
+//	outputs:
+//      N/A        : either call renderIDT() or renderNonIDT()
 
 float * AcesRender::renderACES ( ) {
     if ( !_rawProcessor->imgdata.params.output_color )
-        return renderNonDNG_IDT();
+        return renderIDT();
     else
-        return renderNonDNG();
+//        return renderNonDNG();
+        return renderNonIDT();
+
 }
 
+//	=====================================================================
+//	Write rendered ACES Buffer into an OpenEXR Image File
+//
+//	inputs:
+//      N/A
+//
+//	outputs:
+//      N/A        : An ACES file will be generated
 
 void AcesRender::outputACES ( ) {
 #ifdef C
@@ -1210,16 +1231,16 @@ void AcesRender::outputACES ( ) {
     char outfn[1024];
     
     snprintf( outfn,
-             sizeof(outfn),
-             "%s%s",
-             _pathToRaw,
-             "_aces.exr" );
+              sizeof(outfn),
+              "%s%s",
+              _pathToRaw,
+              "_aces.exr" );
     
     if ( _opts.verbosity > 1 ) {
         if (_opts.mat_method) {
-            vector <vector < double > > camXYZ(3, vector< double >(3, 1.0));
+            vector < vector < double > > camXYZ(3, vector< double >(3, 1.0));
             FORIJ(3,3) camXYZ[i][j] = C.cam_xyz[i][j];
-            vector <vector < double > > camcat = mulVector(camXYZ, _catm);
+            vector < vector < double > > camcat = mulVector (camXYZ, _catm);
             
             printf("The IDT matrix is ...\n");
             FORI(3) printf("   %f, %f, %f\n", camcat[i][0], camcat[i][1], camcat[i][2]);
@@ -1255,7 +1276,6 @@ void AcesRender::outputACES ( ) {
     if (_opts.verbosity)
         printf ("Finished\n\n");
 }
-
 
 //	=====================================================================
 //  Apply white balance values to each pixel
@@ -1293,7 +1313,6 @@ void AcesRender::applyWB ( float * pixels, int bits, uint32_t total )
         }
     }
 }
-
 
 //	=====================================================================
 //  Apply IDT matrix to each pixel
@@ -1336,7 +1355,6 @@ void AcesRender::applyIDT ( float * pixels, int channel, uint32_t total )
                               _idtm );
 }
 
-
 //	=====================================================================
 //  Apply CAT matrix (e.g., D50 to D60) to each pixel
 //  It will be used if using adobe coeffs from "libraw"
@@ -1370,7 +1388,6 @@ void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total )
                               channel,
                               _catm );
 }
-
 
 //	=====================================================================
 //  Convert DNG RAW to aces file
@@ -1426,7 +1443,6 @@ float * AcesRender::renderDNG ( const vector < float > & cameraToDisplayMtx )
     return aces;
 }
 
-
 //	=====================================================================
 //  Convert Non-DNG RAW to aces file (no IDT involved)
 //
@@ -1445,17 +1461,17 @@ float * AcesRender::renderNonDNG ()
     
     FORI(total) aces[i] = static_cast <float> (pixels[i]);
     
-    if(_opts.mat_method > 0) {
+    if( _opts.mat_method > 0 ) {
         applyCAT(aces, _image->colors, total);
     }
     
     vector < vector< double> > XYZ_acesrgb( _image->colors,
                                             vector < double > (_image->colors));
-    if (_image->colors == 3) {
+    if ( _image->colors == 3 ) {
         FORIJ(3, 3) XYZ_acesrgb[i][j] = XYZ_acesrgb_3[i][j];
         aces = mulVectorArray(aces, total, 3, XYZ_acesrgb);
     }
-    else if (_image->colors == 4){
+    else if ( _image->colors == 4 ){
         FORIJ(4, 4) XYZ_acesrgb[i][j] = XYZ_acesrgb_4[i][j];
         aces = mulVectorArray(aces, total, 4, XYZ_acesrgb);
     }
@@ -1476,7 +1492,7 @@ float * AcesRender::renderNonDNG ()
 //	outputs:
 //		float * : an array of aces values for each pixel
 
-float * AcesRender::renderNonDNG_IDT ()
+float * AcesRender::renderIDT ()
 {
     assert(_image);
     ushort * pixels = (ushort *) _image->data;
@@ -1556,7 +1572,7 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
     uint8_t  channels  = _image->colors;
     uint8_t  bits      = _image->bits;
     
-    halfBytes *halfIn = new (std::nothrow) halfBytes[channels * width * height];
+    halfBytes * halfIn = new (std::nothrow) halfBytes[channels * width * height];
         
     FORI ( channels * width * height ){
         if ( bits == 8 )
@@ -1568,7 +1584,7 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
         halfIn[i] = tmpV.bits();
     }
     
-    std::vector<std::string> filenames;
+    vector < std::string > filenames;
     filenames.push_back(name);
     
     aces_Writer x;
@@ -1667,7 +1683,7 @@ const vector < string > AcesRender::getSupportedIllums ( ) const {
 //      N/A
 //
 //	outputs:
-//      vector < string > : _cameras values
+//      vector < string > : _cameras values/names
 
 const vector < string > AcesRender::getSupportedCameras ( ) const {
     return _cameras;

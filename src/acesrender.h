@@ -105,7 +105,8 @@ class AcesRender {
         float * renderACES ( );
         float * renderDNG ( const vector < float > & cameraToDisplayMtx );
         float * renderNonDNG ();
-        float * renderNonDNG_IDT ();
+        float * renderIDT ();
+        float * renderNonIDT ();
     
         const vector < string > getSupportedIllums () const;
         const vector < string > getSupportedCameras () const;

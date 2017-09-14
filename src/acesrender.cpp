@@ -1478,6 +1478,46 @@ float * AcesRender::renderNonDNG_IDT ()
     return aces;
 };
 
+//	=====================================================================
+//  Convert RAW (DNG and Non-DNG) to aces file (no IDT involved)
+//
+//	inputs:  N/A
+//
+//	outputs:
+//		float * : an array of converted aces code values
+
+float * AcesRender::renderNonIDT ()
+{
+    assert(_image);
+    
+    ushort * pixels = (ushort *) _image->data;
+    uint32_t total = _image->width * _image->height * _image->colors;
+    float * aces = new (std::nothrow) float[total];
+    
+    FORI(total) aces[i] = static_cast <float> (pixels[i]);
+    
+    if( _opts.mat_method > 0 ) {
+        applyCAT(aces, _image->colors, total);
+    }
+    
+    vector < vector< double> > XYZ_acesrgb( _image->colors,
+                                           vector < double > (_image->colors));
+    if ( _image->colors == 3 ) {
+        FORIJ(3, 3) XYZ_acesrgb[i][j] = XYZ_acesrgb_3[i][j];
+        aces = mulVectorArray(aces, total, 3, XYZ_acesrgb);
+    }
+    else if ( _image->colors == 4 ){
+        FORIJ(4, 4) XYZ_acesrgb[i][j] = XYZ_acesrgb_4[i][j];
+        aces = mulVectorArray(aces, total, 4, XYZ_acesrgb);
+    }
+    else {
+        fprintf ( stderr, "\nError: Currenly support 3 channels "
+                 "and 4 channels. \n" );
+        exit (1);
+    }
+    
+    return aces;
+}
 
 //	=====================================================================
 //  Write processed image file to an aces-compliant openexr file

@@ -440,7 +440,7 @@ The attributes are defined as follows:
         - **type**: `["string", "null"]`
     - `license`
         - **description**: *Required*, usage license of the document, e.g. "CC-BY-NC-ND".
-        - **type**: `"string"`
+        - **type**: `["string", "null"]`
     - `manufacturer`
         - **description**: *Optional*, manufacturer of the device being tested.
         - **type**: `["string", "null"]`

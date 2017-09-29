@@ -241,36 +241,44 @@ namespace rta {
     };
     
     
-    class DNG {
+    class DNGHelper {
         public:
-            DNG();
-            ~DNG();
+            DNGHelper();
+            virtual ~DNGHelper();
         
-            vector<double> xyToXYZ( const vector < double > & xy );
-            vector<double> uvToXYZ( const vector < double > & uv );
-            vector<double> uvToxy( const vector < double > & uv );
-            vector<double> XYZTouv( const vector < double > &XYZ) ;
-            vector<double> XYZtoCameraWeightedMatrix( const float & mir,
-                                                      const float & mir1,
-                                                      const float & mir2 );
-            vector<double> colorTemperatureToXYZ( const double cct ) const;
-            vector<double> findXYZtoCameraMtx( const vector < double > & neutralRGB ) const;
-            vector<double> matrixRGBtoXYZ( const vector < vector < double > > & chromaticities ) const;
-            vector<double> matrixChromaticAdaptation( const vector < double > & whiteFrom,
-                                                      const vector < double > & whiteTo );
+//            vector < double > xyToXYZ ( const vector < double > & xy );
+//            vector < double > uvToXYZ ( const vector < double > & uv );
+//            vector < double > uvToxy ( const vector < double > & uv );
+//            vector < double > XYZTouv ( const vector < double > &XYZ) ;
+            vector < double > XYZtoCameraWeightedMatrix ( const float & mir,
+                                                          const float & mir1,
+                                                          const float & mir2 );
+            vector < double > colorTemperatureToXYZ ( const double cct ) const;
+            vector < double > findXYZtoCameraMtx ( const vector < double > & neutralRGB ) const;
+            vector < double > matrixRGBtoXYZ ( const vector < vector < double > > & chromaticities ) const;
+            vector < double > matrixChromaticAdaptation ( const vector < double > & whiteFrom,
+                                                          const vector < double > & whiteTo ) const;
         
-
-            double ccttoMired( const double cct ) const;
-            double robertsonLength( const vector < double > & uv,
-                                    const vector < double > & uvt ) const;
-            double lightSourceToColorTemp( const unsigned short tag ) const;
-            double XYZToColorTemperature( const vector < double > & XYZ );
+            double ccttoMired ( const double cct ) const;
+            double robertsonLength ( const vector < double > & uv,
+                                     const vector < double > & uvt ) const;
+            double lightSourceToColorTemp ( const unsigned short tag ) const;
+            double XYZToColorTemperature ( const vector < double > & XYZ );
         
             void prepareMatrices();
-            void getCameraXYZMtxAndWhitePoint( double baseExpo );
+            void getCameraXYZMtxAndWhitePoint ( double baseExpo );
         
         private:
-            vector<double> CAT;
+//            vector < double > _CAT;
+            vector < double >  _cameraCalibration1DNG;
+            vector < double >  _cameraCalibration2DNG;
+            vector < double >  _cameraToXYZMtx;
+            vector < double >  _xyz2rgbMatrix1DNG;
+            vector < double >  _xyz2rgbMatrix2DNG;
+            vector < double >  _analogBalanceDNG;
+            vector < double >  _neutralRGBDNG;
+            vector < double >  _cameraXYZWhitePoint;
+            vector < double >  _calibrateIllum;
     };
     
     struct Objfun {

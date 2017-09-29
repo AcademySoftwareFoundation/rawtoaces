@@ -1451,6 +1451,34 @@ namespace rta {
     const vector < double > Idt::getWB() const {
         return _wb;
     }
+    
+    // ------------------------------------------------------//
+    
+    DNGHelper::DNGHelper() {
+        _cameraCalibration1DNG = vector < double > (1.0, 9);
+        _cameraCalibration2DNG = vector < double > (1.0, 9);
+        _cameraToXYZMtx        = vector < double > (1.0, 9);
+        _xyz2rgbMatrix1DNG     = vector < double > (1.0, 9);
+        _xyz2rgbMatrix2DNG     = vector < double > (1.0, 9);
+        _analogBalanceDNG      = vector < double > (1.0, 3);
+        _neutralRGBDNG         = vector < double > (1.0, 3);
+        _cameraXYZWhitePoint   = vector < double > (1.0, 3);
+        _calibrateIllum        = vector < double > (1.0, 2);
+    }
+    
+    DNGHelper::~DNGHelper() {
+        clearVM ( _cameraCalibration1DNG );
+        clearVM ( _cameraCalibration2DNG );
+        clearVM ( _cameraToXYZMtx );
+        clearVM ( _xyz2rgbMatrix1DNG );
+        clearVM ( _xyz2rgbMatrix2DNG );
+        clearVM ( _analogBalanceDNG );
+        clearVM ( _neutralRGBDNG );
+        clearVM ( _cameraXYZWhitePoint );
+        clearVM ( _calibrateIllum );
+    }
+    
+    
 }
 
 

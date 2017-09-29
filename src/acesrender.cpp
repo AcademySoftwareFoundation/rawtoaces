@@ -476,7 +476,7 @@ int AcesRender::configureSettings ( int argc, char * argv[] )
             }
             case 'M':  _opts.scale = atof(argv[arg++]); break;
             case 'H':  {
-                OUT.highlight   = atoi(argv[arg++]);
+                OUT.highlight    = atoi(argv[arg++]);
                 _opts.highlight  = OUT.highlight;
                 break;
             }
@@ -505,12 +505,12 @@ int AcesRender::configureSettings ( int argc, char * argv[] )
                 // 1
                 if ( _opts.wb_method == wbMethod1 ) {
                     _opts.use_illum = 1;
-                    _opts.illumType = ( char * )(argv[arg++]);
+                    _opts.illumType = static_cast<char * >(argv[arg++]);
                     lowerCase ( _opts.illumType );
                     
                     if ( !isValidCT ( string ( _opts.illumType )) ) {
                         fprintf( stderr, "\nError: white balance method 1 requires a valid "
-                                "illuminant (e.g., D60, 3200K) to be specified\n" );
+                                         "illuminant (e.g., D60, 3200K) to be specified\n" );
                         exit(-1);
                     }
                 }
@@ -519,13 +519,13 @@ int AcesRender::configureSettings ( int argc, char * argv[] )
                     FORI(4) {
                         if ( !isdigit(argv[arg][0]) )
                         {
-                            fprintf (stderr, "\nError: Non-numeric argument to "
-                                     "\"%s %i\" \n",
-                                     key.c_str(),
-                                     _opts.wb_method);
+                            fprintf ( stderr, "\nError: Non-numeric argument to "
+                                              "\"%s %i\" \n",
+                                              key.c_str(),
+                                              _opts.wb_method );
                             exit(-1);
                         }
-                        OUT.greybox[i] = (float)atof(argv[arg++]);
+                        OUT.greybox[i] = static_cast<float>(atof(argv[arg++]));
                     }
                 }
                 // 4
@@ -535,17 +535,17 @@ int AcesRender::configureSettings ( int argc, char * argv[] )
                         if ( !isdigit(argv[arg][0]) )
                         {
                             fprintf (stderr, "\nError: Non-numeric argument to "
-                                     "\"%s %i\" \n",
-                                     key.c_str(),
-                                     _opts.wb_method);
+                                             "\"%s %i\" \n",
+                                             key.c_str(),
+                                             _opts.wb_method );
                             exit(-1);
                         }
-                        OUT.user_mul[i] = (float)atof(argv[arg++]);
+                        OUT.user_mul[i] = static_cast<float> (atof(argv[arg++]));
                     }
                 }
                 else if ( _opts.wb_method > 4 || _opts.wb_method < 0 ) {
-                    fprintf (stderr, "\nError: Invalid argument to \"%s\" \n",
-                             key.c_str());
+                    fprintf ( stderr, "\nError: Invalid argument to \"%s\" \n",
+                                      key.c_str());
                     exit(-1);
                 }
                 break;
@@ -554,7 +554,8 @@ int AcesRender::configureSettings ( int argc, char * argv[] )
             case 'E':  _opts.use_mmap = 1;  break;
 #endif
             default:
-                fprintf ( stderr, "\nError: Unknown option \"%s\".\n", key.c_str() );
+                fprintf ( stderr, "\nError: Unknown option \"%s\".\n",
+                                  key.c_str() );
                 exit(-1);
         }
     }

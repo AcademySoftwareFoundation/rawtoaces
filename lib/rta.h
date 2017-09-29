@@ -274,12 +274,11 @@ namespace rta {
     };
     
     struct Objfun {
-            Objfun ( const vector < vector<double> > & RGB,
-                     const vector < vector<double> > & outLAB): _RGB(RGB), _outLAB(outLAB) { }
+            Objfun ( const vector < vector <double> > & RGB,
+                     const vector < vector <double> > & outLAB): _RGB(RGB), _outLAB(outLAB) { }
         
             template<typename T>
-            bool operator() (const T* B,
-                             T * residuals) const
+            bool operator() ( const T* B, T * residuals ) const
             {
                 vector < vector <T> > RGBJet(190, vector< T >(3));
                 FORIJ(190, 3) RGBJet[i][j] = T(_RGB[i][j]);

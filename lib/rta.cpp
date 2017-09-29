@@ -632,7 +632,7 @@ namespace rta {
     //	outputs:
     //		vector <RGBSen>: the sensitivity (in vector) of the camera
     
-    vector <RGBSen> Spst::getSensitivity() {
+    vector < RGBSen > Spst::getSensitivity() {
         return _rgbsen;
     }
     
@@ -1100,7 +1100,7 @@ namespace rta {
     //	outputs:
     //		vector < vector<double> >: 2D vector (81 x 190)
     
-    vector < vector<double> > Idt::calTI() const {
+    vector < vector < double > > Idt::calTI() const {
         assert( _bestIllum._data.size() == 81 &&
                 _trainingSpec[0]._data.size() == 190 );
 
@@ -1123,7 +1123,7 @@ namespace rta {
     //	outputs:
     //		vector < vector<double> >: 2D vector (3 x 3)
     
-    vector < vector<double> > Idt::calCAT ( const vector < double > & src,
+    vector < vector < double > > Idt::calCAT ( const vector < double > & src,
                                             const vector < double > & des ) const {
         assert(src.size() == des.size());
         

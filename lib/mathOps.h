@@ -201,14 +201,14 @@ vector<T> mulVectorElement ( const vector < T > & vct1,
     a1.resize(vct1.size(), 1);
     a2.resize(vct1.size(), 1);
     
-    FORI(a1.rows()) {
+    FORI ( a1.rows() ) {
         a1(i, 0) = vct1[i];
         a2(i, 0) = vct2[i];
     }
     a1 *= a2;
     
-    vector< T > vct3 (a1.data(),
-                      a1.data() + a1.rows() * a1.cols());
+    vector < T > vct3 ( a1.data(),
+                        a1.data() + a1.rows() * a1.cols() );
     
     return vct3;
 };

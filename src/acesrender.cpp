@@ -327,9 +327,8 @@ void AcesRender::initialize ( const dataPath & dp ) {
     _opts.verbosity          = 0;
     _opts.mat_method         = matMethod0;
     _opts.wb_method          = wbMethod0;
-    _opts.highlight          = 0;
+    _opts.highlight          = 1;
     _opts.scale              = 6.0;
-    _opts.highlight          = 0;
     _opts.get_illums         = 0;
     _opts.get_cameras        = 0;
     _opts.get_libraw_cameras = 0;
@@ -1046,6 +1045,7 @@ int AcesRender::postprocessRaw ( ) {
 //        fprintf(stderr, "\nCurrently does not support DNG files.\n");
 //        exit(1);
 //    }
+
     
     switch ( _opts.wb_method ) {
     // 0
@@ -1151,8 +1151,13 @@ int AcesRender::postprocessRaw ( ) {
         }
         // 1
         case matMethod1 :
-            OUT.use_camera_matrix = 0;
-            
+            OUT.use_camera_matrix = 3;
+            if ( P.dng_version ) {
+                OUT.use_camera_matrix = 1;
+                if ( _opts.verbosity > 1 )
+                    printf ( "Always using embeded color profile for DNG files \n");
+            }
+
             if ( _opts.verbosity > 1 ) {
                 printf ( "IDT matrix calculation method is 1 - ");
                 printf ( "Calculating IDT matrix using file metadata ...\n" );
@@ -1161,7 +1166,7 @@ int AcesRender::postprocessRaw ( ) {
             break;
         // 2
         case matMethod2 :
-            OUT.use_camera_matrix = 3;
+            OUT.use_camera_matrix = 1;
             
             if ( _opts.verbosity > 1 ) {
                 printf ( "IDT matrix calculation method is 2 - ");
@@ -1183,6 +1188,18 @@ int AcesRender::postprocessRaw ( ) {
     if ( _opts.mat_method == matMethod0 )
         if ( !prepareIDT ( P, C.pre_mul ) )
             _opts.ret = errno;
+    
+//    if ( P.dng_version ) {
+//        OUT.output_color      = 5;
+//        OUT.output_bps        = 16;
+//        OUT.highlight         = 0;
+//        OUT.use_camera_matrix = 1;
+//        OUT.gamm[0]           = 1.0;
+//        OUT.gamm[1]           = 1.0;
+//        OUT.no_auto_bright    = 0;
+//        OUT.use_camera_wb     = 0;
+//        OUT.use_auto_wb       = 0;
+//    }
 
     libraw_processed_image_t * image = _rawProcessor->dcraw_make_mem_image ( &(_opts.ret) );
     setPixels (image);
@@ -1237,14 +1254,16 @@ void AcesRender::outputACES ( ) {
               _pathToRaw,
               "_aces.exr" );
     
+//    FORI(3) printf("   %f, %f, %f\n", C.cam_xyz[i][0], C.cam_xyz[i][1], C.cam_xyz[i][2]);
+    
     if ( _opts.verbosity > 1 ) {
         if (_opts.mat_method) {
             vector < vector < double > > camXYZ(3, vector< double >(3, 1.0));
             FORIJ(3,3) camXYZ[i][j] = C.cam_xyz[i][j];
             vector < vector < double > > camcat = mulVector (camXYZ, _catm);
             
-            printf("The IDT matrix is ...\n");
-            FORI(3) printf("   %f, %f, %f\n", camcat[i][0], camcat[i][1], camcat[i][2]);
+//            printf("The IDT matrix is ...\n");
+//            FORI(3) printf("   %f, %f, %f\n", camcat[i][0], camcat[i][1], camcat[i][2]);
         }
         
         // printing white balance coefficients

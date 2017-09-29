@@ -48,7 +48,7 @@
 // WITHOUT LIMITING THE GENERALITY OF THE FOREGOING, THE ACADEMY 
 // SPECIFICALLY DISCLAIMS ANY REPRESENTATIONS OR WARRANTIES WHATSOEVER 
 // RELATED TO PATENT OR OTHER INTELLECTUAL PROPERTY RIGHTS IN THE ACADEMY 
-// COLOR ENCODING SYSTEM, OR APPLICATIONS THEREOF, HELD BY PARTIES OTHER 
+// COLOR ENCODING SYSTEM, OR APPLICATIONS THEREO,  HELD BY PARTIES OTHER 
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 #ifndef _DEFINE_h__
@@ -107,6 +107,7 @@
 #define FORI(val) for (int i=0; i < val; i++)
 #define FORJ(val) for (int j=0; j < val; j++)
 #define FORIJ(val1, val2) for (int i=0; i < val1; i++) for (int j=0; j < val2; j++)
+#define countSize(a)    (sizeof(a) / sizeof((a)[0]))
 
 typedef float  float32_t;
 typedef double float64_t;
@@ -260,7 +261,59 @@ static const double acesrgb_XYZ_3[3][3] = {
     { 0.0,                             0.0,        1.00882518435159   }
 };
 
-//  Color Adaptation Matrices - Bradford
+static const double chromaticitiesACES[4][2] = {
+    { 0.73470,  0.26530 },
+    { 0.00000,  1.00000 },
+    { 0.00010,  -0.07700},
+    { 0.32168,  0.33767 }
+};
+
+// Roberson UV Table
+static const double Robertson_uvtTable[][3] = {
+    { 0.18006,  0.26352,  -0.24341 },
+    { 0.18066,  0.26589,  -0.25479 },
+    { 0.18133,  0.26846,  -0.26876 },
+    { 0.18208,  0.27119,  -0.28539 },
+    { 0.18293,  0.27407,  -0.3047 },
+    { 0.18388,  0.27709,  -0.32675 },
+    { 0.18494,  0.28021,  -0.35156 },
+    { 0.18611,  0.28342,  -0.37915 },
+    { 0.18740,  0.28668,  -0.40955 },
+    { 0.18880,  0.28997,  -0.44278 },
+    { 0.19032,  0.29326,  -0.47888 },
+    { 0.19462,  0.30141,  -0.58204 },
+    { 0.19962,  0.30921,  -0.70471 },
+    { 0.20525,  0.31647,  -0.84901 },
+    { 0.21142,  0.32312,  -1.0182 },
+    { 0.21807,  0.32909,  -1.2168 },
+    { 0.22511,  0.33439,  -1.4512 },
+    { 0.23247,  0.33904,  -1.7298 },
+    { 0.24010,  0.34308,  -2.0637 },
+    { 0.24792,  0.34655,  -2.4681 },
+    { 0.25591,  0.34951,  -2.9641 },
+    { 0.26400,  0.35200,  -3.5814 },
+    { 0.27218,  0.35407,  -4.3633 },
+    { 0.28039,  0.35577,  -5.3762 },
+    { 0.28863,  0.35714,  -6.7262 },
+    { 0.29685,  0.35823,  -8.5955 },
+    { 0.30505,  0.35907,  -11.324 },
+    { 0.31320,  0.35968,  -15.628 },
+    { 0.32129,  0.36011,  -23.325 },
+    { 0.32931,  0.36038,  -40.77  },
+    { 0.33724,  0.36051,  -116.45 }
+};
+
+// Roberson Mired Matrix
+static const double RobertsonMired[] = {
+    1.0e-10, 10.0, 20.0, 30.0, 40.0, 
+    50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 
+    125.0, 150.0, 175.0, 200.0, 225.0, 
+    250.0, 275.0, 300.0, 325.0, 350.0, 
+    375.0, 400.0, 425.0, 450.0, 475.0, 
+    500.0, 525.0, 550.0, 575.0, 600.0f
+};
+
+//  Color Adaptation Matrix - Bradford
 static const double bradford[3][3] = {
     {0.8951,  0.2664, -0.1614},
     {-0.7502, 1.7135,  0.0367},

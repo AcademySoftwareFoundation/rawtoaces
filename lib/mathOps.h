@@ -407,6 +407,52 @@ vector <T> interp1DLinear ( const vector <int> & X0,
 };
 
 template<typename T>
+vector < T > xyToXYZ ( const vector < T > &xy )
+{
+    vector < T > XYZ (1.0, 3);
+    XYZ[0] = xy[0];
+    XYZ[1] = xy[1];
+    XYZ[2] = 1 - xy[0] - xy[1];
+    
+    return XYZ;
+};
+
+template<typename T>
+vector < T > uvToxy ( const vector < T > &uv )
+{
+    T xyS[] = { 3.0, 2.0 };
+    vector < T > xyScale (xyS, xyS + sizeof(xyS)/sizeof(T));
+    xyScale = mulVectorElement (xyScale, uv);
+    
+    T scale = 2 * uv [0] - 8 * uv[1] + 4;
+    scaleVector (xyScale, 1.0 / scale);
+    
+    return xyScale;
+};
+
+template<typename T>
+vector < T > uvToXYZ ( const vector < T > &uv )
+{
+    return xyToXYZ ( uvToxy ( uv ) );
+};
+
+template<typename T>
+vector < T > XYZTouv ( const vector < T > &XYZ )
+{
+    T uvS[] = { 4.0, 6.0 };
+    T slice[] = { XYZ[0], XYZ[1] };
+    vector < T > uvScale (uvS, uvS + sizeof(uvS)/sizeof(T));
+    vector < T > vSlice (slice, slice + sizeof(slice)/sizeof(T));
+    
+    uvScale = mulVectorElement ( uvScale, vSlice );
+    
+    T scale = XYZ[0] + 15 * XYZ[1] + 3 * XYZ[2];
+    scaleVector ( uvScale, 1.0 / scale);
+    
+    return uvScale;
+};
+
+template<typename T>
 vector < vector<T> > XYZtoLAB ( const vector < vector < T > > & XYZ ) {
     assert(XYZ.size() == 190);
     T add = T(16.0/116.0);

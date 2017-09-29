@@ -327,8 +327,9 @@ void AcesRender::initialize ( const dataPath & dp ) {
     _opts.verbosity          = 0;
     _opts.mat_method         = matMethod0;
     _opts.wb_method          = wbMethod0;
-    _opts.highlight          = 1;
+    _opts.highlight          = 0;
     _opts.scale              = 6.0;
+    _opts.highlight          = 0;
     _opts.get_illums         = 0;
     _opts.get_cameras        = 0;
     _opts.get_libraw_cameras = 0;
@@ -1400,8 +1401,7 @@ void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total )
     // will use calCAT() inside rawtoaces
     vector < double > dIV (d50, d50 + 3);
     vector < double > dOV (d60, d60 + 3);
-    
-    _catm = _idt->calCAT(dIV, dOV);
+    _catm = getCAT(dIV, dOV);
 
     pixels = mulVectorArray ( pixels,
                               total,

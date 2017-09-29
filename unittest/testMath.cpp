@@ -469,6 +469,26 @@ BOOST_AUTO_TEST_CASE ( Test_Interp1DLinear ) {
         BOOST_CHECK_CLOSE ( YV1[i], Y1[i], 1e-5 );
 };
 
+BOOST_AUTO_TEST_CASE ( TestIDT_GetCAT ) {
+    vector < double > dIV (d50, d50 + 3);
+    vector < double > dOV (d60, d60 + 3);
+    
+    vector < vector<double> > CAT_test = getCAT (dIV, dOV);
+    
+    float CAT[3][3] =
+    {
+        {  0.9711790957, -0.0217386019,  0.0460288393 },
+        { -0.0156935400,  1.0000112293,  0.0183278569 },
+        {  0.0009710255,  0.0030856714,  1.2179433335 }
+    };
+    
+    FORI (3) {
+        BOOST_CHECK_CLOSE ( CAT[i][0], CAT_test[i][0], 1e-5 );
+        BOOST_CHECK_CLOSE ( CAT[i][1], CAT_test[i][1], 1e-5 );
+        BOOST_CHECK_CLOSE ( CAT[i][2], CAT_test[i][2], 1e-5 );
+    }
+};
+
 BOOST_AUTO_TEST_CASE ( Test_XYZtoLAB ) {
     vector < vector < double > > XYZ ( 190, ( vector < double > ( 3 ) ));
     FORIJ(190, 3)

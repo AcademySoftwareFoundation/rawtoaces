@@ -1112,36 +1112,6 @@ namespace rta {
     }
     
     //	=====================================================================
-    //	Calculate the CAT matrix to compensate for difference between scene
-    //  adopted white chromaticity and ACES neutral chromaticity (either
-    //  CAT02 or bradford is used)
-    //
-    //	inputs:
-    //		vector<double> source
-    //      vector<double> destination
-    //
-    //	outputs:
-    //		vector < vector<double> >: 2D vector (3 x 3)
-    
-    vector < vector < double > > Idt::calCAT ( const vector < double > & src,
-                                            const vector < double > & des ) const {
-        assert(src.size() == des.size());
-        
-        vector < vector <double> > vcat(3, vector<double>(3));
-        FORIJ(3, 3) vcat[i][j] = cat02[i][j];
-        
-        vector< double > wSRC = mulVector ( src, vcat );
-        vector< double > wDES = mulVector ( des, vcat );
-        vector< vector<double> > vkm = solveVM(vcat, diagVM ( divVectorElement (wDES, wSRC) ));
-        vkm = mulVector(vkm, transposeVec(vcat));
-        
-        clearVM (wSRC);
-        clearVM (wDES);
-
-        return vkm;
-    }
-    
-    //	=====================================================================
     //	Calculate White Balance based on the Illuminant data and
     //  highlight mode used in pre-processing with "libraw"
     //

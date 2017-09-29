@@ -453,6 +453,25 @@ vector < T > XYZTouv ( const vector < T > &XYZ )
 };
 
 template<typename T>
+vector < vector < T > > getCAT ( const vector < T > & src,
+                                 const vector < T > & des ) {
+    assert(src.size() == des.size());
+    
+    vector < vector <T> > vcat(3, vector<T>(3));
+    FORIJ(3, 3) vcat[i][j] = cat02[i][j];
+    
+    vector< T > wSRC = mulVector ( src, vcat );
+    vector< T > wDES = mulVector ( des, vcat );
+    vector< vector<T> > vkm = solveVM(vcat, diagVM ( divVectorElement (wDES, wSRC) ));
+    vkm = mulVector(vkm, transposeVec(vcat));
+    
+    clearVM (wSRC);
+    clearVM (wDES);
+    
+    return vkm;
+}
+
+template<typename T>
 vector < vector<T> > XYZtoLAB ( const vector < vector < T > > & XYZ ) {
     assert(XYZ.size() == 190);
     T add = T(16.0/116.0);

@@ -208,11 +208,6 @@ namespace rta {
         
             vector < double > calCM();
             vector < double > calWB( Illum & Illuminant, int highlight );
-            vector < vector <double> > calTI() const;
-            vector < vector <double> > calCAT( const vector < double > & src,
-                                               const vector < double > & des ) const;
-            vector < vector<double> > calXYZ( const vector < vector < double > > & TI ) const;
-            vector < vector<double> > calRGB( const vector < vector <double > > & TI ) const;
         
             int curveFit( const vector < vector <double> > & RGB,
                           const vector < vector <double> > & XYZ,

@@ -1176,14 +1176,14 @@ namespace rta {
                                                               transTI));
         
         FORI(XYZ.size())
-            scaleVector(XYZ[i],
-                        1.0 / sumVector(mulVectorElement(colXYZ[1], _bestIllum._data)));
+            scaleVector ( XYZ[i],
+                          1.0 / sumVector ( mulVectorElement(colXYZ[1], _bestIllum._data ) ) );
         
         vector <double> ww = mulVector(colXYZ, _bestIllum._data);
-        scaleVector(ww, (1.0/ww[1]));
-        vector <double> w(XYZ_w, XYZ_w+3);
+        scaleVector ( ww, ( 1.0 / ww[1] ) );
+        vector <double> w ( XYZ_w, XYZ_w+3 );
 
-        XYZ = mulVector(XYZ, calCAT(ww, w));
+        XYZ = mulVector(XYZ, getCAT(ww, w));
         
         clearVM(ww);
         clearVM(w);

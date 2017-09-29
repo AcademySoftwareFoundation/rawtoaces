@@ -208,9 +208,12 @@ namespace rta {
         
             vector < double > calCM();
             vector < double > calWB( Illum & Illuminant, int highlight );
+            vector < vector < double > > calTI() const;
+            vector < vector <double > > calXYZ( const vector < vector < double > > & TI ) const;
+            vector < vector < double > > calRGB( const vector < vector <double > > & TI ) const;
         
-            int curveFit( const vector < vector <double> > & RGB,
-                          const vector < vector <double> > & XYZ,
+            int curveFit( const vector < vector < double > > & RGB,
+                          const vector < vector < double > > & XYZ,
                           double * B );
             int calIDT();
         
@@ -241,18 +244,12 @@ namespace rta {
             DNGHelper();
             virtual ~DNGHelper();
         
-//            vector < double > xyToXYZ ( const vector < double > & xy );
-//            vector < double > uvToXYZ ( const vector < double > & uv );
-//            vector < double > uvToxy ( const vector < double > & uv );
-//            vector < double > XYZTouv ( const vector < double > &XYZ) ;
             vector < double > XYZtoCameraWeightedMatrix ( const float & mir,
                                                           const float & mir1,
                                                           const float & mir2 );
             vector < double > colorTemperatureToXYZ ( const double cct ) const;
             vector < double > findXYZtoCameraMtx ( const vector < double > & neutralRGB ) const;
             vector < double > matrixRGBtoXYZ ( const vector < vector < double > > & chromaticities ) const;
-            vector < double > matrixChromaticAdaptation ( const vector < double > & whiteFrom,
-                                                          const vector < double > & whiteTo ) const;
         
             double ccttoMired ( const double cct ) const;
             double robertsonLength ( const vector < double > & uv,
@@ -264,7 +261,6 @@ namespace rta {
             void getCameraXYZMtxAndWhitePoint ( double baseExpo );
         
         private:
-//            vector < double > _CAT;
             vector < double >  _cameraCalibration1DNG;
             vector < double >  _cameraCalibration2DNG;
             vector < double >  _cameraToXYZMtx;

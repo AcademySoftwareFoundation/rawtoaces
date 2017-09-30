@@ -92,15 +92,15 @@ BOOST_AUTO_TEST_CASE ( Test_IsSquare ) {
     BOOST_CHECK_EQUAL ( isSquare(a), 0 );
 };
 
-BOOST_AUTO_TEST_CASE ( Test_Cross ) {
+BOOST_AUTO_TEST_CASE ( Test_Cross2 ) {
     double a[2] = { 1.0, 3.0 };
     double b[2] = { 1.0, 6.5 };
     
     vector < double > av(a, a+2);
     vector < double > bv(b, b+2);
 
-    double cross_test = cross(av, bv);
-    BOOST_CHECK_CLOSE ( cross_test, 3.50, 1e-5 );
+    double cross2_test = cross2(av, bv);
+    BOOST_CHECK_CLOSE ( cross2_test, 3.50, 1e-5 );
 };
 
 BOOST_AUTO_TEST_CASE ( Test_InvertVM ) {
@@ -125,6 +125,24 @@ BOOST_AUTO_TEST_CASE ( Test_InvertVM ) {
         BOOST_CHECK_CLOSE ( MV_Inverse[i][1], M_Inverse[i][1], 1e-5 );
         BOOST_CHECK_CLOSE ( MV_Inverse[i][2], M_Inverse[i][2], 1e-5 );
     }
+};
+
+BOOST_AUTO_TEST_CASE ( Test_InvertV ) {
+    double V[9] = {
+        0.0188205,  8.59E-03,   9.58E-03,
+        0.0440222,  0.0166118,  0.0258734,
+        0.1561591,  0.046321,   0.1181466
+    };
+    double V_Inverse[9] = {
+        -844.264597,  631.004958,  -69.728531,
+        1282.403375,  -803.858096, 72.055546,
+        613.114494,  -518.860936,  72.376689
+    };
+    
+    vector < double > MV ( V, V+9 );
+    vector < double > MV_Inverse = invertV (MV);
+    
+    FORI(9) BOOST_CHECK_CLOSE ( V_Inverse[i], MV_Inverse[i], 1e-5 );
 };
 
 BOOST_AUTO_TEST_CASE ( Test_DiagVM ) {

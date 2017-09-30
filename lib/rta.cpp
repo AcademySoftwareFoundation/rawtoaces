@@ -153,8 +153,8 @@ namespace rta {
                 else if ( wavs.size() > 2 &&
                          wavs[wavs.size()-1] - wavs[wavs.size()-2] != dis ) {
                     fprintf ( stderr, "Please double check the Light "
-                             "Source data (e.g. the increment "
-                             "should be uniform from 380nm to 780nm).\n" );
+                                      "Source data (e.g. the increment "
+                                      "should be uniform from 380nm to 780nm).\n" );
                     exit(-1);
                 }
                 
@@ -242,14 +242,14 @@ namespace rta {
             cctd = cct * 1.0;
         else {
             fprintf ( stderr, "The range of Correlated Color Temperature for "
-                     "Day Light should be from 4000 to 25000. \n");
+                              "Day Light should be from 4000 to 25000. \n");
             exit(1);
         }
         
         if (_data.size() > 0) _data.clear();
         if (!_type.size()) {
             char buffer[10];
-            snprintf(buffer, 10, "%d", cct);
+            snprintf ( buffer, 10, "%d", cct );
             _type = "d" + string(buffer);
         }
         
@@ -568,9 +568,9 @@ namespace rta {
                     inc = wavs[1] - wavs[0];
                 else if ( wavs.size() > 2 &&
                          wavs[wavs.size()-1] - wavs[wavs.size()-2] != inc ) {
-                    fprintf(stderr, "Please double check the Camera "
-                            "Sensitivity data (e.g. the increment "
-                            "should be uniform from 380nm to 780nm).\n");
+                    fprintf ( stderr, "Please double check the Camera "
+                                      "Sensitivity data (e.g. the increment "
+                                      "should be uniform from 380nm to 780nm).\n" );
                     exit(1);
                 }
                 
@@ -612,8 +612,8 @@ namespace rta {
         // (e.g., 300nm-800nm) or a smaller increment values (e.g, 1nm)
         if ( rgbsen.size() != 81 ) {
             fprintf( stderr, "Please double check the Camera "
-                     "Sensitivity data (e.g. the increment "
-                     "should be uniform from 380nm to 780nm).\n" );
+                             "Sensitivity data (e.g. the increment "
+                             "should be uniform from 380nm to 780nm).\n" );
             exit(-1);
         }
         
@@ -776,8 +776,8 @@ namespace rta {
                 return;
         }
         
-        scaleVector(Illuminant._data,
-                    1.0/sumVector(mulVectorElement(Illuminant._data, colMax)));
+        scaleVector ( Illuminant._data,
+                      1.0 / sumVector ( mulVectorElement ( Illuminant._data, colMax ) ) );
     }
     
     //	=====================================================================
@@ -1448,7 +1448,182 @@ namespace rta {
         clearVM ( _calibrateIllum );
     }
     
+    double DNGHelper::ccttoMired ( const double cct ) const {
+        return 1.0e6 / cct;
+    }
     
+    double DNGHelper::robertsonLength ( const vector < double > & uv,
+                                        const vector < double > & uvt ) const {
+        assert ( uv.size() == uvt.size() );
+        
+        double t = uvt[2];
+        vector < double > slope (2, 1.0);
+        slope[0] = -sign(t) / std::sqrt(1 + t * t);
+        slope[1] = t * slope[0];
+        
+        return cross2 ( slope, diffVectors1 ( uv, uvt ) ) ;
+    }
+    
+    double DNGHelper::lightSourceToColorTemp ( const unsigned short tag ) const {
+        if ( tag >= 32768 )
+            return (static_cast<double>(tag)) - 32768.0;
+        
+        uint16_t LightSourceEXIFTagValues[][2] = {
+            { 0,    5500 },
+            { 1,    5500 },
+            { 2,    3500 },
+            { 3,    3400 },
+            { 10,   5550 },
+            { 17,   2856 },
+            { 18,   4874 },
+            { 19,   6774 },
+            { 20,   5500 },
+            { 21,   6500 },
+            { 22,   7500 }
+        };
+        
+        FORI ( countSize ( LightSourceEXIFTagValues ) ) {
+            if (LightSourceEXIFTagValues[i][0] == (uint16_t)tag){
+                return static_cast< double >(LightSourceEXIFTagValues[i][1]);
+            }
+        }
+
+        return 5500.0;
+    }
+    
+    double DNGHelper::XYZToColorTemperature ( const vector < double > & XYZ ) const {
+        vector < double > uv ( XYZTouv ( XYZ ) );
+        int Nrobert = countSize ( Robertson_uvtTable );
+        int i;
+        
+        double mired;
+        double RDthis = 0, RDprevious = 0;
+        
+        for (i = 0; i < Nrobert; i++) {
+            vector < double > robertson ( Robertson_uvtTable[i],
+                                          Robertson_uvtTable[i]+ countSize(Robertson_uvtTable[i]) );
+            if (( RDthis = robertsonLength ( uv, robertson ) ) <= 0.0 )
+                break;
+            RDprevious = RDthis;
+        }
+        if ( i <= 0 )
+            mired = RobertsonMired[0];
+        else if ( i >= Nrobert )
+            mired = RobertsonMired[Nrobert - 1];
+        else
+            mired = RobertsonMired[i-1] + RDprevious * ( \
+                    RobertsonMired[i] - RobertsonMired[i-1] )\
+                    /( RDprevious-RDthis );
+
+        double cct = 1.0e6 / mired;
+        cct = std::max ( 2000.0, std::min (50000.0, cct));
+        
+        return cct;
+    }
+    
+    vector < double > DNGHelper::XYZtoCameraWeightedMatrix ( const double & mir,
+                                                             const double & mir1,
+                                                             const double & mir2 ) const {
+        double weight = std::max ( 0.0, std::min ( 1.0, (mir1 - mir) / (mir1 - mir2) ) );
+        vector < double > result = diffVectors1 ( _xyz2rgbMatrix2DNG, _xyz2rgbMatrix1DNG );
+        scaleVector ( result, weight );
+        result = sumVectors1 ( result, _xyz2rgbMatrix1DNG );
+        
+        return result;
+    }
+    
+    vector < double > DNGHelper::findXYZtoCameraMtx ( const vector < double > & neutralRGB ) const {
+        if ( _calibrateIllum.size() == 0) {
+            fprintf ( stderr, " No calibration illuminants were found. \n " );
+            return _xyz2rgbMatrix1DNG;
+        }
+        
+        if ( neutralRGB.size() == 0 ) {
+            fprintf ( stderr, " no neutral RGB values were found. \n " );
+            return _xyz2rgbMatrix1DNG;
+        }
+        
+        double cct1 = lightSourceToColorTemp ( static_cast < const unsigned short > ( _calibrateIllum[0] ) );
+        double cct2 = lightSourceToColorTemp ( static_cast < const unsigned short > ( _calibrateIllum[1] ) );
+        
+        double mir1 = ccttoMired ( cct1 );
+        double mir2 = ccttoMired ( cct2 );
+        
+        double maxMir = ccttoMired ( 2000.0 );
+        double minMir = ccttoMired ( 50000.0 );
+        
+        double lomir = std::max ( minMir, std::min ( maxMir, std::min ( mir1, mir2 ) ) );
+        double himir = std::max ( minMir, std::min ( maxMir, std::max ( mir1, mir2 ) ) );
+        double mirStep = std::max ( 5.0, ( himir - lomir ) / 50.0 );
+        
+        double mir = 0.0, lastMired = 0.0, estimatedMired = 0.0, lerror = 0.0, lastError = 0.0, smallestError = 0.0;
+        
+        for ( mir = lomir; mir < himir;  mir += mirStep ) {
+            // error = distance between the sampling mired (mir) and the mired of the white balance as returned through the "average" matrices
+            lerror = mir - ccttoMired ( XYZToColorTemperature ( mulVectorElement \
+                                       ( invertV ( XYZtoCameraWeightedMatrix ( mir, mir1, mir2 ) ),\
+                                        _neutralRGBDNG ) ) );
+            
+            if ( std::fabs( lerror - 0.0 ) <= 1e-09 ) {
+                // no error. We found the exact mired
+                estimatedMired = mir;
+                break;
+            }
+            if ( std::fabs( mir - lomir ) > 1e-09
+                 && std::fabs ( lerror * lastError ) <= 1e-09 ) {
+                estimatedMired = mir + lerror / ( lerror-lastError ) * ( mir - lastMired );
+                break;
+            }
+            if ( std::fabs( mir - lomir ) <= 1e-09
+                 || std::fabs(lerror) < std::fabs(smallestError) )    {
+                estimatedMired = mir ;
+                smallestError = lerror;
+            }
+            
+            lastError = lerror;
+            lastMired = mir;
+        }
+        
+        vector < double > xyzToCameraRGBMatrix ( XYZtoCameraWeightedMatrix ( estimatedMired, mir1, mir2 ) );
+        
+        return xyzToCameraRGBMatrix;
+    };
+    
+    vector < double > DNGHelper::colorTemperatureToXYZ ( const double cct ) const {
+        double mired = 1.0e6 / cct;
+        vector < double > uv ( 2, 1.0 );
+        
+        int Nrobert = countSize (Robertson_uvtTable);
+        int i;
+        
+        for ( i = 0; i < Nrobert; i++ ) {
+            if ( RobertsonMired [i] >= mired )
+                break;
+        }
+        if ( i <= 0 ) {
+//            uv[0] = Robertson_uvtTable[0][0];
+//            uv[1] = Robertson_uvtTable[0][1];
+            uv = vector < double > ( Robertson_uvtTable[0], Robertson_uvtTable[0] + 2 );
+        }
+        else if ( i >= Nrobert ) {
+//            uv[0] = Robertson_uvtTable[Nrobert - 1][0];
+//            uv[1] = Robertson_uvtTable[Nrobert - 1][1];
+            uv = vector < double > ( Robertson_uvtTable[Nrobert - 1], Robertson_uvtTable[Nrobert - 1] + 2 );
+        }
+        else {
+            double weight = ( mired - RobertsonMired[i-1] ) / ( RobertsonMired[i] - RobertsonMired[i-1] );
+            
+            vector < double > uv1 ( Robertson_uvtTable[i], Robertson_uvtTable[i] + 2 );
+            scaleVector ( uv1, weight );
+
+            vector < double > uv2 ( Robertson_uvtTable[i-1], Robertson_uvtTable[i-1] + 2 );
+            scaleVector ( uv2, 1 - weight );
+            
+            uv = sumVectors1 ( uv1, uv2 );
+        }
+        
+        return uvToXYZ(uv);
+    };
 }
 
 

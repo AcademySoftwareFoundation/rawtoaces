@@ -244,21 +244,21 @@ namespace rta {
             DNGHelper();
             virtual ~DNGHelper();
         
-            vector < double > XYZtoCameraWeightedMatrix ( const float & mir,
-                                                          const float & mir1,
-                                                          const float & mir2 );
-            vector < double > colorTemperatureToXYZ ( const double cct ) const;
-            vector < double > findXYZtoCameraMtx ( const vector < double > & neutralRGB ) const;
-            vector < double > matrixRGBtoXYZ ( const vector < vector < double > > & chromaticities ) const;
-        
             double ccttoMired ( const double cct ) const;
             double robertsonLength ( const vector < double > & uv,
                                      const vector < double > & uvt ) const;
             double lightSourceToColorTemp ( const unsigned short tag ) const;
-            double XYZToColorTemperature ( const vector < double > & XYZ );
+            double XYZToColorTemperature ( const vector < double > & XYZ ) const;
         
-            void prepareMatrices();
+            vector < double > XYZtoCameraWeightedMatrix ( const double & mir,
+                                                          const double & mir1,
+                                                          const double & mir2 ) const;
+            vector < double > colorTemperatureToXYZ ( const double cct ) const;
+            vector < double > findXYZtoCameraMtx ( const vector < double > & neutralRGB ) const;
+            vector < double > matrixRGBtoXYZ ( const vector < vector < double > > & chromaticities ) const;
+        
             void getCameraXYZMtxAndWhitePoint ( double baseExpo );
+            void prepareMatrices();
         
         private:
             vector < double >  _cameraCalibration1DNG;

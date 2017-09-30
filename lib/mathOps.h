@@ -81,18 +81,34 @@ int isSquare ( const vector < vector < T > > & vm ) {
     return 1;
 };
 
+template <typename T>
+vector <T> sumVectors1 ( const vector <T> &vectorA, const vector < T > & vectorB ) {
+    assert ( vectorA.size() == vectorB.size() );
+    vector <T> sum ( vectorA.size() );
+    FORI ( vectorA.size() ) sum[i] = vectorA[i] + vectorB[i];
+    return sum;
+};
+
+template <typename T>
+vector <T> diffVectors1 ( const vector <T> &vectorA, const vector < T > & vectorB ) {
+    assert ( vectorA.size() == vectorB.size() );
+    vector <T> diff ( vectorA.size() );
+    FORI ( vectorA.size() ) diff[i] = vectorA[i] - vectorB[i];
+    return diff;
+};
+
 // This is not the typical "cross" product
 template <typename T>
-T cross ( const vector <T> &vectorA, const vector < T > & vectorB ) {
+T cross2 ( const vector <T> &vectorA, const vector < T > & vectorB ) {
     assert (vectorA.size() == 2 && vectorB.size() == 2 );
     return vectorA[0] * vectorB[1] - vectorA[1] * vectorB[0];
 };
 
 template <typename T>
-vector< vector<T> > invertVM ( const vector < vector < T > > & vMtx ) {
+vector < vector <T> > invertVM ( const vector < vector < T > > & vMtx ) {
     assert(isSquare(vMtx));
     
-    Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic> m;
+    Eigen::Matrix < T, Eigen::Dynamic, Eigen::Dynamic > m;
     m.resize(vMtx.size(), vMtx[0].size());
     FORIJ(m.rows(), m.cols()) m(i,j) = vMtx[i][j];
     
@@ -105,6 +121,23 @@ vector< vector<T> > invertVM ( const vector < vector < T > > & vMtx ) {
     FORIJ(m.rows(), m.cols()) vMtxR[i][j] = m(i, j);
     
     return vMtxR;
+};
+
+template <typename T>
+vector < T > invertV ( const vector < T > & vMtx ) {
+    int size = std::sqrt ( static_cast<int> (vMtx.size()) );
+    vector < vector <T> > tmp ( size, vector <T> (size) );
+
+    FORIJ ( size, size ) {
+        tmp[i][j] = vMtx[i*size+j];
+    }
+    
+    tmp = invertVM ( tmp );
+    vector <T> result (vMtx.size());
+    
+    FORIJ ( size, size ) result[i*size+j] = tmp[i][j];
+    
+    return result;
 };
 
 template <typename T>
@@ -252,8 +285,8 @@ vector < vector<T> > mulVector ( const vector < vector < T > > & vct1,
 template <typename T>
 vector < T > mulVector( const vector < vector < T > > & vct1,
                         const vector < T > & vct2 ) {
-    assert( vct1.size() != 0 &&
-            (vct1[0]).size() == vct2.size() );
+    assert ( vct1.size() != 0 &&
+             (vct1[0]).size() == vct2.size() );
     
     Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic> m1, m2, m3;
     m1.resize(vct1.size(), vct1[0].size());

@@ -82,17 +82,17 @@ int isSquare ( const vector < vector < T > > & vm ) {
 };
 
 template <typename T>
-vector <T> sumVectors1 ( const vector <T> &vectorA, const vector < T > & vectorB ) {
+vector < T > addVectors ( const vector <T> &vectorA, const vector < T > & vectorB ) {
     assert ( vectorA.size() == vectorB.size() );
-    vector <T> sum ( vectorA.size() );
+    vector < T > sum ( vectorA.size() );
     FORI ( vectorA.size() ) sum[i] = vectorA[i] + vectorB[i];
     return sum;
 };
 
 template <typename T>
-vector <T> diffVectors1 ( const vector <T> &vectorA, const vector < T > & vectorB ) {
+vector < T > subVectors ( const vector <T> &vectorA, const vector < T > & vectorB ) {
     assert ( vectorA.size() == vectorB.size() );
-    vector <T> diff ( vectorA.size() );
+    vector < T > diff ( vectorA.size() );
     FORI ( vectorA.size() ) diff[i] = vectorA[i] - vectorB[i];
     return diff;
 };
@@ -141,11 +141,26 @@ vector < T > invertV ( const vector < T > & vMtx ) {
 };
 
 template <typename T>
-vector < vector<T> > diagVM ( const vector < T > & vct ) {
-    assert(vct.size() != 0);
+vector < vector < T > > diagVM ( const vector < T > & vct ) {
+    assert( vct.size() != 0 );
     vector < vector<T> > vctdiag(vct.size(), vector<T>(vct.size(), T(0.0)));
-    
+
     FORI(vct.size()) vctdiag[i][i] = vct[i];
+    
+    return vctdiag;
+};
+
+template <typename T>
+vector < T > diagV ( const vector < T > & vct ) {
+    assert( vct.size() != 0 );
+    
+    int length = vct.size();
+    vector < T > vctdiag(length * length, T(0.0));
+    
+    FORI (length) {
+        vctdiag[i * length + i] = vct [i];
+    }
+    
     return vctdiag;
 };
 
@@ -258,6 +273,31 @@ vector<T> divVectorElement ( const vector < T > & vct1,
     }
     
     return mulVectorElement ( vct1, vct2D );
+};
+
+template <typename T>
+vector < T > mulVector ( vector < T > vct1, vector < T > vct2, int k = 3 )
+{
+    int rows = ( static_cast < int > (vct1.size()) ) / k;
+    int cols = ( static_cast < int > (vct2.size()) ) / k;
+    
+    assert (rows * k == vct1.size());
+    assert (k * cols == vct2.size());
+    
+    vector < T > vct3 (rows * cols);
+    T * pA = &vct1[0];
+    T * pB = &vct2[0];
+    T * pC = &vct3[0];
+    
+    for ( int r = 0; r < rows; r++ ) {
+        for ( int cArB = 0; cArB < k; cArB++ ) {
+            for ( int c = 0; c < cols; c++ ) {
+                pC[r * cols + c] += pA[r * k + cArB] * pB[cArB * cols + c];
+            }
+        }
+    }
+    
+    return vct3;
 };
 
 template <typename T>

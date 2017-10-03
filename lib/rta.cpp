@@ -1461,7 +1461,7 @@ namespace rta {
         slope[0] = -sign(t) / std::sqrt(1 + t * t);
         slope[1] = t * slope[0];
         
-        return cross2 ( slope, diffVectors1 ( uv, uvt ) ) ;
+        return cross2 ( slope, subVectors ( uv, uvt ) ) ;
     }
     
     double DNGHelper::lightSourceToColorTemp ( const unsigned short tag ) const {
@@ -1525,9 +1525,9 @@ namespace rta {
                                                              const double & mir1,
                                                              const double & mir2 ) const {
         double weight = std::max ( 0.0, std::min ( 1.0, (mir1 - mir) / (mir1 - mir2) ) );
-        vector < double > result = diffVectors1 ( _xyz2rgbMatrix2DNG, _xyz2rgbMatrix1DNG );
+        vector < double > result = subVectors ( _xyz2rgbMatrix2DNG, _xyz2rgbMatrix1DNG );
         scaleVector ( result, weight );
-        result = sumVectors1 ( result, _xyz2rgbMatrix1DNG );
+        result = addVectors ( result, _xyz2rgbMatrix1DNG );
         
         return result;
     }
@@ -1560,7 +1560,7 @@ namespace rta {
         
         for ( mir = lomir; mir < himir;  mir += mirStep ) {
             // error = distance between the sampling mired (mir) and the mired of the white balance as returned through the "average" matrices
-            lerror = mir - ccttoMired ( XYZToColorTemperature ( mulVectorElement \
+            lerror = mir - ccttoMired ( XYZToColorTemperature ( mulVector \
                                        ( invertV ( XYZtoCameraWeightedMatrix ( mir, mir1, mir2 ) ),\
                                         _neutralRGBDNG ) ) );
             
@@ -1619,7 +1619,7 @@ namespace rta {
             vector < double > uv2 ( Robertson_uvtTable[i-1], Robertson_uvtTable[i-1] + 2 );
             scaleVector ( uv2, 1 - weight );
             
-            uv = sumVectors1 ( uv1, uv2 );
+            uv = addVectors ( uv1, uv2 );
         }
         
         return uvToXYZ(uv);

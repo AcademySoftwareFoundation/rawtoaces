@@ -1589,7 +1589,7 @@ namespace rta {
         return xyzToCameraRGBMatrix;
     };
     
-    vector < double > DNGHelper::colorTemperatureToXYZ ( const double cct ) const {
+    vector < double > DNGHelper::colorTemperatureToXYZ ( const double & cct ) const {
         double mired = 1.0e6 / cct;
         vector < double > uv ( 2, 1.0 );
         
@@ -1597,7 +1597,7 @@ namespace rta {
         int i;
         
         for ( i = 0; i < Nrobert; i++ ) {
-            if ( RobertsonMired [i] >= mired )
+            if ( RobertsonMired[i] >= mired )
                 break;
         }
         if ( i <= 0 ) {
@@ -1617,12 +1617,73 @@ namespace rta {
             scaleVector ( uv1, weight );
 
             vector < double > uv2 ( Robertson_uvtTable[i-1], Robertson_uvtTable[i-1] + 2 );
-            scaleVector ( uv2, 1 - weight );
+            scaleVector ( uv2, 1.0 - weight );
             
             uv = addVectors ( uv1, uv2 );
         }
         
         return uvToXYZ(uv);
+    };
+    
+    vector < double > DNGHelper::matrixRGBtoXYZ ( const double chromaticities[][2] ) const {
+        vector < double > rXYZ = xyToXYZ ( vector < double > ( chromaticities[0], chromaticities[0] + 2 ) );
+        vector < double > gXYZ = xyToXYZ ( vector < double > ( chromaticities[1], chromaticities[1] + 2 ) );
+        vector < double > bXYZ = xyToXYZ ( vector < double > ( chromaticities[2], chromaticities[2] + 2 ) );
+        vector < double > wXYZ = xyToXYZ ( vector < double > ( chromaticities[3], chromaticities[3] + 2 ) );
+        
+        vector < double > rgbMtx(9);
+        
+        FORI(3) {
+            rgbMtx[0+i*3] = rXYZ[i];
+            rgbMtx[1+i*3] = gXYZ[i];
+            rgbMtx[2+i*3] = bXYZ[i];
+        }
+        
+        vector < double > normalizedWhite ( wXYZ.size(), 1.0 );
+        FORI ( wXYZ.size() ) normalizedWhite[i] = wXYZ[i] / wXYZ[1];
+        
+        vector < double > channelgains = mulVector ( invertV ( rgbMtx ), normalizedWhite, 3 );
+        vector < double > colorMatrix = mulVector ( rgbMtx, diagV ( channelgains ), 3 );
+        
+        return colorMatrix;
+    };
+    
+    void DNGHelper::getCameraXYZMtxAndWhitePoint ( const double & baseExpo ) {
+        _cameraToXYZMtx = invertV ( findXYZtoCameraMtx ( _neutralRGBDNG ) );
+        assert ( sumVector( _cameraToXYZMtx ) != 0 );
+        
+        double power = std::pow ( 2.0, baseExpo );
+        FORI ( _cameraToXYZMtx.size() )
+            _cameraToXYZMtx[i] *= power;
+        
+        vector < double > neutralXYZ ( 3, 1.0 );
+        if ( _neutralRGBDNG.size() > 0 ) {
+            neutralXYZ = mulVector ( _cameraToXYZMtx, _neutralRGBDNG );
+        } else {
+            neutralXYZ = colorTemperatureToXYZ ( lightSourceToColorTemp ( _calibrateIllum[0] ) );
+        }
+        
+        FORI ( neutralXYZ.size() ) neutralXYZ[i] /= neutralXYZ[1];
+        _cameraXYZWhitePoint = neutralXYZ;
+        assert ( sumVector( _cameraXYZWhitePoint ) != 0);
+        
+        return;
+    };
+    
+    void DNGHelper::prepareMatrices()
+    {
+        if ( _cameraCalibration1DNG.size() != 0 ) {
+            _xyz2rgbMatrix1DNG = mulVector ( _cameraCalibration1DNG, _xyz2rgbMatrix1DNG, 3 );
+        }
+        if ( _cameraCalibration2DNG.size() != 0 ) {
+            _xyz2rgbMatrix2DNG = mulVector ( _cameraCalibration2DNG, _xyz2rgbMatrix2DNG, 3 );
+        }
+        if ( _analogBalanceDNG.size() != 0 ) {
+            _xyz2rgbMatrix1DNG = mulVector ( diagV ( _analogBalanceDNG ), _xyz2rgbMatrix1DNG, 3 );
+            _xyz2rgbMatrix2DNG = mulVector ( diagV ( _analogBalanceDNG ), _xyz2rgbMatrix2DNG, 3 );
+        }
+        
+        return;
     };
 }
 

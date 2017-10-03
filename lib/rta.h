@@ -253,11 +253,12 @@ namespace rta {
             vector < double > XYZtoCameraWeightedMatrix ( const double & mir,
                                                           const double & mir1,
                                                           const double & mir2 ) const;
-            vector < double > colorTemperatureToXYZ ( const double cct ) const;
-            vector < double > findXYZtoCameraMtx ( const vector < double > & neutralRGB ) const;
-            vector < double > matrixRGBtoXYZ ( const vector < vector < double > > & chromaticities ) const;
         
-            void getCameraXYZMtxAndWhitePoint ( double baseExpo );
+            vector < double > findXYZtoCameraMtx ( const vector < double > & neutralRGB ) const;
+            vector < double > colorTemperatureToXYZ ( const double & cct ) const;
+            vector < double > matrixRGBtoXYZ ( const double chromaticities[][2] ) const;
+        
+            void getCameraXYZMtxAndWhitePoint ( const double & baseExpo );
             void prepareMatrices();
         
         private:

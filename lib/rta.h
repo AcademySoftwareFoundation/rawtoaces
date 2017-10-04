@@ -68,6 +68,7 @@
 #include <half.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <libraw/libraw.h>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/foreach.hpp>

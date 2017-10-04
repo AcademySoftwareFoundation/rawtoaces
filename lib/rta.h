@@ -242,6 +242,7 @@ namespace rta {
     class DNGHelper {
         public:
             DNGHelper();
+            DNGHelper( libraw_rawdata_t R );
             virtual ~DNGHelper();
         
             double ccttoMired ( const double cct ) const;
@@ -260,7 +261,8 @@ namespace rta {
         
             void getCameraXYZMtxAndWhitePoint ( const double & baseExpo );
             void prepareMatrices();
-        
+            vector < vector < double > > getDNGIDTMatrix ( const double & baseExpo );
+
         private:
             vector < double >  _cameraCalibration1DNG;
             vector < double >  _cameraCalibration2DNG;

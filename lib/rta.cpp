@@ -1436,6 +1436,27 @@ namespace rta {
         _calibrateIllum        = vector < double > (1.0, 2);
     }
     
+    DNGHelper::DNGHelper ( libraw_rawdata_t R ) {
+//        float (*dng_cm1)[3] = R.color.dng_color[0].colormatrix;
+//        float (*dng_cc1)[4] = R.color.dng_color[0].calibration;
+//        float (*dng_cm2)[3] = R.color.dng_color[1].colormatrix;
+//        float (*dng_cc2)[4] = R.color.dng_color[1].calibration;
+
+        _calibrateIllum[0] = R.color.dng_color[0].illuminant;
+        _calibrateIllum[1] = R.color.dng_color[1].illuminant;
+        
+        FORI(3) {
+            _neutralRGBDNG[i] = 1.0 / (R.color.cam_mul)[i];
+        }
+        
+        FORIJ ( 3, 3 ) {
+            _xyz2rgbMatrix1DNG[i*3+j] = (R.color.dng_color[0].colormatrix)[i][j];
+            _xyz2rgbMatrix2DNG[i*3+j] = (R.color.dng_color[1].colormatrix)[i][j];
+            _cameraCalibration1DNG[i*3+j] = (R.color.dng_color[0].calibration)[i][j];
+            _cameraCalibration2DNG[i*3+j] = (R.color.dng_color[1].calibration)[i][j];
+        }
+    }
+    
     DNGHelper::~DNGHelper() {
         clearVM ( _cameraCalibration1DNG );
         clearVM ( _cameraCalibration2DNG );
@@ -1600,6 +1621,7 @@ namespace rta {
             if ( RobertsonMired[i] >= mired )
                 break;
         }
+        
         if ( i <= 0 ) {
 //            uv[0] = Robertson_uvtTable[0][0];
 //            uv[1] = Robertson_uvtTable[0][1];
@@ -1685,6 +1707,48 @@ namespace rta {
         
         return;
     };
+
+    vector < vector < double > > DNGHelper:: getDNGIDTMatrix ( const double & baseExpo ) 
+    {
+    
+        // #define R _rawProcessor->imgdata.rawdata
+        
+        // DNGHelper * dh = new DNGHelper (R);
+
+        double deviceWhite[3] = { 1.0, 1.0, 1.0 };
+        vector < double > deviceWhiteV ( deviceWhite, deviceWhite + 3 );
+        getCameraXYZMtxAndWhitePoint ( baseExpo );
+        vector < double > outputRGBtoXYZMtx = matrixRGBtoXYZ ( chromaticitiesACES );
+    //    vector < double > XYZToDisplayMtx = invertV (outputRGBtoXYZMtx));
+        vector < double > outputXYZWhitePoint = mulVector ( outputRGBtoXYZMtx, deviceWhiteV );
+    //    vector < double > chadMtx = matrixChromaticAdaptation ( _cameraXYZWhitePoint, outputXYZWhitePoint ) );
+        vector < vector < double > > chadMtx = getCAT ( _cameraXYZWhitePoint, outputXYZWhitePoint );
+        
+        vector < vector < double > > XYZ_acesrgb ( 3, vector < double > (3) ); 
+        FORIJ ( 3, 3 ) XYZ_acesrgb[i][j] = XYZ_acesrgb_3[i][j];
+        vector < vector < double > > DNGIDTMatrix = mulVector ( XYZ_acesrgb, chadMtx );
+        
+        // vector < double > outRGBWhite = mulVector ( DNGIDTMatrix, mulVector ( invertV ( _cameraToXYZMtx ), \
+        //                                             _cameraXYZWhitePoint ) );
+        
+        // double max_value;
+        // max_value = *std::max_element ( outRGBWhite.begin(), outRGBWhite.end() );
+        // scaleVector ( outRGBWhite, 1.0 / max_value );
+        
+        // vector < double > absdif = subVectors ( outRGBWhite, deviceWhiteV );
+        
+        // FORI ( absdif.size() ) absdif[i] = fabs ( absdif[i] );
+        // max_value = *std::max_element ( absdif.begin(), absdif.end() );
+
+        // if ( max_value >= 0.0001 ) {
+        //     fprintf(stderr, "WARNING: The neutrals should come out white balanced.\n");
+        // }
+        
+        // assert ( sumVector ( DNGIDTMatrix ) != 0 );
+        
+        return DNGIDTMatrix;
+    }
+
 }
 
 

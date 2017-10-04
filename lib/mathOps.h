@@ -301,8 +301,8 @@ vector < T > mulVector ( vector < T > vct1, vector < T > vct2, int k = 3 )
 };
 
 template <typename T>
-vector < vector<T> > mulVector ( const vector < vector < T > > & vct1,
-                                 const vector < vector < T > > & vct2 ) {
+vector < vector < T > > mulVector ( const vector < vector < T > > & vct1,
+                                    const vector < vector < T > > & vct2 ) {
     assert(vct1.size() != 0 && vct2.size() != 0);
 
     Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic> m1, m2, m3;
@@ -323,8 +323,8 @@ vector < vector<T> > mulVector ( const vector < vector < T > > & vct1,
 };
 
 template <typename T>
-vector < T > mulVector( const vector < vector < T > > & vct1,
-                        const vector < T > & vct2 ) {
+vector < T > mulVector ( const vector < vector < T > > & vct1,
+                         const vector < T > & vct2 ) {
     assert ( vct1.size() != 0 &&
              (vct1[0]).size() == vct2.size() );
     

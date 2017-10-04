@@ -1189,18 +1189,6 @@ int AcesRender::postprocessRaw ( ) {
     if ( _opts.mat_method == matMethod0 )
         if ( !prepareIDT ( P, C.pre_mul ) )
             _opts.ret = errno;
-    
-//    if ( P.dng_version ) {
-//        OUT.output_color      = 5;
-//        OUT.output_bps        = 16;
-//        OUT.highlight         = 0;
-//        OUT.use_camera_matrix = 1;
-//        OUT.gamm[0]           = 1.0;
-//        OUT.gamm[1]           = 1.0;
-//        OUT.no_auto_bright    = 0;
-//        OUT.use_camera_wb     = 0;
-//        OUT.use_auto_wb       = 0;
-//    }
 
     libraw_processed_image_t * image = _rawProcessor->dcraw_make_mem_image ( &(_opts.ret) );
     setPixels (image);

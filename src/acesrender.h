@@ -103,7 +103,7 @@ class AcesRender {
         void acesWrite ( const char * name, float *  aces, float ratio = 1.0) const;
     
         float * renderACES ( );
-        float * renderDNG ( const vector < float > & cameraToDisplayMtx );
+        float * renderDNG ( const vector < double > & DNGMatrix );
         float * renderNonDNG ();
         float * renderIDT ();
         float * renderNonIDT ();

@@ -1406,21 +1406,21 @@ void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total )
 //	outputs:
 //		float * : an array of converted aces values
 
-float * AcesRender::renderDNG ( const vector < float > & cameraToDisplayMtx )
+float * AcesRender::renderDNG ( const vector < double > & DNGIDTMatrix )
 {
     assert(_image);
     
     ushort * pixels = (ushort *) _image->data;
     uint32_t total = _image->width * _image->height * _image->colors;
-    vector < vector< double> > CMT( _image->colors,
-                                    vector< double >(_image->colors) );
+    vector < vector < double > > CMT( _image->colors,
+                                      vector < double >(_image->colors) );
 
     float * aces = new  (std::nothrow) float[total];
     FORI (total)
         aces[i] = static_cast < float > (pixels[i]);
     
     FORIJ(3, 3)
-        CMT[i][j] = static_cast < double > (cameraToDisplayMtx[i*3+j]);
+        CMT[i][j] = static_cast < double > (DNGIDTMatrix[i*3+j]);
    
     if(_image->colors == 3) {
         aces = mulVectorArray( aces,

@@ -68,10 +68,10 @@
 #include <half.h>
 #include <ctype.h>
 #include <stdlib.h>
-#include <libraw/libraw.h>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/foreach.hpp>
+#include <libraw/libraw.h>
 
 #include "mathOps.h"
 
@@ -243,7 +243,7 @@ namespace rta {
     class DNGHelper {
         public:
             DNGHelper();
-            DNGHelper( libraw_rawdata_t R );
+            DNGHelper ( libraw_rawdata_t R );
             virtual ~DNGHelper();
         
             double ccttoMired ( const double cct ) const;
@@ -260,9 +260,9 @@ namespace rta {
             vector < double > colorTemperatureToXYZ ( const double & cct ) const;
             vector < double > matrixRGBtoXYZ ( const double chromaticities[][2] ) const;
         
-            void getCameraXYZMtxAndWhitePoint ( const double & baseExpo );
+            void getCameraXYZMtxAndWhitePoint ( );
             void prepareMatrices();
-            vector < vector < double > > getDNGIDTMatrix ( const double & baseExpo );
+            vector < vector < double > > getDNGIDTMatrix ( );
 
         private:
             vector < double >  _cameraCalibration1DNG;
@@ -274,6 +274,7 @@ namespace rta {
             vector < double >  _neutralRGBDNG;
             vector < double >  _cameraXYZWhitePoint;
             vector < double >  _calibrateIllum;
+            double _baseExpo;
     };
     
     struct Objfun {

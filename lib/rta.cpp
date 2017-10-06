@@ -1425,35 +1425,42 @@ namespace rta {
     // ------------------------------------------------------//
     
     DNGHelper::DNGHelper() {
-        _cameraCalibration1DNG = vector < double > (1.0, 9);
-        _cameraCalibration2DNG = vector < double > (1.0, 9);
-        _cameraToXYZMtx        = vector < double > (1.0, 9);
-        _xyz2rgbMatrix1DNG     = vector < double > (1.0, 9);
-        _xyz2rgbMatrix2DNG     = vector < double > (1.0, 9);
-        _analogBalanceDNG      = vector < double > (1.0, 3);
-        _neutralRGBDNG         = vector < double > (1.0, 3);
-        _cameraXYZWhitePoint   = vector < double > (1.0, 3);
-        _calibrateIllum        = vector < double > (1.0, 2);
+        _baseExpo              = 1.0;
+        _cameraCalibration1DNG = vector < double > (9, 1.0);
+        _cameraCalibration2DNG = vector < double > (9, 1.0);
+        _cameraToXYZMtx        = vector < double > (9, 1.0);
+        _xyz2rgbMatrix1DNG     = vector < double > (9, 1.0);
+        _xyz2rgbMatrix2DNG     = vector < double > (9, 1.0);
+        _analogBalanceDNG      = vector < double > (3, 1.0);
+        _neutralRGBDNG         = vector < double > (3, 1.0);
+        _cameraXYZWhitePoint   = vector < double > (3, 1.0);
+        _calibrateIllum        = vector < double > (2, 1.0);
     }
     
     DNGHelper::DNGHelper ( libraw_rawdata_t R ) {
-//        float (*dng_cm1)[3] = R.color.dng_color[0].colormatrix;
-//        float (*dng_cc1)[4] = R.color.dng_color[0].calibration;
-//        float (*dng_cm2)[3] = R.color.dng_color[1].colormatrix;
-//        float (*dng_cc2)[4] = R.color.dng_color[1].calibration;
-
-        _calibrateIllum[0] = R.color.dng_color[0].illuminant;
-        _calibrateIllum[1] = R.color.dng_color[1].illuminant;
+        _cameraCalibration1DNG = vector < double > (9, 1.0);
+        _cameraCalibration2DNG = vector < double > (9, 1.0);
+        _cameraToXYZMtx        = vector < double > (9, 1.0);
+        _xyz2rgbMatrix1DNG     = vector < double > (9, 1.0);
+        _xyz2rgbMatrix2DNG     = vector < double > (9, 1.0);
+        _analogBalanceDNG      = vector < double > (3, 1.0);
+        _neutralRGBDNG         = vector < double > (3, 1.0);
+        _cameraXYZWhitePoint   = vector < double > (3, 1.0);
+        _calibrateIllum        = vector < double > (2, 1.0);
+        
+        _baseExpo = static_cast < double > ( R.color.baseline_exposure );
+        _calibrateIllum[0] = static_cast < double > ( R.color.dng_color[0].illuminant );
+        _calibrateIllum[1] = static_cast < double > ( R.color.dng_color[1].illuminant );
         
         FORI(3) {
-            _neutralRGBDNG[i] = 1.0 / (R.color.cam_mul)[i];
+            _neutralRGBDNG[i] = 1.0 / static_cast < double > ( (R.color.cam_mul)[i] );
         }
         
         FORIJ ( 3, 3 ) {
-            _xyz2rgbMatrix1DNG[i*3+j] = (R.color.dng_color[0].colormatrix)[i][j];
-            _xyz2rgbMatrix2DNG[i*3+j] = (R.color.dng_color[1].colormatrix)[i][j];
-            _cameraCalibration1DNG[i*3+j] = (R.color.dng_color[0].calibration)[i][j];
-            _cameraCalibration2DNG[i*3+j] = (R.color.dng_color[1].calibration)[i][j];
+            _xyz2rgbMatrix1DNG[i*3+j] = static_cast < double > ( (R.color.dng_color[0].colormatrix)[i][j] );
+            _xyz2rgbMatrix2DNG[i*3+j] = static_cast < double > ( (R.color.dng_color[1].colormatrix)[i][j] );
+            _cameraCalibration1DNG[i*3+j] = static_cast < double > ( (R.color.dng_color[0].calibration)[i][j] );
+            _cameraCalibration2DNG[i*3+j] = static_cast < double > ( (R.color.dng_color[1].calibration)[i][j] );
         }
     }
     
@@ -1470,22 +1477,25 @@ namespace rta {
     }
     
     double DNGHelper::ccttoMired ( const double cct ) const {
+        
         return 1.0e6 / cct;
     }
     
     double DNGHelper::robertsonLength ( const vector < double > & uv,
                                         const vector < double > & uvt ) const {
-        assert ( uv.size() == uvt.size() );
         
         double t = uvt[2];
-        vector < double > slope (2, 1.0);
+        vector < double > slope (2);
         slope[0] = -sign(t) / std::sqrt(1 + t * t);
         slope[1] = t * slope[0];
         
-        return cross2 ( slope, subVectors ( uv, uvt ) ) ;
+        vector < double > uvr (2);
+        FORI(2) uvr[i] = uvt[i];
+        return cross2 ( slope, subVectors ( uv, uvr ) ) ;
     }
     
     double DNGHelper::lightSourceToColorTemp ( const unsigned short tag ) const {
+        
         if ( tag >= 32768 )
             return (static_cast<double>(tag)) - 32768.0;
         
@@ -1513,16 +1523,17 @@ namespace rta {
     }
     
     double DNGHelper::XYZToColorTemperature ( const vector < double > & XYZ ) const {
-        vector < double > uv ( XYZTouv ( XYZ ) );
+        
+        vector < double > uv = XYZTouv ( XYZ );
         int Nrobert = countSize ( Robertson_uvtTable );
         int i;
         
         double mired;
-        double RDthis = 0, RDprevious = 0;
+        double RDthis = 0.0, RDprevious = 0.0;
         
         for (i = 0; i < Nrobert; i++) {
             vector < double > robertson ( Robertson_uvtTable[i],
-                                          Robertson_uvtTable[i]+ countSize(Robertson_uvtTable[i]) );
+                                          Robertson_uvtTable[i] + countSize(Robertson_uvtTable[i]) );
             if (( RDthis = robertsonLength ( uv, robertson ) ) <= 0.0 )
                 break;
             RDprevious = RDthis;
@@ -1536,7 +1547,7 @@ namespace rta {
                     RobertsonMired[i] - RobertsonMired[i-1] )\
                     /( RDprevious-RDthis );
 
-        double cct = 1.0e6 / mired;
+        double cct = 1.0e06 / mired;
         cct = std::max ( 2000.0, std::min (50000.0, cct));
         
         return cct;
@@ -1545,6 +1556,7 @@ namespace rta {
     vector < double > DNGHelper::XYZtoCameraWeightedMatrix ( const double & mir,
                                                              const double & mir1,
                                                              const double & mir2 ) const {
+        
         double weight = std::max ( 0.0, std::min ( 1.0, (mir1 - mir) / (mir1 - mir2) ) );
         vector < double > result = subVectors ( _xyz2rgbMatrix2DNG, _xyz2rgbMatrix1DNG );
         scaleVector ( result, weight );
@@ -1554,6 +1566,7 @@ namespace rta {
     }
     
     vector < double > DNGHelper::findXYZtoCameraMtx ( const vector < double > & neutralRGB ) const {
+
         if ( _calibrateIllum.size() == 0) {
             fprintf ( stderr, " No calibration illuminants were found. \n " );
             return _xyz2rgbMatrix1DNG;
@@ -1580,23 +1593,21 @@ namespace rta {
         double mir = 0.0, lastMired = 0.0, estimatedMired = 0.0, lerror = 0.0, lastError = 0.0, smallestError = 0.0;
         
         for ( mir = lomir; mir < himir;  mir += mirStep ) {
-            // error = distance between the sampling mired (mir) and the mired of the white balance as returned through the "average" matrices
             lerror = mir - ccttoMired ( XYZToColorTemperature ( mulVector \
                                        ( invertV ( XYZtoCameraWeightedMatrix ( mir, mir1, mir2 ) ),\
                                         _neutralRGBDNG ) ) );
             
             if ( std::fabs( lerror - 0.0 ) <= 1e-09 ) {
-                // no error. We found the exact mired
                 estimatedMired = mir;
                 break;
             }
-            if ( std::fabs( mir - lomir ) > 1e-09
-                 && std::fabs ( lerror * lastError ) <= 1e-09 ) {
-                estimatedMired = mir + lerror / ( lerror-lastError ) * ( mir - lastMired );
+            if ( std::fabs( mir - lomir - 0.0 ) > 1e-09
+                 && lerror * lastError <= 0.0 ) {
+                estimatedMired = mir + ( lerror / ( lerror-lastError ) * ( mir - lastMired ) );
                 break;
             }
             if ( std::fabs( mir - lomir ) <= 1e-09
-                 || std::fabs(lerror) < std::fabs(smallestError) )    {
+                 || std::fabs ( lerror ) < std::fabs ( smallestError ) )    {
                 estimatedMired = mir ;
                 smallestError = lerror;
             }
@@ -1605,13 +1616,12 @@ namespace rta {
             lastMired = mir;
         }
         
-        vector < double > xyzToCameraRGBMatrix ( XYZtoCameraWeightedMatrix ( estimatedMired, mir1, mir2 ) );
-        
-        return xyzToCameraRGBMatrix;
+        return XYZtoCameraWeightedMatrix ( estimatedMired, mir1, mir2 );
     };
     
     vector < double > DNGHelper::colorTemperatureToXYZ ( const double & cct ) const {
-        double mired = 1.0e6 / cct;
+
+        double mired = 1.0e06 / cct;
         vector < double > uv ( 2, 1.0 );
         
         int Nrobert = countSize (Robertson_uvtTable);
@@ -1623,13 +1633,9 @@ namespace rta {
         }
         
         if ( i <= 0 ) {
-//            uv[0] = Robertson_uvtTable[0][0];
-//            uv[1] = Robertson_uvtTable[0][1];
             uv = vector < double > ( Robertson_uvtTable[0], Robertson_uvtTable[0] + 2 );
         }
         else if ( i >= Nrobert ) {
-//            uv[0] = Robertson_uvtTable[Nrobert - 1][0];
-//            uv[1] = Robertson_uvtTable[Nrobert - 1][1];
             uv = vector < double > ( Robertson_uvtTable[Nrobert - 1], Robertson_uvtTable[Nrobert - 1] + 2 );
         }
         else {
@@ -1670,11 +1676,11 @@ namespace rta {
         return colorMatrix;
     };
     
-    void DNGHelper::getCameraXYZMtxAndWhitePoint ( const double & baseExpo ) {
+    void DNGHelper::getCameraXYZMtxAndWhitePoint ( ) {
         _cameraToXYZMtx = invertV ( findXYZtoCameraMtx ( _neutralRGBDNG ) );
         assert ( sumVector( _cameraToXYZMtx ) != 0 );
         
-        double power = std::pow ( 2.0, baseExpo );
+        double power = std::pow ( 2.0, _baseExpo );
         FORI ( _cameraToXYZMtx.size() )
             _cameraToXYZMtx[i] *= power;
         
@@ -1685,15 +1691,16 @@ namespace rta {
             neutralXYZ = colorTemperatureToXYZ ( lightSourceToColorTemp ( _calibrateIllum[0] ) );
         }
         
-        FORI ( neutralXYZ.size() ) neutralXYZ[i] /= neutralXYZ[1];
+        scaleVector ( neutralXYZ, 1.0/neutralXYZ[1] );
+        
         _cameraXYZWhitePoint = neutralXYZ;
-        assert ( sumVector( _cameraXYZWhitePoint ) != 0);
+        assert ( sumVector ( _cameraXYZWhitePoint ) != 0);
         
         return;
     };
     
-    void DNGHelper::prepareMatrices()
-    {
+    void DNGHelper::prepareMatrices() {
+        
         if ( _cameraCalibration1DNG.size() != 0 ) {
             _xyz2rgbMatrix1DNG = mulVector ( _cameraCalibration1DNG, _xyz2rgbMatrix1DNG, 3 );
         }
@@ -1708,43 +1715,53 @@ namespace rta {
         return;
     };
 
-    vector < vector < double > > DNGHelper:: getDNGIDTMatrix ( const double & baseExpo ) 
-    {
-    
-        // #define R _rawProcessor->imgdata.rawdata
+    vector < vector < double > > DNGHelper::getDNGIDTMatrix ( ) {
         
-        // DNGHelper * dh = new DNGHelper (R);
-
-        double deviceWhite[3] = { 1.0, 1.0, 1.0 };
-        vector < double > deviceWhiteV ( deviceWhite, deviceWhite + 3 );
-        getCameraXYZMtxAndWhitePoint ( baseExpo );
+        vector < double > deviceWhiteV ( 3, 1.0 );
+        getCameraXYZMtxAndWhitePoint ( );
         vector < double > outputRGBtoXYZMtx = matrixRGBtoXYZ ( chromaticitiesACES );
     //    vector < double > XYZToDisplayMtx = invertV (outputRGBtoXYZMtx));
         vector < double > outputXYZWhitePoint = mulVector ( outputRGBtoXYZMtx, deviceWhiteV );
-    //    vector < double > chadMtx = matrixChromaticAdaptation ( _cameraXYZWhitePoint, outputXYZWhitePoint ) );
         vector < vector < double > > chadMtx = getCAT ( _cameraXYZWhitePoint, outputXYZWhitePoint );
         
-        vector < vector < double > > XYZ_acesrgb ( 3, vector < double > (3) ); 
-        FORIJ ( 3, 3 ) XYZ_acesrgb[i][j] = XYZ_acesrgb_3[i][j];
-        vector < vector < double > > DNGIDTMatrix = mulVector ( XYZ_acesrgb, chadMtx );
+        vector < double > XYZ_acesrgb (9);
+        vector < double > CAT (9);
+        FORIJ ( 3, 3 ) {
+            XYZ_acesrgb[i*3+j] = XYZ_acesrgb_3[i][j];
+            CAT[i*3+j] = chadMtx[i][j];
+        }
         
-        // vector < double > outRGBWhite = mulVector ( DNGIDTMatrix, mulVector ( invertV ( _cameraToXYZMtx ), \
-        //                                             _cameraXYZWhitePoint ) );
+        vector < double > matrix = mulVector ( XYZ_acesrgb, CAT, 3 );
+        vector < vector < double > > DNGIDTMatrix ( 3, vector < double > (3) );
         
-        // double max_value;
-        // max_value = *std::max_element ( outRGBWhite.begin(), outRGBWhite.end() );
-        // scaleVector ( outRGBWhite, 1.0 / max_value );
+        FORIJ ( 3, 3 ) DNGIDTMatrix[i][j] = matrix[i*3+j];
         
-        // vector < double > absdif = subVectors ( outRGBWhite, deviceWhiteV );
+        vector < double > outRGBWhite = mulVector ( DNGIDTMatrix,
+                                                    mulVector ( invertV ( _cameraToXYZMtx ),
+                                                                _cameraXYZWhitePoint ) );
         
-        // FORI ( absdif.size() ) absdif[i] = fabs ( absdif[i] );
-        // max_value = *std::max_element ( absdif.begin(), absdif.end() );
+         double max_value;
+         max_value = *std::max_element ( outRGBWhite.begin(), outRGBWhite.end() );
+         scaleVector ( outRGBWhite, 1.0 / max_value );
+        
+         vector < double > absdif = subVectors ( outRGBWhite, deviceWhiteV );
+        
+        FORI ( absdif.size() ) absdif[i] = std::fabs ( absdif[i] );
+         max_value = *std::max_element ( absdif.begin(), absdif.end() );
 
-        // if ( max_value >= 0.0001 ) {
-        //     fprintf(stderr, "WARNING: The neutrals should come out white balanced.\n");
-        // }
+         if ( max_value >= 0.0001 ) {
+             fprintf(stderr, "WARNING: The neutrals should come out white balanced.\n");
+         }
         
-        // assert ( sumVector ( DNGIDTMatrix ) != 0 );
+        assert ( std::fabs( sumVectorM ( DNGIDTMatrix ) - 0.0 ) > 1e-09 );
+
+//        cout << "chadMtx: \n";
+//        FORIJ ( chadMtx.size(), chadMtx[0].size() ) cout << chadMtx[i][j] << " ";
+//        cout << "\n";
+        
+//        cout << "DNGIDTMatrix: \n";
+//        FORIJ ( 3, 3 ) cout << DNGIDTMatrix[i][j] << " ";
+//        cout << "\n";
         
         return DNGIDTMatrix;
     }

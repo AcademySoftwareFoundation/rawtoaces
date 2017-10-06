@@ -125,11 +125,6 @@ int main(int argc, char *argv[])
              timerprint ( "AcesRender::postprocessRaw()", raw );
         
         timerstart_timeval();
-        Render.renderACES ();
-        if ( opts.use_timing )
-             timerprint( "AcesRender::renderACES()", raw);
-        
-        timerstart_timeval();
         Render.outputACES ();
         if ( opts.use_timing )
              timerprint( "AcesRender::outputACES()", raw);

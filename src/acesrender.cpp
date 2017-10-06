@@ -877,7 +877,7 @@ int AcesRender::prepareIDT ( const libraw_iparams_t & P, float * M )
         _idt->chooseIllumSrc ( mulV, _opts.highlight );
     }
 
-    if (_opts.verbosity > 1)
+    if ( _opts.verbosity > 1 )
         printf ( "Regressing IDT matrix coefficients ...\n" );
 
     if ( _idt->calIDT() )  {
@@ -937,9 +937,9 @@ int AcesRender::prepareWB ( const libraw_iparams_t & P )
 
         // choose the best light source based on
         // as-shot white balance coefficients
-       _idt->chooseIllumType( _opts.illumType, _opts.highlight );
+       _idt->chooseIllumType ( _opts.illumType, _opts.highlight );
 
-       if (_opts.verbosity > 1) {
+       if ( _opts.verbosity > 1 ) {
            printf ( "Calculating White Balance Coefficients "
                     "from Spectral Sensitivity ...\n" );
            printf ( "Applying Calculated White Balance "
@@ -1040,7 +1040,7 @@ int AcesRender::postprocessRaw ( ) {
 #define P  _rawProcessor->imgdata.idata
 #define C   _rawProcessor->imgdata.color
 
-    if (_opts.verbosity > 1)
+    if ( _opts.verbosity > 1 )
         printf ( "The camera has been identified as a %s %s ...\n", P.make, P.model );
     
     switch ( _opts.wb_method ) {
@@ -1152,6 +1152,7 @@ int AcesRender::postprocessRaw ( ) {
 
             if ( P.dng_version ) {
                 OUT.use_camera_matrix = 1;
+                
                 if ( _opts.verbosity > 1 )
                     printf ( "DNG file uses embeded color profile. \n ");
             }
@@ -1205,7 +1206,8 @@ int AcesRender::postprocessRaw ( ) {
 //      N/A
 //
 //	outputs:
-//      N/A        : either call renderIDT() or renderNonIDT()
+//      N/A        : either call renderIDT() or renderDNG()
+//                   or renderNonDNG()
 
 float * AcesRender::renderACES ( ) {
 #ifdef P
@@ -1213,13 +1215,13 @@ float * AcesRender::renderACES ( ) {
 #endif
     
 #define P _rawProcessor->imgdata.idata
-
+    
     if ( !_rawProcessor->imgdata.params.output_color )
         return renderIDT();
     else {
         if ( P.dng_version )
             return renderDNG();
-        else 
+        else
             return renderNonDNG();
     }
         // return renderNonIDT();
@@ -1240,7 +1242,7 @@ void AcesRender::outputACES ( ) {
 #endif
 
 #define C   _rawProcessor->imgdata.color
-
+    
     assert(_pathToRaw != nullptr);
 
     char * cp;
@@ -1293,7 +1295,7 @@ void AcesRender::outputACES ( ) {
     
     _rawProcessor->recycle();
 
-    if (_opts.verbosity)
+    if ( _opts.verbosity ) {
         printf ("Finished\n\n");
 }
 
@@ -1425,7 +1427,7 @@ float * AcesRender::renderDNG ( )
 
 #define P _rawProcessor->imgdata.idata
 
-    assert(_image && P.dng_version);
+    assert ( _image && P.dng_version );
     
     DNGHelper * dh = new DNGHelper ( _rawProcessor->imgdata.rawdata );
     _idtm = dh->getDNGIDTMatrix();
@@ -1468,6 +1470,9 @@ float * AcesRender::renderDNG ( )
 //        exit(1);
 //    }
 
+    if ( _opts.verbosity > 1 )
+        printf ( "Applying IDT Matrix ...\n" );
+    
     applyIDT ( aces, _image->colors, total );
     return aces;
 }

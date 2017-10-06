@@ -191,6 +191,21 @@ T sumVector ( const vector < T > & vct ) {
 };
 
 template <typename T>
+T sumVectorM ( const vector < vector < T > > & vct ) {
+    int row = vct.size();
+    int col = vct[0].size();
+
+    T sum = T(0);
+    Eigen::Matrix <T, Eigen::Dynamic, 1> v;
+    v.resize ( row * col, 1 );
+
+    FORIJ ( row, col )
+        v(i*col + j) = vct[i][j];
+
+    return v.sum();
+};
+
+template <typename T>
 void scaleVector ( vector < T > & vct, const T scale ) {
     Eigen::Matrix <T, Eigen::Dynamic, 1> v;
     v.resize(vct.size(), 1);
@@ -278,11 +293,11 @@ vector<T> divVectorElement ( const vector < T > & vct1,
 template <typename T>
 vector < T > mulVector ( vector < T > vct1, vector < T > vct2, int k = 3 )
 {
-    int rows = ( static_cast < int > (vct1.size()) ) / k;
-    int cols = ( static_cast < int > (vct2.size()) ) / k;
+    int rows = ( static_cast < int > ( vct1.size() ) ) / k;
+    int cols = ( static_cast < int > ( vct2.size() ) ) / k;
     
-    assert (rows * k == vct1.size());
-    assert (k * cols == vct2.size());
+    assert ( rows * k == vct1.size() );
+    assert ( k * cols == vct2.size() );
     
     vector < T > vct3 (rows * cols);
     T * pA = &vct1[0];
@@ -316,7 +331,7 @@ vector < vector < T > > mulVector ( const vector < vector < T > > & vct1,
     
     m3 = m1 * m2;
     
-    vector < vector<T> > vct3( m3.rows(), vector<T>(m3.cols()) );
+    vector < vector<T> > vct3( m3.rows(), vector < T > ( m3.cols() ) );
     FORIJ (m3.rows(), m3.cols()) vct3[i][j] = m3(i, j);
 
     return vct3;
@@ -482,7 +497,7 @@ vector <T> interp1DLinear ( const vector <int> & X0,
 template<typename T>
 vector < T > xyToXYZ ( const vector < T > &xy )
 {
-    vector < T > XYZ (1.0, 3);
+    vector < T > XYZ (3);
     XYZ[0] = xy[0];
     XYZ[1] = xy[1];
     XYZ[2] = 1 - xy[0] - xy[1];
@@ -531,6 +546,7 @@ vector < vector < T > > getCAT ( const vector < T > & src,
     assert(src.size() == des.size());
     
     vector < vector <T> > vcat(3, vector<T>(3));
+    // cat02 or bradford
     FORIJ(3, 3) vcat[i][j] = cat02[i][j];
     
     vector< T > wSRC = mulVector ( src, vcat );

@@ -106,7 +106,6 @@ class AcesRender {
         float * renderDNG ();
         float * renderNonDNG ();
         float * renderIDT ();
-        float * renderNonIDT ();
     
         const vector < string > getSupportedIllums () const;
         const vector < string > getSupportedCameras () const;

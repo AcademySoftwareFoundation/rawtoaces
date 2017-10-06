@@ -359,7 +359,7 @@ void AcesRender::initialize ( const dataPath & dp ) {
     OUT.output_color      = 5;
     OUT.output_bps        = 16;
     OUT.highlight         = 0;
-    OUT.use_camera_matrix = 0;
+//    OUT.use_camera_matrix = 0;
     OUT.gamm[0]           = 1.0;
     OUT.gamm[1]           = 1.0;
     OUT.no_auto_bright    = 1;
@@ -1137,6 +1137,7 @@ int AcesRender::postprocessRaw ( ) {
         // 0
         case matMethod0 : {
             OUT.output_color = 0;
+            OUT.use_camera_matrix = 0;
             
             if ( _opts.verbosity > 1 ) {
                 printf ( "IDT matrix calculation method is 0 - ");
@@ -1180,6 +1181,11 @@ int AcesRender::postprocessRaw ( ) {
 // Set four_color_rgb to 0 when half_size is set to 1
     if ( OUT.half_size == 1 )
          OUT.four_color_rgb = 0;
+    
+    if ( P.dng_version && OUT.output_color != 0 ) {
+        OUT.use_camera_matrix = 1;
+        OUT.use_camera_wb     = 1;
+    }
     
     _opts.ret = dcraw();
     if ( _opts.mat_method == matMethod0 )

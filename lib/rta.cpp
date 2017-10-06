@@ -1740,29 +1740,18 @@ namespace rta {
                                                     mulVector ( invertV ( _cameraToXYZMtx ),
                                                                 _cameraXYZWhitePoint ) );
         
-         double max_value;
-         max_value = *std::max_element ( outRGBWhite.begin(), outRGBWhite.end() );
-         scaleVector ( outRGBWhite, 1.0 / max_value );
-        
-         vector < double > absdif = subVectors ( outRGBWhite, deviceWhiteV );
-        
-        FORI ( absdif.size() ) absdif[i] = std::fabs ( absdif[i] );
-         max_value = *std::max_element ( absdif.begin(), absdif.end() );
-
-         if ( max_value >= 0.0001 ) {
-             fprintf(stderr, "WARNING: The neutrals should come out white balanced.\n");
-         }
+//        double max_value = *std::max_element ( outRGBWhite.begin(), outRGBWhite.end() );
+//        scaleVector ( outRGBWhite, 1.0 / max_value );
+//        vector < double > absdif = subVectors ( outRGBWhite, deviceWhiteV );
+//
+//        FORI ( absdif.size() ) absdif[i] = std::fabs ( absdif[i] );
+//        max_value = *std::max_element ( absdif.begin(), absdif.end() );
+//
+//        if ( max_value >= 0.0001 )
+//            fprintf(stderr, "WARNING: The neutrals should come out white balanced.\n");
         
         assert ( std::fabs( sumVectorM ( DNGIDTMatrix ) - 0.0 ) > 1e-09 );
 
-//        cout << "chadMtx: \n";
-//        FORIJ ( chadMtx.size(), chadMtx[0].size() ) cout << chadMtx[i][j] << " ";
-//        cout << "\n";
-        
-//        cout << "DNGIDTMatrix: \n";
-//        FORIJ ( 3, 3 ) cout << DNGIDTMatrix[i][j] << " ";
-//        cout << "\n";
-        
         return DNGIDTMatrix;
     }
 

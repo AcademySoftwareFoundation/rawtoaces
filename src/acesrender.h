@@ -85,7 +85,7 @@ class AcesRender {
         int openRawPath ( const char * pathToRaw );
         int unpack ( const char * pathToRaw );
         int dcraw ( );
-
+    
         int prepareIDT ( const libraw_iparams_t & P, float * M );
         int prepareWB ( const libraw_iparams_t & P );
         int preprocessRaw ( const char * path );
@@ -102,8 +102,8 @@ class AcesRender {
         void applyCAT ( float * pixels, int channel, uint32_t total );
         void acesWrite ( const char * name, float *  aces, float ratio = 1.0) const;
     
-        float * renderACES ( );
-        float * renderDNG ( const vector < double > & DNGMatrix );
+        float * renderACES ();
+        float * renderDNG ();
         float * renderNonDNG ();
         float * renderIDT ();
         float * renderNonIDT ();

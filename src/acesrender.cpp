@@ -833,8 +833,9 @@ int AcesRender::fetchIlluminant ( const char * illumType )
         }
     }
     
-    return _idt->loadIlluminant( paths, (string)illumType );
+    return _idt->loadIlluminant( paths, static_cast<string >(illumType) );
 }
+
 
 //	=====================================================================
 //  Calculate IDT matrix from camera spectral sensitivity data and the
@@ -851,23 +852,23 @@ int AcesRender::fetchIlluminant ( const char * illumType )
 
 int AcesRender::prepareIDT ( const libraw_iparams_t & P, float * M )
 {
-// _rawProcessor->imgdata.idata
+    // _rawProcessor->imgdata.idata
     int read = fetchCameraSenPath( P );
-    
+
     if ( !read ) {
         fprintf( stderr, "\nError: No matching cameras found. "
                          "Please use other options for "
                          "\"--mat-method\" and/or \"--wb-method\".\n");
         exit (-1);
     }
-    
+
     // loading training data (190 patches)
     _idt->loadTrainingData ( static_cast < string > ( FILEPATH )
                              +"training/training_spectral.json" );
     // loading color matching function
-    _idt->loadCMF ( static_cast < string > ( FILEPATH )
+    _idt->loadCMF ( static_cast < string > ( FILEPATH ) \
                     +"cmf/cmf_1931.json" );
-    
+
     _idt->setVerbosity(_opts.verbosity);
     if ( _opts.illumType )
         _idt->chooseIllumType( _opts.illumType, _opts.highlight );
@@ -875,14 +876,14 @@ int AcesRender::prepareIDT ( const libraw_iparams_t & P, float * M )
         vector < double > mulV (M, M+3);
         _idt->chooseIllumSrc ( mulV, _opts.highlight );
     }
-    
+
     if (_opts.verbosity > 1)
-    	printf ( "Regressing IDT matrix coefficients ...\n" );
-    
+        printf ( "Regressing IDT matrix coefficients ...\n" );
+
     if ( _idt->calIDT() )  {
         _idtm = _idt->getIDT();
         _wbv = _idt->getWB();
-        
+    
         return 1;
     }
     
@@ -1042,12 +1043,6 @@ int AcesRender::postprocessRaw ( ) {
     if (_opts.verbosity > 1)
         printf ( "The camera has been identified as a %s %s ...\n", P.make, P.model );
     
-//    if ( P.dng_version ) {
-//        fprintf(stderr, "\nCurrently does not support DNG files.\n");
-//        exit(1);
-//    }
-
-    
     switch ( _opts.wb_method ) {
     // 0
         case wbMethod0 : {
@@ -1153,10 +1148,11 @@ int AcesRender::postprocessRaw ( ) {
         // 1
         case matMethod1 :
             OUT.use_camera_matrix = 3;
+
             if ( P.dng_version ) {
                 OUT.use_camera_matrix = 1;
                 if ( _opts.verbosity > 1 )
-                    printf ( "Always using embeded color profile for DNG files \n");
+                    printf ( "DNG file uses embeded color profile. \n ");
             }
 
             if ( _opts.verbosity > 1 ) {
@@ -1184,7 +1180,7 @@ int AcesRender::postprocessRaw ( ) {
 // Set four_color_rgb to 0 when half_size is set to 1
     if ( OUT.half_size == 1 )
          OUT.four_color_rgb = 0;
-
+    
     _opts.ret = dcraw();
     if ( _opts.mat_method == matMethod0 )
         if ( !prepareIDT ( P, C.pre_mul ) )
@@ -1206,12 +1202,21 @@ int AcesRender::postprocessRaw ( ) {
 //      N/A        : either call renderIDT() or renderNonIDT()
 
 float * AcesRender::renderACES ( ) {
+#ifdef P
+#undef P
+#endif
+    
+#define P _rawProcessor->imgdata.idata
+
     if ( !_rawProcessor->imgdata.params.output_color )
         return renderIDT();
-    else
-//        return renderNonDNG();
-        return renderNonIDT();
-
+    else {
+        if ( P.dng_version )
+            return renderDNG();
+        else 
+            return renderNonDNG();
+    }
+        // return renderNonIDT();
 }
 
 //	=====================================================================
@@ -1246,7 +1251,7 @@ void AcesRender::outputACES ( ) {
 //    FORI(3) printf("   %f, %f, %f\n", C.cam_xyz[i][0], C.cam_xyz[i][1], C.cam_xyz[i][2]);
     
     if ( _opts.verbosity > 1 ) {
-        if (_opts.mat_method) {
+        if ( _opts.mat_method ) {
             vector < vector < double > > camXYZ(3, vector< double >(3, 1.0));
             FORIJ(3,3) camXYZ[i][j] = C.cam_xyz[i][j];
             vector < vector < double > > camcat = mulVector (camXYZ, _catm);
@@ -1406,10 +1411,19 @@ void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total )
 //	outputs:
 //		float * : an array of converted aces values
 
-float * AcesRender::renderDNG ( const vector < double > & DNGIDTMatrix )
+float * AcesRender::renderDNG ( )
 {
-    assert(_image);
+#ifdef P
+#undef P
+#endif
+
+#define P _rawProcessor->imgdata.idata
+
+    assert(_image && P.dng_version);
     
+    DNGHelper * dh = new DNGHelper ( _rawProcessor->imgdata.rawdata );
+    _idtm = dh->getDNGIDTMatrix();
+        
     ushort * pixels = (ushort *) _image->data;
     uint32_t total = _image->width * _image->height * _image->colors;
     vector < vector < double > > CMT( _image->colors,
@@ -1419,35 +1433,36 @@ float * AcesRender::renderDNG ( const vector < double > & DNGIDTMatrix )
     FORI (total)
         aces[i] = static_cast < float > (pixels[i]);
     
-    FORIJ(3, 3)
-        CMT[i][j] = static_cast < double > (DNGIDTMatrix[i*3+j]);
-   
-    if(_image->colors == 3) {
-        aces = mulVectorArray( aces,
-                               total,
-                               3,
-                               CMT);
-    }
-    else if(_image->colors == 4){
-        CMT[0][3]=0.0;
-        CMT[1][3]=0.0;
-        CMT[2][3]=0.0;
-        CMT[3][3]=1.0;
-        CMT[3][0]=0.0;
-        CMT[3][1]=0.0;
-        CMT[3][2]=0.0;
-        
-        aces =  mulVectorArray( aces,
-                                total,
-                                4,
-                                CMT );
-    }
-    else {
-        fprintf(stderr, "\nError: Currenly support 3 channels "
-                        "and 4 channels. \n");
-        exit(1);
-    }
+//    FORIJ(3, 3)
+//        CMT[i][j] = static_cast < double > (DNGIDTMatrix[i*3+j]);
+//
+//    if(_image->colors == 3) {
+//        aces = mulVectorArray( aces,
+//                               total,
+//                               3,
+//                               CMT);
+//    }
+//    else if(_image->colors == 4){
+//        CMT[0][3]=0.0;
+//        CMT[1][3]=0.0;
+//        CMT[2][3]=0.0;
+//        CMT[3][3]=1.0;
+//        CMT[3][0]=0.0;
+//        CMT[3][1]=0.0;
+//        CMT[3][2]=0.0;
+//
+//        aces =  mulVectorArray( aces,
+//                                total,
+//                                4,
+//                                CMT );
+//    }
+//    else {
+//        fprintf(stderr, "\nError: Currenly support 3 channels "
+//                        "and 4 channels. \n");
+//        exit(1);
+//    }
 
+    applyIDT ( aces, _image->colors, total );
     return aces;
 }
 
@@ -1502,16 +1517,16 @@ float * AcesRender::renderNonDNG ()
 
 float * AcesRender::renderIDT ()
 {
-    assert(_image);
-    ushort * pixels = (ushort *) _image->data;
+    assert (_image);
+    ushort * pixels = ( ushort * ) _image->data;
     uint32_t total = _image->width * _image->height * _image->colors;
     float * aces = new (std::nothrow) float[total];
     
-    FORI(total) {
+    FORI ( total ) {
         aces[i] = static_cast <float> (pixels[i]);
     }
 
-    if (_opts.verbosity > 1)
+    if ( _opts.verbosity > 1 )
     	printf ( "Applying IDT Matrix ...\n" );
     
     applyIDT ( aces, _image->colors, total );
@@ -1549,11 +1564,11 @@ float * AcesRender::renderNonIDT ()
     }
     else if ( _image->colors == 4 ){
         FORIJ(4, 4) XYZ_acesrgb[i][j] = XYZ_acesrgb_4[i][j];
-        aces = mulVectorArray(aces, total, 4, XYZ_acesrgb);
+        aces = mulVectorArray ( aces, total, 4, XYZ_acesrgb );
     }
     else {
         fprintf ( stderr, "\nError: Currenly support 3 channels "
-                 "and 4 channels. \n" );
+                          "and 4 channels. \n" );
         exit (1);
     }
     
@@ -1627,12 +1642,12 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
             writeParams.hi.channels[3].name = "R";
             break;
         case 6:
-            throw std::invalid_argument("Stereo RGB support not yet implemented");
+            throw std::invalid_argument ( "Stereo RGB support not yet implemented" );
         case 8:
-            throw std::invalid_argument("Stereo RGB support not yet implemented");
+            throw std::invalid_argument ( "Stereo RGB support not yet implemented" );
         default:
-            throw std::invalid_argument("Only RGB, RGBA or"
-                                        "stereo RGB[A] file supported");
+            throw std::invalid_argument ( "Only RGB, RGBA or"
+                                          "stereo RGB[A] file supported" );
             break;
     }
     

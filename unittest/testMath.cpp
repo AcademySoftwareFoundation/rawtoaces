@@ -92,12 +92,40 @@ BOOST_AUTO_TEST_CASE ( Test_IsSquare ) {
     BOOST_CHECK_EQUAL ( isSquare(a), 0 );
 };
 
+BOOST_AUTO_TEST_CASE ( Test_AddVectors ) {
+    
+    double a[5] = { 1.0, 2.0, 3.0, 4.0, 5.0 };
+    double b[5] = { 5.0, 4.0, 3.0, 2.0, 1.0 };
+    double c[5] = { 6.0, 6.0, 6.0, 6.0, 6.0 };
+    
+    vector < double > av ( a, a+5 );
+    vector < double > bv ( b, b+5 );
+    vector < double > cv = addVectors (av, bv);
+    
+    FORI ( 5 )
+        BOOST_CHECK_CLOSE ( cv[i], c[i], 1e-9 );
+};
+
+BOOST_AUTO_TEST_CASE ( Test_SubVectors ) {
+    
+    double a[5] = { 5.0, 4.0, 3.0, 2.0, 1.0 };
+    double b[5] = { 5.0, 4.0, 3.0, 2.0, 1.0 };
+    double c[5] = { 0.0, 0.0, 0.0, 0.0, 0.0 };
+    
+    vector < double > av ( a, a+5 );
+    vector < double > bv ( b, b+5 );
+    vector < double > cv = subVectors ( av, bv );
+    
+    FORI ( 5 )
+        BOOST_CHECK_CLOSE ( cv[i], c[i], 1e-9 );
+};
+
 BOOST_AUTO_TEST_CASE ( Test_Cross2 ) {
     double a[2] = { 1.0, 3.0 };
     double b[2] = { 1.0, 6.5 };
     
-    vector < double > av(a, a+2);
-    vector < double > bv(b, b+2);
+    vector < double > av ( a, a+2 );
+    vector < double > bv ( b, b+2 );
 
     double cross2_test = cross2(av, bv);
     BOOST_CHECK_CLOSE ( cross2_test, 3.50, 1e-5 );
@@ -163,6 +191,19 @@ BOOST_AUTO_TEST_CASE ( Test_DiagVM ) {
     }
 };
 
+BOOST_AUTO_TEST_CASE ( Test_DiagV ) {
+    double v[3] = { 1.0, 2.0, 3.0 };
+    double vd[9] = { 1.0, 0.0, 0.0,
+                     0.0, 2.0, 0.0,
+                     0.0, 0.0, 3.0 };
+    vector < double > VV(v, v+3);
+    vector < double > DV = diagV (VV);
+    
+    FORI(9) {
+        BOOST_CHECK_CLOSE ( DV[i], vd[i], 1e-5 );
+    }
+};
+
 BOOST_AUTO_TEST_CASE ( Test_TransposeVec ) {
     double M[6][3] = {
         { 1.0, 0.0, 0.0 },
@@ -216,7 +257,10 @@ BOOST_AUTO_TEST_CASE ( Test_ScaleVectorMin ) {
 
 BOOST_AUTO_TEST_CASE ( Test_scaleVectorD ) {
     double M[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
-    double M_Scaled[10] = { 10.0000000000,  5.0000000000,  3.3333333333,  2.5000000000,  2.0000000000,  1.6666666667,  1.4285714286,  1.2500000000,  1.1111111111,  1.0000000000 };
+    double M_Scaled[10] = { 10.0000000000,  5.0000000000,  3.3333333333,
+                            2.5000000000,   2.0000000000,  1.6666666667,
+                            1.4285714286,   1.2500000000,  1.1111111111,
+                            1.0000000000 };
     vector < double > MV(M, M+10);
     
     scaleVectorD (MV);
@@ -226,7 +270,10 @@ BOOST_AUTO_TEST_CASE ( Test_scaleVectorD ) {
 
 BOOST_AUTO_TEST_CASE ( Test_MulVectorElement ) {
     double M1[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
-    double M2[10] = { 10.0000000000,  5.0000000000,  3.3333333333,  2.5000000000,  2.0000000000,  1.6666666667,  1.4285714286,  1.2500000000,  1.1111111111,  1.0000000000 };
+    double M2[10] = { 10.0000000000,  5.0000000000,  3.3333333333,
+                      2.5000000000,   2.0000000000,  1.6666666667,
+                      1.4285714286,   1.2500000000,  1.1111111111,
+                      1.0000000000 };
     vector < double > MV1(M1, M1+10);
     vector < double > MV2(M2, M2+10);
     
@@ -307,7 +354,9 @@ BOOST_AUTO_TEST_CASE ( Test_MulVectorArray ) {
         
     };
     
-    double data_test[9] = { 1.0000000000,  4.0000000000,  9.0000000000,  4.0000000000, 10.0000000000, 18.0000000000,  7.0000000000, 16.0000000000, 27.0000000000 };
+    double data_test[9] = { 1.0000000000,  4.0000000000,  9.0000000000,
+                            4.0000000000, 10.0000000000, 18.0000000000,
+                            7.0000000000, 16.0000000000, 27.0000000000 };
 
     vector < vector < double > > MV( 3, vector < double > (3) );
     FORIJ( 3, 3 )
@@ -711,10 +760,10 @@ BOOST_AUTO_TEST_CASE ( Test_XYZtoLAB ) {
 };
 
 BOOST_AUTO_TEST_CASE ( Test_GetCalcXYZt ) {
-    vector < vector < double > > RGB ( 190, ( vector < double > ( 3 ) ));
+    vector < vector < double > > RGB ( 190, ( vector < double > ( 3 ) ) );
     const double BStart[6] = {1.0, 0.0, 0.0, 1.0, 0.0, 0.0};
     
-    FORIJ(190, 3)
+    FORIJ ( 190, 3 )
         RGB[i][j] = 10 / (i * j + 1);
     vector < vector < double > > XYZ_test = getCalcXYZt(RGB, BStart);
     

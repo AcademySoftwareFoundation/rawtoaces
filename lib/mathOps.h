@@ -82,18 +82,24 @@ int isSquare ( const vector < vector < T > > & vm ) {
 };
 
 template <typename T>
-vector < T > addVectors ( const vector <T> &vectorA, const vector < T > & vectorB ) {
+vector < T > addVectors ( const vector < T > & vectorA, const vector < T > & vectorB ) {
     assert ( vectorA.size() == vectorB.size() );
-    vector < T > sum ( vectorA.size() );
-    FORI ( vectorA.size() ) sum[i] = vectorA[i] + vectorB[i];
+    vector < T > sum;
+    sum.reserve ( vectorA.size() );
+    std::transform ( vectorA.begin(), vectorA.end(),
+                     vectorB.begin(), std::back_inserter (sum),
+                     std::plus<T>() );
     return sum;
 };
 
 template <typename T>
 vector < T > subVectors ( const vector <T> &vectorA, const vector < T > & vectorB ) {
     assert ( vectorA.size() == vectorB.size() );
-    vector < T > diff ( vectorA.size() );
-    FORI ( vectorA.size() ) diff[i] = vectorA[i] - vectorB[i];
+    vector < T > diff;
+    diff.reserve ( vectorA.size() );
+    std::transform ( vectorA.begin(), vectorA.end(),
+                     vectorB.begin(), std::back_inserter (diff),
+                     std::minus<T>() );
     return diff;
 };
 
@@ -128,9 +134,8 @@ vector < T > invertV ( const vector < T > & vMtx ) {
     int size = std::sqrt ( static_cast<int> (vMtx.size()) );
     vector < vector <T> > tmp ( size, vector <T> (size) );
 
-    FORIJ ( size, size ) {
+    FORIJ ( size, size )
         tmp[i][j] = vMtx[i*size+j];
-    }
     
     tmp = invertVM ( tmp );
     vector <T> result (vMtx.size());
@@ -154,7 +159,7 @@ template <typename T>
 vector < T > diagV ( const vector < T > & vct ) {
     assert( vct.size() != 0 );
     
-    int length = vct.size();
+    int length = static_cast<int>( vct.size() );
     vector < T > vctdiag(length * length, T(0.0));
     
     FORI (length) {

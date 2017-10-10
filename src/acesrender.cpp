@@ -1258,15 +1258,14 @@ void AcesRender::outputACES ( ) {
 //    FORI(3) printf("   %f, %f, %f\n", C.cam_xyz[i][0], C.cam_xyz[i][1], C.cam_xyz[i][2]);
     
     if ( _opts.verbosity > 1 ) {
-        if ( _opts.mat_method ) {
+        if ( _opts.mat_method && !P.dng_version ) {
             vector < vector < double > > camXYZ(3, vector< double >(3, 1.0));
             FORIJ(3,3) camXYZ[i][j] = C.cam_xyz[i][j];
             vector < vector < double > > camcat = mulVector (camXYZ, _catm);
             
-//            printf("The IDT matrix is ...\n");
-//            FORI(3) printf("   %f, %f, %f\n", camcat[i][0], camcat[i][1], camcat[i][2]);
+            printf("The Approximate IDT matrix is ...\n");
+            FORI(3) printf("   %f, %f, %f\n", camcat[i][0], camcat[i][1], camcat[i][2]);
         }
-        
         // printing white balance coefficients
         printf ("The final white balance coefficients are ...\n");
         printf ("   %f   %f   %f\n", C.pre_mul[0], C.pre_mul[1], C.pre_mul[2]);
@@ -1431,6 +1430,11 @@ float * AcesRender::renderDNG ( )
     
     DNGHelper * dh = new DNGHelper ( _rawProcessor->imgdata.rawdata );
     _idtm = dh->getDNGIDTMatrix();
+    
+   if ( _opts.verbosity > 1 ) {
+        printf("The Approximate IDT matrix is ...\n");
+        FORI(3) printf("   %f, %f, %f\n", _idtm[i][0], _idtm[i][1], _idtm[i][2]);
+    }
         
     ushort * pixels = (ushort *) _image->data;
     uint32_t total = _image->width * _image->height * _image->colors;

@@ -1422,10 +1422,11 @@ namespace rta {
         return _wb;
     }
     
+    
     // ------------------------------------------------------//
     
-    DNGHelper::DNGHelper() {
-        _baseExpo              = 1.0;
+    
+    DNGIdt::DNGIdt() {
         _cameraCalibration1DNG = vector < double > (9, 1.0);
         _cameraCalibration2DNG = vector < double > (9, 1.0);
         _cameraToXYZMtx        = vector < double > (9, 1.0);
@@ -1435,9 +1436,10 @@ namespace rta {
         _neutralRGBDNG         = vector < double > (3, 1.0);
         _cameraXYZWhitePoint   = vector < double > (3, 1.0);
         _calibrateIllum        = vector < double > (2, 1.0);
+        _baseExpo              = 1.0;
     }
     
-    DNGHelper::DNGHelper ( libraw_rawdata_t R ) {
+    DNGIdt::DNGIdt ( libraw_rawdata_t R ) {
         _cameraCalibration1DNG = vector < double > (9, 1.0);
         _cameraCalibration2DNG = vector < double > (9, 1.0);
         _cameraToXYZMtx        = vector < double > (9, 1.0);
@@ -1464,7 +1466,7 @@ namespace rta {
         }
     }
     
-    DNGHelper::~DNGHelper() {
+    DNGIdt::~DNGIdt() {
         clearVM ( _cameraCalibration1DNG );
         clearVM ( _cameraCalibration2DNG );
         clearVM ( _cameraToXYZMtx );
@@ -1476,12 +1478,11 @@ namespace rta {
         clearVM ( _calibrateIllum );
     }
     
-    double DNGHelper::ccttoMired ( const double cct ) const {
-        
-        return 1.0e6 / cct;
+    double DNGIdt::ccttoMired ( const double cct ) const {
+        return 1.0E06 / cct;
     }
     
-    double DNGHelper::robertsonLength ( const vector < double > & uv,
+    double DNGIdt::robertsonLength ( const vector < double > & uv,
                                         const vector < double > & uvt ) const {
         
         double t = uvt[2];
@@ -1494,7 +1495,7 @@ namespace rta {
         return cross2 ( slope, subVectors ( uv, uvr ) ) ;
     }
     
-    double DNGHelper::lightSourceToColorTemp ( const unsigned short tag ) const {
+    double DNGIdt::lightSourceToColorTemp ( const unsigned short tag ) const {
         
         if ( tag >= 32768 )
             return (static_cast<double>(tag)) - 32768.0;
@@ -1522,7 +1523,7 @@ namespace rta {
         return 5500.0;
     }
     
-    double DNGHelper::XYZToColorTemperature ( const vector < double > & XYZ ) const {
+    double DNGIdt::XYZToColorTemperature ( const vector < double > & XYZ ) const {
         
         vector < double > uv = XYZTouv ( XYZ );
         int Nrobert = countSize ( Robertson_uvtTable );
@@ -1553,7 +1554,7 @@ namespace rta {
         return cct;
     }
     
-    vector < double > DNGHelper::XYZtoCameraWeightedMatrix ( const double & mir,
+    vector < double > DNGIdt::XYZtoCameraWeightedMatrix ( const double & mir,
                                                              const double & mir1,
                                                              const double & mir2 ) const {
         
@@ -1565,7 +1566,7 @@ namespace rta {
         return result;
     }
     
-    vector < double > DNGHelper::findXYZtoCameraMtx ( const vector < double > & neutralRGB ) const {
+    vector < double > DNGIdt::findXYZtoCameraMtx ( const vector < double > & neutralRGB ) const {
 
         if ( _calibrateIllum.size() == 0) {
             fprintf ( stderr, " No calibration illuminants were found. \n " );
@@ -1617,9 +1618,9 @@ namespace rta {
         }
         
         return XYZtoCameraWeightedMatrix ( estimatedMired, mir1, mir2 );
-    };
+    }
     
-    vector < double > DNGHelper::colorTemperatureToXYZ ( const double & cct ) const {
+    vector < double > DNGIdt::colorTemperatureToXYZ ( const double & cct ) const {
 
         double mired = 1.0e06 / cct;
         vector < double > uv ( 2, 1.0 );
@@ -1651,81 +1652,60 @@ namespace rta {
         }
         
         return uvToXYZ(uv);
-    };
+    }
     
-    vector < double > DNGHelper::matrixRGBtoXYZ ( const double chromaticities[][2] ) const {
+    vector < double > DNGIdt::matrixRGBtoXYZ ( const double chromaticities[][2] ) const {
         vector < double > rXYZ = xyToXYZ ( vector < double > ( chromaticities[0], chromaticities[0] + 2 ) );
         vector < double > gXYZ = xyToXYZ ( vector < double > ( chromaticities[1], chromaticities[1] + 2 ) );
         vector < double > bXYZ = xyToXYZ ( vector < double > ( chromaticities[2], chromaticities[2] + 2 ) );
         vector < double > wXYZ = xyToXYZ ( vector < double > ( chromaticities[3], chromaticities[3] + 2 ) );
         
         vector < double > rgbMtx(9);
-        
         FORI(3) {
             rgbMtx[0+i*3] = rXYZ[i];
             rgbMtx[1+i*3] = gXYZ[i];
             rgbMtx[2+i*3] = bXYZ[i];
         }
         
-        vector < double > normalizedWhite ( wXYZ.size(), 1.0 );
-        FORI ( wXYZ.size() ) normalizedWhite[i] = wXYZ[i] / wXYZ[1];
+        scaleVector ( wXYZ, 1.0 / wXYZ[1] );
         
-        vector < double > channelgains = mulVector ( invertV ( rgbMtx ), normalizedWhite, 3 );
+        vector < double > channelgains = mulVector ( invertV ( rgbMtx ), wXYZ, 3 );
         vector < double > colorMatrix = mulVector ( rgbMtx, diagV ( channelgains ), 3 );
         
         return colorMatrix;
-    };
+    }
     
-    void DNGHelper::getCameraXYZMtxAndWhitePoint ( ) {
+    void DNGIdt::getCameraXYZMtxAndWhitePoint ( ) {
         _cameraToXYZMtx = invertV ( findXYZtoCameraMtx ( _neutralRGBDNG ) );
         assert ( sumVector( _cameraToXYZMtx ) != 0 );
+    
+        scaleVector ( _cameraToXYZMtx, std::pow ( 2.0, _baseExpo ) );
         
-        double power = std::pow ( 2.0, _baseExpo );
-        FORI ( _cameraToXYZMtx.size() )
-            _cameraToXYZMtx[i] *= power;
-        
-        vector < double > neutralXYZ ( 3, 1.0 );
         if ( _neutralRGBDNG.size() > 0 ) {
-            neutralXYZ = mulVector ( _cameraToXYZMtx, _neutralRGBDNG );
+            _cameraXYZWhitePoint = mulVector ( _cameraToXYZMtx, _neutralRGBDNG );
         } else {
-            neutralXYZ = colorTemperatureToXYZ ( lightSourceToColorTemp ( _calibrateIllum[0] ) );
+            _cameraXYZWhitePoint = colorTemperatureToXYZ ( lightSourceToColorTemp ( _calibrateIllum[0] ) );
         }
         
-        scaleVector ( neutralXYZ, 1.0/neutralXYZ[1] );
-        
-        _cameraXYZWhitePoint = neutralXYZ;
+        scaleVector ( _cameraXYZWhitePoint, 1.0 / _cameraXYZWhitePoint[1] );
         assert ( sumVector ( _cameraXYZWhitePoint ) != 0);
         
         return;
-    };
+    }
     
-    void DNGHelper::prepareMatrices() {
-        
-        if ( _cameraCalibration1DNG.size() != 0 ) {
-            _xyz2rgbMatrix1DNG = mulVector ( _cameraCalibration1DNG, _xyz2rgbMatrix1DNG, 3 );
-        }
-        if ( _cameraCalibration2DNG.size() != 0 ) {
-            _xyz2rgbMatrix2DNG = mulVector ( _cameraCalibration2DNG, _xyz2rgbMatrix2DNG, 3 );
-        }
-        if ( _analogBalanceDNG.size() != 0 ) {
-            _xyz2rgbMatrix1DNG = mulVector ( diagV ( _analogBalanceDNG ), _xyz2rgbMatrix1DNG, 3 );
-            _xyz2rgbMatrix2DNG = mulVector ( diagV ( _analogBalanceDNG ), _xyz2rgbMatrix2DNG, 3 );
-        }
-        
-        return;
-    };
-
-    vector < vector < double > > DNGHelper::getDNGIDTMatrix ( ) {
-        
+    vector < vector < double > > DNGIdt::getDNGCATMatrix ( ) {
         vector < double > deviceWhiteV ( 3, 1.0 );
         getCameraXYZMtxAndWhitePoint ( );
         vector < double > outputRGBtoXYZMtx = matrixRGBtoXYZ ( chromaticitiesACES );
-    //    vector < double > XYZToDisplayMtx = invertV (outputRGBtoXYZMtx));
         vector < double > outputXYZWhitePoint = mulVector ( outputRGBtoXYZMtx, deviceWhiteV );
         vector < vector < double > > chadMtx = getCAT ( _cameraXYZWhitePoint, outputXYZWhitePoint );
         
-        vector < double > XYZ_acesrgb (9);
-        vector < double > CAT (9);
+        return chadMtx;
+    }
+    
+    vector < vector < double > > DNGIdt::getDNGIDTMatrix ( ) {
+        vector < vector < double > > chadMtx = getDNGCATMatrix ( );
+        vector < double > XYZ_acesrgb (9), CAT (9);
         FORIJ ( 3, 3 ) {
             XYZ_acesrgb[i*3+j] = XYZ_acesrgb_3[i][j];
             CAT[i*3+j] = chadMtx[i][j];
@@ -1733,12 +1713,11 @@ namespace rta {
         
         vector < double > matrix = mulVector ( XYZ_acesrgb, CAT, 3 );
         vector < vector < double > > DNGIDTMatrix ( 3, vector < double > (3) );
-        
         FORIJ ( 3, 3 ) DNGIDTMatrix[i][j] = matrix[i*3+j];
         
-        vector < double > outRGBWhite = mulVector ( DNGIDTMatrix,
-                                                    mulVector ( invertV ( _cameraToXYZMtx ),
-                                                                _cameraXYZWhitePoint ) );
+//        vector < double > outRGBWhite = mulVector ( DNGIDTMatrix,
+//                                                    mulVector ( invertV ( _cameraToXYZMtx ),
+//                                                                _cameraXYZWhitePoint ) );
         
 //        double max_value = *std::max_element ( outRGBWhite.begin(), outRGBWhite.end() );
 //        scaleVector ( outRGBWhite, 1.0 / max_value );
@@ -1754,7 +1733,6 @@ namespace rta {
 
         return DNGIDTMatrix;
     }
-
 }
 
 

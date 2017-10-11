@@ -240,11 +240,11 @@ namespace rta {
     };
     
     
-    class DNGHelper {
+    class DNGIdt {
         public:
-            DNGHelper();
-            DNGHelper ( libraw_rawdata_t R );
-            virtual ~DNGHelper();
+            DNGIdt();
+            DNGIdt ( libraw_rawdata_t R );
+            virtual ~DNGIdt();
         
             double ccttoMired ( const double cct ) const;
             double robertsonLength ( const vector < double > & uv,
@@ -260,9 +260,9 @@ namespace rta {
             vector < double > colorTemperatureToXYZ ( const double & cct ) const;
             vector < double > matrixRGBtoXYZ ( const double chromaticities[][2] ) const;
         
-            void getCameraXYZMtxAndWhitePoint ( );
-            void prepareMatrices();
+            vector < vector < double > > getDNGCATMatrix ( );
             vector < vector < double > > getDNGIDTMatrix ( );
+            void getCameraXYZMtxAndWhitePoint ( );
 
         private:
             vector < double >  _cameraCalibration1DNG;

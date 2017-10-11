@@ -1416,8 +1416,9 @@ float * AcesRender::renderDNG ( )
 
     assert ( _image && P.dng_version );
     
-    DNGHelper * dh = new DNGHelper ( _rawProcessor->imgdata.rawdata );
-    _idtm = dh->getDNGIDTMatrix();
+    DNGIdt * dng = new DNGIdt ( _rawProcessor->imgdata.rawdata );
+    _catm = dng->getDNGCATMatrix();
+    _idtm = dng->getDNGIDTMatrix();
     
    if ( _opts.verbosity > 1 ) {
         printf("The Approximate IDT matrix is ...\n");

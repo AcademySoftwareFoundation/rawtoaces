@@ -1242,38 +1242,28 @@ void AcesRender::outputACES ( ) {
 
 #define C   _rawProcessor->imgdata.color
     
-    assert(_pathToRaw != nullptr);
-
+    assert ( _pathToRaw != nullptr );
     char * cp;
     if (( cp = strrchr ( _pathToRaw, '.' ))) *cp = 0;
     
     char outfn[1024];
+    snprintf( outfn, sizeof(outfn), "%s%s", _pathToRaw, "_aces.exr" );
     
-    snprintf( outfn,
-              sizeof(outfn),
-              "%s%s",
-              _pathToRaw,
-              "_aces.exr" );
-    
-//    FORI(3) printf("   %f, %f, %f\n", C.cam_xyz[i][0], C.cam_xyz[i][1], C.cam_xyz[i][2]);
-    
+    float * aces = renderACES();
     if ( _opts.verbosity > 1 ) {
         if ( _opts.mat_method && !P.dng_version ) {
             vector < vector < double > > camXYZ(3, vector< double >(3, 1.0));
-            FORIJ(3,3) camXYZ[i][j] = C.cam_xyz[i][j];
+            FORIJ (3,3) camXYZ[i][j] = C.cam_xyz[i][j];
             vector < vector < double > > camcat = mulVector (camXYZ, _catm);
             
-            printf("The Approximate IDT matrix is ...\n");
-            FORI(3) printf("   %f, %f, %f\n", camcat[i][0], camcat[i][1], camcat[i][2]);
+            printf ("The Approximate IDT matrix is ...\n");
+            FORI (3) printf ("   %f, %f, %f\n", camcat[i][0], camcat[i][1], camcat[i][2]);
         }
         // printing white balance coefficients
         printf ("The final white balance coefficients are ...\n");
         printf ("   %f   %f   %f\n", C.pre_mul[0], C.pre_mul[1], C.pre_mul[2]);
-        
         printf ( "Writing ACES file to %s ...\n", outfn );
     }
-    
-    float * aces = renderACES();
     
     if ( _opts.highlight > 0 ) {
         float ratio = ( *(std::max_element ( C.pre_mul, C.pre_mul+3)) /
@@ -1293,9 +1283,7 @@ void AcesRender::outputACES ( ) {
     
     _rawProcessor->recycle();
 
-    if ( _opts.verbosity ) {
-        printf ("Finished\n\n");
-    }
+    if ( _opts.verbosity ) printf ("Finished\n\n");
 }
 
 //	=====================================================================

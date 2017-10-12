@@ -514,11 +514,11 @@ template<typename T>
 vector < T > uvToxy ( const vector < T > &uv )
 {
     T xyS[] = { 3.0, 2.0 };
-    vector < T > xyScale (xyS, xyS + sizeof(xyS)/sizeof(T));
-    xyScale = mulVectorElement (xyScale, uv);
+    vector < T > xyScale ( xyS, xyS + sizeof(xyS)/sizeof(T) );
+    xyScale = mulVectorElement ( xyScale, uv );
     
     T scale = 2 * uv [0] - 8 * uv[1] + 4;
-    scaleVector (xyScale, 1.0 / scale);
+    scaleVector ( xyScale, 1.0 / scale );
     
     return xyScale;
 };

@@ -536,6 +536,47 @@ BOOST_AUTO_TEST_CASE ( Test_Interp1DLinear ) {
         BOOST_CHECK_CLOSE ( YV1[i], Y1[i], 1e-5 );
 };
 
+BOOST_AUTO_TEST_CASE ( TestIDT_XytoXYZ ) {
+    double xy[3] = { 0.7347, 0.2653 };
+    double XYZ[3] = { 0.7347, 0.2653, 0.0 };
+    vector < double > XYZV = xyToXYZ ( vector < double > ( xy, xy + 2 ) );
+    
+    FORI (3) {
+        BOOST_CHECK_CLOSE ( XYZV[i], XYZV[i], 1e-5 );
+    }
+};
+
+BOOST_AUTO_TEST_CASE ( TestIDT_Uvtoxy ) {
+    double uv[2] = { 0.7347, 0.2653 };
+    double xy[2] = { 0.658530026, 0.158530026 };
+    vector < double > xyV = uvToxy ( vector < double > ( uv, uv + 2 ) );
+    
+    FORI (2) {
+        BOOST_CHECK_CLOSE ( xy[i], xyV[i], 1e-5 );
+    }
+};
+
+BOOST_AUTO_TEST_CASE ( TestIDT_UvtoXYZ ) {
+    double uv[2] = { 0.7347, 0.2653 };
+    double XYZ[3] = { 0.658530026, 0.158530026, 0.18293995 };
+    vector < double > XYZV = uvToXYZ ( vector < double > ( uv, uv + 2 ) );
+    
+    FORI (3) {
+        BOOST_CHECK_CLOSE ( XYZ[i], XYZV[i], 1e-5 );
+    }
+};
+
+BOOST_AUTO_TEST_CASE ( TestIDT_XYZTouv ) {
+    double XYZ[3] = { 0.658530026, 0.158530026, 0.18293995 };
+    double uv[2] = { 0.7347, 0.2653 };
+    vector < double > uvV = XYZTouv ( vector < double > ( XYZ, XYZ + 3 ) );
+    
+    FORI (2) {
+        BOOST_CHECK_CLOSE ( uv[i], uvV[i], 1e-5 );
+    }
+};
+
+
 BOOST_AUTO_TEST_CASE ( TestIDT_GetCAT ) {
     vector < double > dIV (d50, d50 + 3);
     vector < double > dOV (d60, d60 + 3);
@@ -963,5 +1004,4 @@ BOOST_AUTO_TEST_CASE ( Test_GetCalcXYZt ) {
     FORIJ(190, 3)
         BOOST_CHECK_CLOSE ( XYZ_test[i][j], XYZ[i][j], 1e-5 );
 };
-
 

@@ -55,9 +55,15 @@
 #ifndef _ACESRENDER_h__
 #define _ACESRENDER_h__
 
-#include <aces/aces_Writer.h>
-//#include <libraw/libraw.h>
 #include "../lib/rta.h"
+
+#ifndef __aces_oeWriter__
+#include <aces/aces_Writer.h>
+#endif
+
+#ifndef _LIBRAW_CLASS_H
+#include <libraw/libraw.h>
+#endif
 
 using namespace rta;
 

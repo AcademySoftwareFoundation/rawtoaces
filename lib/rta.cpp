@@ -1483,22 +1483,25 @@ namespace rta {
     }
     
     double DNGIdt::robertsonLength ( const vector < double > & uv,
-                                        const vector < double > & uvt ) const {
+                                     const vector < double > & uvt ) const {
+        
+//        FORI ( uv.size() )
+//            printf ( "%13.10f, ", uv[i] );
+//        printf ("\n");
         
         double t = uvt[2];
         vector < double > slope (2);
         slope[0] = -sign(t) / std::sqrt(1 + t * t);
         slope[1] = t * slope[0];
         
-        vector < double > uvr (2);
-        FORI(2) uvr[i] = uvt[i];
+        vector < double > uvr ( uvt.begin(), uvt.begin()+2 );
         return cross2 ( slope, subVectors ( uv, uvr ) ) ;
     }
     
     double DNGIdt::lightSourceToColorTemp ( const unsigned short tag ) const {
         
         if ( tag >= 32768 )
-            return (static_cast<double>(tag)) - 32768.0;
+            return ( static_cast < double > ( tag ) ) - 32768.0;
         
         uint16_t LightSourceEXIFTagValues[][2] = {
             { 0,    5500 },
@@ -1515,11 +1518,11 @@ namespace rta {
         };
         
         FORI ( countSize ( LightSourceEXIFTagValues ) ) {
-            if (LightSourceEXIFTagValues[i][0] == (uint16_t)tag){
-                return static_cast< double >(LightSourceEXIFTagValues[i][1]);
+            if ( LightSourceEXIFTagValues[i][0] == static_cast < uint16_t > (tag) ) {
+                return ( static_cast < double > (LightSourceEXIFTagValues[i][1]) );
             }
         }
-
+        
         return 5500.0;
     }
     
@@ -1555,8 +1558,8 @@ namespace rta {
     }
     
     vector < double > DNGIdt::XYZtoCameraWeightedMatrix ( const double & mir,
-                                                             const double & mir1,
-                                                             const double & mir2 ) const {
+                                                          const double & mir1,
+                                                          const double & mir2 ) const {
         
         double weight = std::max ( 0.0, std::min ( 1.0, (mir1 - mir) / (mir1 - mir2) ) );
         vector < double > result = subVectors ( _xyz2rgbMatrix2DNG, _xyz2rgbMatrix1DNG );

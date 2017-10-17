@@ -2348,13 +2348,11 @@ BOOST_AUTO_TEST_CASE ( TestIDT_CalIDT ) {
     };
     
     FORI(3) {
-//                printf(" { %13.10lf, %13.10lf, %13.10lf },\n", IDT_test[i][0], IDT_test[i][1], IDT_test[i][2] );
         BOOST_CHECK_CLOSE ( IDT[i][0], IDT_test[i][0], 1e-5 );
         BOOST_CHECK_CLOSE ( IDT[i][1], IDT_test[i][1], 1e-5 );
         BOOST_CHECK_CLOSE ( IDT[i][2], IDT_test[i][2], 1e-5 );
     }
 };
-
 
 
 

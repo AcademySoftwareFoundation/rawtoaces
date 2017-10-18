@@ -1676,7 +1676,7 @@ namespace rta {
     
     void DNGIdt::getCameraXYZMtxAndWhitePoint ( ) {
         _cameraToXYZMtx = invertV ( findXYZtoCameraMtx ( _neutralRGBDNG ) );
-        assert ( sumVector( _cameraToXYZMtx ) != 0 );
+        assert ( std::fabs ( sumVector ( _cameraToXYZMtx ) - 0.0 ) > 1e-09 );
     
         scaleVector ( _cameraToXYZMtx, std::pow ( 2.0, _baseExpo ) );
         

@@ -1535,7 +1535,7 @@ namespace rta {
         double mired;
         double RDthis = 0.0, RDprevious = 0.0;
         
-        for (i = 0; i < Nrobert; i++) {
+        for ( i = 0; i < Nrobert; i++ ) {
             vector < double > robertson ( Robertson_uvtTable[i],
                                           Robertson_uvtTable[i] + countSize(Robertson_uvtTable[i]) );
             if (( RDthis = robertsonLength ( uv, robertson ) ) <= 0.0 )
@@ -1552,16 +1552,16 @@ namespace rta {
                     /( RDprevious-RDthis );
 
         double cct = 1.0e06 / mired;
-        cct = std::max ( 2000.0, std::min (50000.0, cct));
+        cct = std::max ( 2000.0, std::min ( 50000.0, cct ) );
         
         return cct;
     }
     
-    vector < double > DNGIdt::XYZtoCameraWeightedMatrix ( const double & mir,
+    vector < double > DNGIdt::XYZtoCameraWeightedMatrix ( const double & mir0,
                                                           const double & mir1,
                                                           const double & mir2 ) const {
         
-        double weight = std::max ( 0.0, std::min ( 1.0, (mir1 - mir) / (mir1 - mir2) ) );
+        double weight = std::max ( 0.0, std::min ( 1.0, (mir1 - mir0) / (mir1 - mir2) ) );
         vector < double > result = subVectors ( _xyz2rgbMatrix2DNG, _xyz2rgbMatrix1DNG );
         scaleVector ( result, weight );
         result = addVectors ( result, _xyz2rgbMatrix1DNG );
@@ -1570,8 +1570,8 @@ namespace rta {
     }
     
     vector < double > DNGIdt::findXYZtoCameraMtx ( const vector < double > & neutralRGB ) const {
-
-        if ( _calibrateIllum.size() == 0) {
+        
+        if ( _calibrateIllum.size() == 0 ) {
             fprintf ( stderr, " No calibration illuminants were found. \n " );
             return _xyz2rgbMatrix1DNG;
         }

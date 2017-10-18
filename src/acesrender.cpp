@@ -790,7 +790,7 @@ int AcesRender::fetchCameraSenPath( const libraw_iparams_t & P )
 {
     int readC = 0;
     
-    FORI (_opts.envPaths.size()) {
+    FORI ( _opts.envPaths.size() ) {
         vector<string> cFiles = openDir ( static_cast< string >( (_opts.envPaths)[i] )
                                           +"/camera" );
         for ( vector<string>::iterator file = cFiles.begin( ); file != cFiles.end( ); ++file ) {

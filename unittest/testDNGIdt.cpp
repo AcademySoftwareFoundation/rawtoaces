@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE ( TestIDT_CcttoMired ) {
     double cct = 6500.0;
     
     double mired = di->ccttoMired(cct);
-    BOOST_CHECK_CLOSE ( mired, 153.8461538462, 1e-5);
+    BOOST_CHECK_CLOSE ( mired, 153.8461538462, 1e-5 );
 };
 
 BOOST_AUTO_TEST_CASE ( TestIDT_RobertsonLength ) {
@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE ( TestIDT_RobertsonLength ) {
     vector < double > uvtVector ( uvt, uvt+3 );
 
     double rLength = di->robertsonLength ( uvVector, uvtVector );
-    BOOST_CHECK_CLOSE ( rLength, 0.060234937, 1e-5);
+    BOOST_CHECK_CLOSE ( rLength, 0.060234937, 1e-5 );
 };
 
 BOOST_AUTO_TEST_CASE ( TestIDT_LightSourceToColorTemp ) {

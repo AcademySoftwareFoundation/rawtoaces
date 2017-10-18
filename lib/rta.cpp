@@ -1427,35 +1427,35 @@ namespace rta {
     
     
     DNGIdt::DNGIdt() {
-        _cameraCalibration1DNG = vector < double > (9, 1.0);
-        _cameraCalibration2DNG = vector < double > (9, 1.0);
-        _cameraToXYZMtx        = vector < double > (9, 1.0);
-        _xyz2rgbMatrix1DNG     = vector < double > (9, 1.0);
-        _xyz2rgbMatrix2DNG     = vector < double > (9, 1.0);
-        _analogBalanceDNG      = vector < double > (3, 1.0);
-        _neutralRGBDNG         = vector < double > (3, 1.0);
-        _cameraXYZWhitePoint   = vector < double > (3, 1.0);
-        _calibrateIllum        = vector < double > (2, 1.0);
+        _cameraCalibration1DNG = vector < double > ( 9, 1.0 );
+        _cameraCalibration2DNG = vector < double > ( 9, 1.0 );
+        _cameraToXYZMtx        = vector < double > ( 9, 1.0 );
+        _xyz2rgbMatrix1DNG     = vector < double > ( 9, 1.0 );
+        _xyz2rgbMatrix2DNG     = vector < double > ( 9, 1.0 );
+        _analogBalanceDNG      = vector < double > ( 3, 1.0 );
+        _neutralRGBDNG         = vector < double > ( 3, 1.0 );
+        _cameraXYZWhitePoint   = vector < double > ( 3, 1.0 );
+        _calibrateIllum        = vector < double > ( 2, 1.0 );
         _baseExpo              = 1.0;
     }
     
     DNGIdt::DNGIdt ( libraw_rawdata_t R ) {
-        _cameraCalibration1DNG = vector < double > (9, 1.0);
-        _cameraCalibration2DNG = vector < double > (9, 1.0);
-        _cameraToXYZMtx        = vector < double > (9, 1.0);
-        _xyz2rgbMatrix1DNG     = vector < double > (9, 1.0);
-        _xyz2rgbMatrix2DNG     = vector < double > (9, 1.0);
-        _analogBalanceDNG      = vector < double > (3, 1.0);
-        _neutralRGBDNG         = vector < double > (3, 1.0);
-        _cameraXYZWhitePoint   = vector < double > (3, 1.0);
-        _calibrateIllum        = vector < double > (2, 1.0);
+        _cameraCalibration1DNG = vector < double > ( 9, 1.0 );
+        _cameraCalibration2DNG = vector < double > ( 9, 1.0 );
+        _cameraToXYZMtx        = vector < double > ( 9, 1.0 );
+        _xyz2rgbMatrix1DNG     = vector < double > ( 9, 1.0 );
+        _xyz2rgbMatrix2DNG     = vector < double > ( 9, 1.0 );
+        _analogBalanceDNG      = vector < double > ( 3, 1.0 );
+        _neutralRGBDNG         = vector < double > ( 3, 1.0 );
+        _cameraXYZWhitePoint   = vector < double > ( 3, 1.0 );
+        _calibrateIllum        = vector < double > ( 2, 1.0 );
         
         _baseExpo = static_cast < double > ( R.color.baseline_exposure );
         _calibrateIllum[0] = static_cast < double > ( R.color.dng_color[0].illuminant );
         _calibrateIllum[1] = static_cast < double > ( R.color.dng_color[1].illuminant );
         
         FORI(3) {
-            _neutralRGBDNG[i] = 1.0 / static_cast < double > ( (R.color.cam_mul)[i] );
+            _neutralRGBDNG[i] = 1.0 / static_cast < double > ( R.color.cam_mul[i] );
         }
         
         FORIJ ( 3, 3 ) {
@@ -1484,10 +1484,6 @@ namespace rta {
     
     double DNGIdt::robertsonLength ( const vector < double > & uv,
                                      const vector < double > & uvt ) const {
-        
-//        FORI ( uv.size() )
-//            printf ( "%13.10f, ", uv[i] );
-//        printf ("\n");
         
         double t = uvt[2];
         vector < double > slope (2);
@@ -1673,8 +1669,8 @@ namespace rta {
         scaleVector ( wXYZ, 1.0 / wXYZ[1] );
         
         vector < double > channelgains = mulVector ( invertV ( rgbMtx ), wXYZ, 3 );
-        vector < double > colorMatrix = mulVector ( rgbMtx, diagV ( channelgains ), 3 );
-        
+        vector < double > colorMatrix  = mulVector ( rgbMtx, diagV ( channelgains ), 3 );
+    
         return colorMatrix;
     }
     

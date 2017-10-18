@@ -66,6 +66,7 @@ add_executable (
 target_link_libraries ( Test_DNGIdt
 						${RAWTOACESLIB}
                         ${Boost_SYSTEM_LIBRARY}
+                        ${Boost_FILESYSTEM_LIBRARY}
                         ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
 )
 

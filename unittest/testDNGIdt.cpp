@@ -54,6 +54,7 @@
 
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/test/floating_point_comparison.hpp>
 
 #include "../lib/rta.h"
@@ -69,7 +70,6 @@ BOOST_AUTO_TEST_CASE ( TestIDT_CcttoMired ) {
     BOOST_CHECK_CLOSE ( mired, 153.8461538462, 1e-5);
 };
 
-
 BOOST_AUTO_TEST_CASE ( TestIDT_RobertsonLength ) {
     DNGIdt * di = new DNGIdt ();
     double uv[] = { 0.2042589852,  0.3196233991 };
@@ -82,12 +82,65 @@ BOOST_AUTO_TEST_CASE ( TestIDT_RobertsonLength ) {
     BOOST_CHECK_CLOSE ( rLength, 0.060234937, 1e-5);
 };
 
-
 BOOST_AUTO_TEST_CASE ( TestIDT_LightSourceToColorTemp ) {
     DNGIdt * di = new DNGIdt ();
     unsigned short tag = 17;
     
     double ct = di->lightSourceToColorTemp ( tag );
     BOOST_CHECK_CLOSE ( ct, 2856.0, 1e-5);
+};
+
+BOOST_AUTO_TEST_CASE ( TestIDT_XYZToColorTemperature ) {
+    LibRaw rawProcessor;
+    boost::filesystem::path pathToRaw = boost::filesystem::absolute \
+    ("../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng");
+    int ret = rawProcessor.open_file ( ( pathToRaw.string() ).c_str() );
+    ret = rawProcessor.unpack();
+
+    DNGIdt * dng = new DNGIdt ( rawProcessor.imgdata.rawdata );
+    double XYZ[3] = { 0.9731171910,  1.0174927152,  0.9498565880 };
+    vector < double > XYZVector ( XYZ, XYZ+3 );
+    double cct = dng->XYZToColorTemperature ( XYZVector );
+    
+    rawProcessor.recycle();
+    
+    BOOST_CHECK_CLOSE ( cct, 5564.6648479019, 1e-5 );
+};
+
+BOOST_AUTO_TEST_CASE ( TestIDT_XYZtoCameraWeightedMatrix ) {
+    LibRaw rawProcessor;
+    boost::filesystem::path pathToRaw = boost::filesystem::absolute \
+    ("../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng");
+    int ret = rawProcessor.open_file ( ( pathToRaw.string() ).c_str() );
+    ret = rawProcessor.unpack();
+    
+    DNGIdt * dng = new DNGIdt ( rawProcessor.imgdata.rawdata );
+    double mirs[3] = { 158.8461538462, 350.1400560224, 153.8461538462 };
+    double matrix[9] = { 1.0165710542, -0.2791973987, -0.0801820653, -0.4881171650,  1.3469051835,  0.1100471308, -0.0607157824,  0.3270949763,  0.5439419519 };
+    vector < double > result = dng->XYZtoCameraWeightedMatrix ( mirs[0], mirs[1], mirs[2] );
+    
+    rawProcessor.recycle();
+
+    FORI ( result.size() )
+        BOOST_CHECK_CLOSE ( result[i], matrix[i], 1e-5 );
+};
+
+BOOST_AUTO_TEST_CASE ( TestIDT_FindXYZtoCameraMtx ) {
+    LibRaw rawProcessor;
+    boost::filesystem::path pathToRaw = boost::filesystem::absolute \
+    ("../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng");
+    int ret = rawProcessor.open_file ( ( pathToRaw.string() ).c_str() );
+    ret = rawProcessor.unpack();
+
+    DNGIdt * dng = new DNGIdt ( rawProcessor.imgdata.rawdata );
+    double neutralRGB[3] = { 0.6289999865,  1.0000000000,  0.7904000305 };
+    double matrix[9] = { 1.0616656923, -0.3124143737, -0.0661770211, -0.4772957633,  1.3614785395,  0.1001599918, -0.0411839968,  0.3103035015,  0.5718121924 };
+    vector < double > neutralRGBVector ( neutralRGB, neutralRGB+3 );
+    vector < double > result = dng->findXYZtoCameraMtx ( neutralRGBVector );
+
+    rawProcessor.recycle();
+
+    FORI ( result.size() )
+        BOOST_CHECK_CLOSE ( result[i], matrix[i], 1e-5 );
 };
 

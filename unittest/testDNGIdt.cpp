@@ -119,7 +119,7 @@ BOOST_AUTO_TEST_CASE ( TestIDT_XYZtoCameraWeightedMatrix ) {
     
     rawProcessor.recycle();
 
-    FORI ( result.size() )
+    FORI ( countSize ( matrix ) )
         BOOST_CHECK_CLOSE ( result[i], matrix[i], 1e-5 );
 };
 
@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE ( TestIDT_FindXYZtoCameraMtx ) {
 
     rawProcessor.recycle();
 
-    FORI ( result.size() )
+    FORI ( countSize ( matrix ) )
         BOOST_CHECK_CLOSE ( result[i], matrix[i], 1e-5 );
 };
 

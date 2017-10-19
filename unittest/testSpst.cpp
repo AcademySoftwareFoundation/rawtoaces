@@ -100,8 +100,8 @@ BOOST_AUTO_TEST_CASE ( TestSpst_DefaultConstructor ) {
     BOOST_CHECK_EQUAL( int( spstobject1->getWLIncrement() ), 5 );
     BOOST_CHECK_EQUAL( int( spstobject1->getSensitivity().size() ), 81 );
     
-    
     vector < RGBSen > rgbsen_cp = spstobject1->getSensitivity();
+    delete spstobject1;
     
     FORI (81) {
         BOOST_CHECK_EQUAL( rgbsen_cp[i]._RSen, 1.0 );
@@ -185,6 +185,8 @@ BOOST_AUTO_TEST_CASE ( TestSpst_CopyConstructor ) {
     BOOST_CHECK_EQUAL( int( spstobject3.getSensitivity().size() ), 81 );
 
     vector < RGBSen > rgbsen_cp = spstobject3.getSensitivity();
+    
+    delete spstobject1;
     
     FORI (81) {
         BOOST_CHECK_EQUAL( rgbsen_cp[i]._RSen, 1.0 );
@@ -308,6 +310,10 @@ BOOST_AUTO_TEST_CASE ( TestSpst_LoadSpst ) {
         BOOST_CHECK_CLOSE ( double (rgbsenTest[i]._GSen), rgb[i][1], 1e-5 );
         BOOST_CHECK_CLOSE ( double (rgbsenTest[i]._BSen), rgb[i][2], 1e-5);
     }
+    
+    free ( model );
+    free ( brand );
+    delete spstTest;
 };
 
 BOOST_AUTO_TEST_CASE( TestSpst_DataAccess ) {
@@ -406,4 +412,12 @@ BOOST_AUTO_TEST_CASE( TestSpst_DataAccess ) {
         BOOST_CHECK_CLOSE( rgbsen_cp[i]._GSen, 1e-3, 1e-5 );
         BOOST_CHECK_CLOSE( rgbsen_cp[i]._BSen, 1.0000000000001, 1e-5);
     }
+    
+//    free ( model1 );
+//    free ( model2 );
+//    free ( model3 );
+//    free ( brand1 );
+//    free ( brand2 );
+//    free ( brand3 );
+//    delete spstobject1;
 };

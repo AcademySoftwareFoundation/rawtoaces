@@ -159,6 +159,13 @@ BOOST_AUTO_TEST_CASE( TestIDT_DataAccess ) {
         BOOST_CHECK_CLOSE( rgbsen_cp[i]._GSen, 1e-3, 1e-5 );
         BOOST_CHECK_CLOSE( rgbsen_cp[i]._BSen, 1.0000000000001, 1e-5);
     }
+    
+//    free ( model1 );
+//    free ( model2 );
+//    free ( model3 );
+//    free ( brand1 );
+//    free ( brand2 );
+//    free ( brand3 );
 };
 
 BOOST_AUTO_TEST_CASE ( TestIDT_LoadCameraSpst ) {
@@ -382,8 +389,9 @@ BOOST_AUTO_TEST_CASE ( TestIDT_LoadIlluminant ) {
     vector <double> illumTestData = illumTest.getIllumData();
     BOOST_CHECK_EQUAL( int( illumTestData.size() ), 81 );
     FORI (81) BOOST_CHECK_CLOSE ( illumTestData[i], iso7589[i], 1e-5);
+    
+    delete idtTest;
 };
-
 
 BOOST_AUTO_TEST_CASE ( TestIDT_LoadTrainingData ) {
     Idt * idtTest = new Idt();
@@ -484,8 +492,9 @@ BOOST_AUTO_TEST_CASE ( TestIDT_LoadTrainingData ) {
         BOOST_CHECK_CLOSE ( TS[i][1], TS_test[i]._data[1], 1e-5 );
         BOOST_CHECK_CLOSE ( TS[i][2], TS_test[i]._data[2], 1e-5 );
     }
+    
+    delete idtTest;
 };
-
 
 BOOST_AUTO_TEST_CASE ( TestIDT_LoadCMF ) {
     Idt * idtTest = new Idt();
@@ -905,6 +914,8 @@ BOOST_AUTO_TEST_CASE ( TestIDT_LoadCMF ) {
         BOOST_CHECK_CLOSE ( cmfTest[i]._ybar, cmf[i*5][1], 1e-5 );
         BOOST_CHECK_CLOSE ( cmfTest[i]._zbar, cmf[i*5][2], 1e-5 );
     }
+    
+    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIDT_Verbose ) {
@@ -915,6 +926,8 @@ BOOST_AUTO_TEST_CASE ( TestIDT_Verbose ) {
     
     idtTest->setVerbosity(3);
     BOOST_CHECK_EQUAL ( idtTest->getVerbosity(), 3 );
+    
+    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIDT_scaleLSC ) {
@@ -1033,6 +1046,11 @@ BOOST_AUTO_TEST_CASE ( TestIDT_scaleLSC ) {
     BOOST_CHECK_EQUAL( illumTest->getIllumType(), "iso7589" );
     BOOST_CHECK_EQUAL( illumTest->getIllumInc(), 5 );
     FORI (81) BOOST_CHECK_CLOSE ( illumDataScaled[i], scaledIllum[i], 1e-5);
+    
+    free ( model );
+    free ( brand );
+    delete illumTest;
+    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIDT_CalCM ) {
@@ -1151,6 +1169,10 @@ BOOST_AUTO_TEST_CASE ( TestIDT_CalCM ) {
     FORI (81) {
         FORI(3) BOOST_CHECK_CLOSE ( CM[i], CM_test[i], 1e-5 );
     }
+    
+    free ( model );
+    free ( brand );
+    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIDT_CalWB ) {
@@ -1185,6 +1207,10 @@ BOOST_AUTO_TEST_CASE ( TestIDT_CalWB ) {
     FORI ( WB_test.size() ) {
         BOOST_CHECK_CLOSE ( WB[i], WB_test[i], 1e-5 );
     }
+    
+    free ( model );
+    free ( brand );
+    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIDT_SetIlluminants ) {
@@ -1385,6 +1411,11 @@ BOOST_AUTO_TEST_CASE ( TestIDT_SetIlluminants ) {
         BOOST_CHECK_CLOSE ( daylight[i], daylight_Test[i], 1e-5 );
         BOOST_CHECK_CLOSE ( blackbody[i], blackbody_Test[i] * 1e-12, 1e-5 );
     }
+    
+    delete idtTest;
+    delete illumTest1;
+    delete illumTest2;
+    delete illumTest3;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIDT_ChooseIllumSrc ) {
@@ -1517,6 +1548,10 @@ BOOST_AUTO_TEST_CASE ( TestIDT_ChooseIllumSrc ) {
     BOOST_CHECK_EQUAL( illumType_Test, "d45" );
     FORI( illumData_Test.size() )
     BOOST_CHECK_CLOSE ( illumData[i], illumData_Test[i], 1e-5 );
+    
+    free ( model );
+    free ( brand );
+    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIDT_ChooseIllumType ) {
@@ -1649,6 +1684,10 @@ BOOST_AUTO_TEST_CASE ( TestIDT_ChooseIllumType ) {
     BOOST_CHECK_EQUAL( illumType_Test, "iso7589" );
     FORI( illumData_Test.size() )
         BOOST_CHECK_CLOSE ( illumData[i], illumData_Test[i], 1e-5 );
+    
+    free ( model );
+    free ( brand );
+    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIDT_CalTI ) {
@@ -1768,11 +1807,12 @@ BOOST_AUTO_TEST_CASE ( TestIDT_CalTI ) {
         { 0.1210695579,  0.0110336344,  0.1066357069,  0.0272426989,  0.0832302003,  0.0569160746,  0.0375935589,  0.0248666439,  0.0142563296,  0.0079201831,  0.0052163965,  0.0674444560,  0.0704896298,  0.0648772242,  0.0389317967,  0.0154170461,  0.1107050424,  0.0000000000,  0.0165094852,  0.1148836218,  0.0762112794,  0.0804308252,  0.0872858802,  0.1212880457,  0.1123300455,  0.0955064841,  0.0737532915,  0.0967491335,  0.1148699663,  0.1114151278,  0.1146924450,  0.0957113164,  0.1119067254,  0.1305191557,  0.1262722989,  0.0508803488,  0.0953153073,  0.0942638347,  0.0707763951,  0.0647952913,  0.1075506246,  0.1143647132,  0.1117838260,  0.1217523323,  0.0309569916,  0.0372112052,  0.0386177205,  0.1078647009,  0.1343426924,  0.0975138409,  0.0636345748,  0.0411439858,  0.0881734870,  0.1232544360,  0.0824791484,  0.0534339251,  0.1002312830,  0.0126996040,  0.0875999565,  0.0585820442,  0.0730841726,  0.1002312830,  0.1310926862,  0.0892249596,  0.1327313448,  0.0447900011,  0.1188437133,  0.0725106421,  0.1140096705,  0.1317754606,  0.0682091633,  0.1175054755,  0.0588551539,  0.1136000059,  0.0800894380,  0.0210431072,  0.1218206098,  0.1112102955,  0.1337145399,  0.1002585940,  0.1297134819,  0.0503068183,  0.0102825826,  0.0142153632,  0.1965570964,  0.1302733569,  0.1194582103,  0.1211514908,  0.1523269703,  0.1326494119,  0.0792427977,  0.0367196076,  0.0456776079,  0.0947144658,  0.0637711296,  0.0137647321,  0.0095315307,  0.0115935094,  0.0323088850,  0.1359403845,  0.1238689330,  0.0072647197,  0.0095724972,  0.0117437198,  0.0953835847,  0.0292227446,  0.1178058962,  0.1217932988,  0.0095178752,  0.1222712409,  0.0151439364,  0.1288258752,  0.1234456129,  0.1145012681,  0.0389727632,  0.0248802994,  0.0670621023,  0.0946052219,  0.0359412448,  0.1302870124,  0.0305746380,  0.0493782451,  0.0108561131,  0.0837900753,  0.1307922655,  0.0881325205,  0.0141334302,  0.1161808932,  0.0355042692,  0.1339330278,  0.0157311223,  0.0402836900,  0.0105420368,  0.0397101595,  0.1169865670,  0.1159350944,  0.0807175904,  0.1097764692,  0.1311199972,  0.0818509960,  0.0230914305,  0.0223950006,  0.0123855277,  0.0062542136,  0.0554412819,  0.1303962563,  0.0916010145,  0.0438477724,  0.0984560695,  0.0337973332,  0.0656692425,  0.0497605988,  0.0262731592,  0.1174371981,  0.1332775643,  0.0639349955,  0.0781367032,  0.0703394194,  0.1016787647,  0.1278563355,  0.1236914116,  0.1358447961,  0.0876682339,  0.0993163653,  0.1039728868,  0.0368015406,  0.1074686917,  0.0980464049,  0.1249886830,  0.1097628137,  0.1249340611,  0.1092165942,  0.0288950129,  0.0926661426,  0.1052838136,  0.0877638223,  0.0424685681,  0.1225306951,  0.1148153443,  0.1142964358,  0.1036314996,  0.1093394936,  0.1136546279,  0.1219435092,  0.1049424264,  0.1240054879,  0.1219844756,  0.1052018807,  0.0989613226,  0.0936083713 }
     };
     
-    for ( int i = 0; i < 81; i++ ) {
-        for ( int j = 0; j < 190; j++ ) {
-            BOOST_CHECK_CLOSE ( TI[i][j], TI_test[i][j], 1e-4 );
-        }
-    }
+    FORIJ ( 81, 190 )
+        BOOST_CHECK_CLOSE ( TI[i][j], TI_test[i][j], 1e-4 );
+    
+    free ( model );
+    free ( brand );
+    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIDT_CalXYZ ) {
@@ -2005,11 +2045,12 @@ BOOST_AUTO_TEST_CASE ( TestIDT_CalXYZ ) {
         {  0.4603248290,  0.3206987361,  0.3960834297 }
     };
     
-    FORI(190) {
-        BOOST_CHECK_CLOSE ( XYZ[i][0], XYZ_test[i][0], 1e-5 );
-        BOOST_CHECK_CLOSE ( XYZ[i][1], XYZ_test[i][1], 1e-5 );
-        BOOST_CHECK_CLOSE ( XYZ[i][2], XYZ_test[i][2], 1e-5 );
-    }
+    FORIJ ( 190, 3 )
+        BOOST_CHECK_CLOSE ( XYZ[i][j], XYZ_test[i][j], 1e-5 );
+    
+    free ( model );
+    free ( brand );
+    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIDT_CalRGB ) {
@@ -2238,11 +2279,12 @@ BOOST_AUTO_TEST_CASE ( TestIDT_CalRGB ) {
         {  0.5608623445,  0.2394587589,  0.3637261707 }
     };
     
-    FORI(190) {
-        BOOST_CHECK_CLOSE ( RGB[i][0], RGB_test[i][0], 1e-5 );
-        BOOST_CHECK_CLOSE ( RGB[i][1], RGB_test[i][1], 1e-5 );
-        BOOST_CHECK_CLOSE ( RGB[i][2], RGB_test[i][2], 1e-5 );
-    }
+    FORIJ ( 190, 3 )
+        BOOST_CHECK_CLOSE ( RGB[i][j], RGB_test[i][j], 1e-5 );
+    
+    free ( model );
+    free ( brand );
+    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIDT_CurveFit ) {
@@ -2295,11 +2337,12 @@ BOOST_AUTO_TEST_CASE ( TestIDT_CurveFit ) {
         {  0.0247144012, -0.1245524896,  1.0998380884 }
     };
     
-    FORI(3) {
-        BOOST_CHECK_CLOSE ( IDT[i][0], IDT_test[i][0], 1e-5 );
-        BOOST_CHECK_CLOSE ( IDT[i][1], IDT_test[i][1], 1e-5 );
-        BOOST_CHECK_CLOSE ( IDT[i][2], IDT_test[i][2], 1e-5 );
-    }
+    FORIJ ( 3, 3 )
+        BOOST_CHECK_CLOSE ( IDT[i][j], IDT_test[i][j], 1e-5 );
+    
+    free ( model );
+    free ( brand );
+    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIDT_CalIDT ) {
@@ -2347,11 +2390,12 @@ BOOST_AUTO_TEST_CASE ( TestIDT_CalIDT ) {
         { -0.1312667887, -0.7361633199,  1.8674301085 }
     };
     
-    FORI(3) {
-        BOOST_CHECK_CLOSE ( IDT[i][0], IDT_test[i][0], 1e-5 );
-        BOOST_CHECK_CLOSE ( IDT[i][1], IDT_test[i][1], 1e-5 );
-        BOOST_CHECK_CLOSE ( IDT[i][2], IDT_test[i][2], 1e-5 );
-    }
+    FORIJ ( 3, 3 )
+    BOOST_CHECK_CLOSE ( IDT[i][j], IDT_test[i][j], 1e-5 );
+    
+    free ( model );
+    free ( brand );
+    delete idtTest;
 };
 
 

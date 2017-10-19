@@ -1290,6 +1290,8 @@ namespace rta {
             return 1;
         }
         
+        delete cost_function;
+        
         return 0;
     }
     

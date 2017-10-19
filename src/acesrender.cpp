@@ -1435,6 +1435,8 @@ float * AcesRender::renderDNG ( )
         printf ( "Applying IDT Matrix ...\n" );
     
     applyIDT ( aces, _image->colors, total );
+    delete dng;
+    
     return aces;
 }
 
@@ -1610,6 +1612,8 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
     std::cout << "capDate " << dynamicMeta.capDate << std::endl;
     std::cout << "uuid " << dynamicMeta.uuid << std::endl;
 #endif
+    
+    delete [] halfIn;
     
     x.saveImageObject ( );
 }

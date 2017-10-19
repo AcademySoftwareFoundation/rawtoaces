@@ -68,6 +68,8 @@ BOOST_AUTO_TEST_CASE ( TestIllum_DefaultConstructor ) {
     Illum * illumObject = new Illum();
     
     BOOST_CHECK_EQUAL ( illumObject->getIllumInc(), 5 );
+    
+    delete illumObject;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIllum_DefaultConstructor2 ) {
@@ -75,6 +77,8 @@ BOOST_AUTO_TEST_CASE ( TestIllum_DefaultConstructor2 ) {
 
     BOOST_CHECK_EQUAL ( illumObject->getIllumType(), "d50" );
     BOOST_CHECK_EQUAL ( illumObject->getIllumInc(),  5 );
+    
+    delete illumObject;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIllum_IllumType ) {
@@ -82,6 +86,8 @@ BOOST_AUTO_TEST_CASE ( TestIllum_IllumType ) {
     
     illumObject->setIllumType( "3200k" );
     BOOST_CHECK_EQUAL( std::strcmp( illumObject->getIllumType().c_str(), "3200k" ), 0 );
+    
+    delete illumObject;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIllum_IllumInc ) {
@@ -89,6 +95,8 @@ BOOST_AUTO_TEST_CASE ( TestIllum_IllumInc ) {
     
     illumObject->setIllumInc( 10 );
     BOOST_CHECK_EQUAL ( illumObject->getIllumInc(), 10 );
+    
+    delete illumObject;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIllum_IllumIndex ) {
@@ -97,6 +105,8 @@ BOOST_AUTO_TEST_CASE ( TestIllum_IllumIndex ) {
     illumObject->setIllumIndex( 10.99999 );
 
     BOOST_CHECK_CLOSE ( illumObject->getIllumIndex(), 10.99999, 1e-5 );
+    
+    delete illumObject;
 };
 
 BOOST_AUTO_TEST_CASE ( TestIllum_cctToxy ) {

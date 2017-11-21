@@ -97,16 +97,13 @@ The rawtoaces tool depends on an essential part of the IlmBase software package,
 ACES Container is the reference implementation for a file writer intended to be used with the Academy Color Encoding System (ACES). `rawtoaces` relies on it to produce images that comply with the ACES container specification (SMPTE S2065-4). ACES Container can be downloaded from [https://github.com/ampas/aces_container](https://github.com/ampas/aces_container) or installed using one of the commands below.
 
 * Ubuntu / Redhat / OS X
-	
-	__NOTE : During the beta period please use the build of ACES Container specified below__
-	
+		
 	Install aces_container
 	
 	```sh
-	git clone https://github.com/miaoqi/aces_container.git
+	git clone https://github.com/ampas/aces_container.git
 	cd aces_container
-	git checkout windowBuildSupport
-	
+		
 	mkdir build && cd build
 	cmake ..
 	make
@@ -401,11 +398,8 @@ By default, `rawtoaces` will determine the adopted white by finding the set of w
 
 	$ rawtoaces --wb-method 1 D60 --mat-method 0 input.raw
 	
-If you have spectral sensitivity data for your camera but it is not included with `rawtoaces` you may place that data in `/usr/local/include/RAWTOACES/data/camera` or use the `--ss-path` option to point `rawtoaces` to the path of the data.
+You can use the environment varilable of `AMPAS_DATA_PATH` to specify the repository for your own datasets. If you have spectral sensitivity data for your camera but it is not included with `rawtoaces` you may place that data in `/usr/local/include/RAWTOACES/data/camera` or place the data in the folder pointed by `AMPAS_DATA_PATH`.
 
-An example of the use of the --ss-path option would be 
-	
-	$ rawtoaces --ss-path /path/to/my/ss/data/ input.raw
 	
 #### JSON Schema for Spectral Datasets
 

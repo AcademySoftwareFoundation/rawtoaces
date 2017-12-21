@@ -271,7 +271,7 @@ Ceres Solver is an open source library for solving Non-linear Least Squares prob
 	Install rawtoaces
 	
 	```sh
-	$ (coming soon ...)
+	$ brew install rawtoaces
 	```
 	
 * From Source
@@ -331,8 +331,6 @@ A help message with a description of all command line options can be obtained by
 	                            1=Use file metadata color matrix
 	                            2=Use adobe coeffs
 	                            (default = 0)
-	  --ss-path <path>        Specify the path to camera sensitivity data
-	                            (default = /usr/local/include/RAWTOACES/data/camera)
 	  --headroom float        Set highlight headroom factor (default = 6.0)
 	  --cameras               Show a list of supported cameras/models by LibRaw
 	  --valid-illums          Show a list of illuminants
@@ -398,7 +396,7 @@ By default, `rawtoaces` will determine the adopted white by finding the set of w
 
 	$ rawtoaces --wb-method 1 D60 --mat-method 0 input.raw
 	
-You can use the environment varilable of `AMPAS_DATA_PATH` to specify the repository for your own datasets. If you have spectral sensitivity data for your camera but it is not included with `rawtoaces` you may place that data in `/usr/local/include/RAWTOACES/data/camera` or place the data in the folder pointed by `AMPAS_DATA_PATH`.
+You can use the environment varilable of `AMPAS_DATA_PATH` to specify the repository for your own datasets. If you have spectral sensitivity data for your camera but it is not included with `rawtoaces` you may place that data in `/usr/local/include/rawtoaces/data/camera` or place the data in the folder pointed by `AMPAS_DATA_PATH`.
 
 	
 #### JSON Schema for Spectral Datasets

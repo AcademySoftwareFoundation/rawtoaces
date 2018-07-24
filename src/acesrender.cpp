@@ -1452,20 +1452,20 @@ float * AcesRender::renderNonDNG ()
 {
     assert(_image);
 
-    ushort * pixels = (ushort *) _image->data;
-    uint32_t total = _image->width * _image->height * _image->colors;
+    ushort * pixels = (ushort *) _image->data; //Getting the image data
+    uint32_t total = _image->width * _image->height * _image->colors; //Total number of data pixels
     float * aces = new (std::nothrow) float[total];
     
     FORI(total) aces[i] = static_cast <float> (pixels[i]);
     
     if( _opts.mat_method > 0 ) {
-        applyCAT(aces, _image->colors, total);
+        applyCAT(aces, _image->colors, total);// Apply Chromatic Adaptation Transform
     }
     
     vector < vector< double> > XYZ_acesrgb( _image->colors,
                                             vector < double > (_image->colors));
     if ( _image->colors == 3 ) {
-        FORIJ(3, 3) XYZ_acesrgb[i][j] = XYZ_acesrgb_3[i][j];
+        FORIJ(3, 3) XYZ_acesrgb[i][j] = XYZ_acesrgb_3[i][j];//Populating a new vector with a pre-defined array.
         aces = mulVectorArray(aces, total, 3, XYZ_acesrgb);
     }
     else if ( _image->colors == 4 ){

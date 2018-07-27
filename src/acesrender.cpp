@@ -132,7 +132,7 @@ void usage ( const char *prog ) {
             "                            0=Calculate matrix from camera spec sens\n"
             "                            1=Use file metadata color matrix\n"
             "                            2=Use adobe coeffs included in libraw\n"
-            // Future feature ? "        3=Use custom matrix <m1r m1g m1b m2r m2g m2b m3r m3g m3b>\n"
+            "                            3=Use custom matrix <m1r m1g m1b m2r m2g m2b m3r m3g m3b>\n"
             "                            (default = 0)\n"
             "                            (default = /usr/local/include/rawtoaces/data/camera)\n"
             "  --headroom float        Set highlight headroom factor (default = 6.0)\n"
@@ -482,11 +482,47 @@ int AcesRender::configureSettings ( int argc, char * argv[] )
             }
             case 'p': {
                 _opts.mat_method = matMethods_t(atoi(argv[arg++]));
-                if ( _opts.mat_method > 2
+                if ( _opts.mat_method > 3
                     || _opts.mat_method < 0 ) {
                     fprintf (stderr, "\nError: Invalid argument to "
                              "\"%s\" \n", key.c_str());
                     exit(-1);
+                }
+
+
+                if ( _opts.mat_method == matMethod3 ) {
+
+                    bool flag=false;
+                    FORI(9) {
+                        if ( isalpha(argv[arg][0]) )
+                        {
+                            fprintf (stderr, "\nError: Non-numeric argument to "
+                                             "\"%s %i\" \n",
+                                     key.c_str(),
+                                     _opts.mat_method );
+                            exit(-1);
+                        }
+                        custom_Buffer[i] = static_cast<float> (atof(argv[arg++]));
+                        if(i==8)
+                        {
+                            flag=true;
+                        }
+                    }
+
+                  // For testing purposes FORI(9){ cout<<custom_Buffer[i]<<endl;}
+                if(flag)
+                {
+                    FORI(3)
+                    {
+                        FORJ(3)
+                        {
+                            custom_Matrix[i][j]=custom_Buffer[i*3+j];
+                            //cout<< custom_Matrix[i][j]<<endl;
+                        }
+                    }
+                }
+
+
                 }
                 break;
             }
@@ -1173,8 +1209,17 @@ int AcesRender::postprocessRaw ( ) {
             }
             
             break;
+         // 3
+        case matMethod3 :
+            OUT.output_color = 0;
+            if ( _opts.verbosity > 1 ) {
+                printf ( "IDT matrix calculation method is 3 - ");
+                printf ( "IDT matrix is custom defined ...\n" );
+            }
+
+            break;
         default:
-            fprintf ( stderr, "IDT matrix calculation method is must be 0, 1, 2 \n" );
+            fprintf ( stderr, "IDT matrix calculation method is must be 0, 1, 2, 3\n" );
             exit(-1);
             break;
     }
@@ -1213,19 +1258,23 @@ float * AcesRender::renderACES ( ) {
 #ifdef P
 #undef P
 #endif
-    
+
 #define P _rawProcessor->imgdata.idata
-    
-    if ( !_rawProcessor->imgdata.params.output_color )
+    if (!_rawProcessor->imgdata.params.output_color) {
+        cout << "rendering IDT" << endl;
         return renderIDT();
-    else {
-        if ( P.dng_version )
+    } else {
+        if (P.dng_version) {
+            cout << "rendering DNG" << endl;
             return renderDNG();
-        else
+        } else {
+            cout<< "rendering NonDNG"<< endl;
             return renderNonDNG();
+
+        }
+
     }
 }
-
 //	=====================================================================
 //	Write rendered ACES Buffer into an OpenEXR Image File
 //
@@ -1338,30 +1387,86 @@ void AcesRender::applyWB ( float * pixels, int bits, uint32_t total )
 void AcesRender::applyIDT ( float * pixels, int channel, uint32_t total )
 {
     assert(pixels);
-    
-    if ( channel == 4 ){
-        _idtm.resize(4);
-        FORI(4) _idtm[i].resize(4);
-        
-        _idtm[0][3] = 0.0;
-        _idtm[1][3] = 0.0;
-        _idtm[2][3] = 0.0;
-        _idtm[3][0] = 0.0;
-        _idtm[3][1] = 0.0;
-        _idtm[3][2] = 0.0;
-        _idtm[3][3] = 1.0;
+    cout<<"applying IDT"<<endl;
+
+    if(_opts.mat_method!=matMethod3) {
+
+        if (channel == 4) {
+            _idtm.resize(4);
+            FORI(4) _idtm[i].resize(4);
+
+            _idtm[0][3] = 0.0;
+            _idtm[1][3] = 0.0;
+            _idtm[2][3] = 0.0;
+            _idtm[3][0] = 0.0;
+            _idtm[3][1] = 0.0;
+            _idtm[3][2] = 0.0;
+            _idtm[3][3] = 1.0;
+        }
+
+        if (channel != 3 && channel != 4) {
+            fprintf(stderr, "\nError: Currently support 3 channels "
+                            "and 4 channels. \n");
+            exit(1);
+        }
+
+        pixels = mulVectorArray(pixels,
+                                total,
+                                channel,
+                                _idtm);
+
+        FORI(3)
+        {
+
+                cout<<_idtm[i][0]<<" "<<_idtm[i][1]<<" "<<_idtm[i][2]<<endl;
+
+        }
     }
-    
-    if ( channel != 3 && channel != 4 ) {
-        fprintf ( stderr, "\nError: Currenly support 3 channels "
-                          "and 4 channels. \n" );
-        exit (1);
+    else if(_opts.mat_method==matMethod3)
+    {
+        cout << "Using custom defined matrix for IDT"<<endl ;
+        custom_idtm.resize(3);
+
+        FORI(3) {
+            custom_idtm[i].resize(3);
+
+            FORJ(3) custom_idtm[i][j] = static_cast<double>(custom_Matrix[i][j]);
+        }
+
+        if (channel == 4) {
+            custom_idtm.resize(4);
+            FORI(4) custom_idtm[i].resize(4);
+
+            custom_idtm[0][3] = 0.0;
+            custom_idtm[1][3] = 0.0;
+            custom_idtm[2][3] = 0.0;
+            custom_idtm[3][0] = 0.0;
+            custom_idtm[3][1] = 0.0;
+            custom_idtm[3][2] = 0.0;
+            custom_idtm[3][3] = 1.0;
+        }
+
+        if (channel != 3 && channel != 4) {
+            fprintf(stderr, "\nError: Currently support 3 channels "
+                            "and 4 channels. \n");
+            exit(1);
+        }
+
+        pixels = mulVectorArray(pixels,
+                                total,
+                                channel,
+                                custom_idtm);
+
+        FORI(3)
+        {
+
+            cout<<custom_idtm[i][0]<<" "<<custom_idtm[i][1]<<" "<<custom_idtm[i][2]<<endl;
+
+        }
+
+
+
     }
-    
-    pixels = mulVectorArray ( pixels,
-                              total,
-                              channel,
-                              _idtm );
 }
 
 //	=====================================================================

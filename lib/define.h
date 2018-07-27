@@ -71,6 +71,7 @@
 #include <Eigen/Core>
 #include <glog/logging.h>
 #include <ceres/ceres.h>
+#include <boost/lexical_cast.hpp>
 
 #ifndef WIN32
 #include <fcntl.h>
@@ -120,7 +121,7 @@ using ceres::Problem;
 using ceres::Solve;
 using ceres::Solver;
 
-enum matMethods_t { matMethod0, matMethod1, matMethod2 };
+enum matMethods_t { matMethod0, matMethod1, matMethod2, matMethod3 };
 enum wbMethods_t { wbMethod0, wbMethod1, wbMethod2, wbMethod3, wbMethod4 };
 
 struct Option {
@@ -154,6 +155,10 @@ struct dataPath {
     string os;
     vector <string> paths;
 };
+
+float custom_Matrix[3][3]={0.0};
+float custom_Buffer[9]={0.0};
+vector < vector < double > > custom_idtm;
 
 const double pi = 3.1416;
 // 216.0/24389.0

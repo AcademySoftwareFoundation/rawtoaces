@@ -48,7 +48,7 @@ CMake can be downloaded directly from [https://cmake.org/](https://cmake.org/) a
 	$ yum install cmake
 	```
 	
-* OS X
+* macOS
 
 	Install homebrew if not already installed
 	
@@ -78,7 +78,7 @@ The rawtoaces tool depends on an essential part of the IlmBase software package,
 	$ yum install ilmbase-devel
 	```
 	
-* OS X
+* macOS
 	
 	Install homebrew if not already installed
 	
@@ -96,7 +96,7 @@ The rawtoaces tool depends on an essential part of the IlmBase software package,
 
 ACES Container is the reference implementation for a file writer intended to be used with the Academy Color Encoding System (ACES). `rawtoaces` relies on it to produce images that comply with the ACES container specification (SMPTE S2065-4). ACES Container can be downloaded from [https://github.com/ampas/aces_container](https://github.com/ampas/aces_container) or installed using one of the commands below.
 
-* Ubuntu / Redhat / OS X
+* Ubuntu / Redhat / macOS
 	
 	__NOTE : During the beta period please use the build of ACES Container specified below__
 	
@@ -129,7 +129,7 @@ LibRaw is a library that processes RAW files from digital cameras. It handles im
 	$ yum install libraw1394-devel
 	```
 	
-* OS X
+* macOS
 	
 	Install homebrew if not already installed
 	
@@ -159,7 +159,7 @@ Boost has multiple C++ libraries that support tasks related to linear algebra, m
 	$ yum install boost-devel
 	```
 	
-* OS X
+* macOS
 	
 	Install homebrew if not already installed
 	
@@ -218,7 +218,7 @@ Ceres Solver is an open source library for solving Non-linear Least Squares prob
 	sudo make install
 	```
 	
-* OS X
+* macOS
 	
 	Install homebrew if not already installed
 	
@@ -263,7 +263,7 @@ Ceres Solver is an open source library for solving Non-linear Least Squares prob
 
 ## Installation
 
-* OS X
+* macOS
 	
 	Install homebrew if not already installed
 	
@@ -274,7 +274,7 @@ Ceres Solver is an open source library for solving Non-linear Least Squares prob
 	Install rawtoaces
 	
 	```sh
-	$ (coming soon ...)
+	$ brew install rawtoaces
 	```
 	
 * From Source

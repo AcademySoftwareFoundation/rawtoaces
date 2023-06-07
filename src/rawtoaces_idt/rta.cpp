@@ -52,7 +52,7 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
-#include "rta.h"
+#include <rawtoaces/rta.h>
 
 namespace rta {
     Illum::Illum() {

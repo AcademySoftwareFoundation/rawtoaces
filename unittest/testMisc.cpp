@@ -56,7 +56,7 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
 
-#include "../lib/define.h"
+#include <rawtoaces/define.h>
 
 using namespace std;
 

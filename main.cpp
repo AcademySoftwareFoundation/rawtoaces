@@ -52,8 +52,8 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
-#include "src/acesrender.h"
-#include "src/usage.h"
+#include <rawtoaces/acesrender.h>
+#include <rawtoaces/usage.h>
 
 int main(int argc, char *argv[])
 {

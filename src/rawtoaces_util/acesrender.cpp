@@ -52,7 +52,7 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
-#include "acesrender.h"
+#include <rawtoaces/acesrender.h>
 
 //  =====================================================================
 //  Prepare the matching between string flags and single character flag
@@ -773,10 +773,15 @@ int AcesRender::openRawPath ( const char * pathToRaw ) {
     else
 #endif
     {
-        if ( _opts.use_bigfile )
-            _opts.ret = _rawProcessor->open_file ( pathToRaw, 1 );
-        else
+        #if defined(_WIN32) || defined(WIN32)
+            if ( _opts.use_bigfile )
+                _opts.ret = _rawProcessor->open_file ( pathToRaw, 1 );
+            else
+                _opts.ret = _rawProcessor->open_file ( pathToRaw );
+        #else
             _opts.ret = _rawProcessor->open_file ( pathToRaw );
+        #endif
+
     }
     
     unpack ( pathToRaw );

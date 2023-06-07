@@ -55,7 +55,7 @@
 #ifndef _ACESRENDER_h__
 #define _ACESRENDER_h__
 
-#include "../lib/rta.h"
+#include <rawtoaces/rta.h>
 
 #ifndef __aces_oeWriter__
 #include <aces/aces_Writer.h>

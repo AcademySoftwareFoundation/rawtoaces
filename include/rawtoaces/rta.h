@@ -65,9 +65,9 @@
 #include <stdint.h>
 #include <math.h>
 #include <string>
-#include <half.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <Imath/half.h>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/foreach.hpp>

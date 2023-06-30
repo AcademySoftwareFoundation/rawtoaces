@@ -1637,7 +1637,7 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
     uint16_t height    = _image->height;
     uint8_t  channels  = _image->colors;
     uint8_t  bits      = _image->bits;
-    
+
     halfBytes * halfIn = new (std::nothrow) halfBytes[channels * width * height];
         
     FORI ( channels * width * height ){
@@ -1657,16 +1657,34 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
     
     MetaWriteClip writeParams;
     
-    writeParams.duration				= 1;
-    writeParams.outputFilenames			= filenames;
+    writeParams.duration				 = 1;
+    writeParams.outputFilenames			 = filenames;
     
-    writeParams.outputRows				= height;
-    writeParams.outputCols				= width;
+    writeParams.outputRows				 = height;
+    writeParams.outputCols				 = width;
     
     writeParams.hi = x.getDefaultHeaderInfo();
-    writeParams.hi.originalImageFlag	= 1;
-    writeParams.hi.software				= "rawtoaces v0.1";
+    libraw_iparams_t* iparams = &_rawProcessor->imgdata.idata;
+    writeParams.hi.originalImageFlag	 = 1;
+    writeParams.hi.software				 = "rawtoaces v0.1";
+    writeParams.hi.cameraMake            = string(iparams->make);
+    writeParams.hi.cameraModel           = string(iparams->model);
+    writeParams.hi.cameraLabel           = writeParams.hi.cameraMake
+                                           + " " +
+                                           writeParams.hi.cameraModel;
     
+    libraw_lensinfo_t* lens = &_rawProcessor->imgdata.lens;
+    writeParams.hi.lensMake              = string(lens->LensMake);
+    writeParams.hi.lensModel             = string(lens->Lens);
+    writeParams.hi.lensSerialNumber      = string(lens->LensSerial);
+    
+    libraw_imgother_t* other = &_rawProcessor->imgdata.other;
+    writeParams.hi.isoSpeed              = other->iso_speed;
+    writeParams.hi.expTime               = other->shutter;
+    writeParams.hi.aperture              = other->aperture;
+    writeParams.hi.focalLength           = other->focal_len;
+    writeParams.hi.comments              = string(other->desc);
+    writeParams.hi.artist                = string(other->artist);
     writeParams.hi.channels.clear();
     
     switch (channels)

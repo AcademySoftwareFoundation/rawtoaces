@@ -16,8 +16,8 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 if (NOT CONFIGURED_ONCE)
-	set(CMAKE_CXX_FLAGS "${warnings}")
-	set(CMAKE_C_FLAGS "${warnings}")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${warnings}")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${warnings}")
 endif()
 
 if ( UNIX AND NOT APPLE )
@@ -187,14 +187,6 @@ add_subdirectory("src/${RAWTOACESLIB}")
 
 enable_testing()
 add_subdirectory(unittest)
-
-# Add all targets to the build-tree export set
-# if ( WIN32 AND NOT CYGWIN )
-#  export( TARGETS Half Raw AcesContainer FILE "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" )
-# install ( TARGETS Half Raw AcesContainer EXPORT HRA_targets )
-# install ( EXPORT HRA_targets FILE "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake") 
-# endif ()
-export( PACKAGE RAWTOACES )
  
 # Create a RAWTOACESBuildTreeSettings.cmake file for the use from the build tree
 file(RELATIVE_PATH CONF_REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")

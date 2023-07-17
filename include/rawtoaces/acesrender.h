@@ -120,7 +120,7 @@ class AcesRender {
         const vector < double > getWB () const;
         const libraw_processed_image_t * getImageBuffer() const;
         const struct Option getSettings ( ) const;
-
+            
     private:
         AcesRender();
         ~AcesRender();

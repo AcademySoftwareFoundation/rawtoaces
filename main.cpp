@@ -112,22 +112,30 @@ int main(int argc, char *argv[])
 // Process RAW files ...
     FORI ( RAWs.size() )
     {
-        const char * raw = (RAWs[i]).c_str();
+        string raw = (RAWs[i]).c_str();
         
         timerstart_timeval();
-        Render.preprocessRaw (raw);
+        Render.preprocessRaw (raw.c_str());
         if ( opts.use_timing )
-             timerprint ( "AcesRender::preprocessRaw()", raw );
+             timerprint ( "AcesRender::preprocessRaw()", raw.c_str() );
 
         timerstart_timeval();
         Render.postprocessRaw ();
         if ( opts.use_timing )
-             timerprint ( "AcesRender::postprocessRaw()", raw );
+             timerprint ( "AcesRender::postprocessRaw()", raw.c_str() );
         
         timerstart_timeval();
-        Render.outputACES ();
+        
+        string output;
+        size_t pos = raw.rfind('.');
+        if (pos != std::string::npos) {
+            output = raw.substr(0, pos);
+        }
+        output += "_aces.exr";
+    
+        Render.outputACES ( output.c_str() );
         if ( opts.use_timing )
-             timerprint( "AcesRender::outputACES()", raw);
+             timerprint( "AcesRender::outputACES()", raw.c_str() );
 
     }
 

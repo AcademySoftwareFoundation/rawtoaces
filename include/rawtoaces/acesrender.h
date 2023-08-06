@@ -96,7 +96,7 @@ class AcesRender {
         int prepareWB ( const libraw_iparams_t & P );
         int preprocessRaw ( const char * path );
         int postprocessRaw ( );
-        void outputACES ( );
+        void outputACES ( const char * path );
     
         void initialize ( const dataPath & dp );
         void setPixels ( libraw_processed_image_t * image );

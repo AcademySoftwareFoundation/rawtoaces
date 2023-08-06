@@ -1289,7 +1289,7 @@ float * AcesRender::renderACES ( ) {
 //	outputs:
 //      N/A        : An ACES file will be generated
 
-void AcesRender::outputACES ( ) {
+void AcesRender::outputACES ( const char * path ) {
 #ifdef C
 #undef C
 #endif
@@ -1297,11 +1297,6 @@ void AcesRender::outputACES ( ) {
 #define C   _rawProcessor->imgdata.color
     
     assert ( _pathToRaw != nullptr );
-    char * cp;
-    if (( cp = strrchr ( _pathToRaw, '.' ))) *cp = 0;
-    
-    char outfn[1024];
-    snprintf( outfn, sizeof(outfn), "%s%s", _pathToRaw, "_aces.exr" );
     
     float * aces = renderACES();
     if ( _opts.verbosity > 1 ) {
@@ -1316,16 +1311,16 @@ void AcesRender::outputACES ( ) {
         // printing white balance coefficients
         printf ("The final white balance coefficients are ...\n");
         printf ("   %f   %f   %f\n", C.pre_mul[0], C.pre_mul[1], C.pre_mul[2]);
-        printf ( "Writing ACES file to %s ...\n", outfn );
+        printf ( "Writing ACES file to %s ...\n", path );
     }
     
     if ( _opts.highlight > 0 ) {
         float ratio = ( *(std::max_element ( C.pre_mul, C.pre_mul+3)) /
                         *(std::min_element ( C.pre_mul, C.pre_mul+3)) );
-        acesWrite ( outfn, aces, ratio );
+        acesWrite ( path, aces, ratio );
     }
     else
-        acesWrite ( outfn, aces );
+        acesWrite ( path, aces );
     
 #ifndef WIN32
     if ( _opts.use_mmap && _opts.iobuffer )

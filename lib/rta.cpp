@@ -1452,7 +1452,7 @@ namespace rta {
         _cameraXYZWhitePoint   = vector < double > ( 3, 1.0 );
         _calibrateIllum        = vector < double > ( 2, 1.0 );
         
-        _baseExpo = static_cast < double > ( R.color.baseline_exposure );
+        _baseExpo = static_cast < double > ( R.color.dng_levels.baseline_exposure );
         _calibrateIllum[0] = static_cast < double > ( R.color.dng_color[0].illuminant );
         _calibrateIllum[1] = static_cast < double > ( R.color.dng_color[1].illuminant );
         

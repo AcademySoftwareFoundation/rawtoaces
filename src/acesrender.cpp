@@ -1470,7 +1470,7 @@ void AcesRender::applyIDT ( float * pixels, int channel, uint32_t total )
 }
 
 //	=====================================================================
-//  Apply CAT matrix (e.g., D50 to D60) to each pixel
+//  Apply CAT matrix (e.g., D65 to D60) to each pixel
 //  It will be used if using adobe coeffs from "libraw"
 //
 //	inputs:
@@ -1492,7 +1492,7 @@ void AcesRender::applyCAT ( float * pixels, int channel, uint32_t total )
     }
     
     // will use calCAT() inside rawtoaces
-    vector < double > dIV (d50, d50 + 3);
+    vector < double > dIV (d65, d65 + 3);
     vector < double > dOV (d60, d60 + 3);
     _catm = getCAT(dIV, dOV);
 

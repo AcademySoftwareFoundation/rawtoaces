@@ -1706,13 +1706,13 @@ namespace rta {
     
     vector < vector < double > > DNGIdt::getDNGIDTMatrix ( ) {
         vector < vector < double > > chadMtx = getDNGCATMatrix ( );
-        vector < double > XYZ_acesrgb (9), CAT (9);
+        vector < double > XYZ_D65_acesrgb (9), CAT (9);
         FORIJ ( 3, 3 ) {
-            XYZ_acesrgb[i*3+j] = XYZ_acesrgb_3[i][j];
+            XYZ_D65_acesrgb[i*3+j] = XYZ_D65_acesrgb_3[i][j];
             CAT[i*3+j] = chadMtx[i][j];
         }
         
-        vector < double > matrix = mulVector ( XYZ_acesrgb, CAT, 3 );
+        vector < double > matrix = mulVector ( XYZ_D65_acesrgb, CAT, 3 );
         vector < vector < double > > DNGIDTMatrix ( 3, vector < double > (3) );
         FORIJ ( 3, 3 ) DNGIDTMatrix[i][j] = matrix[i*3+j];
         

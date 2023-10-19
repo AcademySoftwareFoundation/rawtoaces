@@ -7,7 +7,8 @@
 4. [Installation](#installation)
 5. [Usage](#usage)
 6. [Known Issues](#known-issues)
-6. [License](#license)
+7. [Installation for Redhat](#installation-for-redhat)
+8. [License](#license)
 
 ## Introduction
 The RAW to ACES Utility or `rawtoaces`, is a software package that converts digital camera RAW files to ACES container files containing image data encoded according to the Academy Color Encoding Specification (ACES) as specified in [SMPTE 2065-1](http://ieeexplore.ieee.org/document/7289895/).  This is accomplished through one of two methods.
@@ -640,6 +641,10 @@ The following commands will convert RAW to ACES using the camera file metadata f
 ## Known Issues
 
 For a list of currently known issues see the [issues list](https://github.com/ampas/rawtoaces/issues) in github. Please add any issue found to the github list.
+
+## Installation for Redhat
+
+Please follow the steps given in the docx files RAWtoACES_CentOS7.docx and RAWtoACES_CentOS7_noyum.docx with yum and without yum respectively.
 
 ## License
 

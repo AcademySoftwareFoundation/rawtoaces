@@ -61,7 +61,7 @@ target_link_libraries ( Test_Illum
 add_executable (
 	Test_DNGIdt
 	testDNGIdt.cpp
-)
+        testLogic.cpp)
 
 target_link_libraries ( Test_DNGIdt
 						${RAWTOACESLIB}
@@ -80,6 +80,19 @@ target_link_libraries ( Test_Math
                         ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
  						${CERES_LIBRARIES}
 )
+
+add_executable (
+		Test_Logic
+		testLogic.cpp
+)
+
+target_link_libraries ( Test_Logic
+		${RAWTOACESLIB}
+		${Boost_FILESYSTEM_LIBRARY}
+		${Boost_SYSTEM_LIBRARY}
+		${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+		${CERES_LIBRARIES}
+		)
 
 add_executable (
 	Test_Misc

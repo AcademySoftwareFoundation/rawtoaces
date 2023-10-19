@@ -48,7 +48,7 @@ CMake can be downloaded directly from [https://cmake.org/](https://cmake.org/) a
 	$ yum install cmake
 	```
 	
-* OS X
+* macOS
 
 	Install homebrew if not already installed
 	
@@ -78,7 +78,7 @@ The rawtoaces tool depends on an essential part of the IlmBase software package,
 	$ yum install ilmbase-devel
 	```
 	
-* OS X
+* macOS
 	
 	Install homebrew if not already installed
 	
@@ -96,8 +96,8 @@ The rawtoaces tool depends on an essential part of the IlmBase software package,
 
 ACES Container is the reference implementation for a file writer intended to be used with the Academy Color Encoding System (ACES). `rawtoaces` relies on it to produce images that comply with the ACES container specification (SMPTE S2065-4). ACES Container can be downloaded from [https://github.com/ampas/aces_container](https://github.com/ampas/aces_container) or installed using one of the commands below.
 
-* Ubuntu / Redhat / OS X
-		
+* Ubuntu / Redhat / macOS
+	
 	Install aces_container
 	
 	```sh
@@ -126,7 +126,7 @@ LibRaw is a library that processes RAW files from digital cameras. It handles im
 	$ yum install libraw1394-devel
 	```
 	
-* OS X
+* macOS
 	
 	Install homebrew if not already installed
 	
@@ -156,7 +156,7 @@ Boost has multiple C++ libraries that support tasks related to linear algebra, m
 	$ yum install boost-devel
 	```
 	
-* OS X
+* macOS
 	
 	Install homebrew if not already installed
 	
@@ -215,7 +215,7 @@ Ceres Solver is an open source library for solving Non-linear Least Squares prob
 	sudo make install
 	```
 	
-* OS X
+* macOS
 	
 	Install homebrew if not already installed
 	
@@ -260,7 +260,7 @@ Ceres Solver is an open source library for solving Non-linear Least Squares prob
 
 ## Installation
 
-* OS X
+* macOS
 	
 	Install homebrew if not already installed
 	
@@ -309,63 +309,63 @@ A help message with a description of all command line options can be obtained by
 	
 	$ rawtoaces --help
 	rawtoaces - convert RAW digital camera files to ACES
-	
+
 	Usage:
-	  rawtoaces file ...
-	  rawtoaces [options] file
-	  rawtoaces --help
-	  rawtoaces --version
-	
+  	  rawtoaces file ...
+  	  rawtoaces [options] file
+  	  rawtoaces --help
+  	  rawtoaces --version
+
 	IDT options:
-	  --help                  Show this screen
-	  --version               Show version
-	  --wb-method [0-4] [str] White balance factor calculation method
-	                            0=white balance using file metadata
-	                            1=white balance using user specified illuminant [str]
+  	  --help                  Show this screen
+  	  --version               Show version
+  	  --wb-method [0-4]       White balance factor calculation method
+	                            0=white balance using file metadata 
+	                            1=white balance using user specified illuminant [str] 
 	                            2=Average the whole image for white balance
 	                            3=Average a grey box for white balance <x y w h>
 	                            4=Use custom white balance  <r g b g>
 	                            (default = 0)
-	  --mat-method [0-2]      IDT matrix calculation method
+  	  --mat-method [0-2]      IDT matrix calculation method
 	                            0=Calculate matrix from camera spec sens
 	                            1=Use file metadata color matrix
-	                            2=Use adobe coeffs
+	                            2=Use adobe coeffs included in libraw
 	                            (default = 0)
-	  --headroom float        Set highlight headroom factor (default = 6.0)
-	  --cameras               Show a list of supported cameras/models by LibRaw
-	  --valid-illums          Show a list of illuminants
-	  --valid-cameras         Show a list of cameras/models with available 
-	                          spectral sensitivity datasets
-	
+	    --headroom float        Set highlight headroom factor (default = 6.0)
+	    --cameras               Show a list of supported cameras/models by LibRaw
+	    --valid-illums          Show a list of illuminants
+	    --valid-cameras         Show a list of cameras/models with available 
+  	                          spectral sensitivity datasets
+
 	Raw conversion options:
-	  -c float                Set adjust maximum threshold (default = 0.75)
-	  -C <r b>                Correct chromatic aberration
-	  -P <file>               Fix the dead pixels listed in this file
-	  -K <file>               Subtract dark frame (16-bit raw PGM)
-	  -k <num>                Set the darkness level
-	  -S <num>                Set the saturation level
-	  -n <num>                Set threshold for wavelet denoising
-	  -H [0-9]                Highlight mode (0=clip, 1=unclip, 2=blend, 3+=rebuild) (default = 2)
-	  -t [0-7]                Flip image (0=none, 3=180, 5=90CCW, 6=90CW)
-	  -j                      Don't stretch or rotate raw pixels
-	  -W                      Don't automatically brighten the image
-	  -b <num>                Adjust brightness (default = 1.0)
-	  -q [0-3]                Set the interpolation quality
-	  -h                      Half-size color image (twice as fast as "-q 0")
-	  -f                      Interpolate RGGB as four colors
-	  -m <num>                Apply a 3x3 median filter to R-G and B-G
-	  -s [0..N-1]             Select one raw image from input file
-	  -G                      Use green_matching() filter
-	  -B <x y w h>            Use cropbox
+  	  -c float                Set adjust maximum threshold (default = 0.75)
+  	  -C <r b>                Correct chromatic aberration
+  	  -P <file>               Fix the dead pixels listed in this file
+  	  -K <file>               Subtract dark frame (16-bit raw PGM)
+  	  -k <num>                Set the darkness level
+  	  -S <num>                Set the saturation level
+  	  -n <num>                Set threshold for wavelet denoising
+  	  -H [0-9]                Highlight mode (0=clip, 1=unclip, 2=blend, 3+=rebuild) (default = 0)
+  	  -t [0-7]                Flip image (0=none, 3=180, 5=90CCW, 6=90CW)
+  	  -j                      Don't stretch or rotate raw pixels
+  	  -W                      Don't automatically brighten the image
+  	  -b <num>                Adjust brightness (default = 1.0)
+  	  -q [0-3]                Set the interpolation quality
+  	  -h                      Half-size color image (twice as fast as "-q 0")
+  	  -f                      Interpolate RGGB as four colors
+  	  -m <num>                Apply a 3x3 median filter to R-G and B-G
+  	  -s [0..N-1]             Select one raw image from input file
+  	  -G                      Use green_matching() filter
+  	  -B <x y w h>            Use cropbox
 	
 	Benchmarking options:
-	  -v                      Verbose: print progress messages (repeated -v will add verbosity)
-	  -F                      Use FILE I/O instead of streambuf API
-	  -d                      Detailed timing report
-	  -E                      Use mmap()-ed buffer instead of plain FILE I/O
-	
+  	  -v                      Verbose: print progress messages (repeated -v will add verbosity)
+  	  -F                      Use FILE I/O instead of streambuf API
+  	  -d                      Detailed timing report
+  	  -E                      Use mmap()-ed buffer instead of plain FILE I/O
+		
 ### RAW conversion options
-
+	
 In most cases the default values for all "RAW conversion options" should be sufficient.  Please see the help menu for details of the RAW conversion options.
 
 ### Conversion using spectral sensitivities

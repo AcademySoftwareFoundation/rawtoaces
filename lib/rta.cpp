@@ -1245,8 +1245,8 @@ namespace rta {
         Problem problem;
         vector < vector <double> > outLAB = XYZtoLAB(XYZ);
 
-        CostFunction* cost_function =
-            new AutoDiffCostFunction<Objfun, DYNAMIC, 6>(new Objfun(RGB, outLAB), int(RGB.size()*(RGB[0].size())));
+        CostFunction * cost_function =
+            new AutoDiffCostFunction<Objfun, DYNAMIC, 6> ( new Objfun(RGB, outLAB), int(RGB.size()*(RGB[0].size())));
         
         problem.AddResidualBlock ( cost_function,
                                    NULL,

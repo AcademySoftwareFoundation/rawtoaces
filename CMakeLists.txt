@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project( RAWTOACES )
 
-set( RAWTOACES_MAJOR_VERSION 0 )
-set( RAWTOACES_MINOR_VERSION 1 )
+set( RAWTOACES_MAJOR_VERSION 1 )
+set( RAWTOACES_MINOR_VERSION 0 )
 set( RAWTOACES_PATCH_VERSION 0 )
 set( RAWTOACES_VERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${RAWTOACES_PATCH_VERSION} )
 
@@ -120,8 +120,8 @@ if ( NOT AcesContainer_FOUND )
   	STRING(REGEX REPLACE "\\\\" "/" ACES_EXTERNAL_BUILD ${ACES_EXTERNAL_BUILD})
 
  	  ExternalProject_Add( project_aces_container
-    	GIT_REPOSITORY https://github.com/miaoqi/aces_container.git
-    	GIT_TAG "origin/windowBuildSupport"
+    	GIT_REPOSITORY https://github.com/ampas/aces_container.git
+    	# GIT_TAG "origin/windowBuildSupport"
 
       SOURCE_DIR ${ACES_EXTERNAL_BUILD}
       CMAKE_ARGS -DBuildShared=OFF -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_aces_container
@@ -132,8 +132,8 @@ if ( NOT AcesContainer_FOUND )
     set (AcesContainer_INCLUDE_DIRS "${ACES_EXTERNAL_BUILD}")
   else ()
    	ExternalProject_Add( project_aces_container
-    	GIT_REPOSITORY https://github.com/miaoqi/aces_container.git
-    	GIT_TAG "windowBuildSupport"
+    	GIT_REPOSITORY https://github.com/ampas/aces_container.git
+    	# GIT_TAG "windowBuildSupport"
 
       	SOURCE_DIR ${ACES_EXTERNAL_BUILD}
       	CONFIGURE_COMMAND mkdir ${ACES_EXTERNAL_BUILD}/build && cd ${ACES_EXTERNAL_BUILD}/build

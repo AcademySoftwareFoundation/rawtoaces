@@ -98,15 +98,12 @@ ACES Container is the reference implementation for a file writer intended to be 
 
 * Ubuntu / Redhat / macOS
 	
-	__NOTE : During the beta period please use the build of ACES Container specified below__
-	
 	Install aces_container
 	
 	```sh
-	git clone https://github.com/miaoqi/aces_container.git
+	git clone https://github.com/ampas/aces_container.git
 	cd aces_container
-	git checkout windowBuildSupport
-	
+		
 	mkdir build && cd build
 	cmake ..
 	make
@@ -334,12 +331,11 @@ A help message with a description of all command line options can be obtained by
 	                            1=Use file metadata color matrix
 	                            2=Use adobe coeffs included in libraw
 	                            (default = 0)
-	                            (default = /usr/local/include/rawtoaces/data/camera)
-  	  --headroom float        Set highlight headroom factor (default = 6.0)
-  	  --cameras               Show a list of supported cameras/models by LibRaw
-  	  --valid-illums          Show a list of illuminants
-  	  --valid-cameras         Show a list of cameras/models with available
-	                          spectral sensitivity datasets
+	    --headroom float        Set highlight headroom factor (default = 6.0)
+	    --cameras               Show a list of supported cameras/models by LibRaw
+	    --valid-illums          Show a list of illuminants
+	    --valid-cameras         Show a list of cameras/models with available 
+  	                          spectral sensitivity datasets
 
 	Raw conversion options:
   	  -c float                Set adjust maximum threshold (default = 0.75)
@@ -400,15 +396,8 @@ By default, `rawtoaces` will determine the adopted white by finding the set of w
 
 	$ rawtoaces --wb-method 1 D60 --mat-method 0 input.raw
 	
-If you have spectral sensitivity data for your camera but it is not included with `rawtoaces` you may place that data in `/usr/local/include/RAWTOACES/data/camera` or set the evironment variable `AMPAS_CAMERA_SENSITIVITIES_PATH` to the path of your camera's data.
+You can use the environment varilable of `AMPAS_DATA_PATH` to specify the repository for your own datasets. If you have spectral sensitivity data for your camera but it is not included with `rawtoaces` you may place that data in `/usr/local/include/rawtoaces/data/camera` or place the data in the folder pointed by `AMPAS_DATA_PATH`.
 
-If you have spectral data for an illuminant but it is not included with `rawtoaces` you may place that data in `/usr/local/include/RAWTOACES/data/illuminant` or set the evironment variable `AMPAS_ILLUMINANT_PATH` to the path of your data.
-
-An example of the use of the custom spectral data directories would be 
-	
-	$ export AMPAS_CAMERA_SENSITIVITIES_PATH=/usr/local/include/rawtoaces/data/camera
-	$ export AMPAS_ILLUMINANT_PATH=/usr/local/include/rawtoaces/data/illuminant"
-	$ rawtoaces input.raw
 	
 #### JSON Schema for Spectral Datasets
 

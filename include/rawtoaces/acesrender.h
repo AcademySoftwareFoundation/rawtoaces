@@ -55,7 +55,7 @@
 #ifndef _ACESRENDER_h__
 #define _ACESRENDER_h__
 
-#include "../lib/rta.h"
+#include <rawtoaces/rta.h>
 
 #ifndef __aces_oeWriter__
 #include <aces/aces_Writer.h>
@@ -96,7 +96,7 @@ class AcesRender {
         int prepareWB ( const libraw_iparams_t & P );
         int preprocessRaw ( const char * path );
         int postprocessRaw ( );
-        void outputACES ( );
+        void outputACES ( const char * path );
     
         void initialize ( const dataPath & dp );
         void setPixels ( libraw_processed_image_t * image );
@@ -120,7 +120,7 @@ class AcesRender {
         const vector < double > getWB () const;
         const libraw_processed_image_t * getImageBuffer() const;
         const struct Option getSettings ( ) const;
-
+            
     private:
         AcesRender();
         ~AcesRender();

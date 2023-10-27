@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 project( RAWTOACES )
 
 set( RAWTOACES_MAJOR_VERSION 1 )
@@ -9,9 +9,6 @@ set( RAWTOACES_VERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${R
 set(RAWTOACESIDTLIB "rawtoaces_idt")
 set(RAWTOACESLIB "rawtoaces_util")
 
-set(RAWTOACESIDTLIB ${RAWTOACESIDTLIB}.${RAWTOACES_VERSION})
-set(RAWTOACESLIB ${RAWTOACESLIB}.${RAWTOACES_VERSION})
-
 set( CMAKE_MACOSX_RPATH 1 )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -19,8 +16,8 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 if (NOT CONFIGURED_ONCE)
-	set(CMAKE_CXX_FLAGS "${warnings}")
-	set(CMAKE_C_FLAGS "${warnings}")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${warnings}")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${warnings}")
 endif()
 
 if ( UNIX AND NOT APPLE )
@@ -39,7 +36,7 @@ endif()
 set(INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH "Install directory for project CMake files" )
 
 # use, i.e. don't skip the full RPATH for the build tree
-SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+SET(CMAKE_SKIP_BUILD_RPATH FALSE)
 # when building, don't use the install RPATH already
 # (but later on when installing)
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
@@ -75,7 +72,7 @@ if ( APPLE OR UNIX )
 endif()
 
 include(ExternalProject)
-if ( NOT IlmBase_FOUND )
+if ( NOT OpenEXR_FOUND )
   set (openexr_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/openexr")
   set (ilmbase_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/openexr/IlmBase")
   set (ilmbase_EXTERNAL_MAKE_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/openexr/IlmBase/build")
@@ -182,22 +179,14 @@ endif()
 
 # generated config files end up in binary dir so to find them, need
 # to add to include path
-include_directories( "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" )
+include_directories( "${PROJECT_SOURCE_DIR}/include" )
 
 add_definitions( -DPACKAGE="RAWTOACES" -DVERSION="${RAWTOACES_VERSION}" )
-add_subdirectory(lib)
-add_subdirectory(src)
+add_subdirectory("src/${RAWTOACESIDTLIB}")
+add_subdirectory("src/${RAWTOACESLIB}")
 
 enable_testing()
 add_subdirectory(unittest)
-
-# Add all targets to the build-tree export set
-# if ( WIN32 AND NOT CYGWIN )
-#  export( TARGETS Half Raw AcesContainer FILE "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" )
-# install ( TARGETS Half Raw AcesContainer EXPORT HRA_targets )
-# install ( EXPORT HRA_targets FILE "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake") 
-# endif ()
-export( PACKAGE RAWTOACES )
  
 # Create a RAWTOACESBuildTreeSettings.cmake file for the use from the build tree
 file(RELATIVE_PATH CONF_REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")

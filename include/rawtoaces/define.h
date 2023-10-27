@@ -67,7 +67,7 @@
 #include <mutex>
 #include <thread>
 #include <dirent.h>
-#include <half.h>
+#include <Imath/half.h>
 #include <Eigen/Core>
 #include <glog/logging.h>
 #include <ceres/ceres.h>
@@ -468,7 +468,7 @@ inline dataPath& pathsFinder ()
             path = ".";
             cdp.os = "WIN";
 #else
-            path = "/usr/local/include/rawtoaces/data:/usr/local/" PACKAGE "-" VERSION "/include/rawtoaces/data";
+            path = "/usr/local/include/rawtoaces/data";
             cdp.os = "UNIX";
 #endif
         }

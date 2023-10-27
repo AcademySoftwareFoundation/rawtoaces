@@ -56,9 +56,8 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/test/floating_point_comparison.hpp>
 
-#include "../lib/mathOps.h"
-#include "../src/acesrender.cpp"
-#include "../src/acesrender.h"
+#include <rawtoaces/mathOps.h>
+#include <rawtoaces/acesrender.h>
 
 using namespace std;
 

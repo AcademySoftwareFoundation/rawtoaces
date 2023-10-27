@@ -52,7 +52,7 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
-#include "acesrender.h"
+#include <rawtoaces/acesrender.h>
 
 //  =====================================================================
 //  Prepare the matching between string flags and single character flag
@@ -773,10 +773,15 @@ int AcesRender::openRawPath ( const char * pathToRaw ) {
     else
 #endif
     {
-        if ( _opts.use_bigfile )
-            _opts.ret = _rawProcessor->open_file ( pathToRaw, 1 );
-        else
+        #if defined(_WIN32) || defined(WIN32)
+            if ( _opts.use_bigfile )
+                _opts.ret = _rawProcessor->open_file ( pathToRaw, 1 );
+            else
+                _opts.ret = _rawProcessor->open_file ( pathToRaw );
+        #else
             _opts.ret = _rawProcessor->open_file ( pathToRaw );
+        #endif
+
     }
     
     unpack ( pathToRaw );
@@ -1284,7 +1289,7 @@ float * AcesRender::renderACES ( ) {
 //	outputs:
 //      N/A        : An ACES file will be generated
 
-void AcesRender::outputACES ( ) {
+void AcesRender::outputACES ( const char * path ) {
 #ifdef C
 #undef C
 #endif
@@ -1292,11 +1297,6 @@ void AcesRender::outputACES ( ) {
 #define C   _rawProcessor->imgdata.color
     
     assert ( _pathToRaw != nullptr );
-    char * cp;
-    if (( cp = strrchr ( _pathToRaw, '.' ))) *cp = 0;
-    
-    char outfn[1024];
-    snprintf( outfn, sizeof(outfn), "%s%s", _pathToRaw, "_aces.exr" );
     
     float * aces = renderACES();
     if ( _opts.verbosity > 1 ) {
@@ -1311,16 +1311,16 @@ void AcesRender::outputACES ( ) {
         // printing white balance coefficients
         printf ("The final white balance coefficients are ...\n");
         printf ("   %f   %f   %f\n", C.pre_mul[0], C.pre_mul[1], C.pre_mul[2]);
-        printf ( "Writing ACES file to %s ...\n", outfn );
+        printf ( "Writing ACES file to %s ...\n", path );
     }
     
     if ( _opts.highlight > 0 ) {
         float ratio = ( *(std::max_element ( C.pre_mul, C.pre_mul+3)) /
                         *(std::min_element ( C.pre_mul, C.pre_mul+3)) );
-        acesWrite ( outfn, aces, ratio );
+        acesWrite ( path, aces, ratio );
     }
     else
-        acesWrite ( outfn, aces );
+        acesWrite ( path, aces );
     
 #ifndef WIN32
     if ( _opts.use_mmap && _opts.iobuffer )
@@ -1632,7 +1632,7 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
     uint16_t height    = _image->height;
     uint8_t  channels  = _image->colors;
     uint8_t  bits      = _image->bits;
-    
+
     halfBytes * halfIn = new (std::nothrow) halfBytes[channels * width * height];
         
     FORI ( channels * width * height ){
@@ -1652,16 +1652,34 @@ void AcesRender::acesWrite ( const char * name, float *  aces, float ratio ) con
     
     MetaWriteClip writeParams;
     
-    writeParams.duration				= 1;
-    writeParams.outputFilenames			= filenames;
+    writeParams.duration				 = 1;
+    writeParams.outputFilenames			 = filenames;
     
-    writeParams.outputRows				= height;
-    writeParams.outputCols				= width;
+    writeParams.outputRows				 = height;
+    writeParams.outputCols				 = width;
     
     writeParams.hi = x.getDefaultHeaderInfo();
-    writeParams.hi.originalImageFlag	= 1;
-    writeParams.hi.software				= "rawtoaces v0.1";
+    libraw_iparams_t* iparams = &_rawProcessor->imgdata.idata;
+    writeParams.hi.originalImageFlag	 = 1;
+    writeParams.hi.software				 = "rawtoaces v0.1";
+    writeParams.hi.cameraMake            = string(iparams->make);
+    writeParams.hi.cameraModel           = string(iparams->model);
+    writeParams.hi.cameraLabel           = writeParams.hi.cameraMake
+                                           + " " +
+                                           writeParams.hi.cameraModel;
     
+    libraw_lensinfo_t* lens = &_rawProcessor->imgdata.lens;
+    writeParams.hi.lensMake              = string(lens->LensMake);
+    writeParams.hi.lensModel             = string(lens->Lens);
+    writeParams.hi.lensSerialNumber      = string(lens->LensSerial);
+    
+    libraw_imgother_t* other = &_rawProcessor->imgdata.other;
+    writeParams.hi.isoSpeed              = other->iso_speed;
+    writeParams.hi.expTime               = other->shutter;
+    writeParams.hi.aperture              = other->aperture;
+    writeParams.hi.focalLength           = other->focal_len;
+    writeParams.hi.comments              = string(other->desc);
+    writeParams.hi.artist                = string(other->artist);
     writeParams.hi.channels.clear();
     
     switch (channels)

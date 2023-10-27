@@ -52,7 +52,7 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
-#include "rta.h"
+#include <rawtoaces/rta.h>
 
 namespace rta {
     Illum::Illum() {
@@ -811,7 +811,7 @@ namespace rta {
     //               Otherwise, return 0
 
     int Idt::loadIlluminant ( const vector <string> & paths, string type ) {
-        assert ( paths.size() > 0 && !type.empty() );
+//        assert ( paths.size() > 0 && !type.empty() );
         
         if (_Illuminants.size() > 0) _Illuminants.clear();
 

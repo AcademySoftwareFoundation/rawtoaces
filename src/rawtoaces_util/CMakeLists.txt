@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.1)
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
 if ( IlmBase_FOUND )
@@ -46,10 +46,13 @@ if ( AcesContainer_FOUND )
   target_link_libraries( ${RAWTOACESLIB} ${AcesContainer_LDFLAGS_OTHER} )
 endif()
 
+set_target_properties( ${RAWTOACESLIB} PROPERTIES
+  SOVERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${RAWTOACES_PATCH_VERSION}
+  VERSION ${RAWTOACES_VERSION} )
+
 install(FILES
-	acesrender.h	
-    	
- 	DESTINATION include/rawtoaces/include
+  ${PROJECT_SOURCE_DIR}/include/rawtoaces/acesrender.h	 	
+ 	DESTINATION include/rawtoaces
 )
 
 install( TARGETS ${RAWTOACESLIB} DESTINATION lib )

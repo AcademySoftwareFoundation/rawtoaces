@@ -61,7 +61,7 @@ target_link_libraries ( Test_Illum
 add_executable (
 	Test_DNGIdt
 	testDNGIdt.cpp
-        testLogic.cpp)
+)
 
 target_link_libraries ( Test_DNGIdt
 						${RAWTOACESLIB}

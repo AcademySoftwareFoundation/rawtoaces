@@ -66,12 +66,12 @@
 #include <unordered_map>
 #include <mutex>
 #include <thread>
-#include <dirent.h>
 #include <Imath/half.h>
 #include <Eigen/Core>
 #include <glog/logging.h>
 #include <ceres/ceres.h>
 #include <boost/lexical_cast.hpp>
+#include <boost/filesystem.hpp>
 
 #ifndef WIN32
 #    include <fcntl.h>
@@ -172,9 +172,9 @@ struct dataPath
     vector<string> paths;
 };
 
-float                  custom_Matrix[3][3] = { 0.0 };
-float                  custom_Buffer[9]    = { 0.0 };
-vector<vector<double>> custom_idtm;
+static float                  custom_Matrix[3][3] = { 0.0 };
+static float                  custom_Buffer[9]    = { 0.0 };
+static vector<vector<double>> custom_idtm;
 
 const double pi = 3.1416;
 // 216.0/24389.0
@@ -342,10 +342,10 @@ static const double Robertson_uvtTable[][3] = {
 
 // Roberson Mired Matrix
 static const double RobertsonMired[] = {
-    1.0e-10,  10.0,  20.0,  30.0,  40.0,  50.0,  60.0,  70.0,
-     80.0,    90.0, 100.0, 125.0, 150.0, 175.0, 200.0, 225.0,
-    250.0,   275.0, 300.0, 325.0, 350.0, 375.0, 400.0, 425.0,
-    450.0,   475.0, 500.0, 525.0, 550.0, 575.0, 600.0f
+      1.0e-10, 10.0,  20.0,  30.0,  40.0,  50.0,  60.0,  70.0,
+     80.0,     90.0, 100.0, 125.0, 150.0, 175.0, 200.0, 225.0,
+    250.0,    275.0, 300.0, 325.0, 350.0, 375.0, 400.0, 425.0,
+    450.0,    475.0, 500.0, 525.0, 550.0, 575.0, 600.0
 };
 
 //  Color Adaptation Matrix - Bradford
@@ -367,24 +367,15 @@ static const double cat02[3][3] = {
 // Function to Open Directories
 inline vector<string> openDir( string path = "." )
 {
-    DIR           *dir;
-    dirent        *pDir;
-    struct stat    fStat;
-    vector<string> fPaths;
+    vector<string> paths;
 
-    dir = opendir( path.c_str() );
-
-    while ( ( pDir = readdir( dir ) ) )
+    for ( auto &i: boost::filesystem::directory_iterator( path ) )
     {
-        string fPath = path + "/" + pDir->d_name;
-        if ( stat( fPath.c_str(), &fStat ) )
-            continue;
-        if ( S_ISDIR( fStat.st_mode ) )
-            continue;
-        fPaths.push_back( fPath );
+        if ( i.status().type() != boost::filesystem::file_type::directory_file )
+            paths.push_back( i.path().string() );
     }
 
-    return fPaths;
+    return paths;
 };
 
 // Function to clear the memories occupied by vectors

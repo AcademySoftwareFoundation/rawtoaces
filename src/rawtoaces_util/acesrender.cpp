@@ -862,7 +862,7 @@ int AcesRender::openRawPath( const char *pathToRaw )
     else
 #endif
     {
-#if defined( _WIN32 ) || defined( WIN32 )
+#if ( LIBRAW_VERSION < LIBRAW_MAKE_VERSION( 0, 20, 0 ) )
         if ( _opts.use_bigfile )
             _opts.ret = _rawProcessor->open_file( pathToRaw, 1 );
         else

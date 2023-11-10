@@ -52,6 +52,11 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
+#ifdef WIN32
+#    define WIN32_LEAN_AND_MEAN
+#    include <windows.h>
+#endif
+
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>

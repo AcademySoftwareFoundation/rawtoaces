@@ -262,6 +262,27 @@ Ceres Solver is an open source library for solving Non-linear Least Squares prob
 
 ## Installation
 
+* Docker
+
+Assuming you have [Docker](https://www.docker.com/) installed, installing and
+running rawtoaces is relatively straightforward except for the compilation of
+*ceres-solver* that requires a significant amount of memory, well over
+the 2Go that Docker allocates by default. Thus you will need to increase the
+memory in Docker preferences: Preferences --> Resources --> Advanced, 8Go
+should be enough.
+
+	From the root source directory,	build the container:
+
+	```sh
+	$ docker build -f "Dockerfile" -t rawtoaces:latest "."
+	```
+
+	Then to run it from a directory with images:
+
+	```sh
+	$ docker run -it --rm -v $PWD:/tmp -w /tmp rawtoaces:latest rawtoaces IMG_1234.CR2
+	```
+
 * macOS
 	
 	Install homebrew if not already installed

@@ -594,16 +594,15 @@ int Spst::loadSpst( const string &path, const char *maker, const char *model )
         ptree pt;
         read_json( path, pt );
 
-        const char *cmaker =
-            ( pt.get<string>( "header.manufacturer" ) ).c_str();
-        if ( cmp_str( maker, cmaker ) )
+        string cmaker = pt.get<string>( "header.manufacturer" );
+        if ( cmp_str( maker, cmaker.c_str() ) )
             return 0;
-        setBrand( cmaker );
+        setBrand( cmaker.c_str() );
 
-        const char *cmodel = ( pt.get<string>( "header.model" ) ).c_str();
-        if ( cmp_str( model, cmodel ) )
+        string cmodel = pt.get<string>( "header.model" );
+        if ( cmp_str( model, cmodel.c_str() ) )
             return 0;
-        setModel( cmodel );
+        setModel( cmodel.c_str() );
 
         vector<int> wavs;
         int         inc;
@@ -1559,7 +1558,11 @@ DNGIdt::DNGIdt( libraw_rawdata_t R )
     _cameraXYZWhitePoint   = vector<double>( 3, 1.0 );
     _calibrateIllum        = vector<double>( 2, 1.0 );
 
+#if LIBRAW_VERSION >= LIBRAW_MAKE_VERSION( 0, 20, 0 )
     _baseExpo = static_cast<double>( R.color.dng_levels.baseline_exposure );
+#else
+    _baseExpo = static_cast<double>( R.color.baseline_exposure );
+#endif
     _calibrateIllum[0] = static_cast<double>( R.color.dng_color[0].illuminant );
     _calibrateIllum[1] = static_cast<double>( R.color.dng_color[1].illuminant );
 

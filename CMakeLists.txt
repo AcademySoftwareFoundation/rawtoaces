@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 project( RAWTOACES )
 
 set( RAWTOACES_MAJOR_VERSION 1 )
@@ -18,10 +18,6 @@ endif()
 if (NOT CONFIGURED_ONCE)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${warnings}")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${warnings}")
-endif()
-
-if ( UNIX AND NOT APPLE )
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
 endif()
 
 ## Make install directories overridable
@@ -66,116 +62,9 @@ else()
 	set( DO_SHARED STATIC )
 endif()
 
-# Find packages and set up global settings
-if ( APPLE OR UNIX )
-  include( configure.cmake )
-endif()
 
-include(ExternalProject)
-if ( NOT OpenEXR_FOUND )
-  set (openexr_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/openexr")
-  set (ilmbase_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/openexr/IlmBase")
-  set (ilmbase_EXTERNAL_MAKE_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/openexr/IlmBase/build")
+include ( configure.cmake )
 
-  if (WIN32)
-      STRING(REGEX REPLACE "\\\\" "/" openexr_EXTERNAL_BUILD ${openexr_EXTERNAL_BUILD})
-  	  STRING(REGEX REPLACE "\\\\" "/" ilmbase_EXTERNAL_BUILD ${ilmbase_EXTERNAL_BUILD})
-  	  STRING(REGEX REPLACE "\\\\" "/" ilmbase_EXTERNAL_MAKE_BUILD ${ilmbase_EXTERNAL_MAKE_BUILD})
-  	  message (STATUS ${ilmbase_EXTERNAL_MAKE_BUILD})
-
- 	  ExternalProject_Add( project_ilmbase
-    	GIT_REPOSITORY https://github.com/openexr/openexr.git
-    	GIT_TAG "origin/master"
-
-        SOURCE_DIR ${openexr_EXTERNAL_BUILD}
-        CONFIGURE_COMMAND cd ${ilmbase_EXTERNAL_BUILD}
-      	CMAKE_ARGS -DBuildShared=OFF -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_ilmbase
-      	BUILD_COMMAND cmake ${ilmbase_EXTERNAL_BUILD} -G "Visual Studio 14 2015"
-      	# BUILD_COMMAND cmake ${ilmbase_EXTERNAL_BUILD}
-   	)
-   	set (IlmBase_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_ilmbase-prefix/src/project_ilmbase-build/Half")
-    set (IlmBase_INCLUDE_DIRS "${ilmbase_EXTERNAL_BUILD}/IlmBase/Half")
-  else ()
-   	ExternalProject_Add( project_ilmbase
-    	GIT_REPOSITORY https://github.com/openexr/openexr.git
-    	GIT_TAG "master"
-
-    	SOURCE_DIR "${openexr_EXTERNAL_BUILD}"
-    	CONFIGURE_COMMAND mkdir "${ilmbase_EXTERNAL_BUILD}/build" && cd "${ilmbase_EXTERNAL_BUILD}/build"
-      	CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_ilmbase
-      	BUILD_COMMAND cmake "${ilmbase_EXTERNAL_BUILD}" && make -s "${ilmbase_EXTERNAL_BUILD}/build"
-    )
-
-  endif ()
-
-  set (IlmBase_FOUND TRUE)
-endif()
-
-if ( NOT AcesContainer_FOUND )
-  set (ACES_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/aces_container")
-  if (WIN32)
-  	STRING(REGEX REPLACE "\\\\" "/" ACES_EXTERNAL_BUILD ${ACES_EXTERNAL_BUILD})
-
- 	  ExternalProject_Add( project_aces_container
-    	GIT_REPOSITORY https://github.com/ampas/aces_container.git
-    	# GIT_TAG "origin/windowBuildSupport"
-
-      SOURCE_DIR ${ACES_EXTERNAL_BUILD}
-      CMAKE_ARGS -DBuildShared=OFF -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_aces_container
-      CMAKE_GENERATOR "Visual Studio 14 2015"
-     
-   	)
-   	set (AcesContainer_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_aces_container-prefix/src/project_aces_container-build")
-    set (AcesContainer_INCLUDE_DIRS "${ACES_EXTERNAL_BUILD}")
-  else ()
-   	ExternalProject_Add( project_aces_container
-    	GIT_REPOSITORY https://github.com/ampas/aces_container.git
-    	# GIT_TAG "windowBuildSupport"
-
-      	SOURCE_DIR ${ACES_EXTERNAL_BUILD}
-      	CONFIGURE_COMMAND mkdir ${ACES_EXTERNAL_BUILD}/build && cd ${ACES_EXTERNAL_BUILD}/build
-      	CMAKE_ARGS -DBuildShared=ON -DBuildExamples=OFF -DCMAKE_INSTALL_PREFIX=${GLOBAL_OUTPUT_PATH}/project_aces_container
-      	BUILD_COMMAND cmake "${ACES_EXTERNAL_BUILD}" && make -s "${ACES_EXTERNAL_BUILD}/build"
-    )
-    
-  endif ()
-  set (AcesContainer_FOUND TRUE)
-endif()
-
-if ( NOT libraw_FOUND )
-  include(ExternalProject)
-  set (libraw_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/libraw")
-
-  if (WIN32)
-    STRING(REGEX REPLACE "\\\\" "/" libraw_EXTERNAL_BUILD ${libraw_EXTERNAL_BUILD})
- 	  ExternalProject_Add( project_libraw
-    	GIT_REPOSITORY https://github.com/LibRaw/LibRaw.git
-    	GIT_TAG "origin/0.17-stable"
-
-    	SOURCE_DIR "${libraw_EXTERNAL_BUILD}"
-  	)
-  	set (libraw_LIBRARY_DIRS "${CMAKE_CURRENT_BINARY_DIR}/project_libraw-prefix/src/project_libraw-build/lib/.libs") 
-    set (libraw_INCLUDE_DIRS "${libraw_EXTERNAL_BUILD}")
-  else ()
-   	ExternalProject_Add( project_libraw
-    	GIT_REPOSITORY https://github.com/LibRaw/LibRaw.git
-    	GIT_TAG "0.17-stable"
-
-      SOURCE_DIR "${libraw_EXTERNAL_BUILD}"
-      CONFIGURE_COMMAND cd "${libraw_EXTERNAL_BUILD}" && "${libraw_EXTERNAL_BUILD}/mkdist.sh"
-      BUILD_COMMAND "${libraw_EXTERNAL_BUILD}/configure" && make -s "${libraw_EXTERNAL_BUILD}"
-    )
-
-  endif()
-
-  set (libraw_FOUND TRUE)
-
-endif()
-
-#if ( NOT Ceres_FOUND )
-#  set (Ceres_EXTERNAL_BUILD "${CMAKE_CURRENT_BINARY_DIR}/lib/ceres")
-#  set (Ceres_FOUND TRUE)
-#endif()
 
 # generated config files end up in binary dir so to find them, need
 # to add to include path
@@ -185,8 +74,7 @@ add_definitions( -DPACKAGE="RAWTOACES" -DVERSION="${RAWTOACES_VERSION}" )
 add_subdirectory("src/${RAWTOACESIDTLIB}")
 add_subdirectory("src/${RAWTOACESLIB}")
 
-enable_testing()
-add_subdirectory(unittest)
+
  
 # Create a RAWTOACESBuildTreeSettings.cmake file for the use from the build tree
 file(RELATIVE_PATH CONF_REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")
@@ -214,14 +102,32 @@ if ( APPLE OR UNIX )
 endif()
 
 ### to build rawtoaces ###
-link_directories( ${AcesContainer_LIBRARY_DIRS} )
-include_directories( ${CERES_INCLUDE_DIRS} )
 
 add_executable( rawtoaces
     main.cpp
 )
 
-target_link_libraries(rawtoaces ${RAWTOACESLIB} ${libraw_LIBRARIES} ${libraw_LDFLAGS_OTHER} )
+target_include_directories( rawtoaces
+    PUBLIC
+        ${AcesContainer_INCLUDE_DIRS}
+)
+
+target_link_libraries ( rawtoaces
+    PUBLIC
+        ${RAWTOACESLIB}
+    INTERFACE
+        Boost::headers
+)
+
+if ( LIBRAW_CONFIG_FOUND )
+    target_link_libraries ( rawtoaces PUBLIC libraw::raw )
+else ()
+    target_link_directories(rawtoaces PUBLIC ${libraw_LIBRARY_DIRS} )
+    target_link_libraries(rawtoaces PUBLIC ${libraw_LIBRARIES} ${libraw_LDFLAGS_OTHER} )
+endif ()
+
+enable_testing()
+add_subdirectory(unittest)
 
 install( TARGETS rawtoaces DESTINATION bin )
 

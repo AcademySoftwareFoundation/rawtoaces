@@ -1,50 +1,36 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
-if ( IlmBase_FOUND )
-  add_definitions( -DHAVE_IlmBase=1 )
-  include_directories( ${IlmBase_INCLUDE_DIRS} )
-endif()
-
-if ( libraw_FOUND )
-  add_definitions (-DHAVE_LIBRAW=1 )
-  include_directories( ${libraw_INCLUDE_DIRS} )
-  link_directories( ${libraw_LIBRARY_DIRS} ) 
-endif() 
-
-if ( Ceres_FOUND )
-  add_definitions( -DHAVE_Ceres=1 )
-  include_directories( ${CERES_INCLUDE_DIRS} )
-  link_directories( ${CERES_LIBRARY_DIRS} ) 
-endif()
-
-if ( AcesContainer_FOUND )
-  add_definitions( -DHAVE_ACESFILE=1 )
-  include_directories( ${AcesContainer_INCLUDE_DIRS} )
-  link_directories( ${AcesContainer_LIBRARY_DIRS} )
-endif()
-
-add_library( ${RAWTOACESLIB} SHARED
-    	       acesrender.cpp 
+add_library ( ${RAWTOACESLIB} SHARED
+    acesrender.cpp
 )
 
-target_link_libraries( ${RAWTOACESLIB} 
-                       ${RAWTOACESIDTLIB} )
-
-if ( IlmBase_FOUND )
- target_link_libraries( ${RAWTOACESLIB} ${IlmBase_LIBRARIES} )
- target_link_libraries( ${RAWTOACESLIB} ${IlmBase_LDFLAGS_OTHER} )
-endif()
-
-if ( libraw_FOUND )
-  target_link_libraries( ${RAWTOACESLIB} ${libraw_LIBRARIES} )
-  target_link_libraries( ${RAWTOACESLIB} ${libraw_LDFLAGS_OTHER} )
-endif()
-
 if ( AcesContainer_FOUND )
-  target_link_libraries( ${RAWTOACESLIB} ${AcesContainer_LIBRARIES} )
-  target_link_libraries( ${RAWTOACESLIB} ${AcesContainer_LDFLAGS_OTHER} )
+    target_include_directories ( ${RAWTOACESLIB} PRIVATE ${AcesContainer_INCLUDE_DIRS} )
+    target_link_directories    ( ${RAWTOACESLIB} PUBLIC  ${AcesContainer_LIBRARY_DIRS} )
+    target_link_libraries      ( ${RAWTOACESLIB}
+        PUBLIC
+            ${AcesContainer_LIBRARIES}
+            ${AcesContainer_LDFLAGS_OTHER}
+    )
 endif()
+ 
+target_link_libraries ( ${RAWTOACESLIB}
+    PUBLIC
+        ${RAWTOACESIDTLIB}
+    INTERFACE
+        Eigen3::Eigen
+        Imath::Imath
+        Imath::ImathConfig
+)
+    
+if ( LIBRAW_CONFIG_FOUND )
+    target_link_libraries ( ${RAWTOACESLIB} PUBLIC libraw::raw )
+else ()
+    target_link_directories(${RAWTOACESLIB} PUBLIC ${libraw_LIBRARY_DIRS} )
+    target_link_libraries(${RAWTOACESLIB} PUBLIC ${libraw_LIBRARIES} ${libraw_LDFLAGS_OTHER} )
+endif ()
+
 
 set_target_properties( ${RAWTOACESLIB} PROPERTIES
   SOVERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${RAWTOACES_PATCH_VERSION}

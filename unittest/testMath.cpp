@@ -742,7 +742,12 @@ BOOST_AUTO_TEST_CASE( Test_XYZtoLAB )
                            { 0.0000000000, 2409.2865283442, 0.0000000000 } };
 
     FORIJ( 190, 3 )
-    BOOST_CHECK_CLOSE( LAB_test[i][j], LAB[i][j], 1e-5 );
+    {
+        if ( LAB[i][j] == 0 )
+            BOOST_CHECK_SMALL( LAB_test[i][j], 1e-7 );
+        else
+            BOOST_CHECK_CLOSE( LAB_test[i][j], LAB[i][j], 1e-5 );
+    }
 };
 
 BOOST_AUTO_TEST_CASE( Test_GetCalcXYZt )

@@ -1,29 +1,42 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
-if ( Boost_FOUND )
-  add_definitions( -DHAVE_Boost=1 )
-  include_directories( ${Boost_INCLUDE_DIRS} )
-  link_directories( ${Boost_LIBRARY_DIRS} ) 
-endif()
-
-
 add_library( ${RAWTOACESIDTLIB} SHARED
-    	     rta.cpp 
+    rta.cpp
+
+    # Make the headers visible in IDEs. This should not affect the builds.
+    ../../include/rawtoaces/define.h
+    ../../include/rawtoaces/mathOps.h
+    ../../include/rawtoaces/rta.h
 )
 
-target_link_libraries( ${RAWTOACESIDTLIB} 
-                       ${Boost_LIBRARIES}
-		                   ${CERES_LIBRARIES} )
+target_link_libraries(
+    ${RAWTOACESIDTLIB}
+    PUBLIC
+        Boost::boost
+        Boost::system
+        Boost::filesystem
+        Imath::Imath
+        Imath::ImathConfig
+)
+
+if ( ${Ceres_VERSION_MAJOR} GREATER 1 )
+    target_link_libraries( ${RAWTOACESIDTLIB} PUBLIC Ceres::ceres )
+else ()
+    target_include_directories(${RAWTOACESIDTLIB} PUBLIC ${CERES_INCLUDE_DIRS})
+    target_link_libraries(${RAWTOACESIDTLIB} PUBLIC ${CERES_LIBRARIES})
+endif ()
+
 
 set_target_properties( ${RAWTOACESIDTLIB} PROPERTIES
-  SOVERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${RAWTOACES_PATCH_VERSION}
-  VERSION ${RAWTOACES_VERSION} )
+    SOVERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${RAWTOACES_PATCH_VERSION}
+    VERSION ${RAWTOACES_VERSION}
+)
 
 install(FILES
-        ${PROJECT_SOURCE_DIR}/include/rawtoaces/define.h
-	      ${PROJECT_SOURCE_DIR}/include/rawtoaces/mathOps.h
-        ${PROJECT_SOURCE_DIR}/include/rawtoaces/rta.h	
+    ${PROJECT_SOURCE_DIR}/include/rawtoaces/define.h
+    ${PROJECT_SOURCE_DIR}/include/rawtoaces/mathOps.h
+    ${PROJECT_SOURCE_DIR}/include/rawtoaces/rta.h
 
  	DESTINATION include/rawtoaces
 )

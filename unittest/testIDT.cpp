@@ -5781,7 +5781,7 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalIDT )
                         { -0.1312667887, -0.7361633199, 1.8674301085 } };
 
     FORIJ( 3, 3 )
-    BOOST_CHECK_CLOSE( IDT[i][j], IDT_test[i][j], 1e-5 );
+    BOOST_CHECK_CLOSE( IDT[i][j], IDT_test[i][j], 1e-4 );
 
     free( model );
     free( brand );

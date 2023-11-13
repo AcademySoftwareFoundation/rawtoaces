@@ -53,6 +53,14 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #include <rawtoaces/rta.h>
+#include <rawtoaces/mathOps.h>
+
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/foreach.hpp>
+
+using namespace boost::property_tree;
+using namespace ceres;
 
 namespace rta
 {
@@ -421,8 +429,8 @@ void Illum::calBlackBodySPD( const int &cct )
 
 Spst::Spst()
 {
-    _brand      = null_ptr;
-    _model      = null_ptr;
+    _brand      = nullptr;
+    _model      = nullptr;
     _increment  = 5;
     _spstMaxCol = -1;
 
@@ -434,7 +442,7 @@ Spst::Spst()
 
 Spst::Spst( const Spst &spstobject )
 {
-    assert( spstobject._brand != null_ptr && spstobject._model != null_ptr );
+    assert( spstobject._brand != nullptr && spstobject._model != nullptr );
 
     size_t lenb = strlen( spstobject._brand );
     assert( lenb < 64 );
@@ -584,7 +592,7 @@ int Spst::getWLIncrement()
 
 int Spst::loadSpst( const string &path, const char *maker, const char *model )
 {
-    assert( path.length() > 0 && maker != null_ptr && model != null_ptr );
+    assert( path.length() > 0 && maker != nullptr && model != nullptr );
 
     vector<RGBSen> rgbsen;
     vector<double> max( 3, dmin );
@@ -706,7 +714,7 @@ vector<RGBSen> Spst::getSensitivity()
 
 void Spst::setBrand( const char *brand )
 {
-    assert( brand != null_ptr );
+    assert( brand != nullptr );
     size_t len = strlen( brand );
 
     assert( len < 64 );
@@ -734,7 +742,7 @@ void Spst::setBrand( const char *brand )
 
 void Spst::setModel( const char *model )
 {
-    assert( model != null_ptr );
+    assert( model != nullptr );
     size_t len = strlen( model );
 
     assert( len < 64 );
@@ -1341,8 +1349,9 @@ int Idt::curveFit(
     Problem                problem;
     vector<vector<double>> outLAB = XYZtoLAB( XYZ );
 
-    CostFunction *cost_function = new AutoDiffCostFunction<Objfun, DYNAMIC, 6>(
-        new Objfun( RGB, outLAB ), int( RGB.size() * ( RGB[0].size() ) ) );
+    CostFunction *cost_function =
+        new AutoDiffCostFunction<Objfun, ceres::DYNAMIC, 6>(
+            new Objfun( RGB, outLAB ), int( RGB.size() * ( RGB[0].size() ) ) );
 
     problem.AddResidualBlock( cost_function, NULL, B );
 
@@ -1606,9 +1615,10 @@ double DNGIdt::robertsonLength(
     const vector<double> &uv, const vector<double> &uvt ) const
 {
 
-    double         t = uvt[2];
+    double         t    = uvt[2];
+    double         sign = t < 0 ? -1.0 : t > 0 ? 1.0 : 0.0;
     vector<double> slope( 2 );
-    slope[0] = -sign( t ) / std::sqrt( 1 + t * t );
+    slope[0] = -sign / std::sqrt( 1 + t * t );
     slope[1] = t * slope[0];
 
     vector<double> uvr( uvt.begin(), uvt.begin() + 2 );
@@ -1893,4 +1903,16 @@ vector<vector<double>> DNGIdt::getDNGIDTMatrix()
 
     return DNGIDTMatrix;
 }
+
+template <typename T> bool Objfun::operator()( const T *B, T *residuals ) const
+{
+    vector<vector<T>> RGBJet( 190, vector<T>( 3 ) );
+    FORIJ( 190, 3 ) RGBJet[i][j] = T( _RGB[i][j] );
+
+    vector<vector<T>> outCalcLAB         = XYZtoLAB( getCalcXYZt( RGBJet, B ) );
+    FORIJ( 190, 3 ) residuals[i * 3 + j] = _outLAB[i][j] - outCalcLAB[i][j];
+
+    return true;
+}
+
 } // namespace rta

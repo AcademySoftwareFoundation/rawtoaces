@@ -57,7 +57,12 @@
 
 #include "define.h"
 
-//using namespace Eigen;
+#include <cfloat>
+
+#include <Eigen/Core>
+#include <ceres/ceres.h>
+
+using namespace Eigen;
 
 // Non-class functions
 inline double invertD( double val )

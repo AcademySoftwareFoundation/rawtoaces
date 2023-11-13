@@ -53,6 +53,22 @@
 ///////////////////////////////////////////////////////////////////////////
 
 #include <rawtoaces/acesrender.h>
+#include <rawtoaces/mathOps.h>
+
+#include <Imath/half.h>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/foreach.hpp>
+
+#include <aces/aces_Writer.h>
+
+#ifndef WIN32
+#    include <fcntl.h>
+#    include <sys/mman.h>
+#endif
+
+using namespace std;
+using namespace boost::property_tree;
 
 #include <boost/filesystem.hpp>
 
@@ -1859,7 +1875,7 @@ void AcesRender::acesWrite( const char *name, float *aces, float ratio ) const
         else if ( bits == 16 )
             aces[i] = (double)aces[i] * INV_65535 * ( _opts.scale ) * ratio;
 
-        half tmpV( aces[i] );
+        Imath::half tmpV( aces[i] );
         halfIn[i] = tmpV.bits();
     }
 

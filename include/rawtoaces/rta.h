@@ -55,29 +55,12 @@
 #ifndef _RTA_h__
 #define _RTA_h__
 
-// # C++ 11:201103L, C++ 97:199711L
-// #define null_ptr (__cplusplus > 201103L ? (nullptr) : 0)
-#define null_ptr nullptr
+#include "define.h"
 
-#include <iostream>
-#include <fstream>
-#include <stdexcept>
 #include <stdint.h>
-#include <math.h>
-#include <string>
-#include <ctype.h>
-#include <stdlib.h>
-#include <Imath/half.h>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/foreach.hpp>
 #include <libraw/libraw.h>
 
-#include "mathOps.h"
-
 using namespace std;
-using namespace ceres;
-using namespace boost::property_tree;
 
 namespace rta
 {
@@ -284,16 +267,7 @@ struct Objfun
         : _RGB( RGB ), _outLAB( outLAB )
     {}
 
-    template <typename T> bool operator()( const T *B, T *residuals ) const
-    {
-        vector<vector<T>> RGBJet( 190, vector<T>( 3 ) );
-        FORIJ( 190, 3 ) RGBJet[i][j] = T( _RGB[i][j] );
-
-        vector<vector<T>> outCalcLAB = XYZtoLAB( getCalcXYZt( RGBJet, B ) );
-        FORIJ( 190, 3 ) residuals[i * 3 + j] = _outLAB[i][j] - outCalcLAB[i][j];
-
-        return true;
-    }
+    template <typename T> bool operator()( const T *B, T *residuals ) const;
 
     const vector<vector<double>> _RGB;
     const vector<vector<double>> _outLAB;

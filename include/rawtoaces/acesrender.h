@@ -57,13 +57,7 @@
 
 #include <rawtoaces/rta.h>
 
-#ifndef __aces_oeWriter__
-#    include <aces/aces_Writer.h>
-#endif
-
-#ifndef _LIBRAW_CLASS_H
-#    include <libraw/libraw.h>
-#endif
+#include <unordered_map>
 
 using namespace rta;
 

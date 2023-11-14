@@ -54,6 +54,8 @@
 
 #include <rawtoaces/acesrender.h>
 
+#include <boost/filesystem.hpp>
+
 //  =====================================================================
 //  Prepare the matching between string flags and single character flag
 //
@@ -978,6 +980,21 @@ int AcesRender::fetchIlluminant( const char *illumType )
     return _idt->loadIlluminant( paths, static_cast<string>( illumType ) );
 }
 
+vector<string> findFiles( string filePath, vector<string> searchPaths )
+{
+    vector<string> foundFiles;
+
+    for ( auto &i: searchPaths )
+    {
+        string path = i + "/" + filePath;
+
+        if ( boost::filesystem::exists( path ) )
+            foundFiles.push_back( path );
+    }
+
+    return foundFiles;
+}
+
 //	=====================================================================
 //  Calculate IDT matrix from camera spectral sensitivity data and the
 //  selected or specified light source data. THe best White balance
@@ -1006,11 +1023,19 @@ int AcesRender::prepareIDT( const libraw_iparams_t &P, float *M )
         exit( -1 );
     }
 
-    // loading training data (190 patches)
-    _idt->loadTrainingData(
-        static_cast<string>( FILEPATH ) + "training/training_spectral.json" );
-    // loading color matching function
-    _idt->loadCMF( static_cast<string>( FILEPATH ) + "cmf/cmf_1931.json" );
+    vector<string> foundFiles =
+        findFiles( "training/training_spectral.json", _opts.envPaths );
+    if ( foundFiles.size() )
+    {
+        // loading training data (190 patches)
+        _idt->loadTrainingData( foundFiles[0] );
+    }
+
+    foundFiles = findFiles( "cmf/cmf_1931.json", _opts.envPaths );
+    if ( foundFiles.size() )
+    {
+        _idt->loadCMF( foundFiles[0] );
+    }
 
     _idt->setVerbosity( _opts.verbosity );
     if ( _opts.illumType )
@@ -1077,13 +1102,19 @@ int AcesRender::prepareWB( const libraw_iparams_t &P )
     }
     else
     {
-        // loading training data (190 patches)
-        _idt->loadTrainingData(
-            static_cast<string>( FILEPATH ) +
-            "/training/training_spectral.json" );
+        vector<string> foundFiles =
+            findFiles( "training/training_spectral.json", _opts.envPaths );
+        if ( foundFiles.size() )
+        {
+            // loading training data (190 patches)
+            _idt->loadTrainingData( foundFiles[0] );
+        }
 
-        // loading color matching function
-        _idt->loadCMF( static_cast<string>( FILEPATH ) + "/cmf/cmf_1931.json" );
+        foundFiles = findFiles( "cmf/cmf_1931.json", _opts.envPaths );
+        if ( foundFiles.size() )
+        {
+            _idt->loadCMF( foundFiles[0] );
+        }
 
         // choose the best light source based on
         // as-shot white balance coefficients

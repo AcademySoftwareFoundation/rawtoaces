@@ -83,7 +83,6 @@
 
 #define INV_255 ( 1.0 / (double)255.0 )
 #define INV_65535 ( 1.0 / (double)65535.0 )
-#define FILEPATH ( "/usr/local/include/rawtoaces/data/" )
 
 #ifdef WIN32
 // suppress sprintf-related warning. sprintf() is permitted in sample code
@@ -485,8 +484,10 @@ inline dataPath &pathsFinder()
             path   = ".";
             cdp.os = "WIN";
 #else
-            path       = "/usr/local/include/rawtoaces/data";
-            cdp.os     = "UNIX";
+            // clang-format off
+            path   = "/usr/local/include/rawtoaces/data";
+            cdp.os = "UNIX";
+            // clang-format on
 #endif
         }
 

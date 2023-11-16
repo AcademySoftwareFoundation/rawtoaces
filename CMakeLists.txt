@@ -12,7 +12,9 @@ set(RAWTOACESLIB "rawtoaces_util")
 set( CMAKE_MACOSX_RPATH 1 )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    set(warnings "/W4 /WX /EHsc")
+#    set(warnings "/W4 /WX /EHsc")
+    add_compile_options ( /W0 )
+    add_compile_definitions( NOMINMAX )
 endif()
 
 if (NOT CONFIGURED_ONCE)
@@ -54,14 +56,13 @@ foreach( p LIB BIN INCLUDE CMAKE )
   endif()
 endforeach()
 
-option(ENABLE_SHARED "Enable Shared Libraries" ON)
+option( ENABLE_SHARED "Enable Shared Libraries" ON )
 
 if ( ENABLE_SHARED )
-	set( DO_SHARED SHARED )
-else()
-	set( DO_SHARED STATIC )
-endif()
-
+  set ( DO_SHARED SHARED )
+else ()
+  set ( DO_SHARED STATIC )
+endif ()
 
 include ( configure.cmake )
 

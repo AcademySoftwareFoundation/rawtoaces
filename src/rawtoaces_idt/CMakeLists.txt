@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
-add_library( ${RAWTOACESIDTLIB} SHARED
+add_library( ${RAWTOACESIDTLIB} ${DO_SHARED}
     rta.cpp
 
     # Make the headers visible in IDEs. This should not affect the builds.

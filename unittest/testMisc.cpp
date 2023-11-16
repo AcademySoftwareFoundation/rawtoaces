@@ -63,9 +63,9 @@ using namespace std;
 BOOST_AUTO_TEST_CASE( Test_OpenDir )
 {
     boost::filesystem::path absolutePath =
-        boost::filesystem::absolute( "../../data/illuminant" );
+        boost::filesystem::canonical( "../../data/illuminant" );
 
-    boost::filesystem::path absolutePath_test = boost::filesystem::absolute(
+    boost::filesystem::path absolutePath_test = boost::filesystem::canonical(
         "../../data/illuminant/iso7589_stutung_380_780_5.json" );
 
     vector<string> fPaths = openDir( absolutePath.string() );
@@ -144,9 +144,14 @@ BOOST_AUTO_TEST_CASE( Test_IsValidCT )
 
 BOOST_AUTO_TEST_CASE( Test_PathsFinder )
 {
-    dataPath dps   = pathsFinder();
-    string   first = "/usr/local/include/rawtoaces/data";
+    dataPath                 dps = pathsFinder();
+    vector<string>::iterator it  = dps.paths.begin();
 
-    vector<string>::iterator it = dps.paths.begin();
+#ifdef WIN32
+    string first = ".";
+#else
+    string first = "/usr/local/include/rawtoaces/data";
+#endif
+
     BOOST_CHECK_EQUAL( first, *it );
 };

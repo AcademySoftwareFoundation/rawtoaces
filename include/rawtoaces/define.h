@@ -54,31 +54,12 @@
 #ifndef _DEFINE_h__
 #define _DEFINE_h__
 
-#include <assert.h>
-#include <stdlib.h>
-#include <stdexcept>
 #include <string>
-#include <math.h>
-#include <ctype.h>
-#include <cfloat>
-//#include <stdexcept>
-#include <vector>
-#include <unordered_map>
-#include <mutex>
-#include <thread>
-#include <Imath/half.h>
-#include <Eigen/Core>
-#include <glog/logging.h>
-#include <ceres/ceres.h>
-#include <boost/lexical_cast.hpp>
+#include <algorithm>
 #include <boost/filesystem.hpp>
 
 #ifndef WIN32
-#    include <fcntl.h>
-#    include <unistd.h>
 #    include <sys/stat.h>
-#    include <sys/mman.h>
-#    include <sys/time.h>
 #endif
 
 #define INV_255 ( 1.0 / (double)255.0 )
@@ -87,6 +68,7 @@
 #ifdef WIN32
 // suppress sprintf-related warning. sprintf() is permitted in sample code
 #    include <string.h>
+#    define WIN32_LEAN_AND_MEAN
 #    include <windows.h>
 #    define snprintf _snprintf
 #    define _CRT_SECURE_NO_WARNINGS
@@ -103,7 +85,6 @@
 #    define FALSE 0
 #endif
 
-#define sign( x ) ( ( x ) > 0 ? 1 : ( ( x ) < 0 ? ( 0 - 1 ) : 0 ) )
 #define FORI( val ) for ( int i = 0; i < val; i++ )
 #define FORJ( val ) for ( int j = 0; j < val; j++ )
 #define FORIJ( val1, val2 )                                                    \
@@ -115,12 +96,6 @@ typedef float  float32_t;
 typedef double float64_t;
 
 using namespace std;
-using ceres::AutoDiffCostFunction;
-using ceres::CauchyLoss;
-using ceres::CostFunction;
-using ceres::Problem;
-using ceres::Solve;
-using ceres::Solver;
 
 enum matMethods_t
 {

@@ -70,7 +70,7 @@
 #    include <string.h>
 #    define WIN32_LEAN_AND_MEAN
 #    include <windows.h>
-#    define snprintf _snprintf
+//#    define snprintf _snprintf
 #    define _CRT_SECURE_NO_WARNINGS
 #    define cmp_str stricmp
 #else

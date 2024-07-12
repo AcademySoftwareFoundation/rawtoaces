@@ -1,5 +1,5 @@
 # https://hub.docker.com/r/aswf/ci-vfxall/tags
-FROM aswf/ci-vfxall:2022
+FROM aswf/ci-vfxall:2024
 
 # Base Building Dependencies.
 RUN yum install --setopt=tsflags=nodocs -y \

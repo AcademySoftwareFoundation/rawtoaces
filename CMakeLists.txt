@@ -76,6 +76,8 @@ add_subdirectory("src/${RAWTOACESIDTLIB}")
 add_subdirectory("src/${RAWTOACESLIB}")
 add_subdirectory("src/rawtoaces")
 
+add_subdirectory("src/rawtoaces_util2")
+add_subdirectory("src/rawtoaces2")
  
 # Create a RAWTOACESBuildTreeSettings.cmake file for the use from the build tree
 file(RELATIVE_PATH CONF_REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")

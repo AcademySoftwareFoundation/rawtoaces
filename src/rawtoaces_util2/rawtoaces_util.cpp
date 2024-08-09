@@ -555,16 +555,6 @@ bool ImageConverter::configure( const std::string &input_filename )
 
     _is_DNG = _inputFull.extra_attribs.find( "raw:dng:version" )->get_int() > 0;
 
-    int black = _inputFull.find_attribute( "raw:black" )->get_int();
-
-    int cblack[4];
-
-    for ( int i = 0; i < 4; i++ )
-    {
-        cblack[i] =
-            _inputFull.find_attribute( "raw:cblack" )->get_int_indexed( i );
-    }
-
     switch ( wbMethod )
     {
         case WBMethod::Metadata: {

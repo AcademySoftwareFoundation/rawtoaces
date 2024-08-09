@@ -74,8 +74,10 @@ include_directories( "${PROJECT_SOURCE_DIR}/include" )
 add_definitions( -DPACKAGE="RAWTOACES" -DVERSION="${RAWTOACES_VERSION}" )
 add_subdirectory("src/${RAWTOACESIDTLIB}")
 add_subdirectory("src/${RAWTOACESLIB}")
+add_subdirectory("src/rawtoaces")
 
-
+add_subdirectory("src/rawtoaces_util2")
+add_subdirectory("src/rawtoaces2")
  
 # Create a RAWTOACESBuildTreeSettings.cmake file for the use from the build tree
 file(RELATIVE_PATH CONF_REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")
@@ -102,35 +104,8 @@ if ( APPLE OR UNIX )
 	install (DIRECTORY data DESTINATION include/rawtoaces)
 endif()
 
-### to build rawtoaces ###
-
-add_executable( rawtoaces
-    main.cpp
-)
-
-target_include_directories( rawtoaces
-    PUBLIC
-        ${AcesContainer_INCLUDE_DIRS}
-)
-
-target_link_libraries ( rawtoaces
-    PUBLIC
-        ${RAWTOACESLIB}
-    INTERFACE
-        Boost::headers
-)
-
-if ( LIBRAW_CONFIG_FOUND )
-    target_link_libraries ( rawtoaces PUBLIC libraw::raw )
-else ()
-    target_link_directories(rawtoaces PUBLIC ${libraw_LIBRARY_DIRS} )
-    target_link_libraries(rawtoaces PUBLIC ${libraw_LIBRARIES} ${libraw_LDFLAGS_OTHER} )
-endif ()
-
 enable_testing()
 add_subdirectory(unittest)
-
-install( TARGETS rawtoaces DESTINATION bin )
 
 # uninstall target
 configure_file(

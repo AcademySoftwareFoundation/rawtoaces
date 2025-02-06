@@ -10,6 +10,8 @@ add_library( ${RAWTOACESIDTLIB} ${DO_SHARED}
     ../../include/rawtoaces/rta.h
 )
 
+set_property(TARGET ${RAWTOACESIDTLIB} PROPERTY CXX_STANDARD 17)
+
 target_link_libraries(
     ${RAWTOACESIDTLIB}
     PUBLIC

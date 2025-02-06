@@ -6,6 +6,7 @@
 #include <rawtoaces/define.h>
 #include <rawtoaces/metadata.h>
 #include <rawtoaces/rta.h>
+#include <rawtoaces/mathOps.h>
 
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/imagebuf.h>
@@ -296,15 +297,12 @@ bool check_param(
                 return false;
             }
 
-            if ( param_value.size() != correct_size )
-            {
-                std::cerr << "Warning: The parameter \"" << param_name
-                          << "\" must have " << correct_size << " values. "
-                          << default_value_message << std::endl;
+            std::cerr << "Warning: The parameter \"" << param_name
+                      << "\" must have " << correct_size << " values. "
+                      << default_value_message << std::endl;
 
-                on_failure();
-                return false;
-            }
+            on_failure();
+            return false;
         }
     }
     else

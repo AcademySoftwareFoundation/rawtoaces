@@ -18,6 +18,7 @@ endif()
 target_link_libraries ( ${RAWTOACESLIB}
     PUBLIC
         ${RAWTOACESIDTLIB}
+        Boost::filesystem
     INTERFACE
         Eigen3::Eigen
         Imath::Imath

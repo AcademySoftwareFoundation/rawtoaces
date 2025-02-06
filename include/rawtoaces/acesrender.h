@@ -56,7 +56,7 @@
 #define _ACESRENDER_h__
 
 #include <rawtoaces/rta.h>
-
+#include <libraw/libraw.h>
 #include <unordered_map>
 
 using namespace rta;
@@ -67,8 +67,8 @@ void usage( const char *prog );
 class LibRawAces : virtual public LibRaw
 {
 public:
-    LibRawAces(){};
-    ~LibRawAces(){};
+    LibRawAces() {};
+    ~LibRawAces() {};
 
     void show() { printf( "I am here with LibRawAces.\n" ); }
 };

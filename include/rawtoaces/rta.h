@@ -58,9 +58,7 @@
 #include "define.h"
 
 #include <stdint.h>
-#include <libraw/libraw.h>
 
-#include "mathOps.h"
 #include "metadata.h"
 
 using namespace std;
@@ -69,8 +67,8 @@ namespace rta
 {
 struct CIEXYZ
 {
-    CIEXYZ(){};
-    CIEXYZ( double X, double Y, double Z ) : _Xt( X ), _Yt( Y ), _Zt( Z ){};
+    CIEXYZ() {};
+    CIEXYZ( double X, double Y, double Z ) : _Xt( X ), _Yt( Y ), _Zt( Z ) {};
     double _Xt;
     double _Yt;
     double _Zt;
@@ -92,9 +90,9 @@ struct CMF
 
 struct RGBSen
 {
-    RGBSen(){};
+    RGBSen() {};
     RGBSen( double R, double G, double B )
-        : _RSen( R ), _GSen( G ), _BSen( B ){};
+        : _RSen( R ), _GSen( G ), _BSen( B ) {};
 
     double _RSen;
     double _GSen;
@@ -145,7 +143,7 @@ public:
         : _brand( brand )
         , _model( model )
         , _increment( increment )
-        , _rgbsen( rgbsen ){};
+        , _rgbsen( rgbsen ) {};
     ~Spst();
 
     void setBrand( const char *brand );

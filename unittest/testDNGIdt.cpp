@@ -57,6 +57,8 @@
 #include <boost/filesystem.hpp>
 #include <boost/test/floating_point_comparison.hpp>
 
+#include <libraw/libraw.h>
+
 #include <rawtoaces/rta.h>
 
 using namespace std;

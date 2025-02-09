@@ -233,13 +233,13 @@ vector<double> Illum::cctToxy( const double &cctd ) const
     if ( cctd >= 4002.15 && cctd <= 7003.77 )
         xy[0] =
             ( 0.244063 + 99.11 / cctd +
-              2.9678 * 1000000 / ( std::pow( cctd, 2 ) ) -
-              4.6070 * 1000000000 / ( std::pow( cctd, 3 ) ) );
+              2.9678 * 1000000 / (std::pow( cctd, 2 ))-4.6070 * 1000000000 /
+                  ( std::pow( cctd, 3 ) ) );
     else
         xy[0] =
             ( 0.237040 + 247.48 / cctd +
-              1.9018 * 1000000 / ( std::pow( cctd, 2 ) ) -
-              2.0064 * 1000000000 / ( std::pow( cctd, 3 ) ) );
+              1.9018 * 1000000 / (std::pow( cctd, 2 ))-2.0064 * 1000000000 /
+                  ( std::pow( cctd, 3 ) ) );
 
     xy[1] = -3.0 * ( std::pow( xy[0], 2 ) ) + 2.87 * xy[0] - 0.275;
 
@@ -1028,12 +1028,14 @@ void Idt::loadCMF( const string &path )
         BOOST_FOREACH (
             ptree::value_type &row, pt.get_child( "spectral_data.data.main" ) )
         {
-            _cmf[i]._wl = atoi( ( row.first ).c_str() );
+            int wl = atoi( ( row.first ).c_str() );
 
-            if ( _cmf[i]._wl < 380 || _cmf[i]._wl % 5 )
+            if ( wl < 380 || wl % 5 )
                 continue;
-            else if ( _cmf[i]._wl > 780 )
+            else if ( wl > 780 )
                 break;
+
+            _cmf[i]._wl = wl;
 
             vector<double> data;
             BOOST_FOREACH ( ptree::value_type &cell, row.second )

@@ -10,14 +10,22 @@ using namespace rta;
 
 int main( int argc, const char *argv[] )
 {
-    ImageConverter converter;
 
-    if ( !converter.parse( argc, argv ) )
+    OIIO::ArgParse argParse;
+
+    ImageConverter converter;
+    converter.init_parser( argParse );
+
+    if ( argParse.parse_args( argc, argv ) < 0 )
     {
         return 1;
     }
 
-    auto                    &argParse = converter.argParse();
+    if ( !converter.parse_params( argParse ) )
+    {
+        return 1;
+    }
+
     auto                     files = argParse["filename"].as_vec<std::string>();
     std::vector<std::string> files_to_convert;
 
@@ -69,7 +77,9 @@ int main( int argc, const char *argv[] )
         }
         output_filename += "_oiio.exr";
 
-        if ( !converter.configure( input_filename ) )
+        OIIO::ParamValueList options;
+
+        if ( !converter.configure( input_filename, options ) )
         {
             std::cerr << "Failed to configure the reader for the file: "
                       << input_filename << std::endl;
@@ -77,7 +87,14 @@ int main( int argc, const char *argv[] )
             continue;
         }
 
-        if ( !converter.load( input_filename ) )
+        OIIO::ImageSpec imageSpec;
+        imageSpec.extra_attribs = options;
+
+        OIIO::ImageBuf buffer = OIIO::ImageBuf(
+            input_filename, 0, 0, nullptr, &imageSpec, nullptr );
+
+        if ( !buffer.read(
+                 0, 0, 0, buffer.nchannels(), true, OIIO::TypeDesc::FLOAT ) )
         {
             std::cerr << "Failed to read for the file: " << input_filename
                       << std::endl;
@@ -85,15 +102,23 @@ int main( int argc, const char *argv[] )
             continue;
         }
 
-        if ( !converter.process() )
+        if ( !converter.apply_matrix( buffer, buffer ) )
         {
-            std::cerr << "Failed to convert the file: " << input_filename
+            std::cerr << "Failed to apply colour space conversion to the file: "
+                      << input_filename << std::endl;
+            result = false;
+            continue;
+        }
+
+        if ( !converter.apply_scale( buffer, buffer ) )
+        {
+            std::cerr << "Failed to apply scale to the file: " << input_filename
                       << std::endl;
             result = false;
             continue;
         }
 
-        if ( !converter.save( output_filename ) )
+        if ( !converter.save( output_filename, buffer ) )
         {
             std::cerr << "Failed to save the file: " << output_filename
                       << std::endl;

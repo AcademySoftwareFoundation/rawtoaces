@@ -17,8 +17,6 @@ namespace rta
 class ImageConverter
 {
 public:
-    ImageConverter();
-
     /// The  white balancing method to use for conversion can be specified
     ///
     enum class WBMethod
@@ -83,79 +81,92 @@ public:
     int   highlight_mode           = 0;
     int   flip                     = 0;
     int   cropbox[4]               = { 0, 0, 0, 0 };
+    int   verbosity                = 0;
 
-    int verbosity;
+    /// Initialise the parser object with all the command line parameters
+    /// used by this tool. The method also sets the help and usage strings.
+    /// The parser object can be amended by the calling code afterwards if
+    /// needed. This method is optional, all of the settings above can be
+    /// modified directly.
+    /// @param argParse
+    ///    The command line parser object to be updated.
+    void init_parser( OIIO::ArgParse &argParse ) const;
 
-    /// Returns a class which will be used for parsing the command line
-    /// parameters. Can be used to add additional parameters before calling
-    /// `parse()`. The additional parameters will be parsed by ignored by this
-    /// class.
-    /// @result A non-const reference to an
-    /// initialised OIIO::ArgParse class.
-    OIIO::ArgParse &argParse();
-
-    /// Returns an image buffer, containing the image in the current state
-    /// after the previous step of processing. The image can be modified before
-    /// executing the next step if needed.
-    /// @result A non-const reference to the image buffer.
-    OIIO::ImageBuf &imageBuffer();
-
-    /// Parse the command line parameters. This method can be used to
-    /// configure the converter instead of modifying each conversion parameter
-    /// individually. Additional command line parameters can be added by
-    /// modifying the structure returned by `argParse()`.
-    /// @param argc
-    ///    number of parameters
-    /// @param argv
-    ///    list of parameters
+    /// Initialise the converter settings from the command line parser object.
+    /// Prior to calling this, first initialise the object via
+    /// `ImageConverted::init_parser()`, and call
+    /// `OIIO::ArgParse::parse_args()`.
+    /// This method is optional, all of the settings above can be modified
+    /// directly.
+    /// @param argParse
+    ///    the command line parser object
     /// @result
     ///    `true` if parsed successfully
-    bool parse( int argc, const char *argv[] );
+    bool parse_params( const OIIO::ArgParse &argParse );
 
     /// Configures the converter using the requested white balance and colour
     /// matrix method, and the metadata of the file provided in `input_file`.
     /// @param input_filename
     ///    A file name of the raw image file to read the metadata from.
+    /// @param options
+    ///    Conversion hints to be passed to OIIO when reading an image file.
+    ///    The list can be pre- or post- updated with other hints, unrelated to
+    ///    the rawtoaces conversion.
     /// @result
     ///    `true` if configured successfully.
-    bool configure( const std::string &input_filename );
+    bool configure(
+        const std::string &input_filename, OIIO::ParamValueList &options );
 
-    /// Loads an image to convert. Note that the image file name in
-    /// `input_filename` can be differnt from the one used in `configure()`.
-    /// This is useful for configuring the converter using one image, and
-    /// applying the conversion to a different one, or multiple images.
-    /// @param input_filename
-    ///    A file name of the raw image file to read the pixels from.
-    /// @result
-    ///    `true` if loaded successfully.
-    bool load( const std::string &input_filename );
-
-    /// Converts the image from raw camera colour space to ACES.
+    /// Apply the colour space conversion matrix (or matrices) to convert the
+    /// image buffer from the raw camera colour space to ACES.
+    /// @param dst
+    ///     Destination image buffer.
+    /// @param src
+    ///     Source image buffer, can be the same as `dst` for in-place
+    ///     conversion.
     /// @result
     ///    `true` if converted successfully.
-    bool process();
+    bool apply_matrix(
+        OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
+
+    /// Apply the headroom scale to image buffer.
+    /// @param dst
+    ///     Destination image buffer.
+    /// @param src
+    ///     Source image buffer, can be the same as `dst` for in-place
+    ///     conversion.
+    /// @result
+    ///    `true` if converted successfully.
+    bool apply_scale(
+        OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
 
     /// Saves the image into ACES Container.
+    /// @param output_filename
+    ///     Full path to the file to be saved.
+    /// @param buf
+    ///     Image buffer to be saved.
     /// @result
     ///    `true` if saved successfully.
-    bool save( const std::string &output_filename );
+    bool save( const std::string &output_filename, const OIIO::ImageBuf &buf );
 
 private:
-    void initArgParse();
-    void prepareIDT_DNG();
-    void prepareIDT_nonDNG();
-    void prepareIDT_spectral( bool calc_white_balance, bool calc_matrix );
-    void applyMatrix( const std::vector<std::vector<double>> &matrix );
+    void prepareIDT_DNG( const OIIO::ImageSpec &imageSpec );
+    void prepareIDT_nonDNG( const OIIO::ImageSpec &imageSpec );
+    void prepareIDT_spectral(
+        const OIIO::ImageSpec &imageSpec,
+        bool                   calc_white_balance,
+        bool                   calc_matrix );
+    bool applyMatrix(
+        const std::vector<std::vector<double>> &matrix,
+        OIIO::ImageBuf                         &dst,
+        const OIIO::ImageBuf                   &src,
+        OIIO::ROI                               roi );
 
-    bool        _is_DNG;
-    std::string _configFilename;
-    std::string _cameraMake;
-    std::string _cameraModel;
+    bool _is_DNG;
 
-    OIIO::ArgParse  _argParse;
-    OIIO::ImageSpec _inputHint;
-    OIIO::ImageSpec _inputFull;
-    OIIO::ImageBuf  _imageBuffer;
+    /// Make libraw read the raw photosites data without any processing.
+    /// This is set if the requested demosaicing method is set `None`.
+    bool _read_raw = false;
 
     std::vector<double>              _WB_mults;
     std::vector<std::vector<double>> _IDT_matrix;

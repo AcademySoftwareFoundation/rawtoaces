@@ -52,11 +52,6 @@ std::vector<std::string> collectDataFiles( const std::string &type )
     return result;
 }
 
-ImageConverter::ImageConverter()
-{
-    initArgParse();
-}
-
 const char *HelpString =
     "Rawtoaces converts raw image files from a digital camera to "
     "the Academy Colour Encoding System (ACES) compliant images.\n"
@@ -111,158 +106,6 @@ const char *UsageString =
     "    rawtoaces --wb-method metadata --mat-method metadata raw_file.cr3\n"
     "    rawtoaces --wb-method illuminant --illuminant 3200K --mat-method "
     "spectral raw_file.cr3\n";
-
-void ImageConverter::initArgParse()
-{
-    _argParse.intro( HelpString ).usage( UsageString );
-    _argParse.print_defaults( true );
-    _argParse.add_help( true );
-    _argParse.add_version( "VERSION NUMBER" );
-
-    _argParse.arg( "filename" ).action( OIIO::ArgParse::append() ).hidden();
-
-    _argParse.arg( "--wb-method" )
-        .help(
-            "White balance method. Supported options: metadata, illuminant, "
-            "box, custom." )
-        .metavar( "STR" )
-        .defaultval( "metadata" )
-        .action( OIIO::ArgParse::store() );
-
-    _argParse.arg( "--mat-method" )
-        .help(
-            "IDT matrix calculation method. Supported options: spectral, "
-            "metadata, Adobe, custom." )
-        .metavar( "STR" )
-        .defaultval( "spectral" )
-        .action( OIIO::ArgParse::store() );
-
-    _argParse.arg( "--illuminant" )
-        .help( "Illuminant for white balancing. (default = D55)" )
-        .metavar( "STR" )
-        .action( OIIO::ArgParse::store() );
-
-    _argParse.arg( "--wb-box" )
-        .help(
-            "Box to use for white balancing. (default = (0,0,0,0) - full "
-            "image)" )
-        .nargs( 4 )
-        .metavar( "X Y W H" )
-        .action( OIIO::ArgParse::store<int>() );
-
-    _argParse.arg( "--custom-wb" )
-        .help( "Custom white balance multipliers." )
-        .nargs( 4 )
-        .metavar( "R G B G" )
-        .action( OIIO::ArgParse::store<float>() );
-
-    _argParse.arg( "--custom-mat" )
-        .help( "Custom camera RGB to XYZ matrix." )
-        .nargs( 9 )
-        .metavar( "Rr Rg Rb Gr Gg Gb Br Bg Bb" )
-        .action( OIIO::ArgParse::store<float>() );
-
-    _argParse.arg( "--headroom" )
-        .help( "Highlight headroom factor." )
-        .metavar( "VAL" )
-        .defaultval( 6.0f )
-        .action( OIIO::ArgParse::store<float>() );
-
-    _argParse.separator( "Raw conversion options:" );
-
-    _argParse.arg( "--no-auto-bright" )
-        .help( "Disable automatic exposure adjustment." )
-        .action( OIIO::ArgParse::store_true() );
-
-    _argParse.arg( "--adjust-maximum-threshold" )
-        .help(
-            "Automatically lower the linearity threshold provided in the "
-            "metadata by this scaling factor." )
-        .metavar( "VAL" )
-        .defaultval( 0.75f )
-        .action( OIIO::ArgParse::store<float>() );
-
-    _argParse.arg( "--black-level" )
-        .help( "If >= 0, override the black level." )
-        .metavar( "VAL" )
-        .defaultval( -1 )
-        .action( OIIO::ArgParse::store<int>() );
-
-    _argParse.arg( "--saturation-level" )
-        .help(
-            "If not 0, override the level which appears to be saturated "
-            "after normalisation." )
-        .metavar( "VAL" )
-        .defaultval( 0 )
-        .action( OIIO::ArgParse::store<int>() );
-
-    _argParse.arg( "--chromatic-aberration" )
-        .help(
-            "Red and blue scale factors for chromatic aberration correction. "
-            "The value of 1 means no correction." )
-        .metavar( "R B" )
-        .nargs( 2 )
-        .defaultval( 1.0f )
-        .action( OIIO::ArgParse::store<float>() );
-
-    _argParse.arg( "--half-size" )
-        .help( "If present, decode image at half size resolution." )
-        .action( OIIO::ArgParse::store_true() );
-
-    _argParse.arg( "--highlight-mode" )
-        .help( "0 = clip, 1 = unclip, 2 = blend, 3..9 = rebuild." )
-        .metavar( "VAL" )
-        .defaultval( 0 )
-        .action( OIIO::ArgParse::store<int>() );
-
-    _argParse.arg( "--cropbox" )
-        .help(
-            "Apply custom crop. If not present, the default crop is applied, "
-            "which should match the crop of the in-camera JPEG." )
-        .nargs( 4 )
-        .metavar( "X Y W H" )
-        .action( OIIO::ArgParse::store<int>() );
-
-    _argParse.arg( "--flip" )
-        .help(
-            "If not 0, override the orientation specified in the metadata. "
-            "1..8 correspond to EXIF orientation codes "
-            "(3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.)" )
-        .metavar( "VAL" )
-        .defaultval( 0 )
-        .action( OIIO::ArgParse::store<int>() );
-
-    _argParse.arg( "--denoise_threshold" )
-        .help( "Wavelet denoising threshold" )
-        .metavar( "VAL" )
-        .defaultval( 0 )
-        .action( OIIO::ArgParse::store<int>() );
-
-    _argParse.separator( "Benchmarking and debugging:" );
-
-    _argParse.arg( "--list-cameras" )
-        .help( "Shows the list of cameras supported in spectral mode." )
-        .action( OIIO::ArgParse::store_true() );
-
-    _argParse.arg( "--list-illuminants" )
-        .help( "Shows the list of illuminants supported in spectral mode." )
-        .action( OIIO::ArgParse::store_true() );
-
-    _argParse.arg( "--verbose" )
-        .help( "Verbosity level. 0 = off, 1 = info, 2 = debug." )
-        .defaultval( 0 )
-        .action( OIIO::ArgParse::store<int>() );
-}
-
-OIIO::ArgParse &ImageConverter::argParse()
-{
-    return _argParse;
-}
-
-OIIO::ImageBuf &ImageConverter::imageBuffer()
-{
-    return _imageBuffer;
-}
 
 template <typename T, typename F1, typename F2>
 bool check_param(
@@ -325,19 +168,156 @@ bool check_param(
     }
 }
 
-bool ImageConverter::parse( int argc, const char *argv[] )
+void ImageConverter::init_parser( OIIO::ArgParse &argParse ) const
 {
-    if ( _argParse.parse_args( argc, argv ) )
-    {
-        // report error?
-        return false;
-    }
+    argParse.intro( HelpString ).usage( UsageString );
+    argParse.print_defaults( true );
+    argParse.add_help( true );
+    argParse.add_version( "TODO: VERSION NUMBER" );
 
-    if ( _argParse["list-cameras"].get<int>() )
+    argParse.arg( "filename" ).action( OIIO::ArgParse::append() ).hidden();
+
+    argParse.arg( "--wb-method" )
+        .help(
+            "White balance method. Supported options: metadata, illuminant, "
+            "box, custom." )
+        .metavar( "STR" )
+        .defaultval( "metadata" )
+        .action( OIIO::ArgParse::store() );
+
+    argParse.arg( "--mat-method" )
+        .help(
+            "IDT matrix calculation method. Supported options: spectral, "
+            "metadata, Adobe, custom." )
+        .metavar( "STR" )
+        .defaultval( "spectral" )
+        .action( OIIO::ArgParse::store() );
+
+    argParse.arg( "--illuminant" )
+        .help( "Illuminant for white balancing. (default = D55)" )
+        .metavar( "STR" )
+        .action( OIIO::ArgParse::store() );
+
+    argParse.arg( "--wb-box" )
+        .help(
+            "Box to use for white balancing. (default = (0,0,0,0) - full "
+            "image)" )
+        .nargs( 4 )
+        .metavar( "X Y W H" )
+        .action( OIIO::ArgParse::store<int>() );
+
+    argParse.arg( "--custom-wb" )
+        .help( "Custom white balance multipliers." )
+        .nargs( 4 )
+        .metavar( "R G B G" )
+        .action( OIIO::ArgParse::store<float>() );
+
+    argParse.arg( "--custom-mat" )
+        .help( "Custom camera RGB to XYZ matrix." )
+        .nargs( 9 )
+        .metavar( "Rr Rg Rb Gr Gg Gb Br Bg Bb" )
+        .action( OIIO::ArgParse::store<float>() );
+
+    argParse.arg( "--headroom" )
+        .help( "Highlight headroom factor." )
+        .metavar( "VAL" )
+        .defaultval( 6.0f )
+        .action( OIIO::ArgParse::store<float>() );
+
+    argParse.separator( "Raw conversion options:" );
+
+    argParse.arg( "--no-auto-bright" )
+        .help( "Disable automatic exposure adjustment." )
+        .action( OIIO::ArgParse::store_true() );
+
+    argParse.arg( "--adjust-maximum-threshold" )
+        .help(
+            "Automatically lower the linearity threshold provided in the "
+            "metadata by this scaling factor." )
+        .metavar( "VAL" )
+        .defaultval( 0.75f )
+        .action( OIIO::ArgParse::store<float>() );
+
+    argParse.arg( "--black-level" )
+        .help( "If >= 0, override the black level." )
+        .metavar( "VAL" )
+        .defaultval( -1 )
+        .action( OIIO::ArgParse::store<int>() );
+
+    argParse.arg( "--saturation-level" )
+        .help(
+            "If not 0, override the level which appears to be saturated "
+            "after normalisation." )
+        .metavar( "VAL" )
+        .defaultval( 0 )
+        .action( OIIO::ArgParse::store<int>() );
+
+    argParse.arg( "--chromatic-aberration" )
+        .help(
+            "Red and blue scale factors for chromatic aberration correction. "
+            "The value of 1 means no correction." )
+        .metavar( "R B" )
+        .nargs( 2 )
+        .defaultval( 1.0f )
+        .action( OIIO::ArgParse::store<float>() );
+
+    argParse.arg( "--half-size" )
+        .help( "If present, decode image at half size resolution." )
+        .action( OIIO::ArgParse::store_true() );
+
+    argParse.arg( "--highlight-mode" )
+        .help( "0 = clip, 1 = unclip, 2 = blend, 3..9 = rebuild." )
+        .metavar( "VAL" )
+        .defaultval( 0 )
+        .action( OIIO::ArgParse::store<int>() );
+
+    argParse.arg( "--cropbox" )
+        .help(
+            "Apply custom crop. If not present, the default crop is applied, "
+            "which should match the crop of the in-camera JPEG." )
+        .nargs( 4 )
+        .metavar( "X Y W H" )
+        .action( OIIO::ArgParse::store<int>() );
+
+    argParse.arg( "--flip" )
+        .help(
+            "If not 0, override the orientation specified in the metadata. "
+            "1..8 correspond to EXIF orientation codes "
+            "(3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.)" )
+        .metavar( "VAL" )
+        .defaultval( 0 )
+        .action( OIIO::ArgParse::store<int>() );
+
+    argParse.arg( "--denoise_threshold" )
+        .help( "Wavelet denoising threshold" )
+        .metavar( "VAL" )
+        .defaultval( 0 )
+        .action( OIIO::ArgParse::store<int>() );
+
+    argParse.separator( "Benchmarking and debugging:" );
+
+    argParse.arg( "--list-cameras" )
+        .help( "Shows the list of cameras supported in spectral mode." )
+        .action( OIIO::ArgParse::store_true() );
+
+    argParse.arg( "--list-illuminants" )
+        .help( "Shows the list of illuminants supported in spectral mode." )
+        .action( OIIO::ArgParse::store_true() );
+
+    argParse.arg( "--verbose" )
+        .help( "Verbosity level. 0 = off, 1 = info, 2 = debug." )
+        .metavar( "VAL" )
+        .defaultval( 0 )
+        .action( OIIO::ArgParse::store<int>() );
+}
+
+bool ImageConverter::parse_params( const OIIO::ArgParse &argParse )
+{
+    if ( argParse["list-cameras"].get<int>() )
     {
         std::cout
-            << "Spectral sensitivity data are available for the following cameras:"
-            << std::endl;
+            << "Spectral sensitivity data are available for the following "
+            << "cameras:" << std::endl;
 
         Idt                      idt;
         auto                     paths = collectDataFiles( "camera" );
@@ -360,7 +340,7 @@ bool ImageConverter::parse( int argc, const char *argv[] )
         exit( 0 );
     }
 
-    if ( _argParse["list-illuminants"].get<int>() )
+    if ( argParse["list-illuminants"].get<int>() )
     {
         std::cout << "The following illuminants are supported:" << std::endl;
         std::cout << "- The standard illuminant series D (e.g., D60, D6025)"
@@ -387,9 +367,9 @@ bool ImageConverter::parse( int argc, const char *argv[] )
         exit( 0 );
     }
 
-    verbosity = _argParse["verbose"].get<int>();
+    verbosity = argParse["verbose"].get<int>();
 
-    std::string wb_method = _argParse["wb-method"].get();
+    std::string wb_method = argParse["wb-method"].get();
 
     if ( wb_method == "metadata" )
     {
@@ -416,7 +396,7 @@ bool ImageConverter::parse( int argc, const char *argv[] )
         return false;
     }
 
-    std::string mat_method = _argParse["mat-method"].get();
+    std::string mat_method = argParse["mat-method"].get();
 
     if ( mat_method == "spectral" )
     {
@@ -443,9 +423,9 @@ bool ImageConverter::parse( int argc, const char *argv[] )
         return false;
     }
 
-    headroom = _argParse["headroom"].get<float>();
+    headroom = argParse["headroom"].get<float>();
 
-    std::string illum = _argParse["illuminant"].get();
+    std::string illum = argParse["illuminant"].get();
 
     if ( wbMethod == WBMethod::Illuminant )
     {
@@ -469,7 +449,7 @@ bool ImageConverter::parse( int argc, const char *argv[] )
         }
     }
 
-    auto box = _argParse["wb-box"].as_vec<int>();
+    auto box = argParse["wb-box"].as_vec<int>();
     check_param(
         "white balancing mode",
         "box",
@@ -487,7 +467,7 @@ bool ImageConverter::parse( int argc, const char *argv[] )
                 wbBox[i] = 0;
         } );
 
-    auto custom_wb = _argParse["custom-wb"].as_vec<float>();
+    auto custom_wb = argParse["custom-wb"].as_vec<float>();
     check_param(
         "white balancing mode",
         "custom",
@@ -505,7 +485,7 @@ bool ImageConverter::parse( int argc, const char *argv[] )
                 customWB[i] = 1.0;
         } );
 
-    auto custom_mat = _argParse["custom-mat"].as_vec<float>();
+    auto custom_mat = argParse["custom-mat"].as_vec<float>();
     check_param(
         "matrix mode",
         "custom",
@@ -525,56 +505,60 @@ bool ImageConverter::parse( int argc, const char *argv[] )
                     customMatrix[i][j] = i == j ? 1.0 : 0.0;
         } );
 
-    auto crop = _argParse["cropbox"].as_vec<int>();
+    auto crop = argParse["cropbox"].as_vec<int>();
     if ( crop.size() == 4 )
     {
         for ( size_t i = 0; i < 4; i++ )
             cropbox[i] = crop[i];
     }
 
-    no_auto_bright           = _argParse["no-auto-bright"].get<int>();
-    adjust_maximum_threshold = _argParse["adjust-maximum-threshold"].get<int>();
-    black_level              = _argParse["black-level"].get<int>();
-    saturation_level         = _argParse["saturation-level"].get<int>();
-    half_size                = _argParse["half-size"].get<int>();
-    highlight_mode           = _argParse["highlight-mode"].get<int>();
-    flip                     = _argParse["flip"].get<int>();
+    no_auto_bright           = argParse["no-auto-bright"].get<int>();
+    adjust_maximum_threshold = argParse["adjust-maximum-threshold"].get<int>();
+    black_level              = argParse["black-level"].get<int>();
+    saturation_level         = argParse["saturation-level"].get<int>();
+    half_size                = argParse["half-size"].get<int>();
+    highlight_mode           = argParse["highlight-mode"].get<int>();
+    flip                     = argParse["flip"].get<int>();
 
     return true;
 }
 
-bool ImageConverter::configure( const std::string &input_filename )
+bool ImageConverter::configure(
+    const std::string &input_filename, OIIO::ParamValueList &options )
 {
-    _configFilename = input_filename;
+    _read_raw = options.get_string( "raw:Demosaic" ) == "None";
 
-    _inputHint = OIIO::ImageSpec();
+    OIIO::ImageSpec imageSpec;
 
-    _inputHint["raw:ColorSpace"]    = "XYZ";
-    _inputHint["raw:use_camera_wb"] = 0;
-    _inputHint["raw:use_auto_wb"]   = 0;
+    options["raw:ColorSpace"]    = "XYZ";
+    options["raw:use_camera_wb"] = 0;
+    options["raw:use_auto_wb"]   = 0;
 
-    _inputHint["raw:auto_bright"]        = no_auto_bright ? 0 : 1;
-    _inputHint["raw:adjust_maximum_thr"] = adjust_maximum_threshold;
-    _inputHint["raw:user_black"]         = black_level;
-    _inputHint["raw:user_sat"]           = saturation_level;
-    _inputHint["raw:half_size"]          = (int)half_size;
-    _inputHint["raw:flip"]               = flip;
-    _inputHint["raw:HighlightMode"]      = highlight_mode;
+    options["raw:auto_bright"]        = no_auto_bright ? 0 : 1;
+    options["raw:adjust_maximum_thr"] = adjust_maximum_threshold;
+    options["raw:user_black"]         = black_level;
+    options["raw:user_sat"]           = saturation_level;
+    options["raw:half_size"]          = (int)half_size;
+    options["raw:flip"]               = flip;
+    options["raw:HighlightMode"]      = highlight_mode;
 
     if ( cropbox[2] != 0 && cropbox[3] != 0 )
     {
-        _inputHint.attribute(
+        options.attribute(
             "raw:cropbox", OIIO::TypeDesc( OIIO::TypeDesc::INT, 4 ), cropbox );
     }
 
-    auto imageInput = OIIO::ImageInput::create( "raw", false, &_inputHint );
-    bool result = imageInput->open( input_filename, _inputFull, _inputHint );
+    OIIO::ImageSpec temp_spec;
+    temp_spec.extra_attribs = options;
+
+    auto imageInput = OIIO::ImageInput::create( "raw", false, &temp_spec );
+    bool result     = imageInput->open( input_filename, imageSpec, temp_spec );
     if ( !result )
     {
         return false;
     }
 
-    _is_DNG = _inputFull.extra_attribs.find( "raw:dng:version" )->get_int() > 0;
+    _is_DNG = imageSpec.extra_attribs.find( "raw:dng:version" )->get_int() > 0;
 
     switch ( wbMethod )
     {
@@ -583,15 +567,22 @@ bool ImageConverter::configure( const std::string &input_filename )
 
             for ( int i = 0; i < 4; i++ )
             {
-                user_mul[i] = _inputFull.find_attribute( "raw:cam_mul" )
+                user_mul[i] = imageSpec.find_attribute( "raw:cam_mul" )
                                   ->get_float_indexed( i ) /
                               256.0;
             }
 
-            _inputHint.attribute(
+            options.attribute(
                 "raw:user_mul",
                 OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
                 user_mul );
+
+            if ( _read_raw )
+            {
+                _WB_mults.resize( 4 );
+                for ( size_t i = 0; i < 4; i++ )
+                    _WB_mults[i] = user_mul[i];
+            }
             break;
         }
 
@@ -617,7 +608,7 @@ bool ImageConverter::configure( const std::string &input_filename )
             if ( wbBox[2] == 0 || wbBox[3] == 0 )
             {
                 // Empty box, use whole image.
-                _inputHint["raw:use_auto_wb"] = 1;
+                options["raw:use_auto_wb"] = 1;
             }
             else
             {
@@ -626,7 +617,7 @@ bool ImageConverter::configure( const std::string &input_filename )
                 {
                     box[i] = wbBox[i];
                 }
-                _inputHint.attribute(
+                options.attribute(
                     "raw:greybox",
                     OIIO::TypeDesc( OIIO::TypeDesc::INT, 4 ),
                     box );
@@ -634,7 +625,7 @@ bool ImageConverter::configure( const std::string &input_filename )
             break;
 
         case WBMethod::Custom:
-            _inputHint.attribute(
+            options.attribute(
                 "raw:user_mul",
                 OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
                 customWB );
@@ -646,18 +637,16 @@ bool ImageConverter::configure( const std::string &input_filename )
     switch ( matrixMethod )
     {
         case MatrixMethod::Spectral:
-            _inputHint["raw:ColorSpace"]        = "raw";
-            _inputHint["raw:use_camera_matrix"] = 0;
+            options["raw:ColorSpace"]        = "raw";
+            options["raw:use_camera_matrix"] = 0;
             break;
         case MatrixMethod::Metadata:
-            _inputHint["raw:use_camera_matrix"] = _is_DNG ? 1 : 3;
+            options["raw:use_camera_matrix"] = _is_DNG ? 1 : 3;
             break;
-        case MatrixMethod::Adobe:
-            _inputHint["raw:use_camera_matrix"] = 1;
-            break;
+        case MatrixMethod::Adobe: options["raw:use_camera_matrix"] = 1; break;
         case MatrixMethod::Custom:
-            _inputHint["raw:use_camera_matrix"] = 0;
-            _inputHint["raw:ColorSpace"]        = "raw";
+            options["raw:use_camera_matrix"] = 0;
+            options["raw:ColorSpace"]        = "raw";
 
             _IDT_matrix.resize( 3 );
             for ( int i = 0; i < 3; i++ )
@@ -682,14 +671,12 @@ bool ImageConverter::configure( const std::string &input_filename )
 
         for ( int i = 0; i < 4; i++ )
         {
-            pre_mul[i] = _inputFull.find_attribute( "raw:pre_mul" )
+            pre_mul[i] = imageSpec.find_attribute( "raw:pre_mul" )
                              ->get_float_indexed( i );
         }
 
-        _cameraMake  = _inputFull["Make"];
-        _cameraModel = _inputFull["Model"];
-
-        prepareIDT_spectral( spectral_white_balance, spectral_matrix );
+        prepareIDT_spectral(
+            imageSpec, spectral_white_balance, spectral_matrix );
 
         if ( spectral_white_balance )
         {
@@ -702,7 +689,7 @@ bool ImageConverter::configure( const std::string &input_filename )
             if ( _WB_mults.size() == 3 )
                 user_mul[3] = _WB_mults[1];
 
-            _inputHint.attribute(
+            options.attribute(
                 "raw:user_mul",
                 OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
                 user_mul );
@@ -714,43 +701,25 @@ bool ImageConverter::configure( const std::string &input_filename )
     {
         if ( _is_DNG )
         {
-            _inputHint["raw:use_camera_matrix"] = 1;
-            _inputHint["raw:use_camera_wb"]     = 1;
+            options["raw:use_camera_matrix"] = 1;
+            options["raw:use_camera_wb"]     = 1;
 
-            prepareIDT_DNG();
+            prepareIDT_DNG( imageSpec );
         }
         else
         {
-            prepareIDT_nonDNG();
+            prepareIDT_nonDNG( imageSpec );
         }
     }
 
     return true;
 }
 
-bool ImageConverter::load( const std::string &input_filename )
-{
-    if ( _configFilename != input_filename )
-    {
-        auto imageInput = OIIO::ImageInput::create( "raw", false, &_inputHint );
-        imageInput->open( input_filename, _inputFull, _inputHint );
-    }
-
-    _imageBuffer =
-        OIIO::ImageBuf( input_filename, 0, 0, nullptr, &_inputHint, nullptr );
-    bool result = _imageBuffer.init_spec( input_filename, 0, 0 );
-    if ( result )
-    {
-        auto &spec     = _imageBuffer.spec();
-        auto  channels = spec.nchannels;
-        result =
-            _imageBuffer.read( 0, 0, 0, channels, true, OIIO::TypeDesc::FLOAT );
-    }
-    return result;
-}
-
-void ImageConverter::applyMatrix(
-    const std::vector<std::vector<double>> &matrix )
+bool ImageConverter::applyMatrix(
+    const std::vector<std::vector<double>> &matrix,
+    OIIO::ImageBuf                         &dst,
+    const OIIO::ImageBuf                   &src,
+    OIIO::ROI                               roi )
 {
     float M[4][4];
 
@@ -780,34 +749,52 @@ void ImageConverter::applyMatrix(
         }
     }
 
-    _imageBuffer = OIIO::ImageBufAlgo::colormatrixtransform( _imageBuffer, M );
+    return OIIO::ImageBufAlgo::colormatrixtransform( dst, src, M, false, roi );
 }
 
-bool ImageConverter::process()
+bool ImageConverter::apply_matrix(
+    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi )
 {
+    bool success = true;
+
+    if ( !roi.defined() )
+        roi = dst.roi();
+
     if ( _IDT_matrix.size() )
     {
-        applyMatrix( _IDT_matrix );
+        success = applyMatrix( _IDT_matrix, dst, src, roi );
+        if ( !success )
+            return false;
     }
 
     if ( _CAT_matrix.size() )
     {
-        applyMatrix( _CAT_matrix );
+        success = applyMatrix( _CAT_matrix, dst, dst, roi );
+        if ( !success )
+            return false;
 
-        _imageBuffer = OIIO::ImageBufAlgo::colormatrixtransform(
-            _imageBuffer, XYZ_acesrgb_transposed_4 );
+        success = OIIO::ImageBufAlgo::colormatrixtransform(
+            dst, dst, XYZ_acesrgb_transposed_4, false, roi );
+        if ( !success )
+            return false;
     }
 
-    _imageBuffer = OIIO::ImageBufAlgo::mul( _imageBuffer, headroom );
-    return true;
+    return success;
 }
 
-bool ImageConverter::save( const std::string &output_filename )
+bool ImageConverter::apply_scale(
+    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi )
+{
+    return OIIO::ImageBufAlgo::mul( dst, src, headroom );
+}
+
+bool ImageConverter::save(
+    const std::string &output_filename, const OIIO::ImageBuf &buf )
 {
     const float chromaticities[] = { 0.7347, 0.2653, 0,       1,
                                      0.0001, -0.077, 0.32168, 0.33767 };
 
-    OIIO::ImageSpec imageSpec = _inputFull;
+    OIIO::ImageSpec imageSpec = buf.spec();
     imageSpec.set_format( OIIO::TypeDesc::HALF );
     imageSpec["acesImageContainerFlag"] = 1;
     imageSpec["compression"]            = "none";
@@ -818,12 +805,14 @@ bool ImageConverter::save( const std::string &output_filename )
 
     auto imageOutput = OIIO::ImageOutput::create( "exr" );
     bool result      = imageOutput->open( output_filename, imageSpec );
-    result           = _imageBuffer.write( imageOutput.get() );
+    result           = buf.write( imageOutput.get() );
     return result;
 }
 
 void ImageConverter::prepareIDT_spectral(
-    bool calc_white_balance, bool calc_matrix )
+    const OIIO::ImageSpec &imageSpec,
+    bool                   calc_white_balance,
+    bool                   calc_matrix )
 {
     std::string lower_illuminant( illuminant );
 
@@ -839,17 +828,20 @@ void ImageConverter::prepareIDT_spectral(
     }
 
     Idt idt;
+    idt.setVerbosity( verbosity );
 
     auto illum_paths = collectDataFiles( "illuminant" );
     int  res         = idt.loadIlluminant( illum_paths, lower_illuminant );
 
-    bool found_camera = false;
-    auto camera_paths = collectDataFiles( "camera" );
+    bool        found_camera = false;
+    auto        camera_paths = collectDataFiles( "camera" );
+    std::string cameraMake   = imageSpec["Make"];
+    std::string cameraModel  = imageSpec["Model"];
 
     for ( auto &path: camera_paths )
     {
         if ( idt.loadCameraSpst(
-                 path, _cameraMake.c_str(), _cameraModel.c_str() ) )
+                 path, cameraMake.c_str(), cameraModel.c_str() ) )
         {
             found_camera = true;
             break;
@@ -874,11 +866,22 @@ void ImageConverter::prepareIDT_spectral(
     }
     else
     {
+        auto                attr    = imageSpec.find_attribute( "raw:cam_mul" );
+        float               min_val = std::numeric_limits<float>::max();
         std::vector<double> cam_mul( 3 );
         for ( int i = 0; i < 3; i++ )
-            cam_mul[i] = _inputFull.find_attribute( "raw:cam_mul" )
-                             ->get_float_indexed( i );
-        idt.chooseIllumSrc( cam_mul, headroom );
+        {
+            float v    = attr->get_float_indexed( i );
+            cam_mul[i] = v;
+            if ( v < min_val )
+                min_val = v;
+        }
+        for ( int i = 0; i < 3; i++ )
+        {
+            cam_mul[i] /= min_val;
+            std::cerr << "cam_mul[" << i << "]=" << cam_mul[i] << std::endl;
+        }
+        idt.chooseIllumSrc( cam_mul, 0 );
     }
 
     if ( idt.calIDT() )
@@ -896,7 +899,7 @@ void ImageConverter::prepareIDT_spectral(
     }
 }
 
-void ImageConverter::prepareIDT_DNG()
+void ImageConverter::prepareIDT_DNG( const OIIO::ImageSpec &imageSpec )
 {
     Metadata metadata;
     metadata.neutralRGB.resize( 3 );
@@ -906,31 +909,31 @@ void ImageConverter::prepareIDT_DNG()
     metadata.cameraCalibration2.resize( 9 );
 
     metadata.baselineExposure =
-        _inputFull.get_float_attribute( "raw:dng:baseline_exposure" );
+        imageSpec.get_float_attribute( "raw:dng:baseline_exposure" );
     metadata.calibrationIlluminant1 =
-        _inputFull.get_int_attribute( "raw:dng:calibration_illuminant1" );
+        imageSpec.get_int_attribute( "raw:dng:calibration_illuminant1" );
     metadata.calibrationIlluminant2 =
-        _inputFull.get_int_attribute( "raw:dng:calibration_illuminant2" );
+        imageSpec.get_int_attribute( "raw:dng:calibration_illuminant2" );
 
     for ( int i = 0; i < 3; i++ )
     {
         metadata.neutralRGB[i] =
             1.0 /
-            _inputFull.find_attribute( "raw:cam_mul" )->get_float_indexed( i );
+            imageSpec.find_attribute( "raw:cam_mul" )->get_float_indexed( i );
 
         for ( int j = 0; j < 3; j++ )
         {
             metadata.xyz2rgbMatrix1[i * 3 + j] =
-                _inputFull.find_attribute( "raw:dng:color_matrix1" )
+                imageSpec.find_attribute( "raw:dng:color_matrix1" )
                     ->get_float_indexed( i * 3 + j );
             metadata.xyz2rgbMatrix2[i * 3 + j] =
-                _inputFull.find_attribute( "raw:dng:color_matrix2" )
+                imageSpec.find_attribute( "raw:dng:color_matrix2" )
                     ->get_float_indexed( i * 3 + j );
             metadata.cameraCalibration1[i * 3 + j] =
-                _inputFull.find_attribute( "raw:dng:camera_calibration1" )
+                imageSpec.find_attribute( "raw:dng:camera_calibration1" )
                     ->get_float_indexed( i * 4 + j );
             metadata.cameraCalibration2[i * 3 + j] =
-                _inputFull.find_attribute( "raw:dng:camera_calibration2" )
+                imageSpec.find_attribute( "raw:dng:camera_calibration2" )
                     ->get_float_indexed( i * 4 + j );
         }
     }
@@ -944,9 +947,51 @@ void ImageConverter::prepareIDT_DNG()
     //    _CAT_matrix = dng->getDNGCATMatrix();
 }
 
-void ImageConverter::prepareIDT_nonDNG()
+void ImageConverter::prepareIDT_nonDNG( const OIIO::ImageSpec &imageSpec )
 {
-    _IDT_matrix.resize( 0 );
+    if ( _read_raw )
+    {
+        auto   mat  = imageSpec.find_attribute( "raw:cam_xyz" );
+        size_t size = mat->type().arraylen;
+
+        if ( size == 12 )
+        {
+            std::vector<std::vector<double>> xyz2cam;
+
+            int idx = 0;
+            xyz2cam.resize( 4 );
+            for ( size_t row = 0; row < 4; row++ )
+            {
+                xyz2cam[row].resize( 4 );
+
+                for ( size_t col = 0; col < 3; col++ )
+                {
+                    xyz2cam[row][col] = mat->get_float_indexed( idx++ );
+                }
+                xyz2cam[row][3] = 0;
+            }
+            xyz2cam[3][0] = 0;
+            xyz2cam[3][1] = 0;
+            xyz2cam[3][2] = 0;
+            xyz2cam[3][3] = 1;
+
+            auto cam2xyz = invertVM( xyz2cam );
+
+            for ( size_t row = 0; row < 3; row++ )
+            {
+                for ( size_t col = 0; col < 3; col++ )
+                {
+                    cam2xyz[row][col] /= _WB_mults[row];
+                }
+            }
+
+            _IDT_matrix = cam2xyz; //transposeVec(cam2xyz);
+        }
+    }
+    else
+    {
+        _IDT_matrix.resize( 0 );
+    }
 
     vector<double> dIV( d65, d65 + 3 );
     vector<double> dOV( d60, d60 + 3 );

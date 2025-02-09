@@ -58,6 +58,7 @@
 #include <vector>
 #include <algorithm>
 #include <filesystem>
+#include <limits>
 
 #ifndef WIN32
 #    include <sys/stat.h>

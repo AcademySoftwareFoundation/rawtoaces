@@ -5,6 +5,8 @@ add_executable( rawtoaces
     main.cpp
 )
 
+set_property(TARGET rawtoaces PROPERTY CXX_STANDARD 17)
+
 target_include_directories( rawtoaces
     PUBLIC
         ${AcesContainer_INCLUDE_DIRS}

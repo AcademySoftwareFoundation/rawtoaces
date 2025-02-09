@@ -233,12 +233,12 @@ vector<double> Illum::cctToxy( const double &cctd ) const
     if ( cctd >= 4002.15 && cctd <= 7003.77 )
         xy[0] =
             ( 0.244063 + 99.11 / cctd +
-              2.9678 * 1000000 / (std::pow( cctd, 2 ))-4.6070 * 1000000000 /
+              2.9678 * 1000000 / (std::pow( cctd, 2 ) )-4.6070 * 1000000000 /
                   ( std::pow( cctd, 3 ) ) );
     else
         xy[0] =
             ( 0.237040 + 247.48 / cctd +
-              1.9018 * 1000000 / (std::pow( cctd, 2 ))-2.0064 * 1000000000 /
+              1.9018 * 1000000 / (std::pow( cctd, 2 ) )-2.0064 * 1000000000 /
                   ( std::pow( cctd, 3 ) ) );
 
     xy[1] = -3.0 * ( std::pow( xy[0], 2 ) ) + 2.87 * xy[0] - 0.275;

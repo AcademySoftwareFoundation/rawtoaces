@@ -5,6 +5,8 @@ add_library ( ${RAWTOACESLIB} ${DO_SHARED}
     acesrender.cpp
 )
 
+set_property(TARGET ${RAWTOACESLIB} PROPERTY CXX_STANDARD 17)
+
 if ( AcesContainer_FOUND )
     target_include_directories ( ${RAWTOACESLIB} PRIVATE ${AcesContainer_INCLUDE_DIRS} )
     target_link_directories    ( ${RAWTOACESLIB} PUBLIC  ${AcesContainer_LIBRARY_DIRS} )

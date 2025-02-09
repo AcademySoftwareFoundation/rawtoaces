@@ -7,6 +7,8 @@ add_executable (
 	testSpst.cpp
 )
 
+set_property(TARGET Test_Spst PROPERTY CXX_STANDARD 17)
+
 target_link_libraries(
     Test_Spst
     PUBLIC
@@ -20,6 +22,8 @@ add_executable (
 	Test_IDT
 	testIDT.cpp
 )
+
+set_property(TARGET Test_IDT PROPERTY CXX_STANDARD 17)
 
 target_link_libraries(
     Test_IDT
@@ -37,6 +41,8 @@ add_executable (
 	testIllum.cpp
 )
 
+set_property(TARGET Test_Illum PROPERTY CXX_STANDARD 17)
+
 target_link_libraries(
     Test_Illum
     PUBLIC
@@ -50,6 +56,8 @@ add_executable (
 	Test_DNGIdt
 	testDNGIdt.cpp
 )
+
+set_property(TARGET Test_DNGIdt PROPERTY CXX_STANDARD 17)
 
 target_link_libraries(
     Test_DNGIdt
@@ -65,6 +73,8 @@ add_executable (
 	testMath.cpp
 )
 
+set_property(TARGET Test_Math PROPERTY CXX_STANDARD 17)
+
 target_link_libraries(
     Test_Math
     PUBLIC
@@ -79,6 +89,8 @@ add_executable (
     testLogic.cpp
 )
 
+set_property(TARGET Test_Logic PROPERTY CXX_STANDARD 17)
+
 target_link_libraries(
     Test_Logic
     PUBLIC
@@ -92,6 +104,8 @@ add_executable (
 	Test_Misc
 	testMisc.cpp
 )
+
+set_property(TARGET Test_Misc PROPERTY CXX_STANDARD 17)
 
 target_link_libraries(
     Test_Misc

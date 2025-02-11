@@ -55,8 +55,8 @@
 #ifndef _RTA_h__
 #define _RTA_h__
 
-#include "define.h"
-
+#include <string>
+#include <vector>
 #include <stdint.h>
 
 #include "metadata.h"

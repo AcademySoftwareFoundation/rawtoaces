@@ -460,16 +460,36 @@ inline dataPath &pathsFinder()
 
     if ( firstTime )
     {
-        string      path;
-        const char *env;
+#if defined( WIN32 ) || defined( WIN64 )
+        char separator = ';';
+#else
+        char separator = ':';
+#endif
 
+        string          path;
         vector<string> &PATHs = cdp.paths;
-        env                   = getenv( "AMPAS_DATA_PATH" );
 
-        if ( env )
-            path = env;
+        {
+            const char *env = getenv( "AMPAS_DATA_PATH" );
+            if ( env != nullptr )
+            {
+                if ( !path.empty() )
+                    path += separator;
+                path += env;
+            }
+        }
 
-        if ( path == "" )
+        {
+            const char *env = getenv( "RAWTOACES_DATA_PATH" );
+            if ( env != nullptr )
+            {
+                if ( !path.empty() )
+                    path += separator;
+                path += env;
+            }
+        }
+
+        if ( path.empty() )
         {
 #if defined( WIN32 ) || defined( WIN64 )
             path   = ".";
@@ -486,11 +506,7 @@ inline dataPath &pathsFinder()
 
         while ( pos < path.size() )
         {
-#if defined( WIN32 ) || defined( WIN64 )
-            size_t end = path.find( ';', pos );
-#else
-            size_t end = path.find( ':', pos );
-#endif
+            size_t end = path.find( separator, pos );
 
             if ( end == string::npos )
                 end = path.size();

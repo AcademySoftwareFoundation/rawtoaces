@@ -60,6 +60,7 @@
 #include <libraw/libraw.h>
 
 #include <rawtoaces/rta.h>
+#include <rawtoaces/define.h>
 
 using namespace std;
 using namespace rta;

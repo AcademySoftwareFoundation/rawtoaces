@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
 add_library( ${RAWTOACESIDTLIB} ${DO_SHARED}
@@ -8,13 +8,14 @@ add_library( ${RAWTOACESIDTLIB} ${DO_SHARED}
     ../../include/rawtoaces/define.h
     ../../include/rawtoaces/mathOps.h
     ../../include/rawtoaces/rta.h
+    ../../include/rawtoaces/metadata.h
 )
 
 set_property(TARGET ${RAWTOACESIDTLIB} PROPERTY CXX_STANDARD 17)
 
 target_link_libraries(
     ${RAWTOACESIDTLIB}
-    PUBLIC
+    PRIVATE
         Boost::boost
         Boost::system
         Imath::Imath

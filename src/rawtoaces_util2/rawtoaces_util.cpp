@@ -38,14 +38,20 @@ std::vector<std::string> collectDataFiles( const std::string &type )
 
     for ( auto &path: paths.paths )
     {
-        auto it = std::filesystem::directory_iterator( path + "/" + type );
-
-        for ( auto filename2: it )
+        if ( std::filesystem::is_directory( path ) )
         {
-            auto p = filename2.path();
-            if ( filename2.path().extension() == ".json" )
+            auto type_path = path + "/" + type;
+            if ( std::filesystem::exists( type_path ) )
             {
-                result.push_back( filename2.path().string() );
+                auto it = std::filesystem::directory_iterator( type_path );
+                for ( auto filename2: it )
+                {
+                    auto p = filename2.path();
+                    if ( filename2.path().extension() == ".json" )
+                    {
+                        result.push_back( filename2.path().string() );
+                    }
+                }
             }
         }
     }
@@ -95,7 +101,7 @@ const char *HelpString =
     "A matrix can be specified using the \"--custom-mat\" parameter.\n"
     "\n"
     "The paths rawtoaces uses to search for the spectral sensitivity "
-    "data can be specified in the AMPAS_DATA_PATH environment "
+    "data can be specified in the RAWTOACES_DATA_PATH environment "
     "variable.\n";
 
 const char *UsageString =
@@ -170,12 +176,11 @@ bool check_param(
 
 void ImageConverter::init_parser( OIIO::ArgParse &argParse ) const
 {
-    argParse.intro( HelpString ).usage( UsageString );
+    argParse.intro( HelpString );
+    argParse.usage( UsageString );
     argParse.print_defaults( true );
     argParse.add_help( true );
     argParse.add_version( "TODO: VERSION NUMBER" );
-
-    argParse.arg( "filename" ).action( OIIO::ArgParse::append() ).hidden();
 
     argParse.arg( "--wb-method" )
         .help(
@@ -526,7 +531,7 @@ bool ImageConverter::parse_params( const OIIO::ArgParse &argParse )
 bool ImageConverter::configure(
     const std::string &input_filename, OIIO::ParamValueList &options )
 {
-    _read_raw = options.get_string( "raw:Demosaic" ) == "None";
+    _read_raw = options.get_string( "raw:Demosaic" ) == "none";
 
     OIIO::ImageSpec imageSpec;
 
@@ -539,7 +544,7 @@ bool ImageConverter::configure(
     options["raw:user_black"]         = black_level;
     options["raw:user_sat"]           = saturation_level;
     options["raw:half_size"]          = (int)half_size;
-    options["raw:flip"]               = flip;
+    options["raw:user_flip"]          = flip;
     options["raw:HighlightMode"]      = highlight_mode;
 
     if ( cropbox[2] != 0 && cropbox[3] != 0 )
@@ -568,8 +573,7 @@ bool ImageConverter::configure(
             for ( int i = 0; i < 4; i++ )
             {
                 user_mul[i] = imageSpec.find_attribute( "raw:cam_mul" )
-                                  ->get_float_indexed( i ) /
-                              256.0;
+                                  ->get_float_indexed( i );
             }
 
             options.attribute(
@@ -585,15 +589,8 @@ bool ImageConverter::configure(
             }
             break;
         }
-
         case WBMethod::Illuminant: {
-            std::string lower_illuminant( illuminant );
-            std::transform(
-                lower_illuminant.begin(),
-                lower_illuminant.end(),
-                lower_illuminant.begin(),
-                []( unsigned char c ) { return std::tolower( c ); } );
-
+            std::string lower_illuminant = OIIO::Strutil::lower( illuminant );
             if ( !isValidCT( lower_illuminant ) )
             {
                 std::cerr << "Unrecognised illuminant \'" << illuminant << "\'"
@@ -629,6 +626,13 @@ bool ImageConverter::configure(
                 "raw:user_mul",
                 OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
                 customWB );
+
+            if ( _read_raw )
+            {
+                _WB_mults.resize( 4 );
+                for ( size_t i = 0; i < 4; i++ )
+                    _WB_mults[i] = customWB[i];
+            }
             break;
 
         default: break;
@@ -667,14 +671,6 @@ bool ImageConverter::configure(
 
     if ( spectral_white_balance || spectral_matrix )
     {
-        float pre_mul[4];
-
-        for ( int i = 0; i < 4; i++ )
-        {
-            pre_mul[i] = imageSpec.find_attribute( "raw:pre_mul" )
-                             ->get_float_indexed( i );
-        }
-
         prepareIDT_spectral(
             imageSpec, spectral_white_balance, spectral_matrix );
 
@@ -848,6 +844,16 @@ void ImageConverter::prepareIDT_spectral(
         }
     }
 
+    if ( !found_camera )
+    {
+        std::cerr << "Camera spectral sensitivity data not found for "
+                  << cameraMake << " " << cameraModel << ". "
+                  << "Please check that the data is available "
+                  << "at the location(s) specified in RAWTOACES_DATA_PATH"
+                  << std::endl;
+        exit( 1 );
+    }
+
     auto training = findFile( "training/training_spectral.json" );
     if ( training.length() )
     {
@@ -866,22 +872,34 @@ void ImageConverter::prepareIDT_spectral(
     }
     else
     {
-        auto                attr    = imageSpec.find_attribute( "raw:cam_mul" );
-        float               min_val = std::numeric_limits<float>::max();
-        std::vector<double> cam_mul( 3 );
-        for ( int i = 0; i < 3; i++ )
+        std::vector<double> wb_multipliers( 4 );
+
+        if ( _WB_mults.size() == 4 )
         {
-            float v    = attr->get_float_indexed( i );
-            cam_mul[i] = v;
-            if ( v < min_val )
-                min_val = v;
+            for ( int i = 0; i < 3; i++ )
+                wb_multipliers[i] = _WB_mults[i];
         }
-        for ( int i = 0; i < 3; i++ )
+        else
         {
-            cam_mul[i] /= min_val;
-            std::cerr << "cam_mul[" << i << "]=" << cam_mul[i] << std::endl;
+            auto attr = imageSpec.find_attribute( "raw:pre_mul" );
+            for ( int i = 0; i < 4; i++ )
+                wb_multipliers[i] = attr->get_float_indexed( i );
         }
-        idt.chooseIllumSrc( cam_mul, 0 );
+
+        if ( wb_multipliers[3] != 0 )
+            wb_multipliers[1] = ( wb_multipliers[1] + wb_multipliers[3] ) / 2.0;
+        wb_multipliers.resize( 3 );
+
+        float min_val = std::numeric_limits<float>::max();
+        for ( int i = 0; i < 3; i++ )
+            if ( min_val > wb_multipliers[i] )
+                min_val = wb_multipliers[i];
+
+        if ( min_val > 0 && min_val != 1 )
+            for ( int i = 0; i < 3; i++ )
+                wb_multipliers[i] /= min_val;
+
+        idt.chooseIllumSrc( wb_multipliers, 0 );
     }
 
     if ( idt.calIDT() )

@@ -56,6 +56,7 @@
 #define _ACESRENDER_h__
 
 #include <rawtoaces/rta.h>
+#include <rawtoaces/define.h>
 #include <libraw/libraw.h>
 #include <unordered_map>
 

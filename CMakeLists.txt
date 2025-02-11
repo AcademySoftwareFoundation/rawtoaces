@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 project( RAWTOACES )
 
 set( RAWTOACES_MAJOR_VERSION 1 )
@@ -64,6 +64,7 @@ else ()
   set ( DO_SHARED STATIC )
 endif ()
 
+include ( GNUInstallDirs )
 include ( configure.cmake )
 
 
@@ -95,13 +96,38 @@ install( FILES
   "${PROJECT_BINARY_DIR}/RAWTOACESConfigVersion.cmake"
   DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
 
+
+
+install(
+    TARGETS rawtoaces_idt rawtoaces_util rawtoaces_util2 rawtoaces
+    EXPORT RawToAcesConfig
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+export(
+    TARGETS rawtoaces_idt rawtoaces_util rawtoaces_util2 rawtoaces
+    NAMESPACE RawToAces::
+    FILE "${CMAKE_CURRENT_BINARY_DIR}/RawToAcesConfig.cmake"
+)
+
+install(
+    EXPORT RawToAcesConfig
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/CMake/RawToAces"
+    NAMESPACE RawToAces::
+)
+
+
+
+
 if ( WIN32 AND NOT CYGWIN )
 install( FILES "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" DESTINATION
   "${INSTALL_CMAKE_DIR}" COMPONENT dev )
 endif( )
 
 if ( APPLE OR UNIX )
-	install (DIRECTORY data DESTINATION include/rawtoaces)
+	install (DIRECTORY data DESTINATION ${CMAKE_INSTALL_DATADIR}/rawtoaces)
 endif()
 
 enable_testing()

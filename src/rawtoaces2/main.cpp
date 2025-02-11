@@ -10,8 +10,8 @@ using namespace rta;
 
 int main( int argc, const char *argv[] )
 {
-
     OIIO::ArgParse argParse;
+    argParse.arg( "filename" ).action( OIIO::ArgParse::append() ).hidden();
 
     ImageConverter converter;
     converter.init_parser( argParse );

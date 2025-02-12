@@ -64,7 +64,6 @@ else ()
   set ( DO_SHARED STATIC )
 endif ()
 
-include ( GNUInstallDirs )
 include ( configure.cmake )
 
 
@@ -98,25 +97,6 @@ install( FILES
 
 
 
-install(
-    TARGETS rawtoaces_idt rawtoaces_util rawtoaces_util2 rawtoaces
-    EXPORT RawToAcesConfig
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
-
-export(
-    TARGETS rawtoaces_idt rawtoaces_util rawtoaces_util2 rawtoaces
-    NAMESPACE RawToAces::
-    FILE "${CMAKE_CURRENT_BINARY_DIR}/RawToAcesConfig.cmake"
-)
-
-install(
-    EXPORT RawToAcesConfig
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/CMake/RawToAces"
-    NAMESPACE RawToAces::
-)
 
 
 
@@ -127,6 +107,28 @@ install( FILES "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" DESTINATION
 endif( )
 
 if ( APPLE OR UNIX )
+	include ( GNUInstallDirs )
+
+	install(
+        TARGETS rawtoaces_idt rawtoaces_util rawtoaces_util2 rawtoaces
+        EXPORT RawToAcesConfig
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+
+    export(
+        TARGETS rawtoaces_idt rawtoaces_util rawtoaces_util2 rawtoaces
+        NAMESPACE RawToAces::
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/RawToAcesConfig.cmake"
+    )
+
+    install(
+        EXPORT RawToAcesConfig
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/CMake/RawToAces"
+        NAMESPACE RawToAces::
+    )
+
 	install (DIRECTORY data DESTINATION ${CMAKE_INSTALL_DATADIR}/rawtoaces)
 endif()
 

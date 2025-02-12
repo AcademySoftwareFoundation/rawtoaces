@@ -13,8 +13,11 @@ add_library( ${RAWTOACESIDTLIB} ${DO_SHARED}
 
 set_property(TARGET ${RAWTOACESIDTLIB} PROPERTY CXX_STANDARD 17)
 
+# Eigen is also used in rawtoaces_util and rawtoaces_util2, so setting it public here
 target_link_libraries(
     ${RAWTOACESIDTLIB}
+    PUBLIC
+        Eigen3::Eigen
     PRIVATE
         Boost::boost
         Boost::system
@@ -22,6 +25,7 @@ target_link_libraries(
         Imath::ImathConfig
 )
 
+# Ceres is also used in rawtoaces_util and rawtoaces_util2, so setting it public here
 if ( ${Ceres_VERSION_MAJOR} GREATER 1 )
     target_link_libraries( ${RAWTOACESIDTLIB} PUBLIC Ceres::ceres )
 else ()

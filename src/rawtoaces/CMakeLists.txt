@@ -7,16 +7,9 @@ add_executable( rawtoaces
 
 set_property(TARGET rawtoaces PROPERTY CXX_STANDARD 17)
 
-target_include_directories( rawtoaces
-    PUBLIC
-        ${AcesContainer_INCLUDE_DIRS}
-)
-
 target_link_libraries ( rawtoaces
     PUBLIC
         ${RAWTOACESLIB}
-    INTERFACE
-        Boost::headers
 )
 
 if ( LIBRAW_CONFIG_FOUND )

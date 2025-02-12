@@ -1,7 +1,7 @@
 # Until we get some of these modules into the upstream packages, put them here
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_INSTALL_PREFIX}/share/CMake")
-
+set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${CMAKE_SOURCE_DIR}/../")
 
 find_package ( OpenImageIO   CONFIG REQUIRED )
 find_package ( AcesContainer CONFIG REQUIRED )

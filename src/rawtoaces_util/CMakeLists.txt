@@ -10,22 +10,19 @@ add_library ( ${RAWTOACESLIB} ${DO_SHARED}
 
 set_property(TARGET ${RAWTOACESLIB} PROPERTY CXX_STANDARD 17)
 
-if ( AcesContainer_FOUND )
-    target_include_directories ( ${RAWTOACESLIB} PRIVATE ${AcesContainer_INCLUDE_DIRS} )
-    target_link_directories    ( ${RAWTOACESLIB} PUBLIC  ${AcesContainer_LIBRARY_DIRS} )
-    target_link_libraries      ( ${RAWTOACESLIB}
-        PRIVATE
-            ${AcesContainer_LIBRARIES}
-            ${AcesContainer_LDFLAGS_OTHER}
-    )
-endif()
+target_include_directories ( ${RAWTOACESLIB} PRIVATE ${AcesContainer_INCLUDE_DIRS} )
+target_link_directories    ( ${RAWTOACESLIB} PUBLIC ${AcesContainer_LIBRARY_DIRS} )
+target_link_libraries      ( ${RAWTOACESLIB}
+    PUBLIC
+        ${AcesContainer_LIBRARIES}
+        ${AcesContainer_LDFLAGS_OTHER}
+)
  
 target_link_libraries ( ${RAWTOACESLIB}
     PUBLIC
         ${RAWTOACESIDTLIB}
+    PRIVATE
         Boost::filesystem
-    INTERFACE
-        Eigen3::Eigen
         Imath::Imath
         Imath::ImathConfig
 )
@@ -33,6 +30,7 @@ target_link_libraries ( ${RAWTOACESLIB}
 if ( LIBRAW_CONFIG_FOUND )
     target_link_libraries ( ${RAWTOACESLIB} PUBLIC libraw::raw )
 else ()
+    target_include_directories(${RAWTOACESLIB} PUBLIC ${libraw_INCLUDE_DIR}/..)
     target_link_directories(${RAWTOACESLIB} PUBLIC ${libraw_LIBRARY_DIRS} )
     target_link_libraries(${RAWTOACESLIB} PUBLIC ${libraw_LIBRARIES} ${libraw_LDFLAGS_OTHER} )
 endif ()

@@ -100,15 +100,18 @@ jobs:
             c_compiler: gcc
             cpp_compiler: g++
             install_deps: install_deps_linux
+            build_shared_libs: ON
           - title: ubuntu
             os: ubuntu-24.04
             cpp_compiler: clang++
             install_deps: install_deps_linux
+            build_shared_libs: ON
           - title: macos
             os: macos-latest
             c_compiler: clang
             cpp_compiler: clang++
             install_deps: install_deps_mac
+            build_shared_libs: ON
         exclude:
           - title: windows
             c_compiler: gcc

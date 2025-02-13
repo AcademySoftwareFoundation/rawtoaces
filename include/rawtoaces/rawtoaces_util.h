@@ -106,6 +106,9 @@ public:
 
     /// Configures the converter using the requested white balance and colour
     /// matrix method, and the metadata of the file provided in `input_file`.
+    /// This method loads the metadata from the given image file and
+    /// initialises the options to give the OIIO raw image reader to
+    /// decode the pixels.
     /// @param input_filename
     ///    A file name of the raw image file to read the metadata from.
     /// @param options
@@ -116,6 +119,21 @@ public:
     ///    `true` if configured successfully.
     bool configure(
         const std::string &input_filename, OIIO::ParamValueList &options );
+
+    /// Configures the converter using the requested white balance and colour
+    /// matrix method, and the metadata of the given OIIO::ImageSpec object.
+    /// Use this method if you already have an image read from file to save
+    /// on disk operations.
+    /// @param imageSpec
+    ///    An image spec obtained from OIIO::ImageInput or OIIO::ImageBuf.
+    /// @param options
+    ///    Conversion hints to be passed to OIIO when reading an image file.
+    ///    The list can be pre- or post- updated with other hints, unrelated to
+    ///    the rawtoaces conversion.
+    /// @result
+    ///    `true` if configured successfully.
+    bool configure(
+        const OIIO::ImageSpec &imageSpec, OIIO::ParamValueList &options );
 
     /// Apply the colour space conversion matrix (or matrices) to convert the
     /// image buffer from the raw camera colour space to ACES.

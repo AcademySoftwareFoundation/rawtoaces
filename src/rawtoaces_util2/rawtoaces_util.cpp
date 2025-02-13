@@ -430,11 +430,11 @@ bool ImageConverter::parse_params( const OIIO::ArgParse &argParse )
 
     headroom = argParse["headroom"].get<float>();
 
-    std::string illum = argParse["illuminant"].get();
+    illuminant = argParse["illuminant"].get();
 
     if ( wbMethod == WBMethod::Illuminant )
     {
-        if ( illum.size() == 0 )
+        if ( illuminant.empty() )
         {
             std::cerr << "Warning: the white balancing method was set to "
                       << "\"illuminant\", but no \"--illuminant\" parameter "
@@ -444,7 +444,7 @@ bool ImageConverter::parse_params( const OIIO::ArgParse &argParse )
     }
     else
     {
-        if ( illum.size() != 0 )
+        if ( !illuminant.empty() )
         {
             std::cerr << "Warning: the \"--illuminant\" parameter provided "
                       << "but the white balancing mode different from "
@@ -529,13 +529,8 @@ bool ImageConverter::parse_params( const OIIO::ArgParse &argParse )
 }
 
 bool ImageConverter::configure(
-    const std::string &input_filename, OIIO::ParamValueList &options )
+    const OIIO::ImageSpec &imageSpec, OIIO::ParamValueList &options )
 {
-    _read_raw = options.get_string( "raw:Demosaic" ) == "none";
-
-    OIIO::ImageSpec imageSpec;
-
-    options["raw:ColorSpace"]    = "XYZ";
     options["raw:use_camera_wb"] = 0;
     options["raw:use_auto_wb"]   = 0;
 
@@ -551,16 +546,6 @@ bool ImageConverter::configure(
     {
         options.attribute(
             "raw:cropbox", OIIO::TypeDesc( OIIO::TypeDesc::INT, 4 ), cropbox );
-    }
-
-    OIIO::ImageSpec temp_spec;
-    temp_spec.extra_attribs = options;
-
-    auto imageInput = OIIO::ImageInput::create( "raw", false, &temp_spec );
-    bool result     = imageInput->open( input_filename, imageSpec, temp_spec );
-    if ( !result )
-    {
-        return false;
     }
 
     _is_DNG = imageSpec.extra_attribs.find( "raw:dng:version" )->get_int() > 0;
@@ -635,7 +620,11 @@ bool ImageConverter::configure(
             }
             break;
 
-        default: break;
+        default:
+            std::cerr
+                << "ERROR: This white balancing method has not been configured "
+                << "properly." << std::endl;
+            exit( 1 );
     }
 
     switch ( matrixMethod )
@@ -645,12 +634,16 @@ bool ImageConverter::configure(
             options["raw:use_camera_matrix"] = 0;
             break;
         case MatrixMethod::Metadata:
+            options["raw:ColorSpace"]        = "XYZ";
             options["raw:use_camera_matrix"] = _is_DNG ? 1 : 3;
             break;
-        case MatrixMethod::Adobe: options["raw:use_camera_matrix"] = 1; break;
+        case MatrixMethod::Adobe:
+            options["raw:ColorSpace"]        = "XYZ";
+            options["raw:use_camera_matrix"] = 1;
+            break;
         case MatrixMethod::Custom:
-            options["raw:use_camera_matrix"] = 0;
             options["raw:ColorSpace"]        = "raw";
+            options["raw:use_camera_matrix"] = 0;
 
             _IDT_matrix.resize( 3 );
             for ( int i = 0; i < 3; i++ )
@@ -661,9 +654,12 @@ bool ImageConverter::configure(
                     _IDT_matrix[i][j] = customMatrix[i][j];
                 }
             }
-
             break;
-        default: break;
+        default:
+            std::cerr
+                << "ERROR: This matrix method has not been configured properly."
+                << std::endl;
+            exit( 1 );
     }
 
     bool spectral_white_balance = wbMethod == WBMethod::Illuminant;
@@ -709,6 +705,30 @@ bool ImageConverter::configure(
     }
 
     return true;
+}
+
+bool ImageConverter::configure(
+    const std::string &input_filename, OIIO::ParamValueList &options )
+{
+    _read_raw = options.get_string( "raw:Demosaic" ) == "none";
+
+    OIIO::ImageSpec imageSpec;
+
+    options["raw:ColorSpace"]    = "XYZ";
+    options["raw:use_camera_wb"] = 0;
+    options["raw:use_auto_wb"]   = 0;
+
+    OIIO::ImageSpec temp_spec;
+    temp_spec.extra_attribs = options;
+
+    auto imageInput = OIIO::ImageInput::create( "raw", false, &temp_spec );
+    bool result     = imageInput->open( input_filename, imageSpec, temp_spec );
+    if ( !result )
+    {
+        return false;
+    }
+
+    return configure( imageSpec, options );
 }
 
 bool ImageConverter::applyMatrix(

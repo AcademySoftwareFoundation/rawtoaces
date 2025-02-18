@@ -8,6 +8,8 @@
 #include <rawtoaces/rta.h>
 #include <rawtoaces/mathOps.h>
 
+#include "transform_cache.h"
+
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/imagebuf.h>
 #include <OpenImageIO/imagebufalgo.h>
@@ -17,46 +19,7 @@
 namespace rta
 {
 
-std::string findFile( const std::string &filename )
-{
-    auto paths = pathsFinder();
-
-    for ( auto &path: paths.paths )
-    {
-        std::string full_path = path + "/" + filename;
-        if ( std::filesystem::exists( full_path ) )
-            return full_path;
-    }
-    return "";
-}
-
-std::vector<std::string> collectDataFiles( const std::string &type )
-{
-    std::vector<std::string> result;
-
-    auto paths = pathsFinder();
-
-    for ( auto &path: paths.paths )
-    {
-        if ( std::filesystem::is_directory( path ) )
-        {
-            auto type_path = path + "/" + type;
-            if ( std::filesystem::exists( type_path ) )
-            {
-                auto it = std::filesystem::directory_iterator( type_path );
-                for ( auto filename2: it )
-                {
-                    auto p = filename2.path();
-                    if ( filename2.path().extension() == ".json" )
-                    {
-                        result.push_back( filename2.path().string() );
-                    }
-                }
-            }
-        }
-    }
-    return result;
-}
+cache::TransformCache transform_cache;
 
 const char *HelpString =
     "Rawtoaces converts raw image files from a digital camera to "
@@ -325,7 +288,7 @@ bool ImageConverter::parse_params( const OIIO::ArgParse &argParse )
             << "cameras:" << std::endl;
 
         Idt                      idt;
-        auto                     paths = collectDataFiles( "camera" );
+        auto                     paths = cache::collectDataFiles( "camera" );
         std::vector<std::string> cameras;
         for ( auto path: paths )
         {
@@ -352,8 +315,8 @@ bool ImageConverter::parse_params( const OIIO::ArgParse &argParse )
                   << std::endl;
         std::cout << "- Black-body radiation (e.g., 3200K)" << std::endl;
 
-        Idt                      idt;
-        auto                     paths = collectDataFiles( "illuminant" );
+        Idt  idt;
+        auto paths = cache::collectDataFiles( "illuminant" );
         std::vector<std::string> illuminants;
         for ( auto path: paths )
         {
@@ -566,7 +529,7 @@ bool ImageConverter::configure(
                 OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
                 user_mul );
 
-            if ( _read_raw )
+            //            if ( _read_raw )
             {
                 _WB_mults.resize( 4 );
                 for ( size_t i = 0; i < 4; i++ )
@@ -612,7 +575,7 @@ bool ImageConverter::configure(
                 OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
                 customWB );
 
-            if ( _read_raw )
+            //            if ( _read_raw )
             {
                 _WB_mults.resize( 4 );
                 for ( size_t i = 0; i < 4; i++ )
@@ -830,67 +793,15 @@ void ImageConverter::prepareIDT_spectral(
     bool                   calc_white_balance,
     bool                   calc_matrix )
 {
-    std::string lower_illuminant( illuminant );
-
-    if ( lower_illuminant.length() == 0 )
+    std::string lower_illuminant = OIIO::Strutil::lower( illuminant );
+    if ( lower_illuminant.empty() )
         lower_illuminant = "na";
-    else
-    {
-        std::transform(
-            lower_illuminant.begin(),
-            lower_illuminant.end(),
-            lower_illuminant.begin(),
-            []( unsigned char c ) { return std::tolower( c ); } );
-    }
 
-    Idt idt;
-    idt.setVerbosity( verbosity );
+    cache::TransformDescriptor descriptor;
+    descriptor.camera_make  = imageSpec["Make"];
+    descriptor.camera_model = imageSpec["Model"];
 
-    auto illum_paths = collectDataFiles( "illuminant" );
-    int  res         = idt.loadIlluminant( illum_paths, lower_illuminant );
-
-    bool        found_camera = false;
-    auto        camera_paths = collectDataFiles( "camera" );
-    std::string cameraMake   = imageSpec["Make"];
-    std::string cameraModel  = imageSpec["Model"];
-
-    for ( auto &path: camera_paths )
-    {
-        if ( idt.loadCameraSpst(
-                 path, cameraMake.c_str(), cameraModel.c_str() ) )
-        {
-            found_camera = true;
-            break;
-        }
-    }
-
-    if ( !found_camera )
-    {
-        std::cerr << "Camera spectral sensitivity data not found for "
-                  << cameraMake << " " << cameraModel << ". "
-                  << "Please check that the data is available "
-                  << "at the location(s) specified in RAWTOACES_DATA_PATH"
-                  << std::endl;
-        exit( 1 );
-    }
-
-    auto training = findFile( "training/training_spectral.json" );
-    if ( training.length() )
-    {
-        idt.loadTrainingData( training );
-    }
-
-    auto cmf = findFile( "cmf/cmf_1931.json" );
-    if ( cmf.length() )
-    {
-        idt.loadCMF( cmf );
-    }
-
-    if ( lower_illuminant != "na" )
-    {
-        idt.chooseIllumType( lower_illuminant.c_str(), headroom );
-    }
-    else
+    if ( lower_illuminant == "na" )
     {
         std::vector<double> wb_multipliers( 4 );
 
@@ -919,27 +830,89 @@ void ImageConverter::prepareIDT_spectral(
             for ( int i = 0; i < 3; i++ )
                 wb_multipliers[i] /= min_val;
 
-        idt.chooseIllumSrc( wb_multipliers, 0 );
+        descriptor.type = cache::TransformEntryType::Illum_from_WB;
+        cache::WB &wb   = descriptor.value.emplace<cache::WB>();
+        wb.value[0]     = wb_multipliers[0];
+        wb.value[1]     = wb_multipliers[1];
+        wb.value[2]     = wb_multipliers[2];
+    }
+    else
+    {
+        descriptor.type  = cache::TransformEntryType::WB_from_Illum;
+        descriptor.value = lower_illuminant;
     }
 
-    if ( idt.calIDT() )
+    transform_cache.verbosity = verbosity;
+    const cache::TransformCacheEntryData &wb_data =
+        transform_cache.fetch( descriptor );
+
+    if ( calc_white_balance )
     {
-        if ( calc_white_balance )
+        auto p = std::get<std::pair<cache::WB, std::string>>( wb_data.value );
+        const cache::WB &wb = p.first;
+        _WB_mults.resize( 3 );
+        _WB_mults[0] = wb.value[0];
+        _WB_mults[1] = wb.value[1];
+        _WB_mults[2] = wb.value[2];
+    }
+
+    if ( calc_matrix )
+    {
+        auto &p = std::get<std::pair<cache::WB, std::string>>( wb_data.value );
+        std::string illum = p.second;
+
+        cache::TransformDescriptor descriptor;
+        descriptor.camera_make  = imageSpec["Make"];
+        descriptor.camera_model = imageSpec["Model"];
+        descriptor.type         = cache::TransformEntryType::Mat_from_Illum;
+        descriptor.value        = illum;
+
+        const cache::TransformCacheEntryData &mat_data =
+            transform_cache.fetch( descriptor );
+        const cache::Matrix33 &mat =
+            std::get<cache::Matrix33>( mat_data.value );
+
+        _IDT_matrix.resize( 3 );
+        for ( size_t i = 0; i < 3; i++ )
         {
-            _WB_mults = idt.getWB();
+            _IDT_matrix[i].resize( 3 );
+            for ( size_t j = 0; j < 3; j++ )
+            {
+                _IDT_matrix[i][j] = mat.value[i][j];
+            }
         }
 
-        if ( calc_matrix )
+        _CAT_matrix.resize( 0 );
+    }
+}
+
+void fetch_matrix(
+    cache::TransformDescriptor       &descriptor,
+    std::vector<std::vector<double>> &matrix )
+{
+    const cache::TransformCacheEntryData &mat_data =
+        transform_cache.fetch( descriptor );
+    const cache::Matrix33 &mat = std::get<cache::Matrix33>( mat_data.value );
+
+    matrix.resize( 3 );
+    for ( size_t i = 0; i < 3; i++ )
+    {
+        matrix[i].resize( 3 );
+        for ( size_t j = 0; j < 3; j++ )
         {
-            _IDT_matrix = idt.getIDT();
-            _CAT_matrix.resize( 0 );
+            matrix[i][j] = mat.value[i][j];
         }
     }
 }
 
 void ImageConverter::prepareIDT_DNG( const OIIO::ImageSpec &imageSpec )
 {
-    Metadata metadata;
+    cache::TransformDescriptor descriptor;
+    descriptor.type         = cache::TransformEntryType::Mat_from_DNG;
+    descriptor.camera_make  = imageSpec["Make"];
+    descriptor.camera_model = imageSpec["Model"];
+    Metadata &metadata      = descriptor.value.emplace<Metadata>();
+
     metadata.neutralRGB.resize( 3 );
     metadata.xyz2rgbMatrix1.resize( 9 );
     metadata.xyz2rgbMatrix2.resize( 9 );
@@ -976,13 +949,10 @@ void ImageConverter::prepareIDT_DNG( const OIIO::ImageSpec &imageSpec )
         }
     }
 
-    DNGIdt *dng = new DNGIdt( metadata );
-
-    _IDT_matrix = dng->getDNGIDTMatrix();
+    fetch_matrix( descriptor, _IDT_matrix );
 
     // Do not apply CAT for DNG
     _CAT_matrix.resize( 0 );
-    //    _CAT_matrix = dng->getDNGCATMatrix();
 }
 
 void ImageConverter::prepareIDT_nonDNG( const OIIO::ImageSpec &imageSpec )
@@ -994,36 +964,28 @@ void ImageConverter::prepareIDT_nonDNG( const OIIO::ImageSpec &imageSpec )
 
         if ( size == 12 )
         {
-            std::vector<std::vector<double>> xyz2cam;
+            cache::TransformDescriptor descriptor;
+            descriptor.type        = cache::TransformEntryType::Mat_from_nonDNG;
+            descriptor.camera_make = imageSpec["Make"];
+            descriptor.camera_model = imageSpec["Model"];
+
+            auto &p =
+                descriptor.value
+                    .emplace<std::pair<cache::Vector3, cache::Matrix33>>();
+
+            cache::Vector3  &wb   = p.first;
+            cache::Matrix33 &mat2 = p.second;
 
             int idx = 0;
-            xyz2cam.resize( 4 );
-            for ( size_t row = 0; row < 4; row++ )
-            {
-                xyz2cam[row].resize( 4 );
-
-                for ( size_t col = 0; col < 3; col++ )
-                {
-                    xyz2cam[row][col] = mat->get_float_indexed( idx++ );
-                }
-                xyz2cam[row][3] = 0;
-            }
-            xyz2cam[3][0] = 0;
-            xyz2cam[3][1] = 0;
-            xyz2cam[3][2] = 0;
-            xyz2cam[3][3] = 1;
-
-            auto cam2xyz = invertVM( xyz2cam );
-
             for ( size_t row = 0; row < 3; row++ )
             {
                 for ( size_t col = 0; col < 3; col++ )
                 {
-                    cam2xyz[row][col] /= _WB_mults[row];
+                    mat2.value[row][col] = mat->get_float_indexed( idx++ );
                 }
             }
 
-            _IDT_matrix = cam2xyz; //transposeVec(cam2xyz);
+            fetch_matrix( descriptor, _IDT_matrix );
         }
     }
     else

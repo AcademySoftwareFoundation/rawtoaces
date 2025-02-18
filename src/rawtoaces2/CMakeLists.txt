@@ -18,4 +18,7 @@ target_link_libraries ( rawtoaces2
         rawtoaces_util2
 )
 
+
+set_target_properties(rawtoaces2 PROPERTIES XCODE_SCHEME_ARGUMENTS "${CMAKE_XCODE_SCHEME_ARGUMENTS}" )
+
 install( TARGETS rawtoaces2 DESTINATION bin )

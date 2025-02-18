@@ -43,8 +43,8 @@ install(FILES
     ${PROJECT_SOURCE_DIR}/include/rawtoaces/define.h
     ${PROJECT_SOURCE_DIR}/include/rawtoaces/mathOps.h
     ${PROJECT_SOURCE_DIR}/include/rawtoaces/rta.h
-
- 	DESTINATION include/rawtoaces
+    ${PROJECT_SOURCE_DIR}/include/rawtoaces/metadata.h
+    DESTINATION include/rawtoaces
 )
 
 install( TARGETS ${RAWTOACESIDTLIB} DESTINATION lib )

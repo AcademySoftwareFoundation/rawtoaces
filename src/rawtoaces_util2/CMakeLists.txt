@@ -2,8 +2,11 @@ cmake_minimum_required(VERSION 3.10)
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
 add_library ( rawtoaces_util2 ${DO_SHARED}
+    transform_cache.cpp
+    transform_cache.h
     rawtoaces_util.cpp
     ${PROJECT_SOURCE_DIR}/include/rawtoaces/rawtoaces_util.h
+    ${PROJECT_SOURCE_DIR}/include/rawtoaces/cache_base.h
 )
 
 set_property(TARGET rawtoaces_util2 PROPERTY CXX_STANDARD 17)
@@ -31,7 +34,8 @@ set_target_properties( rawtoaces_util2 PROPERTIES
 
 install(
     FILES
-        ${PROJECT_SOURCE_DIR}/include/rawtoaces/rawtoaces_util.h	 	
+        ${PROJECT_SOURCE_DIR}/include/rawtoaces/rawtoaces_util.h
+        ${PROJECT_SOURCE_DIR}/include/rawtoaces/cache_base.h	 	
     DESTINATION include/rawtoaces
 )
 

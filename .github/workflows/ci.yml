@@ -55,7 +55,7 @@ jobs:
         shell: bash
         run: |
             build_scripts/install_aces_container.bash
-            sudo yum install --setopt=tsflags=nodocs -y eigen3-devel ceres-solver-devel LibRaw-devel
+            sudo yum install --setopt=tsflags=nodocs -y eigen3-devel ceres-solver-devel LibRaw-devel json-devel
 
       - name: Configure CMake
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.

@@ -11,4 +11,4 @@ time sudo apt-get -q -f install -y \
     libopenimageio-dev \
     libboost-dev libboost-thread-dev libboost-filesystem-dev \
     libboost-test-dev \
-    libraw-dev libceres-dev
+    libraw-dev libceres-dev nlohmann-json-dev

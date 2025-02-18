@@ -21,8 +21,7 @@ target_link_libraries(
     PRIVATE
         Boost::boost
         Boost::system
-        Imath::Imath
-        Imath::ImathConfig
+	    nlohmann_json::nlohmann_json
 )
 
 # Ceres is also used in rawtoaces_util and rawtoaces_util2, so setting it public here

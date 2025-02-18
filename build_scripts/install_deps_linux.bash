@@ -12,4 +12,5 @@ time sudo apt-get -q -f install -y \
     libraw-dev libceres-dev \
     libopencv-dev \
     openimageio-tools \
-    libopenimageio-dev
+    libopenimageio-dev \
+    nlohmann-json3-dev

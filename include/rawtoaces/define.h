@@ -359,10 +359,13 @@ inline vector<string> openDir( string path = "." )
 {
     vector<string> paths;
 
-    for ( auto &i: filesystem::directory_iterator( path ) )
+    if ( filesystem::exists( path ) )
     {
-        if ( i.status().type() != filesystem::file_type::directory )
-            paths.push_back( i.path().string() );
+        for ( auto &i: filesystem::directory_iterator( path ) )
+        {
+            if ( i.status().type() != filesystem::file_type::directory )
+                paths.push_back( i.path().string() );
+        }
     }
 
     return paths;

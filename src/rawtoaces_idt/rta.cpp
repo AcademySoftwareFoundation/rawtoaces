@@ -55,15 +55,14 @@
 #include <rawtoaces/rta.h>
 #include <rawtoaces/mathOps.h>
 
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/foreach.hpp>
+#include <fstream>
+#include <nlohmann/json.hpp>
 
-using namespace boost::property_tree;
 using namespace ceres;
 
 namespace rta
 {
+
 Illum::Illum()
 {
     _inc = 5;
@@ -146,12 +145,10 @@ int Illum::readSPD( const string &path, const string &type )
 
     try
     {
-        // using libraries from boost::property_tree
-        ptree pt;
-        read_json( path, pt );
-
-        const string stype = pt.get<string>( "header.illuminant" );
-        if ( type.compare( stype ) != 0 && type.compare( "na" ) != 0 )
+        std::ifstream  i( path );
+        nlohmann::json data  = nlohmann::json::parse( i );
+        const string   stype = data["header"]["illuminant"];
+        if ( type != stype && type != "na" )
             return 0;
 
         _type = stype;
@@ -159,10 +156,11 @@ int Illum::readSPD( const string &path, const string &type )
         vector<int> wavs;
         int         dis;
 
-        BOOST_FOREACH (
-            ptree::value_type &row, pt.get_child( "spectral_data.data.main" ) )
+        nlohmann::json main_data = data["spectral_data"]["data"]["main"];
+        for ( auto &[index, values]: main_data.items() )
         {
-            wavs.push_back( atoi( ( row.first ).c_str() ) );
+            std::string row = index;
+            wavs.push_back( stoi( row ) );
 
             if ( wavs.size() == 2 )
                 dis = wavs[1] - wavs[0];
@@ -183,11 +181,11 @@ int Illum::readSPD( const string &path, const string &type )
             else if ( wavs[wavs.size() - 1] > 780 )
                 break;
 
-            BOOST_FOREACH ( ptree::value_type &cell, row.second )
+            for ( auto j: values )
             {
-                _data.push_back( cell.second.get_value<double>() );
+                _data.push_back( (double)j );
                 if ( wavs[wavs.size() - 1] == 550 )
-                    _index = cell.second.get_value<double>();
+                    _index = (double)j;
             }
 
             //                printf ( "\"%i\": [ %18.13f ], \n",
@@ -599,26 +597,30 @@ int Spst::loadSpst( const string &path, const char *maker, const char *model )
 
     try
     {
-        ptree pt;
-        read_json( path, pt );
+        std::ifstream  i( path );
+        nlohmann::json data = nlohmann::json::parse( i );
 
-        string cmaker = pt.get<string>( "header.manufacturer" );
-        if ( maker != nullptr && cmp_str( maker, cmaker.c_str() ) )
+        const string camera_make = data["header"]["manufacturer"];
+        if ( camera_make.empty() || cmp_str( camera_make.c_str(), maker ) != 0 )
             return 0;
-        setBrand( cmaker.c_str() );
 
-        string cmodel = pt.get<string>( "header.model" );
-        if ( model != nullptr && cmp_str( model, cmodel.c_str() ) )
+        setBrand( camera_make.c_str() );
+
+        const string camera_model = data["header"]["model"];
+        if ( camera_model.empty() ||
+             cmp_str( camera_model.c_str(), model ) != 0 )
             return 0;
-        setModel( cmodel.c_str() );
+
+        setModel( camera_model.c_str() );
 
         vector<int> wavs;
         int         inc;
 
-        BOOST_FOREACH (
-            ptree::value_type &row, pt.get_child( "spectral_data.data.main" ) )
+        nlohmann::json main_data = data["spectral_data"]["data"]["main"];
+        for ( auto &[index, values]: main_data.items() )
         {
-            wavs.push_back( atoi( ( row.first ).c_str() ) );
+            std::string row = index;
+            wavs.push_back( stoi( row ) );
 
             if ( wavs.size() == 2 )
                 inc = wavs[1] - wavs[0];
@@ -640,8 +642,8 @@ int Spst::loadSpst( const string &path, const char *maker, const char *model )
                 break;
 
             vector<double> data;
-            BOOST_FOREACH ( ptree::value_type &cell, row.second )
-                data.push_back( cell.second.get_value<double>() );
+            for ( auto j: values )
+                data.push_back( (double)j );
 
             // ensure there are three components
             assert( data.size() == 3 );
@@ -980,19 +982,22 @@ void Idt::loadTrainingData( const string &path )
 
     try
     {
-        ptree pt;
-        read_json( path, pt );
+        std::ifstream  stream( path );
+        nlohmann::json data = nlohmann::json::parse( stream );
 
         int i = 0;
 
-        BOOST_FOREACH (
-            ptree::value_type &row, pt.get_child( "spectral_data.data.main" ) )
+        nlohmann::json main_data = data["spectral_data"]["data"]["main"];
+        for ( auto &[index, values]: main_data.items() )
         {
-            _trainingSpec[i]._wl = atoi( ( row.first ).c_str() );
+            std::string row      = index;
+            _trainingSpec[i]._wl = stoi( row );
 
-            BOOST_FOREACH ( ptree::value_type &cell, row.second )
-                _trainingSpec[i]._data.push_back(
-                    cell.second.get_value<double>() );
+            for ( auto j: values )
+            {
+                double d = j;
+                _trainingSpec[i]._data.push_back( d );
+            }
 
             assert( _trainingSpec[i]._data.size() == 190 );
 
@@ -1021,14 +1026,16 @@ void Idt::loadCMF( const string &path )
 
     try
     {
-        ptree pt;
-        read_json( path, pt );
+        std::ifstream  stream( path );
+        nlohmann::json data = nlohmann::json::parse( stream );
 
         int i = 0;
-        BOOST_FOREACH (
-            ptree::value_type &row, pt.get_child( "spectral_data.data.main" ) )
+
+        nlohmann::json main_data = data["spectral_data"]["data"]["main"];
+        for ( auto &[index, values]: main_data.items() )
         {
-            int wl = atoi( ( row.first ).c_str() );
+            std::string row = index;
+            int         wl  = stoi( row );
 
             if ( wl < 380 || wl % 5 )
                 continue;
@@ -1038,8 +1045,8 @@ void Idt::loadCMF( const string &path )
             _cmf[i]._wl = wl;
 
             vector<double> data;
-            BOOST_FOREACH ( ptree::value_type &cell, row.second )
-                data.push_back( cell.second.get_value<double>() );
+            for ( auto j: values )
+                data.push_back( (double)j );
 
             assert( data.size() == 3 );
             _cmf[i]._xbar = data[0];

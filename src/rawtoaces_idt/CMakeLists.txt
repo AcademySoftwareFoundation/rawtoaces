@@ -19,8 +19,6 @@ target_link_libraries(
     PUBLIC
         Eigen3::Eigen
     PRIVATE
-        Boost::boost
-        Boost::system
 	    nlohmann_json::nlohmann_json
 )
 

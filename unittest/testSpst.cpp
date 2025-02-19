@@ -57,10 +57,9 @@
 #    include <windows.h>
 #endif
 
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/test/floating_point_comparison.hpp>
+#include <OpenImageIO/unittest.h>
+
+#include <filesystem>
 
 #include <rawtoaces/mathOps.h>
 #include <rawtoaces/rta.h>
@@ -68,7 +67,7 @@
 using namespace std;
 using namespace rta;
 
-BOOST_AUTO_TEST_CASE( TestSpst_DefaultConstructor )
+void testSpst_DefaultConstructor()
 {
     char   *brand;
     char   *model;
@@ -99,26 +98,23 @@ BOOST_AUTO_TEST_CASE( TestSpst_DefaultConstructor )
     spstobject1->setWLIncrement( increment );
     spstobject1->setSensitivity( rgbsen );
 
-    //    boost::test_tools::const_string csBrand(spstobject1->getBrand());
-    //    BOOST_CHECK_THROW( csBrand.at( csBrand.size()+1 ), std::out_of_range );
-
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject1->getBrand(), "test" ), 0 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject1->getModel(), "test" ), 0 );
-    BOOST_CHECK_EQUAL( int( spstobject1->getWLIncrement() ), 5 );
-    BOOST_CHECK_EQUAL( int( spstobject1->getSensitivity().size() ), 81 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject1->getBrand(), "test" ), 0 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject1->getModel(), "test" ), 0 );
+    OIIO_CHECK_EQUAL( int( spstobject1->getWLIncrement() ), 5 );
+    OIIO_CHECK_EQUAL( int( spstobject1->getSensitivity().size() ), 81 );
 
     vector<RGBSen> rgbsen_cp = spstobject1->getSensitivity();
     delete spstobject1;
 
     FORI( 81 )
     {
-        BOOST_CHECK_EQUAL( rgbsen_cp[i]._RSen, 1.0 );
-        BOOST_CHECK_EQUAL( rgbsen_cp[i]._GSen, 1.0 );
-        BOOST_CHECK_EQUAL( rgbsen_cp[i]._BSen, 1.0 );
+        OIIO_CHECK_EQUAL( rgbsen_cp[i]._RSen, 1.0 );
+        OIIO_CHECK_EQUAL( rgbsen_cp[i]._GSen, 1.0 );
+        OIIO_CHECK_EQUAL( rgbsen_cp[i]._BSen, 1.0 );
     }
 };
 
-BOOST_AUTO_TEST_CASE( TestSpst_Constructor2 )
+void testSpst_Constructor2()
 {
     char   *brand;
     char   *model;
@@ -144,22 +140,22 @@ BOOST_AUTO_TEST_CASE( TestSpst_Constructor2 )
     // Constructor 2
     Spst spstobject2( brand, model, increment, rgbsen );
 
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject2.getBrand(), "test" ), 0 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject2.getModel(), "test" ), 0 );
-    BOOST_CHECK_EQUAL( int( spstobject2.getWLIncrement() ), increment );
-    BOOST_CHECK_EQUAL( int( spstobject2.getSensitivity().size() ), 81 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject2.getBrand(), "test" ), 0 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject2.getModel(), "test" ), 0 );
+    OIIO_CHECK_EQUAL( int( spstobject2.getWLIncrement() ), increment );
+    OIIO_CHECK_EQUAL( int( spstobject2.getSensitivity().size() ), 81 );
 
     vector<RGBSen> rgbsen_cp = spstobject2.getSensitivity();
 
     FORI( 81 )
     {
-        BOOST_CHECK_EQUAL( rgbsen_cp[i]._RSen, 1.0 );
-        BOOST_CHECK_EQUAL( rgbsen_cp[i]._GSen, 1.0 );
-        BOOST_CHECK_EQUAL( rgbsen_cp[i]._BSen, 1.0 );
+        OIIO_CHECK_EQUAL( rgbsen_cp[i]._RSen, 1.0 );
+        OIIO_CHECK_EQUAL( rgbsen_cp[i]._GSen, 1.0 );
+        OIIO_CHECK_EQUAL( rgbsen_cp[i]._BSen, 1.0 );
     }
 };
 
-BOOST_AUTO_TEST_CASE( TestSpst_CopyConstructor )
+void testSpst_CopyConstructor()
 {
     char   *brand;
     char   *model;
@@ -192,10 +188,10 @@ BOOST_AUTO_TEST_CASE( TestSpst_CopyConstructor )
 
     Spst spstobject3( *spstobject1 );
 
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject3.getBrand(), "test" ), 0 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject3.getModel(), "test" ), 0 );
-    BOOST_CHECK_EQUAL( int( spstobject3.getWLIncrement() ), 5 );
-    BOOST_CHECK_EQUAL( int( spstobject3.getSensitivity().size() ), 81 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject3.getBrand(), "test" ), 0 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject3.getModel(), "test" ), 0 );
+    OIIO_CHECK_EQUAL( int( spstobject3.getWLIncrement() ), 5 );
+    OIIO_CHECK_EQUAL( int( spstobject3.getSensitivity().size() ), 81 );
 
     vector<RGBSen> rgbsen_cp = spstobject3.getSensitivity();
 
@@ -203,13 +199,13 @@ BOOST_AUTO_TEST_CASE( TestSpst_CopyConstructor )
 
     FORI( 81 )
     {
-        BOOST_CHECK_EQUAL( rgbsen_cp[i]._RSen, 1.0 );
-        BOOST_CHECK_EQUAL( rgbsen_cp[i]._GSen, 1.0 );
-        BOOST_CHECK_EQUAL( rgbsen_cp[i]._BSen, 1.0 );
+        OIIO_CHECK_EQUAL( rgbsen_cp[i]._RSen, 1.0 );
+        OIIO_CHECK_EQUAL( rgbsen_cp[i]._GSen, 1.0 );
+        OIIO_CHECK_EQUAL( rgbsen_cp[i]._BSen, 1.0 );
     }
 };
 
-BOOST_AUTO_TEST_CASE( TestSpst_LoadSpst )
+void testSpst_LoadSpst()
 {
     uint8_t len   = 6;
     char   *brand = (char *)malloc( len + 1 );
@@ -223,12 +219,18 @@ BOOST_AUTO_TEST_CASE( TestSpst_LoadSpst )
     memcpy( model, "d21", len );
     model[len] = '\0';
 
-    Spst                   *spstTest     = new Spst();
-    boost::filesystem::path absolutePath = boost::filesystem::absolute(
+    Spst                 *spstTest     = new Spst();
+    std::filesystem::path absolutePath = std::filesystem::absolute(
         "../../data/camera/arri_d21_380_780_5.json" );
 
-    BOOST_CHECK_NO_THROW(
-        spstTest->loadSpst( absolutePath.string(), brand, model ) );
+    try
+    {
+        spstTest->loadSpst( absolutePath.string(), brand, model );
+    }
+    catch ( ... )
+    {
+        OIIO_CHECK_ASSERT( 0 );
+    }
 
     const vector<RGBSen> rgbsenTest = spstTest->getSensitivity();
 
@@ -314,16 +316,19 @@ BOOST_AUTO_TEST_CASE( TestSpst_LoadSpst )
                           { 0.000149065, 7.26E-05, 5.84E-05 },
                           { 3.71E-05, 0.0, 2.70E-06 } };
 
-    BOOST_CHECK_EQUAL( int( rgbsenTest.size() ), 81 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstTest->getBrand(), "arri" ), 0 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstTest->getModel(), "d21" ), 0 );
-    BOOST_CHECK_EQUAL( int( spstTest->getWLIncrement() ), 5 );
+    OIIO_CHECK_EQUAL( int( rgbsenTest.size() ), 81 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstTest->getBrand(), "arri" ), 0 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstTest->getModel(), "d21" ), 0 );
+    OIIO_CHECK_EQUAL( int( spstTest->getWLIncrement() ), 5 );
 
     FORI( 81 )
     {
-        BOOST_CHECK_CLOSE( double( rgbsenTest[i]._RSen ), rgb[i][0], 1e-5 );
-        BOOST_CHECK_CLOSE( double( rgbsenTest[i]._GSen ), rgb[i][1], 1e-5 );
-        BOOST_CHECK_CLOSE( double( rgbsenTest[i]._BSen ), rgb[i][2], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH(
+            double( rgbsenTest[i]._RSen ), rgb[i][0], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH(
+            double( rgbsenTest[i]._GSen ), rgb[i][1], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH(
+            double( rgbsenTest[i]._BSen ), rgb[i][2], 1e-5 );
     }
 
     free( model );
@@ -331,7 +336,7 @@ BOOST_AUTO_TEST_CASE( TestSpst_LoadSpst )
     delete spstTest;
 };
 
-BOOST_AUTO_TEST_CASE( TestSpst_DataAccess )
+void testSpst_DataAccess()
 {
     char   *brand1, *brand2, *brand3;
     char   *model1, *model2, *model3;
@@ -382,33 +387,33 @@ BOOST_AUTO_TEST_CASE( TestSpst_DataAccess )
     spstobject1->setWLIncrement( 5 );
     spstobject1->setSensitivity( rgbsen1 );
 
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject1->getBrand(), "" ), 0 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject1->getModel(), "" ), 0 );
-    BOOST_CHECK_EQUAL( int( spstobject1->getWLIncrement() ), 5 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject1->getBrand(), "" ), 0 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject1->getModel(), "" ), 0 );
+    OIIO_CHECK_EQUAL( int( spstobject1->getWLIncrement() ), 5 );
 
     vector<RGBSen> rgbsen_cp = spstobject1->getSensitivity();
 
     FORI( 81 )
     {
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._RSen, 1.00000001, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._GSen, 1.0, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._BSen, 0.999999999, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._RSen, 1.00000001, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._GSen, 1.0, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._BSen, 0.999999999, 1e-5 );
     }
 
     Spst spstobject2( brand2, model2, 10, rgbsen2 );
 
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject2.getBrand(), "b2" ), 0 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject2.getModel(), "m2" ), 0 );
-    BOOST_CHECK_EQUAL( int( spstobject2.getWLIncrement() ), 10 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject2.getBrand(), "b2" ), 0 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject2.getModel(), "m2" ), 0 );
+    OIIO_CHECK_EQUAL( int( spstobject2.getWLIncrement() ), 10 );
 
     rgbsen_cp.clear();
     rgbsen_cp = spstobject2.getSensitivity();
 
     FORI( 81 )
     {
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._RSen, 1.0, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._GSen, 1.0, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._BSen, 1.0, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._RSen, 1.0, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._GSen, 1.0, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._BSen, 1.0, 1e-5 );
     }
 
     Spst spstobject3( spstobject2 );
@@ -418,18 +423,18 @@ BOOST_AUTO_TEST_CASE( TestSpst_DataAccess )
     spstobject3.setWLIncrement( 20 );
     spstobject3.setSensitivity( rgbsen3 );
 
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject3.getBrand(), "brand3" ), 0 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject3.getModel(), "model3" ), 0 );
-    BOOST_CHECK_EQUAL( int( spstobject3.getWLIncrement() ), 20 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject3.getBrand(), "brand3" ), 0 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject3.getModel(), "model3" ), 0 );
+    OIIO_CHECK_EQUAL( int( spstobject3.getWLIncrement() ), 20 );
 
     rgbsen_cp.clear();
     rgbsen_cp = spstobject3.getSensitivity();
 
     FORI( 81 )
     {
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._RSen, -0.9999999999999, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._GSen, 1e-3, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._BSen, 1.0000000000001, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._RSen, -0.9999999999999, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._GSen, 1e-3, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._BSen, 1.0000000000001, 1e-5 );
     }
 
     //    free ( model1 );
@@ -440,3 +445,14 @@ BOOST_AUTO_TEST_CASE( TestSpst_DataAccess )
     //    free ( brand3 );
     //    delete spstobject1;
 };
+
+int main( int, char ** )
+{
+    testSpst_DefaultConstructor();
+    testSpst_Constructor2();
+    testSpst_CopyConstructor();
+    testSpst_LoadSpst();
+    testSpst_DataAccess();
+
+    return unit_test_failures;
+}

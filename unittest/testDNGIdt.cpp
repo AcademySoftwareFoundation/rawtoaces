@@ -52,10 +52,7 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/test/floating_point_comparison.hpp>
+#include <OpenImageIO/unittest.h>
 
 #include <libraw/libraw.h>
 
@@ -65,7 +62,7 @@
 using namespace std;
 using namespace rta;
 
-BOOST_AUTO_TEST_CASE( TestIDT_CcttoMired )
+void testIDT_CcttoMired()
 {
 
     DNGIdt *di    = new DNGIdt();
@@ -73,10 +70,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_CcttoMired )
     double  mired = di->ccttoMired( cct );
     delete di;
 
-    BOOST_CHECK_CLOSE( mired, 153.8461538462, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( mired, 153.8461538462, 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_RobertsonLength )
+void testIDT_RobertsonLength()
 {
 
     DNGIdt        *di    = new DNGIdt();
@@ -88,12 +85,12 @@ BOOST_AUTO_TEST_CASE( TestIDT_RobertsonLength )
     double rLength = di->robertsonLength( uvVector, uvtVector );
     delete di;
 
-    BOOST_CHECK_CLOSE( rLength, 0.060234937, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( rLength, 0.060234937, 1e-5 );
 };
 
 DNGIdt *openFile( std::string path, LibRaw &rawProcessor )
 {
-    boost::filesystem::path pathToRaw = boost::filesystem::absolute(
+    std::filesystem::path pathToRaw = std::filesystem::absolute(
         "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
     int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
     ret     = rawProcessor.unpack();
@@ -140,17 +137,17 @@ DNGIdt *openFile( std::string path, LibRaw &rawProcessor )
     return new DNGIdt( metadata );
 }
 
-BOOST_AUTO_TEST_CASE( TestIDT_LightSourceToColorTemp )
+void testIDT_LightSourceToColorTemp()
 {
     DNGIdt        *di  = new DNGIdt();
     unsigned short tag = 17;
     double         ct  = di->lightSourceToColorTemp( tag );
     delete di;
 
-    BOOST_CHECK_CLOSE( ct, 2856.0, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( ct, 2856.0, 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_XYZToColorTemperature )
+void testIDT_XYZToColorTemperature()
 {
     LibRaw  rawProcessor;
     DNGIdt *di = openFile(
@@ -163,10 +160,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_XYZToColorTemperature )
     rawProcessor.recycle();
     delete di;
 
-    BOOST_CHECK_CLOSE( cct, 5564.6648479019, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( cct, 5564.6648479019, 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_XYZtoCameraWeightedMatrix )
+void testIDT_XYZtoCameraWeightedMatrix()
 {
     LibRaw  rawProcessor;
     DNGIdt *di = openFile(
@@ -183,10 +180,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_XYZtoCameraWeightedMatrix )
     delete di;
 
     FORI( countSize( matrix ) )
-    BOOST_CHECK_CLOSE( result[i], matrix[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i], matrix[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_FindXYZtoCameraMtx )
+void testIDT_FindXYZtoCameraMtx()
 {
     LibRaw  rawProcessor;
     DNGIdt *di = openFile(
@@ -204,10 +201,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_FindXYZtoCameraMtx )
     delete di;
 
     FORI( countSize( matrix ) )
-    BOOST_CHECK_CLOSE( result[i], matrix[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i], matrix[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_ColorTemperatureToXYZ )
+void testIDT_ColorTemperatureToXYZ()
 {
 
     DNGIdt        *di     = new DNGIdt();
@@ -217,10 +214,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_ColorTemperatureToXYZ )
     delete di;
 
     FORI( countSize( XYZ ) )
-    BOOST_CHECK_CLOSE( result[i], XYZ[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i], XYZ[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_MatrixRGBtoXYZ )
+void testIDT_MatrixRGBtoXYZ()
 {
 
     DNGIdt        *di     = new DNGIdt();
@@ -231,10 +228,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_MatrixRGBtoXYZ )
     delete di;
 
     FORI( countSize( XYZ ) )
-    BOOST_CHECK_CLOSE( result[i], XYZ[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i], XYZ[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_GetDNGCATMatrix )
+void testIDT_GetDNGCATMatrix()
 {
     LibRaw  rawProcessor;
     DNGIdt *di = openFile(
@@ -250,10 +247,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_GetDNGCATMatrix )
     delete di;
 
     FORIJ( 3, 3 )
-    BOOST_CHECK_CLOSE( result[i][j], matrix[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i][j], matrix[i][j], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_GetDNGIDTMatrix )
+void testIDT_GetDNGIDTMatrix()
 {
     LibRaw  rawProcessor;
     DNGIdt *di = openFile(
@@ -269,5 +266,21 @@ BOOST_AUTO_TEST_CASE( TestIDT_GetDNGIDTMatrix )
     delete di;
 
     FORIJ( 3, 3 )
-    BOOST_CHECK_CLOSE( result[i][j], matrix[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i][j], matrix[i][j], 1e-5 );
 };
+
+int main( int, char ** )
+{
+    testIDT_CcttoMired();
+    testIDT_RobertsonLength();
+    testIDT_LightSourceToColorTemp();
+    testIDT_XYZToColorTemperature();
+    testIDT_XYZtoCameraWeightedMatrix();
+    testIDT_FindXYZtoCameraMtx();
+    testIDT_ColorTemperatureToXYZ();
+    testIDT_MatrixRGBtoXYZ();
+    testIDT_GetDNGCATMatrix();
+    testIDT_GetDNGIDTMatrix();
+
+    return unit_test_failures;
+}

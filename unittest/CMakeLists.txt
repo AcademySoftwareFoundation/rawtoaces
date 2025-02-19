@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
 
-add_definitions (-DBOOST_TEST_DYN_LINK)
 
 add_executable (
 	Test_Spst
@@ -13,9 +12,7 @@ target_link_libraries(
     Test_Spst
     PUBLIC
         ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
-        Boost::unit_test_framework
+        OpenImageIO::OpenImageIO
 )
 
 add_executable (
@@ -29,11 +26,7 @@ target_link_libraries(
     Test_IDT
     PUBLIC
         ${RAWTOACESLIB}
-        Imath::Imath
-        Imath::ImathConfig
-        Boost::boost
-        Boost::filesystem
-        Boost::unit_test_framework
+        OpenImageIO::OpenImageIO
 )
 
 add_executable (
@@ -47,9 +40,7 @@ target_link_libraries(
     Test_Illum
     PUBLIC
         ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
-        Boost::unit_test_framework
+        OpenImageIO::OpenImageIO
 )
 
 add_executable (
@@ -63,9 +54,7 @@ target_link_libraries(
     Test_DNGIdt
     PUBLIC
         ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
-        Boost::unit_test_framework
+        OpenImageIO::OpenImageIO
 )
 
 if ( LIBRAW_CONFIG_FOUND )
@@ -87,9 +76,7 @@ target_link_libraries(
     Test_Math
     PUBLIC
         ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
-        Boost::unit_test_framework
+        OpenImageIO::OpenImageIO
 )
 
 add_executable (
@@ -103,9 +90,7 @@ target_link_libraries(
     Test_Logic
     PUBLIC
         ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
-        Boost::unit_test_framework
+        OpenImageIO::OpenImageIO
 )
 
 add_executable (
@@ -119,9 +104,7 @@ target_link_libraries(
     Test_Misc
     PUBLIC
         ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
-        Boost::unit_test_framework
+        OpenImageIO::OpenImageIO
 )
 
 

@@ -22,7 +22,6 @@ target_link_libraries ( ${RAWTOACESLIB}
     PUBLIC
         ${RAWTOACESIDTLIB}
     PRIVATE
-        Boost::filesystem
         Imath::Imath
         Imath::ImathConfig
 )

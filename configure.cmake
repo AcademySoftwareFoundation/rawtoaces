@@ -9,12 +9,6 @@ find_package ( Eigen3        CONFIG REQUIRED )
 find_package ( Imath         CONFIG REQUIRED )
 find_package ( nlohmann_json CONFIG REQUIRED )
 find_package ( Ceres                REQUIRED )
-find_package ( Boost                REQUIRED
-    COMPONENTS
-        system
-        filesystem
-        unit_test_framework
-)
 
 find_package (libraw CONFIG QUIET )
 

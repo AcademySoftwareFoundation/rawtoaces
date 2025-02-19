@@ -56,9 +56,7 @@
 #include <rawtoaces/mathOps.h>
 
 #include <Imath/half.h>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/foreach.hpp>
+#include <nlohmann/json.hpp>
 
 #include <aces/aces_Writer.h>
 
@@ -68,9 +66,9 @@
 #endif
 
 using namespace std;
-using namespace boost::property_tree;
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
+#include <mutex>
 
 //  =====================================================================
 //  Prepare the matching between string flags and single character flag
@@ -732,9 +730,9 @@ void AcesRender::gatherSupportedIllums()
             string path( *file );
             try
             {
-                ptree pt;
-                read_json( path, pt );
-                string tmp = pt.get<string>( "header.illuminant" );
+                std::ifstream  i( path );
+                nlohmann::json data = nlohmann::json::parse( i );
+                const string   tmp  = data["header"]["illuminant"];
 
                 if ( record.find( tmp ) != record.end() )
                     continue;
@@ -780,10 +778,11 @@ void AcesRender::gatherSupportedCameras()
             string path( *file );
             try
             {
-                ptree pt;
-                read_json( path, pt );
-                string tmp = pt.get<string>( "header.manufacturer" );
-                tmp += ( " / " + pt.get<string>( "header.model" ) );
+                std::ifstream  i( path );
+                nlohmann::json data  = nlohmann::json::parse( i );
+                const string   make  = data["header"]["manufacturer"];
+                const string   model = data["header"]["model"];
+                string         tmp   = make + "/" + model;
 
                 if ( record.find( tmp ) != record.end() )
                     continue;
@@ -1004,7 +1003,7 @@ vector<string> findFiles( string filePath, vector<string> searchPaths )
     {
         string path = i + "/" + filePath;
 
-        if ( boost::filesystem::exists( path ) )
+        if ( std::filesystem::exists( path ) )
             foundFiles.push_back( path );
     }
 

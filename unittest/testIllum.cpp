@@ -57,10 +57,7 @@
 #    include <windows.h>
 #endif
 
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/test/floating_point_comparison.hpp>
+#include <OpenImageIO/unittest.h>
 
 #include <rawtoaces/mathOps.h>
 #include <rawtoaces/rta.h>
@@ -68,58 +65,58 @@
 using namespace std;
 using namespace rta;
 
-BOOST_AUTO_TEST_CASE( TestIllum_DefaultConstructor )
+void testIllum_DefaultConstructor()
 {
     Illum *illumObject = new Illum();
 
-    BOOST_CHECK_EQUAL( illumObject->getIllumInc(), 5 );
+    OIIO_CHECK_EQUAL( illumObject->getIllumInc(), 5 );
 
     delete illumObject;
 };
 
-BOOST_AUTO_TEST_CASE( TestIllum_DefaultConstructor2 )
+void testIllum_DefaultConstructor2()
 {
     Illum *illumObject = new Illum( "d50" );
 
-    BOOST_CHECK_EQUAL( illumObject->getIllumType(), "d50" );
-    BOOST_CHECK_EQUAL( illumObject->getIllumInc(), 5 );
+    OIIO_CHECK_EQUAL( illumObject->getIllumType(), "d50" );
+    OIIO_CHECK_EQUAL( illumObject->getIllumInc(), 5 );
 
     delete illumObject;
 };
 
-BOOST_AUTO_TEST_CASE( TestIllum_IllumType )
+void testIllum_IllumType()
 {
     Illum *illumObject = new Illum( "d50" );
 
     illumObject->setIllumType( "3200k" );
-    BOOST_CHECK_EQUAL(
+    OIIO_CHECK_EQUAL(
         std::strcmp( illumObject->getIllumType().c_str(), "3200k" ), 0 );
 
     delete illumObject;
 };
 
-BOOST_AUTO_TEST_CASE( TestIllum_IllumInc )
+void testIllum_IllumInc()
 {
     Illum *illumObject = new Illum();
 
     illumObject->setIllumInc( 10 );
-    BOOST_CHECK_EQUAL( illumObject->getIllumInc(), 10 );
+    OIIO_CHECK_EQUAL( illumObject->getIllumInc(), 10 );
 
     delete illumObject;
 };
 
-BOOST_AUTO_TEST_CASE( TestIllum_IllumIndex )
+void testIllum_IllumIndex()
 {
     Illum *illumObject = new Illum();
 
     illumObject->setIllumIndex( 10.99999 );
 
-    BOOST_CHECK_CLOSE( illumObject->getIllumIndex(), 10.99999, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( illumObject->getIllumIndex(), 10.99999, 1e-5 );
 
     delete illumObject;
 };
 
-BOOST_AUTO_TEST_CASE( TestIllum_cctToxy )
+void testIllum_cctToxy()
 {
     Illum illumObject;
 
@@ -127,15 +124,15 @@ BOOST_AUTO_TEST_CASE( TestIllum_cctToxy )
 
     vector<double> xy = illumObject.cctToxy( 5000 * 1.4387752 / 1.438 );
 
-    BOOST_CHECK_CLOSE( xy[0], 0.3456619734948, 1e-9 );
-    BOOST_CHECK_CLOSE( xy[1], 0.3586032641691, 1e-9 );
+    OIIO_CHECK_EQUAL_THRESH( xy[0], 0.3456619734948, 1e-9 );
+    OIIO_CHECK_EQUAL_THRESH( xy[1], 0.3586032641691, 1e-9 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIllum_readSPD )
+void testIllum_readSPD()
 {
     Illum illumObject;
 
-    boost::filesystem::path illumPath = boost::filesystem::absolute(
+    std::filesystem::path illumPath = std::filesystem::absolute(
         "../../data/illuminant/iso7589_stutung_380_780_5.json" );
     illumObject.readSPD( illumPath.string(), "iso7589" );
 
@@ -163,15 +160,15 @@ BOOST_AUTO_TEST_CASE( TestIllum_readSPD )
         1.0000000000000
     };
 
-    BOOST_CHECK_EQUAL( illumObject.getIllumType(), "iso7589" );
-    BOOST_CHECK_EQUAL( illumObject.getIllumInc(), 5 );
+    OIIO_CHECK_EQUAL( illumObject.getIllumType(), "iso7589" );
+    OIIO_CHECK_EQUAL( illumObject.getIllumInc(), 5 );
 
     vector<double> illumTestData = illumObject.getIllumData();
-    BOOST_CHECK_EQUAL( illumTestData.size(), 81 );
-    FORI( 81 ) BOOST_CHECK_CLOSE( illumTestData[i], iso7589[i], 1e-5 );
+    OIIO_CHECK_EQUAL( illumTestData.size(), 81 );
+    FORI( 81 ) OIIO_CHECK_EQUAL_THRESH( illumTestData[i], iso7589[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIllum_calDayLightSPD )
+void testIllum_calDayLightSPD()
 {
     Illum illumObject;
 
@@ -212,10 +209,10 @@ BOOST_AUTO_TEST_CASE( TestIllum_calDayLightSPD )
 
     vector<double> data = illumObject.getIllumData();
     FORI( data.size() )
-    BOOST_CHECK_CLOSE( data[i], spd[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( data[i], spd[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIllum_calBlackBodySPD )
+void testIllum_calBlackBodySPD()
 {
     Illum illumObject;
 
@@ -246,5 +243,20 @@ BOOST_AUTO_TEST_CASE( TestIllum_calBlackBodySPD )
 
     vector<double> data = illumObject.getIllumData();
     FORI( data.size() )
-    BOOST_CHECK_CLOSE( data[i] * 1e-12, spd[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( data[i] * 1e-12, spd[i], 1e-5 );
 };
+
+int main( int, char ** )
+{
+    testIllum_DefaultConstructor();
+    testIllum_DefaultConstructor2();
+    testIllum_IllumType();
+    testIllum_IllumInc();
+    testIllum_IllumIndex();
+    testIllum_cctToxy();
+    testIllum_readSPD();
+    testIllum_calDayLightSPD();
+    testIllum_calBlackBodySPD();
+
+    return unit_test_failures;
+}

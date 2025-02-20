@@ -49,6 +49,15 @@ int main( int argc, const char *argv[] )
                 if ( std::filesystem::is_regular_file( filename2 ) ||
                      std::filesystem::is_symlink( filename2 ) )
                 {
+                    auto e = filename2.path().extension();
+
+                    if ( e == ".exr" || e == ".EXR" )
+                        continue;
+                    if ( e == ".jpg" || e == ".JPG" )
+                        continue;
+                    if ( e == ".jpeg" || e == ".JPEG" )
+                        continue;
+
                     files_to_convert.push_back( filename2.path().string() );
                 }
             }
@@ -57,6 +66,15 @@ int main( int argc, const char *argv[] )
             std::filesystem::is_regular_file( filename ) ||
             std::filesystem::is_symlink( filename ) )
         {
+            auto e = std::filesystem::path( filename ).extension();
+
+            if ( e == ".exr" || e == ".EXR" )
+                continue;
+            if ( e == ".jpg" || e == ".JPG" )
+                continue;
+            if ( e == ".jpeg" || e == ".JPEG" )
+                continue;
+
             files_to_convert.push_back( filename );
         }
         else
@@ -70,12 +88,8 @@ int main( int argc, const char *argv[] )
     for ( auto const &input_filename: files_to_convert )
     {
         std::string output_filename = input_filename;
-        size_t      pos             = input_filename.rfind( '.' );
-        if ( pos != std::string::npos )
-        {
-            output_filename = input_filename.substr( 0, pos );
-        }
-        output_filename += "_oiio.exr";
+        if ( !converter.make_output_path( output_filename ) )
+            continue;
 
         OIIO::ParamValueList options;
 

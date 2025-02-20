@@ -83,6 +83,10 @@ public:
     int   cropbox[4]               = { 0, 0, 0, 0 };
     int   verbosity                = 0;
 
+    bool        overwrite   = false;
+    bool        create_dirs = false;
+    std::string output_dir;
+
     /// Initialise the parser object with all the command line parameters
     /// used by this tool. The method also sets the help and usage strings.
     /// The parser object can be amended by the calling code afterwards if
@@ -90,7 +94,7 @@ public:
     /// modified directly.
     /// @param argParse
     ///    The command line parser object to be updated.
-    void init_parser( OIIO::ArgParse &argParse ) const;
+    void init_parser( OIIO::ArgParse &argParse );
 
     /// Initialise the converter settings from the command line parser object.
     /// Prior to calling this, first initialise the object via
@@ -157,6 +161,16 @@ public:
     ///    `true` if converted successfully.
     bool apply_scale(
         OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
+
+    /// Make output file path and check if it is writable.
+    /// @param path
+    ///     A reference to a variable containing the input file path. The output file path gets generated
+    ///     in-place.
+    /// @result
+    ///    `true` if the file can be written, e.g. the output directory exists, or creating directories
+    ///     is allowed; the file does not exist or overwriting is allowed.
+    bool
+    make_output_path( std::string &path, const std::string &suffix = "_oiio" );
 
     /// Saves the image into ACES Container.
     /// @param output_filename

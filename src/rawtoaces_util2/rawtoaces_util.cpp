@@ -137,7 +137,7 @@ bool check_param(
     }
 }
 
-void ImageConverter::init_parser( OIIO::ArgParse &argParse ) const
+void ImageConverter::init_parser( OIIO::ArgParse &argParse )
 {
     argParse.intro( HelpString );
     argParse.usage( UsageString );
@@ -191,6 +191,26 @@ void ImageConverter::init_parser( OIIO::ArgParse &argParse ) const
         .metavar( "VAL" )
         .defaultval( 6.0f )
         .action( OIIO::ArgParse::store<float>() );
+
+    argParse.separator( "General options:" );
+
+    argParse.arg( "--overwrite" )
+        .help(
+            "Allows overwriting existing files. If not set, trying to write "
+            "to an existing file will generate an error." )
+        .action( OIIO::ArgParse::store_true() );
+
+    argParse.arg( "--output-dir" )
+        .help(
+            "The directory to write the output files to. "
+            "This gets applied to every input directory, so it is better to "
+            "be used with a single input directory." )
+        .metavar( "STR" )
+        .action( OIIO::ArgParse::store() );
+
+    argParse.arg( "--create-dirs" )
+        .help( "Create output directories if they don't exist." )
+        .action( OIIO::ArgParse::store_true() );
 
     argParse.separator( "Raw conversion options:" );
 
@@ -273,10 +293,13 @@ void ImageConverter::init_parser( OIIO::ArgParse &argParse ) const
         .action( OIIO::ArgParse::store_true() );
 
     argParse.arg( "--verbose" )
-        .help( "Verbosity level. 0 = off, 1 = info, 2 = debug." )
-        .metavar( "VAL" )
-        .defaultval( 0 )
-        .action( OIIO::ArgParse::store<int>() );
+        .help(
+            "(-v) Print progress messages. "
+            "Repeated -v will increase verbosity." )
+        .action( [&]( OIIO::cspan<const char *> argv ) { verbosity++; } );
+
+    argParse.arg( "-v" ).hidden().action(
+        [&]( OIIO::cspan<const char *> argv ) { verbosity++; } );
 }
 
 bool ImageConverter::parse_params( const OIIO::ArgParse &argParse )
@@ -334,8 +357,6 @@ bool ImageConverter::parse_params( const OIIO::ArgParse &argParse )
         std::cout << std::endl;
         exit( 0 );
     }
-
-    verbosity = argParse["verbose"].get<int>();
 
     std::string wb_method = argParse["wb-method"].get();
 
@@ -487,6 +508,10 @@ bool ImageConverter::parse_params( const OIIO::ArgParse &argParse )
     half_size                = argParse["half-size"].get<int>();
     highlight_mode           = argParse["highlight-mode"].get<int>();
     flip                     = argParse["flip"].get<int>();
+
+    overwrite   = argParse["overwrite"].get<int>();
+    create_dirs = argParse["create-dirs"].get<int>();
+    output_dir  = argParse["output-dir"].get();
 
     return true;
 }
@@ -765,6 +790,58 @@ bool ImageConverter::apply_scale(
     OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi )
 {
     return OIIO::ImageBufAlgo::mul( dst, src, headroom );
+}
+
+bool ImageConverter::make_output_path(
+    std::string &path, const std::string &suffix )
+{
+    std::filesystem::path temp_path( path );
+
+    temp_path.replace_extension();
+    temp_path += suffix + ".exr";
+
+    if ( !output_dir.empty() )
+    {
+        auto new_directory = std::filesystem::path( output_dir );
+
+        auto filename      = temp_path.filename();
+        auto old_directory = temp_path.remove_filename();
+
+        new_directory = old_directory / new_directory;
+
+        if ( !std::filesystem::exists( new_directory ) )
+        {
+            if ( create_dirs )
+            {
+                if ( !std::filesystem::create_directory( new_directory ) )
+                {
+                    std::cerr << "ERROR: Failed to create directory "
+                              << new_directory << "." << std::endl;
+                    return false;
+                }
+            }
+            else
+            {
+                std::cerr << "ERROR: The output directory " << new_directory
+                          << " does not exist." << std::endl;
+                return false;
+            }
+        }
+
+        temp_path = std::filesystem::absolute( new_directory / filename );
+    }
+
+    if ( !overwrite && std::filesystem::exists( temp_path ) )
+    {
+        std::cerr
+            << "ERROR: file " << temp_path << " already exists. Use "
+            << "--overwrite to allow overwriting existing files. Skipping "
+            << "this file." << std::endl;
+        return false;
+    }
+
+    path = temp_path.string();
+    return true;
 }
 
 bool ImageConverter::save(

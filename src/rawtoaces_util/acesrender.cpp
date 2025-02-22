@@ -56,9 +56,7 @@
 #include <rawtoaces/mathOps.h>
 
 #include <Imath/half.h>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/foreach.hpp>
+#include <nlohmann/json.hpp>
 
 #include <aces/aces_Writer.h>
 
@@ -68,9 +66,9 @@
 #endif
 
 using namespace std;
-using namespace boost::property_tree;
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
+#include <mutex>
 
 //  =====================================================================
 //  Prepare the matching between string flags and single character flag
@@ -732,9 +730,9 @@ void AcesRender::gatherSupportedIllums()
             string path( *file );
             try
             {
-                ptree pt;
-                read_json( path, pt );
-                string tmp = pt.get<string>( "header.illuminant" );
+                std::ifstream  i( path );
+                nlohmann::json data = nlohmann::json::parse( i );
+                const string   tmp  = data["header"]["illuminant"];
 
                 if ( record.find( tmp ) != record.end() )
                     continue;
@@ -780,10 +778,11 @@ void AcesRender::gatherSupportedCameras()
             string path( *file );
             try
             {
-                ptree pt;
-                read_json( path, pt );
-                string tmp = pt.get<string>( "header.manufacturer" );
-                tmp += ( " / " + pt.get<string>( "header.model" ) );
+                std::ifstream  i( path );
+                nlohmann::json data  = nlohmann::json::parse( i );
+                const string   make  = data["header"]["manufacturer"];
+                const string   model = data["header"]["model"];
+                string         tmp   = make + "/" + model;
 
                 if ( record.find( tmp ) != record.end() )
                     continue;
@@ -1004,7 +1003,7 @@ vector<string> findFiles( string filePath, vector<string> searchPaths )
     {
         string path = i + "/" + filePath;
 
-        if ( boost::filesystem::exists( path ) )
+        if ( std::filesystem::exists( path ) )
             foundFiles.push_back( path );
     }
 
@@ -1736,9 +1735,52 @@ float *AcesRender::renderDNG()
 
 #define P _rawProcessor->imgdata.idata
 
+#ifdef R
+#    undef R
+#endif
+
+#define R _rawProcessor->imgdata.rawdata
+
     assert( _image && P.dng_version );
 
-    DNGIdt *dng = new DNGIdt( _rawProcessor->imgdata.rawdata );
+    Metadata metadata;
+    metadata.neutralRGB.resize( 3 );
+    metadata.xyz2rgbMatrix1.resize( 9 );
+    metadata.xyz2rgbMatrix2.resize( 9 );
+    metadata.cameraCalibration1.resize( 9 );
+    metadata.cameraCalibration2.resize( 9 );
+
+#if LIBRAW_VERSION >= LIBRAW_MAKE_VERSION( 0, 20, 0 )
+    metadata.baselineExposure =
+        static_cast<double>( R.color.dng_levels.baseline_exposure );
+#else
+    metadata.baselineExposure =
+        static_cast<double>( R.color.baseline_exposure );
+#endif
+    metadata.calibrationIlluminant1 =
+        static_cast<double>( R.color.dng_color[0].illuminant );
+    metadata.calibrationIlluminant2 =
+        static_cast<double>( R.color.dng_color[1].illuminant );
+
+    FORI( 3 )
+    {
+        metadata.neutralRGB[i] =
+            1.0 / static_cast<double>( R.color.cam_mul[i] );
+    }
+
+    FORIJ( 3, 3 )
+    {
+        metadata.xyz2rgbMatrix1[i * 3 + j] =
+            static_cast<double>( ( R.color.dng_color[0].colormatrix )[i][j] );
+        metadata.xyz2rgbMatrix2[i * 3 + j] =
+            static_cast<double>( ( R.color.dng_color[1].colormatrix )[i][j] );
+        metadata.cameraCalibration1[i * 3 + j] =
+            static_cast<double>( ( R.color.dng_color[0].calibration )[i][j] );
+        metadata.cameraCalibration2[i * 3 + j] =
+            static_cast<double>( ( R.color.dng_color[1].calibration )[i][j] );
+    }
+
+    DNGIdt *dng = new DNGIdt( metadata );
     _catm       = dng->getDNGCATMatrix();
     _idtm       = dng->getDNGIDTMatrix();
 

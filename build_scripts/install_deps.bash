@@ -8,6 +8,5 @@ time sudo apt-get update
 
 time sudo apt-get -q -f install -y \
     libunwind-dev libilmbase-dev libopenexr-dev \
-    libboost-dev libboost-thread-dev libboost-filesystem-dev \
-    libboost-test-dev \
-    libraw-dev libceres-dev
+    libopenimageio-dev \
+    libraw-dev libceres-dev nlohmann-json-dev

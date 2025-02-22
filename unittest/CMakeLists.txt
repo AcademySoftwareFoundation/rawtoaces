@@ -1,19 +1,18 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
-add_definitions (-DBOOST_TEST_DYN_LINK)
 
 add_executable (
 	Test_Spst
 	testSpst.cpp
 )
 
+set_property(TARGET Test_Spst PROPERTY CXX_STANDARD 17)
+
 target_link_libraries(
     Test_Spst
     PUBLIC
         ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
-        Boost::unit_test_framework
+        OpenImageIO::OpenImageIO
 )
 
 add_executable (
@@ -21,15 +20,13 @@ add_executable (
 	testIDT.cpp
 )
 
+set_property(TARGET Test_IDT PROPERTY CXX_STANDARD 17)
+
 target_link_libraries(
     Test_IDT
     PUBLIC
         ${RAWTOACESLIB}
-        Imath::Imath
-        Imath::ImathConfig
-        Boost::boost
-        Boost::filesystem
-        Boost::unit_test_framework
+        OpenImageIO::OpenImageIO
 )
 
 add_executable (
@@ -37,13 +34,13 @@ add_executable (
 	testIllum.cpp
 )
 
+set_property(TARGET Test_Illum PROPERTY CXX_STANDARD 17)
+
 target_link_libraries(
     Test_Illum
     PUBLIC
         ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
-        Boost::unit_test_framework
+        OpenImageIO::OpenImageIO
 )
 
 add_executable (
@@ -51,27 +48,35 @@ add_executable (
 	testDNGIdt.cpp
 )
 
+set_property(TARGET Test_DNGIdt PROPERTY CXX_STANDARD 17)
+
 target_link_libraries(
     Test_DNGIdt
     PUBLIC
         ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
-        Boost::unit_test_framework
+        OpenImageIO::OpenImageIO
 )
+
+if ( LIBRAW_CONFIG_FOUND )
+    target_link_libraries ( Test_DNGIdt PUBLIC libraw::raw )
+else ()
+    target_include_directories( Test_DNGIdt PUBLIC ${libraw_INCLUDE_DIR}/..)
+    target_link_directories( Test_DNGIdt PUBLIC ${libraw_LIBRARY_DIRS} )
+    target_link_libraries( Test_DNGIdt PUBLIC ${libraw_LIBRARIES} ${libraw_LDFLAGS_OTHER} )
+endif ()
 
 add_executable (
 	Test_Math
 	testMath.cpp
 )
 
+set_property(TARGET Test_Math PROPERTY CXX_STANDARD 17)
+
 target_link_libraries(
     Test_Math
     PUBLIC
         ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
-        Boost::unit_test_framework
+        OpenImageIO::OpenImageIO
 )
 
 add_executable (
@@ -79,13 +84,13 @@ add_executable (
     testLogic.cpp
 )
 
+set_property(TARGET Test_Logic PROPERTY CXX_STANDARD 17)
+
 target_link_libraries(
     Test_Logic
     PUBLIC
         ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
-        Boost::unit_test_framework
+        OpenImageIO::OpenImageIO
 )
 
 add_executable (
@@ -93,13 +98,13 @@ add_executable (
 	testMisc.cpp
 )
 
+set_property(TARGET Test_Misc PROPERTY CXX_STANDARD 17)
+
 target_link_libraries(
     Test_Misc
     PUBLIC
         ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
-        Boost::unit_test_framework
+        OpenImageIO::OpenImageIO
 )
 
 

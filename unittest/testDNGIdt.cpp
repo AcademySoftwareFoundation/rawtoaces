@@ -52,17 +52,17 @@
 // THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
 ///////////////////////////////////////////////////////////////////////////
 
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/test/floating_point_comparison.hpp>
+#include <OpenImageIO/unittest.h>
+
+#include <libraw/libraw.h>
 
 #include <rawtoaces/rta.h>
+#include <rawtoaces/define.h>
 
 using namespace std;
 using namespace rta;
 
-BOOST_AUTO_TEST_CASE( TestIDT_CcttoMired )
+void testIDT_CcttoMired()
 {
 
     DNGIdt *di    = new DNGIdt();
@@ -70,10 +70,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_CcttoMired )
     double  mired = di->ccttoMired( cct );
     delete di;
 
-    BOOST_CHECK_CLOSE( mired, 153.8461538462, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( mired, 153.8461538462, 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_RobertsonLength )
+void testIDT_RobertsonLength()
 {
 
     DNGIdt        *di    = new DNGIdt();
@@ -85,29 +85,74 @@ BOOST_AUTO_TEST_CASE( TestIDT_RobertsonLength )
     double rLength = di->robertsonLength( uvVector, uvtVector );
     delete di;
 
-    BOOST_CHECK_CLOSE( rLength, 0.060234937, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( rLength, 0.060234937, 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_LightSourceToColorTemp )
+DNGIdt *openFile( std::string path, LibRaw &rawProcessor )
 {
+    std::filesystem::path pathToRaw = std::filesystem::absolute(
+        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
+    int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
+    ret     = rawProcessor.unpack();
 
+#define R rawProcessor.imgdata.rawdata
+
+    Metadata metadata;
+    metadata.neutralRGB.resize( 3 );
+    metadata.xyz2rgbMatrix1.resize( 9 );
+    metadata.xyz2rgbMatrix2.resize( 9 );
+    metadata.cameraCalibration1.resize( 9 );
+    metadata.cameraCalibration2.resize( 9 );
+
+#if LIBRAW_VERSION >= LIBRAW_MAKE_VERSION( 0, 20, 0 )
+    metadata.baselineExposure =
+        static_cast<double>( R.color.dng_levels.baseline_exposure );
+#else
+    metadata.baselineExposure =
+        static_cast<double>( R.color.baseline_exposure );
+#endif
+    metadata.calibrationIlluminant1 =
+        static_cast<double>( R.color.dng_color[0].illuminant );
+    metadata.calibrationIlluminant2 =
+        static_cast<double>( R.color.dng_color[1].illuminant );
+
+    FORI( 3 )
+    {
+        metadata.neutralRGB[i] =
+            1.0 / static_cast<double>( R.color.cam_mul[i] );
+    }
+
+    FORIJ( 3, 3 )
+    {
+        metadata.xyz2rgbMatrix1[i * 3 + j] =
+            static_cast<double>( ( R.color.dng_color[0].colormatrix )[i][j] );
+        metadata.xyz2rgbMatrix2[i * 3 + j] =
+            static_cast<double>( ( R.color.dng_color[1].colormatrix )[i][j] );
+        metadata.cameraCalibration1[i * 3 + j] =
+            static_cast<double>( ( R.color.dng_color[0].calibration )[i][j] );
+        metadata.cameraCalibration2[i * 3 + j] =
+            static_cast<double>( ( R.color.dng_color[1].calibration )[i][j] );
+    }
+
+    return new DNGIdt( metadata );
+}
+
+void testIDT_LightSourceToColorTemp()
+{
     DNGIdt        *di  = new DNGIdt();
     unsigned short tag = 17;
     double         ct  = di->lightSourceToColorTemp( tag );
     delete di;
 
-    BOOST_CHECK_CLOSE( ct, 2856.0, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( ct, 2856.0, 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_XYZToColorTemperature )
+void testIDT_XYZToColorTemperature()
 {
-    LibRaw                  rawProcessor;
-    boost::filesystem::path pathToRaw = boost::filesystem::absolute(
-        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
-    int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
-    ret     = rawProcessor.unpack();
-
-    DNGIdt        *di     = new DNGIdt( rawProcessor.imgdata.rawdata );
+    LibRaw  rawProcessor;
+    DNGIdt *di = openFile(
+        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng",
+        rawProcessor );
     double         XYZ[3] = { 0.9731171910, 1.0174927152, 0.9498565880 };
     vector<double> XYZVector( XYZ, XYZ + 3 );
     double         cct = di->XYZToColorTemperature( XYZVector );
@@ -115,18 +160,16 @@ BOOST_AUTO_TEST_CASE( TestIDT_XYZToColorTemperature )
     rawProcessor.recycle();
     delete di;
 
-    BOOST_CHECK_CLOSE( cct, 5564.6648479019, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( cct, 5564.6648479019, 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_XYZtoCameraWeightedMatrix )
+void testIDT_XYZtoCameraWeightedMatrix()
 {
-    LibRaw                  rawProcessor;
-    boost::filesystem::path pathToRaw = boost::filesystem::absolute(
-        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
-    int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
-    ret     = rawProcessor.unpack();
+    LibRaw  rawProcessor;
+    DNGIdt *di = openFile(
+        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng",
+        rawProcessor );
 
-    DNGIdt        *di      = new DNGIdt( rawProcessor.imgdata.rawdata );
     double         mirs[3] = { 158.8461538462, 350.1400560224, 153.8461538462 };
     double         matrix[9] = { 1.0165710542,  -0.2791973987, -0.0801820653,
                                  -0.4881171650, 1.3469051835,  0.1100471308,
@@ -137,18 +180,16 @@ BOOST_AUTO_TEST_CASE( TestIDT_XYZtoCameraWeightedMatrix )
     delete di;
 
     FORI( countSize( matrix ) )
-    BOOST_CHECK_CLOSE( result[i], matrix[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i], matrix[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_FindXYZtoCameraMtx )
+void testIDT_FindXYZtoCameraMtx()
 {
-    LibRaw                  rawProcessor;
-    boost::filesystem::path pathToRaw = boost::filesystem::absolute(
-        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
-    int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
-    ret     = rawProcessor.unpack();
+    LibRaw  rawProcessor;
+    DNGIdt *di = openFile(
+        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng",
+        rawProcessor );
 
-    DNGIdt        *di            = new DNGIdt( rawProcessor.imgdata.rawdata );
     double         neutralRGB[3] = { 0.6289999865, 1.0000000000, 0.7904000305 };
     double         matrix[9] = { 1.0616656923,  -0.3124143737, -0.0661770211,
                                  -0.4772957633, 1.3614785395,  0.1001599918,
@@ -160,10 +201,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_FindXYZtoCameraMtx )
     delete di;
 
     FORI( countSize( matrix ) )
-    BOOST_CHECK_CLOSE( result[i], matrix[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i], matrix[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_ColorTemperatureToXYZ )
+void testIDT_ColorTemperatureToXYZ()
 {
 
     DNGIdt        *di     = new DNGIdt();
@@ -173,10 +214,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_ColorTemperatureToXYZ )
     delete di;
 
     FORI( countSize( XYZ ) )
-    BOOST_CHECK_CLOSE( result[i], XYZ[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i], XYZ[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_MatrixRGBtoXYZ )
+void testIDT_MatrixRGBtoXYZ()
 {
 
     DNGIdt        *di     = new DNGIdt();
@@ -187,49 +228,59 @@ BOOST_AUTO_TEST_CASE( TestIDT_MatrixRGBtoXYZ )
     delete di;
 
     FORI( countSize( XYZ ) )
-    BOOST_CHECK_CLOSE( result[i], XYZ[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i], XYZ[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_GetDNGCATMatrix )
+void testIDT_GetDNGCATMatrix()
 {
+    LibRaw  rawProcessor;
+    DNGIdt *di = openFile(
+        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng",
+        rawProcessor );
 
-    LibRaw                  rawProcessor;
-    boost::filesystem::path pathToRaw = boost::filesystem::absolute(
-        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
-    int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
-    ret     = rawProcessor.unpack();
-
-    DNGIdt *di           = new DNGIdt( rawProcessor.imgdata.rawdata );
-    double  matrix[3][3] = { { 0.9907763427, -0.0022862289, 0.0209908807 },
-                             { -0.0017882434, 0.9941341374, 0.0083008330 },
-                             { 0.0003777587, 0.0015609315, 1.1063201101 } };
+    double matrix[3][3] = { { 0.9907763427, -0.0022862289, 0.0209908807 },
+                            { -0.0017882434, 0.9941341374, 0.0083008330 },
+                            { 0.0003777587, 0.0015609315, 1.1063201101 } };
     vector<vector<double>> result = di->getDNGCATMatrix();
 
     rawProcessor.recycle();
     delete di;
 
     FORIJ( 3, 3 )
-    BOOST_CHECK_CLOSE( result[i][j], matrix[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i][j], matrix[i][j], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_GetDNGIDTMatrix )
+void testIDT_GetDNGIDTMatrix()
 {
+    LibRaw  rawProcessor;
+    DNGIdt *di = openFile(
+        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng",
+        rawProcessor );
 
-    LibRaw                  rawProcessor;
-    boost::filesystem::path pathToRaw = boost::filesystem::absolute(
-        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
-    int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
-    ret     = rawProcessor.unpack();
-
-    DNGIdt *di           = new DNGIdt( rawProcessor.imgdata.rawdata );
-    double  matrix[3][3] = { { 1.0536466144, 0.0039044182, 0.0049084502 },
-                             { -0.4899562165, 1.3614787986, 0.1020844728 },
-                             { -0.0024498461, 0.0060497128, 1.0139159537 } };
+    double matrix[3][3] = { { 1.0536466144, 0.0039044182, 0.0049084502 },
+                            { -0.4899562165, 1.3614787986, 0.1020844728 },
+                            { -0.0024498461, 0.0060497128, 1.0139159537 } };
     vector<vector<double>> result = di->getDNGIDTMatrix();
 
     rawProcessor.recycle();
     delete di;
 
     FORIJ( 3, 3 )
-    BOOST_CHECK_CLOSE( result[i][j], matrix[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i][j], matrix[i][j], 1e-5 );
 };
+
+int main( int, char ** )
+{
+    testIDT_CcttoMired();
+    testIDT_RobertsonLength();
+    testIDT_LightSourceToColorTemp();
+    testIDT_XYZToColorTemperature();
+    testIDT_XYZtoCameraWeightedMatrix();
+    testIDT_FindXYZtoCameraMtx();
+    testIDT_ColorTemperatureToXYZ();
+    testIDT_MatrixRGBtoXYZ();
+    testIDT_GetDNGCATMatrix();
+    testIDT_GetDNGIDTMatrix();
+
+    return unit_test_failures;
+}

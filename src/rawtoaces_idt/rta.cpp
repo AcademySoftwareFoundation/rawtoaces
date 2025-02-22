@@ -55,15 +55,14 @@
 #include <rawtoaces/rta.h>
 #include <rawtoaces/mathOps.h>
 
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/foreach.hpp>
+#include <fstream>
+#include <nlohmann/json.hpp>
 
-using namespace boost::property_tree;
 using namespace ceres;
 
 namespace rta
 {
+
 Illum::Illum()
 {
     _inc = 5;
@@ -146,12 +145,10 @@ int Illum::readSPD( const string &path, const string &type )
 
     try
     {
-        // using libraries from boost::property_tree
-        ptree pt;
-        read_json( path, pt );
-
-        const string stype = pt.get<string>( "header.illuminant" );
-        if ( type.compare( stype ) != 0 && type.compare( "na" ) != 0 )
+        std::ifstream  i( path );
+        nlohmann::json data  = nlohmann::json::parse( i );
+        const string   stype = data["header"]["illuminant"];
+        if ( type != stype && type != "na" )
             return 0;
 
         _type = stype;
@@ -159,10 +156,11 @@ int Illum::readSPD( const string &path, const string &type )
         vector<int> wavs;
         int         dis;
 
-        BOOST_FOREACH (
-            ptree::value_type &row, pt.get_child( "spectral_data.data.main" ) )
+        nlohmann::json main_data = data["spectral_data"]["data"]["main"];
+        for ( auto &[index, values]: main_data.items() )
         {
-            wavs.push_back( atoi( ( row.first ).c_str() ) );
+            std::string row = index;
+            wavs.push_back( stoi( row ) );
 
             if ( wavs.size() == 2 )
                 dis = wavs[1] - wavs[0];
@@ -183,11 +181,11 @@ int Illum::readSPD( const string &path, const string &type )
             else if ( wavs[wavs.size() - 1] > 780 )
                 break;
 
-            BOOST_FOREACH ( ptree::value_type &cell, row.second )
+            for ( auto j: values )
             {
-                _data.push_back( cell.second.get_value<double>() );
+                _data.push_back( (double)j );
                 if ( wavs[wavs.size() - 1] == 550 )
-                    _index = cell.second.get_value<double>();
+                    _index = (double)j;
             }
 
             //                printf ( "\"%i\": [ %18.13f ], \n",
@@ -592,33 +590,37 @@ int Spst::getWLIncrement()
 
 int Spst::loadSpst( const string &path, const char *maker, const char *model )
 {
-    assert( path.length() > 0 && maker != nullptr && model != nullptr );
+    assert( path.length() > 0 );
 
     vector<RGBSen> rgbsen;
     vector<double> max( 3, dmin );
 
     try
     {
-        ptree pt;
-        read_json( path, pt );
+        std::ifstream  i( path );
+        nlohmann::json data = nlohmann::json::parse( i );
 
-        string cmaker = pt.get<string>( "header.manufacturer" );
-        if ( cmp_str( maker, cmaker.c_str() ) )
+        const string camera_make = data["header"]["manufacturer"];
+        if ( camera_make.empty() || cmp_str( camera_make.c_str(), maker ) != 0 )
             return 0;
-        setBrand( cmaker.c_str() );
 
-        string cmodel = pt.get<string>( "header.model" );
-        if ( cmp_str( model, cmodel.c_str() ) )
+        setBrand( camera_make.c_str() );
+
+        const string camera_model = data["header"]["model"];
+        if ( camera_model.empty() ||
+             cmp_str( camera_model.c_str(), model ) != 0 )
             return 0;
-        setModel( cmodel.c_str() );
+
+        setModel( camera_model.c_str() );
 
         vector<int> wavs;
         int         inc;
 
-        BOOST_FOREACH (
-            ptree::value_type &row, pt.get_child( "spectral_data.data.main" ) )
+        nlohmann::json main_data = data["spectral_data"]["data"]["main"];
+        for ( auto &[index, values]: main_data.items() )
         {
-            wavs.push_back( atoi( ( row.first ).c_str() ) );
+            std::string row = index;
+            wavs.push_back( stoi( row ) );
 
             if ( wavs.size() == 2 )
                 inc = wavs[1] - wavs[0];
@@ -640,8 +642,8 @@ int Spst::loadSpst( const string &path, const char *maker, const char *model )
                 break;
 
             vector<double> data;
-            BOOST_FOREACH ( ptree::value_type &cell, row.second )
-                data.push_back( cell.second.get_value<double>() );
+            for ( auto j: values )
+                data.push_back( (double)j );
 
             // ensure there are three components
             assert( data.size() == 3 );
@@ -980,19 +982,22 @@ void Idt::loadTrainingData( const string &path )
 
     try
     {
-        ptree pt;
-        read_json( path, pt );
+        std::ifstream  stream( path );
+        nlohmann::json data = nlohmann::json::parse( stream );
 
         int i = 0;
 
-        BOOST_FOREACH (
-            ptree::value_type &row, pt.get_child( "spectral_data.data.main" ) )
+        nlohmann::json main_data = data["spectral_data"]["data"]["main"];
+        for ( auto &[index, values]: main_data.items() )
         {
-            _trainingSpec[i]._wl = atoi( ( row.first ).c_str() );
+            std::string row      = index;
+            _trainingSpec[i]._wl = stoi( row );
 
-            BOOST_FOREACH ( ptree::value_type &cell, row.second )
-                _trainingSpec[i]._data.push_back(
-                    cell.second.get_value<double>() );
+            for ( auto j: values )
+            {
+                double d = j;
+                _trainingSpec[i]._data.push_back( d );
+            }
 
             assert( _trainingSpec[i]._data.size() == 190 );
 
@@ -1021,23 +1026,27 @@ void Idt::loadCMF( const string &path )
 
     try
     {
-        ptree pt;
-        read_json( path, pt );
+        std::ifstream  stream( path );
+        nlohmann::json data = nlohmann::json::parse( stream );
 
         int i = 0;
-        BOOST_FOREACH (
-            ptree::value_type &row, pt.get_child( "spectral_data.data.main" ) )
-        {
-            _cmf[i]._wl = atoi( ( row.first ).c_str() );
 
-            if ( _cmf[i]._wl < 380 || _cmf[i]._wl % 5 )
+        nlohmann::json main_data = data["spectral_data"]["data"]["main"];
+        for ( auto &[index, values]: main_data.items() )
+        {
+            std::string row = index;
+            int         wl  = stoi( row );
+
+            if ( wl < 380 || wl % 5 )
                 continue;
-            else if ( _cmf[i]._wl > 780 )
+            else if ( wl > 780 )
                 break;
 
+            _cmf[i]._wl = wl;
+
             vector<double> data;
-            BOOST_FOREACH ( ptree::value_type &cell, row.second )
-                data.push_back( cell.second.get_value<double>() );
+            for ( auto j: values )
+                data.push_back( (double)j );
 
             assert( data.size() == 3 );
             _cmf[i]._xbar = data[0];
@@ -1543,67 +1552,21 @@ const vector<double> Idt::getWB() const
 
 DNGIdt::DNGIdt()
 {
-    _cameraCalibration1DNG = vector<double>( 9, 1.0 );
-    _cameraCalibration2DNG = vector<double>( 9, 1.0 );
-    _cameraToXYZMtx        = vector<double>( 9, 1.0 );
-    _xyz2rgbMatrix1DNG     = vector<double>( 9, 1.0 );
-    _xyz2rgbMatrix2DNG     = vector<double>( 9, 1.0 );
-    _analogBalanceDNG      = vector<double>( 3, 1.0 );
-    _neutralRGBDNG         = vector<double>( 3, 1.0 );
-    _cameraXYZWhitePoint   = vector<double>( 3, 1.0 );
-    _calibrateIllum        = vector<double>( 2, 1.0 );
-    _baseExpo              = 1.0;
+    _cameraToXYZMtx      = vector<double>( 9, 1.0 );
+    _cameraXYZWhitePoint = vector<double>( 3, 1.0 );
 }
 
-DNGIdt::DNGIdt( libraw_rawdata_t R )
+DNGIdt::DNGIdt( const Metadata &metadata ) //  libraw_rawdata_t R )
 {
-    _cameraCalibration1DNG = vector<double>( 9, 1.0 );
-    _cameraCalibration2DNG = vector<double>( 9, 1.0 );
-    _cameraToXYZMtx        = vector<double>( 9, 1.0 );
-    _xyz2rgbMatrix1DNG     = vector<double>( 9, 1.0 );
-    _xyz2rgbMatrix2DNG     = vector<double>( 9, 1.0 );
-    _analogBalanceDNG      = vector<double>( 3, 1.0 );
-    _neutralRGBDNG         = vector<double>( 3, 1.0 );
-    _cameraXYZWhitePoint   = vector<double>( 3, 1.0 );
-    _calibrateIllum        = vector<double>( 2, 1.0 );
-
-#if LIBRAW_VERSION >= LIBRAW_MAKE_VERSION( 0, 20, 0 )
-    _baseExpo = static_cast<double>( R.color.dng_levels.baseline_exposure );
-#else
-    _baseExpo = static_cast<double>( R.color.baseline_exposure );
-#endif
-    _calibrateIllum[0] = static_cast<double>( R.color.dng_color[0].illuminant );
-    _calibrateIllum[1] = static_cast<double>( R.color.dng_color[1].illuminant );
-
-    FORI( 3 )
-    {
-        _neutralRGBDNG[i] = 1.0 / static_cast<double>( R.color.cam_mul[i] );
-    }
-
-    FORIJ( 3, 3 )
-    {
-        _xyz2rgbMatrix1DNG[i * 3 + j] =
-            static_cast<double>( ( R.color.dng_color[0].colormatrix )[i][j] );
-        _xyz2rgbMatrix2DNG[i * 3 + j] =
-            static_cast<double>( ( R.color.dng_color[1].colormatrix )[i][j] );
-        _cameraCalibration1DNG[i * 3 + j] =
-            static_cast<double>( ( R.color.dng_color[0].calibration )[i][j] );
-        _cameraCalibration2DNG[i * 3 + j] =
-            static_cast<double>( ( R.color.dng_color[1].calibration )[i][j] );
-    }
+    _metadata = metadata;
 }
 
 DNGIdt::~DNGIdt()
 {
-    clearVM( _cameraCalibration1DNG );
-    clearVM( _cameraCalibration2DNG );
+    _metadata = Metadata();
+
     clearVM( _cameraToXYZMtx );
-    clearVM( _xyz2rgbMatrix1DNG );
-    clearVM( _xyz2rgbMatrix2DNG );
-    clearVM( _analogBalanceDNG );
-    clearVM( _neutralRGBDNG );
     clearVM( _cameraXYZWhitePoint );
-    clearVM( _calibrateIllum );
 }
 
 double DNGIdt::ccttoMired( const double cct ) const
@@ -1689,9 +1652,9 @@ vector<double> DNGIdt::XYZtoCameraWeightedMatrix(
     double weight =
         std::max( 0.0, std::min( 1.0, ( mir1 - mir0 ) / ( mir1 - mir2 ) ) );
     vector<double> result =
-        subVectors( _xyz2rgbMatrix2DNG, _xyz2rgbMatrix1DNG );
+        subVectors( _metadata.xyz2rgbMatrix2, _metadata.xyz2rgbMatrix1 );
     scaleVector( result, weight );
-    result = addVectors( result, _xyz2rgbMatrix1DNG );
+    result = addVectors( result, _metadata.xyz2rgbMatrix1 );
 
     return result;
 }
@@ -1699,23 +1662,24 @@ vector<double> DNGIdt::XYZtoCameraWeightedMatrix(
 vector<double>
 DNGIdt::findXYZtoCameraMtx( const vector<double> &neutralRGB ) const
 {
+    assert( _metadata.xyz2rgbMatrix2.size() > 0 );
 
-    if ( _calibrateIllum.size() == 0 )
+    if ( _metadata.xyz2rgbMatrix2.size() == 0 )
     {
-        fprintf( stderr, " No calibration illuminants were found. \n " );
-        return _xyz2rgbMatrix1DNG;
+        fprintf( stderr, " Only one calibration matrix found. \n " );
+        return _metadata.xyz2rgbMatrix1;
     }
 
     if ( neutralRGB.size() == 0 )
     {
         fprintf( stderr, " no neutral RGB values were found. \n " );
-        return _xyz2rgbMatrix1DNG;
+        return _metadata.xyz2rgbMatrix1;
     }
 
     double cct1 = lightSourceToColorTemp(
-        static_cast<const unsigned short>( _calibrateIllum[0] ) );
+        static_cast<const unsigned short>( _metadata.calibrationIlluminant1 ) );
     double cct2 = lightSourceToColorTemp(
-        static_cast<const unsigned short>( _calibrateIllum[1] ) );
+        static_cast<const unsigned short>( _metadata.calibrationIlluminant2 ) );
 
     double mir1 = ccttoMired( cct1 );
     double mir2 = ccttoMired( cct2 );
@@ -1737,7 +1701,7 @@ DNGIdt::findXYZtoCameraMtx( const vector<double> &neutralRGB ) const
         lerror =
             mir - ccttoMired( XYZToColorTemperature( mulVector(
                       invertV( XYZtoCameraWeightedMatrix( mir, mir1, mir2 ) ),
-                      _neutralRGBDNG ) ) );
+                      _metadata.neutralRGB ) ) );
 
         if ( std::fabs( lerror - 0.0 ) <= 1e-09 )
         {
@@ -1837,19 +1801,20 @@ vector<double> DNGIdt::matrixRGBtoXYZ( const double chromaticities[][2] ) const
 
 void DNGIdt::getCameraXYZMtxAndWhitePoint()
 {
-    _cameraToXYZMtx = invertV( findXYZtoCameraMtx( _neutralRGBDNG ) );
+    _cameraToXYZMtx = invertV( findXYZtoCameraMtx( _metadata.neutralRGB ) );
     assert( std::fabs( sumVector( _cameraToXYZMtx ) - 0.0 ) > 1e-09 );
 
-    scaleVector( _cameraToXYZMtx, std::pow( 2.0, _baseExpo ) );
+    scaleVector( _cameraToXYZMtx, std::pow( 2.0, _metadata.baselineExposure ) );
 
-    if ( _neutralRGBDNG.size() > 0 )
+    if ( _metadata.neutralRGB.size() > 0 )
     {
-        _cameraXYZWhitePoint = mulVector( _cameraToXYZMtx, _neutralRGBDNG );
+        _cameraXYZWhitePoint =
+            mulVector( _cameraToXYZMtx, _metadata.neutralRGB );
     }
     else
     {
         _cameraXYZWhitePoint = colorTemperatureToXYZ(
-            lightSourceToColorTemp( _calibrateIllum[0] ) );
+            lightSourceToColorTemp( _metadata.calibrationIlluminant1 ) );
     }
 
     scaleVector( _cameraXYZWhitePoint, 1.0 / _cameraXYZWhitePoint[1] );

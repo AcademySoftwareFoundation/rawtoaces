@@ -57,10 +57,7 @@
 #    include <windows.h>
 #endif
 
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/test/floating_point_comparison.hpp>
+#include <OpenImageIO/unittest.h>
 
 #include <rawtoaces/mathOps.h>
 #include <rawtoaces/rta.h>
@@ -68,7 +65,7 @@
 using namespace std;
 using namespace rta;
 
-BOOST_AUTO_TEST_CASE( TestIDT_DataAccess )
+void testIDT_DataAccess()
 {
     char   *brand1, *brand2, *brand3;
     char   *model1, *model2, *model3;
@@ -119,33 +116,33 @@ BOOST_AUTO_TEST_CASE( TestIDT_DataAccess )
     spstobject1->setWLIncrement( 5 );
     spstobject1->setSensitivity( rgbsen1 );
 
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject1->getBrand(), "" ), 0 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject1->getModel(), "" ), 0 );
-    BOOST_CHECK_EQUAL( int( spstobject1->getWLIncrement() ), 5 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject1->getBrand(), "" ), 0 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject1->getModel(), "" ), 0 );
+    OIIO_CHECK_EQUAL( int( spstobject1->getWLIncrement() ), 5 );
 
     vector<RGBSen> rgbsen_cp = spstobject1->getSensitivity();
 
     FORI( 81 )
     {
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._RSen, 1.00000001, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._GSen, 1.0, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._BSen, 0.999999999, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._RSen, 1.00000001, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._GSen, 1.0, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._BSen, 0.999999999, 1e-5 );
     }
 
     Spst spstobject2( brand2, model2, 10, rgbsen2 );
 
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject2.getBrand(), "b2" ), 0 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject2.getModel(), "m2" ), 0 );
-    BOOST_CHECK_EQUAL( int( spstobject2.getWLIncrement() ), 10 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject2.getBrand(), "b2" ), 0 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject2.getModel(), "m2" ), 0 );
+    OIIO_CHECK_EQUAL( int( spstobject2.getWLIncrement() ), 10 );
 
     rgbsen_cp.clear();
     rgbsen_cp = spstobject2.getSensitivity();
 
     FORI( 81 )
     {
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._RSen, 1.0, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._GSen, 1.0, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._BSen, 1.0, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._RSen, 1.0, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._GSen, 1.0, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._BSen, 1.0, 1e-5 );
     }
 
     Spst spstobject3( spstobject2 );
@@ -155,18 +152,18 @@ BOOST_AUTO_TEST_CASE( TestIDT_DataAccess )
     spstobject3.setWLIncrement( 20 );
     spstobject3.setSensitivity( rgbsen3 );
 
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject3.getBrand(), "brand3" ), 0 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject3.getModel(), "model3" ), 0 );
-    BOOST_CHECK_EQUAL( int( spstobject3.getWLIncrement() ), 20 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject3.getBrand(), "brand3" ), 0 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstobject3.getModel(), "model3" ), 0 );
+    OIIO_CHECK_EQUAL( int( spstobject3.getWLIncrement() ), 20 );
 
     rgbsen_cp.clear();
     rgbsen_cp = spstobject3.getSensitivity();
 
     FORI( 81 )
     {
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._RSen, -0.9999999999999, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._GSen, 1e-3, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._BSen, 1.0000000000001, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._RSen, -0.9999999999999, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._GSen, 1e-3, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( rgbsen_cp[i]._BSen, 1.0000000000001, 1e-5 );
     }
 
     //    free ( model1 );
@@ -177,7 +174,7 @@ BOOST_AUTO_TEST_CASE( TestIDT_DataAccess )
     //    free ( brand3 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_LoadCameraSpst )
+void testIDT_LoadCameraSpst()
 {
     uint8_t len   = 6;
     char   *brand = (char *)malloc( len + 1 );
@@ -191,8 +188,8 @@ BOOST_AUTO_TEST_CASE( TestIDT_LoadCameraSpst )
     memcpy( model, "d21", len );
     model[len] = '\0';
 
-    Idt                    *idtTest      = new Idt();
-    boost::filesystem::path absolutePath = boost::filesystem::absolute(
+    Idt                  *idtTest      = new Idt();
+    std::filesystem::path absolutePath = std::filesystem::absolute(
         "../../data/camera/arri_d21_380_780_5.json" );
 
     idtTest->loadCameraSpst( absolutePath.string(), brand, model );
@@ -282,29 +279,39 @@ BOOST_AUTO_TEST_CASE( TestIDT_LoadCameraSpst )
                           { 0.000149065, 7.26E-05, 5.84E-05 },
                           { 3.71E-05, 0.0, 2.70E-06 } };
 
-    BOOST_CHECK_EQUAL( int( rgbsenTest.size() ), 81 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstTest.getBrand(), "arri" ), 0 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstTest.getModel(), "d21" ), 0 );
-    BOOST_CHECK_EQUAL( int( spstTest.getWLIncrement() ), 5 );
+    OIIO_CHECK_EQUAL( int( rgbsenTest.size() ), 81 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstTest.getBrand(), "arri" ), 0 );
+    OIIO_CHECK_EQUAL( std::strcmp( spstTest.getModel(), "d21" ), 0 );
+    OIIO_CHECK_EQUAL( int( spstTest.getWLIncrement() ), 5 );
 
     FORI( 81 )
     {
-        BOOST_CHECK_CLOSE( double( rgbsenTest[i]._RSen ), rgb[i][0], 1e-5 );
-        BOOST_CHECK_CLOSE( double( rgbsenTest[i]._GSen ), rgb[i][1], 1e-5 );
-        BOOST_CHECK_CLOSE( double( rgbsenTest[i]._BSen ), rgb[i][2], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH(
+            double( rgbsenTest[i]._RSen ), rgb[i][0], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH(
+            double( rgbsenTest[i]._GSen ), rgb[i][1], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH(
+            double( rgbsenTest[i]._BSen ), rgb[i][2], 1e-5 );
     }
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_LoadIlluminant )
+void testIDT_LoadIlluminant()
 {
     Idt *idtTest = new Idt();
 
-    vector<string>          illumPaths;
-    boost::filesystem::path absolutePath = boost::filesystem::absolute(
+    vector<string>        illumPaths;
+    std::filesystem::path absolutePath = std::filesystem::absolute(
         "../../data/illuminant/iso7589_stutung_380_780_5.json" );
     illumPaths.push_back( absolutePath.string() );
 
-    BOOST_CHECK_NO_THROW( idtTest->loadIlluminant( illumPaths, "iso7589" ) );
+    try
+    {
+        idtTest->loadIlluminant( illumPaths, "iso7589" );
+    }
+    catch ( ... )
+    {
+        OIIO_CHECK_ASSERT( 0 );
+    }
 
     Illum illumTest = ( idtTest->getIlluminants() )[0];
 
@@ -332,24 +339,31 @@ BOOST_AUTO_TEST_CASE( TestIDT_LoadIlluminant )
         1.0000000000000
     };
 
-    BOOST_CHECK_EQUAL( illumTest.getIllumType(), "iso7589" );
-    BOOST_CHECK_EQUAL( illumTest.getIllumInc(), 5 );
+    OIIO_CHECK_EQUAL( illumTest.getIllumType(), "iso7589" );
+    OIIO_CHECK_EQUAL( illumTest.getIllumInc(), 5 );
 
     vector<double> illumTestData = illumTest.getIllumData();
-    BOOST_CHECK_EQUAL( int( illumTestData.size() ), 81 );
-    FORI( 81 ) BOOST_CHECK_CLOSE( illumTestData[i], iso7589[i], 1e-5 );
+    OIIO_CHECK_EQUAL( int( illumTestData.size() ), 81 );
+    FORI( 81 ) OIIO_CHECK_EQUAL_THRESH( illumTestData[i], iso7589[i], 1e-5 );
 
     delete idtTest;
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_LoadTrainingData )
+void testIDT_LoadTrainingData()
 {
     Idt *idtTest = new Idt();
 
-    boost::filesystem::path absolutePath = boost::filesystem::absolute(
+    std::filesystem::path absolutePath = std::filesystem::absolute(
         "../../data/training/training_spectral.json" );
 
-    BOOST_CHECK_NO_THROW( idtTest->loadTrainingData( absolutePath.string() ) );
+    try
+    {
+        idtTest->loadTrainingData( absolutePath.string() );
+    }
+    catch ( ... )
+    {
+        OIIO_CHECK_ASSERT( 0 );
+    }
 
     const vector<trainSpec> TS_test = idtTest->getTrainingSpec();
 
@@ -437,22 +451,30 @@ BOOST_AUTO_TEST_CASE( TestIDT_LoadTrainingData )
 
     FORI( 81 )
     {
-        BOOST_CHECK_CLOSE( TS[i][0], TS_test[i]._data[0], 1e-5 );
-        BOOST_CHECK_CLOSE( TS[i][1], TS_test[i]._data[1], 1e-5 );
-        BOOST_CHECK_CLOSE( TS[i][2], TS_test[i]._data[2], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( TS[i][0], TS_test[i]._data[0], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( TS[i][1], TS_test[i]._data[1], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( TS[i][2], TS_test[i]._data[2], 1e-5 );
     }
 
     delete idtTest;
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_LoadCMF )
+void testIDT_LoadCMF()
 {
     Idt *idtTest = new Idt();
 
-    boost::filesystem::path absolutePath =
-        boost::filesystem::absolute( "../../data/cmf/cmf_1931.json" );
+    std::filesystem::path absolutePath =
+        std::filesystem::absolute( "../../data/cmf/cmf_1931.json" );
 
-    BOOST_CHECK_NO_THROW( idtTest->loadCMF( absolutePath.string() ) );
+    try
+    {
+        idtTest->loadCMF( absolutePath.string() );
+    }
+    catch ( ... )
+    {
+        OIIO_CHECK_ASSERT( 0 );
+    }
+
     vector<CMF> cmfTest = idtTest->getCMF();
 
     double cmf[401][3] = { { 0.001368, 3.90E-05, 0.006450001 },
@@ -859,28 +881,28 @@ BOOST_AUTO_TEST_CASE( TestIDT_LoadCMF )
 
     FORI( 81 )
     {
-        BOOST_CHECK_CLOSE( cmfTest[i]._xbar, cmf[i * 5][0], 1e-5 );
-        BOOST_CHECK_CLOSE( cmfTest[i]._ybar, cmf[i * 5][1], 1e-5 );
-        BOOST_CHECK_CLOSE( cmfTest[i]._zbar, cmf[i * 5][2], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( cmfTest[i]._xbar, cmf[i * 5][0], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( cmfTest[i]._ybar, cmf[i * 5][1], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( cmfTest[i]._zbar, cmf[i * 5][2], 1e-5 );
     }
 
     delete idtTest;
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_Verbose )
+void testIDT_Verbose()
 {
     Idt *idtTest = new Idt();
 
     idtTest->setVerbosity( 1 );
-    BOOST_CHECK_EQUAL( idtTest->getVerbosity(), 1 );
+    OIIO_CHECK_EQUAL( idtTest->getVerbosity(), 1 );
 
     idtTest->setVerbosity( 3 );
-    BOOST_CHECK_EQUAL( idtTest->getVerbosity(), 3 );
+    OIIO_CHECK_EQUAL( idtTest->getVerbosity(), 3 );
 
     delete idtTest;
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_scaleLSC )
+void testIDT_scaleLSC()
 {
     uint8_t len   = 6;
     char   *brand = (char *)malloc( len + 1 );
@@ -897,11 +919,11 @@ BOOST_AUTO_TEST_CASE( TestIDT_scaleLSC )
     Idt   *idtTest   = new Idt();
     Illum *illumTest = new Illum();
 
-    boost::filesystem::path pathIllum = boost::filesystem::absolute(
+    std::filesystem::path pathIllum = std::filesystem::absolute(
         "../../data/illuminant/iso7589_stutung_380_780_5.json" );
     illumTest->readSPD( pathIllum.string(), "iso7589" );
 
-    boost::filesystem::path pathSpst = boost::filesystem::absolute(
+    std::filesystem::path pathSpst = std::filesystem::absolute(
         "../../data/camera/nikon_d200_380_780_5.json" );
     idtTest->loadCameraSpst( pathSpst.string(), brand, model );
 
@@ -933,10 +955,11 @@ BOOST_AUTO_TEST_CASE( TestIDT_scaleLSC )
 
     const vector<double> illumDataScaled = illumTest->getIllumData();
 
-    BOOST_CHECK_EQUAL( illumDataScaled.size(), 81 );
-    BOOST_CHECK_EQUAL( illumTest->getIllumType(), "iso7589" );
-    BOOST_CHECK_EQUAL( illumTest->getIllumInc(), 5 );
-    FORI( 81 ) BOOST_CHECK_CLOSE( illumDataScaled[i], scaledIllum[i], 1e-5 );
+    OIIO_CHECK_EQUAL( illumDataScaled.size(), 81 );
+    OIIO_CHECK_EQUAL( illumTest->getIllumType(), "iso7589" );
+    OIIO_CHECK_EQUAL( illumTest->getIllumInc(), 5 );
+    FORI( 81 )
+    OIIO_CHECK_EQUAL_THRESH( illumDataScaled[i], scaledIllum[i], 1e-5 );
 
     free( model );
     free( brand );
@@ -944,7 +967,7 @@ BOOST_AUTO_TEST_CASE( TestIDT_scaleLSC )
     delete idtTest;
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_CalCM )
+void testIDT_CalCM()
 {
     Idt *idtTest = new Idt();
 
@@ -960,11 +983,11 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalCM )
     memcpy( model, "d21", len );
     model[len] = '\0';
 
-    boost::filesystem::path pathSpst = boost::filesystem::absolute(
+    std::filesystem::path pathSpst = std::filesystem::absolute(
         "../../data/camera/arri_d21_380_780_5.json" );
     idtTest->loadCameraSpst( pathSpst.string(), brand, model );
 
-    boost::filesystem::path pathIllum = boost::filesystem::absolute(
+    std::filesystem::path pathIllum = std::filesystem::absolute(
         "../../data/illuminant/iso7589_stutung_380_780_5.json" );
     vector<string> illumPaths;
     illumPaths.push_back( pathIllum.string() );
@@ -996,7 +1019,7 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalCM )
 
     FORI( 81 )
     {
-        FORI( 3 ) BOOST_CHECK_CLOSE( CM[i], CM_test[i], 1e-5 );
+        FORI( 3 ) OIIO_CHECK_EQUAL_THRESH( CM[i], CM_test[i], 1e-5 );
     }
 
     free( model );
@@ -1004,7 +1027,7 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalCM )
     delete idtTest;
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_CalWB )
+void testIDT_CalWB()
 {
     Idt *idtTest = new Idt();
 
@@ -1020,11 +1043,11 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalWB )
     memcpy( model, "d200", len );
     model[len] = '\0';
 
-    boost::filesystem::path pathSpst = boost::filesystem::absolute(
+    std::filesystem::path pathSpst = std::filesystem::absolute(
         "../../data/camera/nikon_d200_380_780_5.json" );
     idtTest->loadCameraSpst( pathSpst.string(), brand, model );
 
-    boost::filesystem::path pathIllum = boost::filesystem::absolute(
+    std::filesystem::path pathIllum = std::filesystem::absolute(
         "../../data/illuminant/iso7589_stutung_380_780_5.json" );
     vector<string> illumPaths;
     illumPaths.push_back( pathIllum.string() );
@@ -1036,7 +1059,7 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalWB )
     double WB[3] = { 1.1397265, 1.0000000, 2.3240151 };
     FORI( WB_test.size() )
     {
-        BOOST_CHECK_CLOSE( WB[i], WB_test[i], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( WB[i], WB_test[i], 1e-5 );
     }
 
     free( model );
@@ -1044,14 +1067,14 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalWB )
     delete idtTest;
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_SetIlluminants )
+void testIDT_SetIlluminants()
 {
     Idt   *idtTest    = new Idt();
     Illum *illumTest1 = new Illum();
     Illum *illumTest2 = new Illum( "d50" );
     Illum *illumTest3 = new Illum( "3200k" );
 
-    boost::filesystem::path pathIllum = boost::filesystem::absolute(
+    std::filesystem::path pathIllum = std::filesystem::absolute(
         "../../data/illuminant/iso7589_stutung_380_780_5.json" );
     illumTest1->readSPD( pathIllum.string(), "iso7589" );
 
@@ -1064,9 +1087,9 @@ BOOST_AUTO_TEST_CASE( TestIDT_SetIlluminants )
 
     vector<Illum> illumTests = idtTest->getIlluminants();
 
-    BOOST_CHECK_EQUAL( illumTests[0].getIllumType(), "iso7589" );
-    BOOST_CHECK_EQUAL( illumTests[1].getIllumType(), "d50" );
-    BOOST_CHECK_EQUAL( illumTests[2].getIllumType(), "3200k" );
+    OIIO_CHECK_EQUAL( illumTests[0].getIllumType(), "iso7589" );
+    OIIO_CHECK_EQUAL( illumTests[1].getIllumType(), "d50" );
+    OIIO_CHECK_EQUAL( illumTests[2].getIllumType(), "3200k" );
 
     const double daylight[81] = {
         24.4978949755877,  27.1891380970612,  29.8803812185346,
@@ -1123,8 +1146,9 @@ BOOST_AUTO_TEST_CASE( TestIDT_SetIlluminants )
 
     FORI( blackbody_Test.size() )
     {
-        BOOST_CHECK_CLOSE( daylight[i], daylight_Test[i], 1e-5 );
-        BOOST_CHECK_CLOSE( blackbody[i], blackbody_Test[i] * 1e-12, 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( daylight[i], daylight_Test[i], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH(
+            blackbody[i], blackbody_Test[i] * 1e-12, 1e-5 );
     }
 
     delete idtTest;
@@ -1133,7 +1157,7 @@ BOOST_AUTO_TEST_CASE( TestIDT_SetIlluminants )
     delete illumTest3;
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumSrc )
+void testIDT_ChooseIllumSrc()
 {
     Idt *idtTest = new Idt();
 
@@ -1148,12 +1172,12 @@ BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumSrc )
     memcpy( model, "d200", len );
     model[len] = '\0';
 
-    boost::filesystem::path pathSpst = boost::filesystem::absolute(
+    std::filesystem::path pathSpst = std::filesystem::absolute(
         "../../data/camera/nikon_d200_380_780_5.json" );
     idtTest->loadCameraSpst( pathSpst.string(), brand, model );
 
-    boost::filesystem::path pathIllum =
-        boost::filesystem::absolute( "../../data/illuminant" );
+    std::filesystem::path pathIllum =
+        std::filesystem::absolute( "../../data/illuminant" );
 
     vector<string> iFiles = openDir( pathIllum.string() );
     vector<string> illumPaths;
@@ -1167,7 +1191,7 @@ BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumSrc )
     }
     idtTest->loadIlluminant( illumPaths, "na" );
 
-    boost::filesystem::path absolutePath = boost::filesystem::absolute(
+    std::filesystem::path absolutePath = std::filesystem::absolute(
         "../../data/training/training_spectral.json" );
     idtTest->loadTrainingData( absolutePath.string() );
 
@@ -1199,16 +1223,16 @@ BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumSrc )
         0.0523097995
     };
 
-    BOOST_CHECK_EQUAL( illumType_Test, "d45" );
+    OIIO_CHECK_EQUAL( illumType_Test, "d45" );
     FORI( illumData_Test.size() )
-    BOOST_CHECK_CLOSE( illumData[i], illumData_Test[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( illumData[i], illumData_Test[i], 1e-5 );
 
     free( model );
     free( brand );
     delete idtTest;
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumType )
+void testIDT_ChooseIllumType()
 {
     Idt *idtTest = new Idt();
 
@@ -1223,12 +1247,12 @@ BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumType )
     memcpy( model, "d200", len );
     model[len] = '\0';
 
-    boost::filesystem::path pathSpst = boost::filesystem::absolute(
+    std::filesystem::path pathSpst = std::filesystem::absolute(
         "../../data/camera/nikon_d200_380_780_5.json" );
     idtTest->loadCameraSpst( pathSpst.string(), brand, model );
 
-    boost::filesystem::path pathIllum =
-        boost::filesystem::absolute( "../../data/illuminant" );
+    std::filesystem::path pathIllum =
+        std::filesystem::absolute( "../../data/illuminant" );
 
     vector<string> iFiles = openDir( pathIllum.string() );
     vector<string> illumPaths;
@@ -1242,7 +1266,7 @@ BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumType )
     }
     idtTest->loadIlluminant( illumPaths, "iso7589" );
 
-    boost::filesystem::path absolutePath = boost::filesystem::absolute(
+    std::filesystem::path absolutePath = std::filesystem::absolute(
         "../../data/training/training_spectral.json" );
     idtTest->loadTrainingData( absolutePath.string() );
 
@@ -1274,16 +1298,16 @@ BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumType )
         0.1365548815
     };
 
-    BOOST_CHECK_EQUAL( illumType_Test, "iso7589" );
+    OIIO_CHECK_EQUAL( illumType_Test, "iso7589" );
     FORI( illumData_Test.size() )
-    BOOST_CHECK_CLOSE( illumData[i], illumData_Test[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( illumData[i], illumData_Test[i], 1e-5 );
 
     free( model );
     free( brand );
     delete idtTest;
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_CalTI )
+void testIDT_CalTI()
 {
     Idt *idtTest = new Idt();
 
@@ -1298,17 +1322,17 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalTI )
     memcpy( model, "d200", len );
     model[len] = '\0';
 
-    boost::filesystem::path pathSpst = boost::filesystem::absolute(
+    std::filesystem::path pathSpst = std::filesystem::absolute(
         "../../data/camera/nikon_d200_380_780_5.json" );
     idtTest->loadCameraSpst( pathSpst.string(), brand, model );
 
-    boost::filesystem::path pathIllum = boost::filesystem::absolute(
+    std::filesystem::path pathIllum = std::filesystem::absolute(
         "../../data/illuminant/iso7589_stutung_380_780_5.json" );
     vector<string> illumPaths;
     illumPaths.push_back( pathIllum.string() );
     idtTest->loadIlluminant( illumPaths, "iso7589" );
 
-    boost::filesystem::path absolutePath = boost::filesystem::absolute(
+    std::filesystem::path absolutePath = std::filesystem::absolute(
         "../../data/training/training_spectral.json" );
     idtTest->loadTrainingData( absolutePath.string() );
 
@@ -5207,14 +5231,14 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalTI )
                          0.0989613226, 0.0936083713 } };
 
     FORIJ( 81, 190 )
-    BOOST_CHECK_CLOSE( TI[i][j], TI_test[i][j], 1e-4 );
+    OIIO_CHECK_EQUAL_THRESH( TI[i][j], TI_test[i][j], 1e-4 );
 
     free( model );
     free( brand );
     delete idtTest;
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_CalXYZ )
+void testIDT_CalXYZ()
 {
     uint8_t len   = 6;
     char   *brand = (char *)malloc( len + 1 );
@@ -5230,21 +5254,21 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalXYZ )
 
     Idt *idtTest = new Idt();
 
-    boost::filesystem::path pathSpst = boost::filesystem::absolute(
+    std::filesystem::path pathSpst = std::filesystem::absolute(
         "../../data/camera/nikon_d200_380_780_5.json" );
     idtTest->loadCameraSpst( pathSpst.string(), brand, model );
 
-    boost::filesystem::path pathIllum = boost::filesystem::absolute(
+    std::filesystem::path pathIllum = std::filesystem::absolute(
         "../../data/illuminant/iso7589_stutung_380_780_5.json" );
     vector<string> illumPaths;
     illumPaths.push_back( pathIllum.string() );
     idtTest->loadIlluminant( illumPaths, "iso7589" );
 
-    boost::filesystem::path pathCMF =
-        boost::filesystem::absolute( "../../data/cmf/cmf_1931.json" );
+    std::filesystem::path pathCMF =
+        std::filesystem::absolute( "../../data/cmf/cmf_1931.json" );
     idtTest->loadCMF( pathCMF.string() );
 
-    boost::filesystem::path pathTS = boost::filesystem::absolute(
+    std::filesystem::path pathTS = std::filesystem::absolute(
         "../../data/training/training_spectral.json" );
     idtTest->loadTrainingData( pathTS.string() );
 
@@ -5444,14 +5468,14 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalXYZ )
                            { 0.4603248290, 0.3206987361, 0.3960834297 } };
 
     FORIJ( 190, 3 )
-    BOOST_CHECK_CLOSE( XYZ[i][j], XYZ_test[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( XYZ[i][j], XYZ_test[i][j], 1e-5 );
 
     free( model );
     free( brand );
     delete idtTest;
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_CalRGB )
+void testIDT_CalRGB()
 {
     uint8_t len   = 6;
     char   *brand = (char *)malloc( len + 1 );
@@ -5467,17 +5491,17 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalRGB )
 
     Idt *idtTest = new Idt();
 
-    boost::filesystem::path pathSpst = boost::filesystem::absolute(
+    std::filesystem::path pathSpst = std::filesystem::absolute(
         "../../data/camera/nikon_d200_380_780_5.json" );
     idtTest->loadCameraSpst( pathSpst.string(), brand, model );
 
-    boost::filesystem::path pathIllum = boost::filesystem::absolute(
+    std::filesystem::path pathIllum = std::filesystem::absolute(
         "../../data/illuminant/iso7589_stutung_380_780_5.json" );
     vector<string> illumPaths;
     illumPaths.push_back( pathIllum.string() );
     idtTest->loadIlluminant( illumPaths, "iso7589" );
 
-    boost::filesystem::path pathTS = boost::filesystem::absolute(
+    std::filesystem::path pathTS = std::filesystem::absolute(
         "../../data/training/training_spectral.json" );
     idtTest->loadTrainingData( pathTS.string() );
 
@@ -5677,14 +5701,14 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalRGB )
                            { 0.5608623445, 0.2394587589, 0.3637261707 } };
 
     FORIJ( 190, 3 )
-    BOOST_CHECK_CLOSE( RGB[i][j], RGB_test[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( RGB[i][j], RGB_test[i][j], 1e-5 );
 
     free( model );
     free( brand );
     delete idtTest;
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_CurveFit )
+void testIDT_CurveFit()
 {
     uint8_t len   = 6;
     char   *brand = (char *)malloc( len + 1 );
@@ -5700,22 +5724,22 @@ BOOST_AUTO_TEST_CASE( TestIDT_CurveFit )
 
     Idt *idtTest = new Idt();
 
-    boost::filesystem::path pathSpst = boost::filesystem::absolute(
+    std::filesystem::path pathSpst = std::filesystem::absolute(
         "../../data/camera/nikon_d200_380_780_5.json" );
     idtTest->loadCameraSpst( pathSpst.string(), brand, model );
 
-    boost::filesystem::path pathIllum = boost::filesystem::absolute(
+    std::filesystem::path pathIllum = std::filesystem::absolute(
         "../../data/illuminant/iso7589_stutung_380_780_5.json" );
     vector<string> illumPaths;
     illumPaths.push_back( pathIllum.string() );
     idtTest->loadIlluminant( illumPaths, "iso7589" );
 
-    boost::filesystem::path pathTS = boost::filesystem::absolute(
+    std::filesystem::path pathTS = std::filesystem::absolute(
         "../../data/training/training_spectral.json" );
     idtTest->loadTrainingData( pathTS.string() );
 
-    boost::filesystem::path absolutePath =
-        boost::filesystem::absolute( "../../data/cmf/cmf_1931.json" );
+    std::filesystem::path absolutePath =
+        std::filesystem::absolute( "../../data/cmf/cmf_1931.json" );
     idtTest->loadCMF( absolutePath.string() );
 
     idtTest->chooseIllumType( "iso7589", 0 );
@@ -5734,14 +5758,14 @@ BOOST_AUTO_TEST_CASE( TestIDT_CurveFit )
                         { 0.0247144012, -0.1245524896, 1.0998380884 } };
 
     FORIJ( 3, 3 )
-    BOOST_CHECK_CLOSE( IDT[i][j], IDT_test[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-5 );
 
     free( model );
     free( brand );
     delete idtTest;
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_CalIDT )
+void testIDT_CalIDT()
 {
     uint8_t len   = 6;
     char   *brand = (char *)malloc( len + 1 );
@@ -5757,22 +5781,22 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalIDT )
 
     Idt *idtTest = new Idt();
 
-    boost::filesystem::path pathSpst = boost::filesystem::absolute(
+    std::filesystem::path pathSpst = std::filesystem::absolute(
         "../../data/camera/arri_d21_380_780_5.json" );
     idtTest->loadCameraSpst( pathSpst.string(), brand, model );
 
-    boost::filesystem::path pathIllum = boost::filesystem::absolute(
+    std::filesystem::path pathIllum = std::filesystem::absolute(
         "../../data/illuminant/iso7589_stutung_380_780_5.json" );
     vector<string> illumPaths;
     illumPaths.push_back( pathIllum.string() );
     idtTest->loadIlluminant( illumPaths, "iso7589" );
 
-    boost::filesystem::path pathTS = boost::filesystem::absolute(
+    std::filesystem::path pathTS = std::filesystem::absolute(
         "../../data/training/training_spectral.json" );
     idtTest->loadTrainingData( pathTS.string() );
 
-    boost::filesystem::path absolutePath =
-        boost::filesystem::absolute( "../../data/cmf/cmf_1931.json" );
+    std::filesystem::path absolutePath =
+        std::filesystem::absolute( "../../data/cmf/cmf_1931.json" );
     idtTest->loadCMF( absolutePath.string() );
 
     idtTest->chooseIllumType( "iso7589", 0 );
@@ -5786,9 +5810,32 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalIDT )
                         { -0.1312667887, -0.7361633199, 1.8674301085 } };
 
     FORIJ( 3, 3 )
-    BOOST_CHECK_CLOSE( IDT[i][j], IDT_test[i][j], 1e-4 );
+    OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-4 );
 
     free( model );
     free( brand );
     delete idtTest;
 };
+
+int main( int, char ** )
+{
+    testIDT_DataAccess();
+    testIDT_LoadCameraSpst();
+    testIDT_LoadIlluminant();
+    testIDT_LoadTrainingData();
+    testIDT_LoadCMF();
+    testIDT_Verbose();
+    testIDT_scaleLSC();
+    testIDT_CalCM();
+    testIDT_CalWB();
+    testIDT_SetIlluminants();
+    testIDT_ChooseIllumSrc();
+    testIDT_ChooseIllumType();
+    testIDT_CalTI();
+    testIDT_CalXYZ();
+    testIDT_CalRGB();
+    testIDT_CurveFit();
+    testIDT_CalIDT();
+
+    return unit_test_failures;
+}

@@ -55,8 +55,10 @@
 #define _DEFINE_h__
 
 #include <string>
+#include <vector>
 #include <algorithm>
-#include <boost/filesystem.hpp>
+#include <filesystem>
+#include <limits>
 
 #ifndef WIN32
 #    include <sys/stat.h>
@@ -266,6 +268,20 @@ static const double XYZ_acesrgb_4[4][4] = {
     {  0.0,          0.0,           0.0,          1.0 }
 };
 
+static const float XYZ_acesrgb_float_4[4][4] = {
+    {  1.0498110175, 0.0000000000, -0.0000974845, 0.0 },
+    { -0.4959030231, 1.3733130458,  0.0982400361, 0.0 },
+    {  0.0000000000, 0.0000000000,  0.9912520182, 0.0 },
+    {  0.0,          0.0,           0.0,          1.0 }
+};
+
+static const float XYZ_acesrgb_transposed_4[4][4] = {
+    {  1.0498110175, -0.4959030231, 0.0000000000, 0.0 },
+    {  0.0000000000,  1.3733130458, 0.0000000000, 0.0 },
+    { -0.0000974845,  0.0982400361, 0.9912520182, 0.0 },
+    {  0.0000000000,  0.0000000000, 0.0000000000, 1.0 }
+};
+
 static const double acesrgb_XYZ_3[3][3] = {
     { 0.952552395938186, 0.0,                9.36786316604686e-05 },
     { 0.343966449765075, 0.728166096613485, -0.0721325463785608   },
@@ -343,10 +359,13 @@ inline vector<string> openDir( string path = "." )
 {
     vector<string> paths;
 
-    for ( auto &i: boost::filesystem::directory_iterator( path ) )
+    if ( filesystem::exists( path ) )
     {
-        if ( i.status().type() != boost::filesystem::file_type::directory_file )
-            paths.push_back( i.path().string() );
+        for ( auto &i: filesystem::directory_iterator( path ) )
+        {
+            if ( i.status().type() != filesystem::file_type::directory )
+                paths.push_back( i.path().string() );
+        }
     }
 
     return paths;
@@ -390,8 +409,8 @@ inline bool isCTLetterDigit( const char c )
 // to represent color temperature(s) (e.g., D60, 3200K)
 inline bool isValidCT( string str )
 {
-    int i      = 0;
-    int length = str.length();
+    int    i      = 0;
+    size_t length = str.length();
 
     if ( length == 0 )
         return false;
@@ -444,16 +463,36 @@ inline dataPath &pathsFinder()
 
     if ( firstTime )
     {
-        string      path;
-        const char *env;
+#if defined( WIN32 ) || defined( WIN64 )
+        char separator = ';';
+#else
+        char separator = ':';
+#endif
 
+        string          path;
         vector<string> &PATHs = cdp.paths;
-        env                   = getenv( "AMPAS_DATA_PATH" );
 
-        if ( env )
-            path = env;
+        {
+            const char *env = getenv( "AMPAS_DATA_PATH" );
+            if ( env != nullptr )
+            {
+                if ( !path.empty() )
+                    path += separator;
+                path += env;
+            }
+        }
 
-        if ( path == "" )
+        {
+            const char *env = getenv( "RAWTOACES_DATA_PATH" );
+            if ( env != nullptr )
+            {
+                if ( !path.empty() )
+                    path += separator;
+                path += env;
+            }
+        }
+
+        if ( path.empty() )
         {
 #if defined( WIN32 ) || defined( WIN64 )
             path   = ".";
@@ -470,11 +509,7 @@ inline dataPath &pathsFinder()
 
         while ( pos < path.size() )
         {
-#if defined( WIN32 ) || defined( WIN64 )
-            size_t end = path.find( ';', pos );
-#else
-            size_t end = path.find( ':', pos );
-#endif
+            size_t end = path.find( separator, pos );
 
             if ( end == string::npos )
                 end = path.size();

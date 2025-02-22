@@ -1,0 +1,42 @@
+cmake_minimum_required(VERSION 3.10)
+include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
+
+add_library ( rawtoaces_util2 ${DO_SHARED}
+    transform_cache.cpp
+    transform_cache.h
+    rawtoaces_util.cpp
+    ${PROJECT_SOURCE_DIR}/include/rawtoaces/rawtoaces_util.h
+    ${PROJECT_SOURCE_DIR}/include/rawtoaces/cache_base.h
+)
+
+set_property(TARGET rawtoaces_util2 PROPERTY CXX_STANDARD 17)
+
+if ( OIIO_FOUND )
+    target_include_directories ( rawtoaces_util2 PRIVATE ${OIIO_INCLUDE_DIRS} )
+    target_link_directories    ( rawtoaces_util2 PUBLIC  ${OIIO_LIBRARY_DIRS} )
+    target_link_libraries      ( rawtoaces_util2
+        PUBLIC
+            ${OIIO_LIBRARIES}
+            ${OIIO_LDFLAGS_OTHER}
+    )
+endif()
+ 
+target_link_libraries ( rawtoaces_util2
+    PRIVATE
+        ${RAWTOACESIDTLIB}
+    PUBLIC
+        OpenImageIO::OpenImageIO
+)
+    
+set_target_properties( rawtoaces_util2 PROPERTIES
+    SOVERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${RAWTOACES_PATCH_VERSION}
+    VERSION ${RAWTOACES_VERSION} )
+
+install(
+    FILES
+        ${PROJECT_SOURCE_DIR}/include/rawtoaces/rawtoaces_util.h
+        ${PROJECT_SOURCE_DIR}/include/rawtoaces/cache_base.h	 	
+    DESTINATION include/rawtoaces
+)
+
+install( TARGETS rawtoaces_util2 DESTINATION lib )

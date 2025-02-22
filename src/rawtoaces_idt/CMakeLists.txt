@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
 add_library( ${RAWTOACESIDTLIB} ${DO_SHARED}
@@ -8,18 +8,21 @@ add_library( ${RAWTOACESIDTLIB} ${DO_SHARED}
     ../../include/rawtoaces/define.h
     ../../include/rawtoaces/mathOps.h
     ../../include/rawtoaces/rta.h
+    ../../include/rawtoaces/metadata.h
 )
 
+set_property(TARGET ${RAWTOACESIDTLIB} PROPERTY CXX_STANDARD 17)
+
+# Eigen is also used in rawtoaces_util and rawtoaces_util2, so setting it public here
 target_link_libraries(
     ${RAWTOACESIDTLIB}
     PUBLIC
-        Boost::boost
-        Boost::system
-        Boost::filesystem
-        Imath::Imath
-        Imath::ImathConfig
+        Eigen3::Eigen
+    PRIVATE
+	    nlohmann_json::nlohmann_json
 )
 
+# Ceres is also used in rawtoaces_util and rawtoaces_util2, so setting it public here
 if ( ${Ceres_VERSION_MAJOR} GREATER 1 )
     target_link_libraries( ${RAWTOACESIDTLIB} PUBLIC Ceres::ceres )
 else ()
@@ -37,8 +40,8 @@ install(FILES
     ${PROJECT_SOURCE_DIR}/include/rawtoaces/define.h
     ${PROJECT_SOURCE_DIR}/include/rawtoaces/mathOps.h
     ${PROJECT_SOURCE_DIR}/include/rawtoaces/rta.h
-
- 	DESTINATION include/rawtoaces
+    ${PROJECT_SOURCE_DIR}/include/rawtoaces/metadata.h
+    DESTINATION include/rawtoaces
 )
 
 install( TARGETS ${RAWTOACESIDTLIB} DESTINATION lib )

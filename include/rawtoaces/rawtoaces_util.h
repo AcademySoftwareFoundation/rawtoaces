@@ -83,8 +83,9 @@ public:
     int   cropbox[4]               = { 0, 0, 0, 0 };
     int   verbosity                = 0;
 
-    bool        overwrite   = false;
-    bool        create_dirs = false;
+    bool        disable_cache = false;
+    bool        overwrite     = false;
+    bool        create_dirs   = false;
     std::string output_dir;
 
     /// Initialise the parser object with all the command line parameters

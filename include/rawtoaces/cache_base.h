@@ -40,37 +40,49 @@ public:
         std::list<std::pair<Descriptor, CacheEntryData>> &map =
             _maps[map_index];
 
-        if ( verbosity > 0 )
+        if ( disabled )
         {
-            std::cerr << name << ": searching for a " << descriptor;
-        }
-
-        for ( auto iter = map.begin(); iter != map.end(); ++iter )
-        {
-            if ( iter->first == descriptor )
+            if ( verbosity > 0 )
             {
-                if ( iter != map.begin() )
-                {
-                    map.splice( map.begin(), map, iter, std::next( iter ) );
-                }
-
-                if ( verbosity > 0 )
-                {
-                    std::cerr << name << ": found in cache!" << std::endl;
-                }
-                return map.front().second;
+                std::cerr << name << ": disabled " << std::endl;
             }
+            map.clear();
         }
-
-        if ( map.size() == capacity )
+        else
         {
-            map.pop_back();
-        }
 
-        if ( verbosity > 0 )
-        {
-            std::cerr << name << ": not found. Calculating a new entry."
-                      << std::endl;
+            if ( verbosity > 0 )
+            {
+                std::cerr << name << ": searching for a " << descriptor;
+            }
+
+            for ( auto iter = map.begin(); iter != map.end(); ++iter )
+            {
+                if ( iter->first == descriptor )
+                {
+                    if ( iter != map.begin() )
+                    {
+                        map.splice( map.begin(), map, iter, std::next( iter ) );
+                    }
+
+                    if ( verbosity > 0 )
+                    {
+                        std::cerr << name << ": found in cache!" << std::endl;
+                    }
+                    return map.front().second;
+                }
+            }
+
+            if ( map.size() == capacity )
+            {
+                map.pop_back();
+            }
+
+            if ( verbosity > 0 )
+            {
+                std::cerr << name << ": not found. Calculating a new entry."
+                          << std::endl;
+            }
         }
 
         map.emplace_front(
@@ -83,6 +95,7 @@ public:
         return data;
     };
 
+    bool        disabled  = false;
     int         capacity  = 10;
     int         verbosity = 0;
     std::string name      = "Cache";

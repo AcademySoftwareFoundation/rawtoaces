@@ -212,6 +212,10 @@ void ImageConverter::init_parser( OIIO::ArgParse &argParse )
         .help( "Create output directories if they don't exist." )
         .action( OIIO::ArgParse::store_true() );
 
+    argParse.arg( "--disable-cache" )
+        .help( "Disable the colour space transform cache." )
+        .action( OIIO::ArgParse::store_true() );
+
     argParse.separator( "Raw conversion options:" );
 
     argParse.arg( "--no-auto-bright" )
@@ -509,9 +513,10 @@ bool ImageConverter::parse_params( const OIIO::ArgParse &argParse )
     highlight_mode           = argParse["highlight-mode"].get<int>();
     flip                     = argParse["flip"].get<int>();
 
-    overwrite   = argParse["overwrite"].get<int>();
-    create_dirs = argParse["create-dirs"].get<int>();
-    output_dir  = argParse["output-dir"].get();
+    disable_cache = argParse["disable-cache"].get<int>();
+    overwrite     = argParse["overwrite"].get<int>();
+    create_dirs   = argParse["create-dirs"].get<int>();
+    output_dir    = argParse["output-dir"].get();
 
     return true;
 }
@@ -919,6 +924,7 @@ void ImageConverter::prepareIDT_spectral(
         descriptor.value = lower_illuminant;
     }
 
+    transform_cache.disabled  = disable_cache;
     transform_cache.verbosity = verbosity;
     const cache::TransformCacheEntryData &wb_data =
         transform_cache.fetch( descriptor );

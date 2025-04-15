@@ -33,236 +33,88 @@ The source code contains the following:
 
 ## Prerequisites
 
-###### CMake
+To build `rawtoaces` you would need to sutisfy these dependencies:
 
-CMake can be downloaded directly from [https://cmake.org/](https://cmake.org/) and/or installed using one of the commands below.
+| Library          | Min Version| Purpose  | Link to installation instruction |
+| -------          | -----------| -------- | -------------------------------- |
+| `cmake`          | `3.10`     | | [CMake download](https://cmake.org/download/)|
+| `ceres`          | `1.14.0`   | Ceres Solver is an open source library for solving Non-linear Least Squares problems with bounds constraints and unconstrained optimization problems. It processes non-linear regression for rawtoaces.  | [Ceres Solver installation](http://ceres-solver.org/installation.html)|
+| `imath`          | `3.1.8`    | Provides the half data type used for representing 16-bit floating-point values. It's used by rawtoaces for storing high dynamic range (HDR) data in a compact format. | [Imath installation](https://imath.readthedocs.io/en/latest/install.html#install)|
+| `libraw`         | `0.19.5`   | LibRaw is a library that processes RAW files from digital cameras. It handles image pre-processing for rawtoaces. | [LibRaw download](http://www.libraw.org/download) |
+| `boost`          | `1.80.0`   | Boost has multiple C++ libraries that support tasks related to linear algebra, multithreading, image processing, unit testing, etc. It handles data loading and unit testing for rawtoaces. | [Boost download](http://www.boost.org/) |
+| `aces_container` | `latest`   | ACES Container is the reference implementation for a file writer intended to be used with the Academy Color Encoding System (ACES). `rawtoaces` relies on it to produce images that comply with the ACES container specification (SMPTE S2065-4). | [ACES Container installation](https://github.com/ampas/aces_container?tab=readme-ov-file#installation) |
 
-* Ubuntu
-	
-	```sh
-	$ sudo apt-get install cmake
-	```
-	
-* Redhat
 
-	```sh
-	$ yum install cmake
-	```
-	
-* macOS
+### MacOS
 
-	Install homebrew if not already installed
+Install homebrew if not already installed
 	
-	```sh
-	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-	```
-	
-	Install cmake
-	
-	```sh
-	$ brew install cmake
-	```
-	
-###### IlmBase
+```sh
+$ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+```
 
-The rawtoaces tool depends on an essential part of the IlmBase software package, which can be downloaded from [http://www.openexr.com](http://www.openexr.com) and/or installed using one of the commands below.
+```sh
+$ brew install cmake ceres-solver imath libraw boost aces_container  
+```
 
-* Ubuntu
-	
-	```sh
-	$ sudo apt-get install libilmbase-dev
-	```
-	
-* Redhat
-	
-	```sh
-	$ yum install ilmbase-devel
-	```
-	
-* macOS
-	
-	Install homebrew if not already installed
-	
-	```sh
-	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-	```
-	
-	Install ilmBase
-	
-	```sh
-	$ brew install ilmBase
-	```
-	
-###### ACES Container 
+### Linux
 
-ACES Container is the reference implementation for a file writer intended to be used with the Academy Color Encoding System (ACES). `rawtoaces` relies on it to produce images that comply with the ACES container specification (SMPTE S2065-4). ACES Container can be downloaded from [https://github.com/ampas/aces_container](https://github.com/ampas/aces_container) or installed using one of the commands below.
+```sh
+$ sudo apt-get -f cmake
+$ build_scripts/install_aces_container.bash
+$ sudo apt-get -f install \
+    libimath-dev \
+    libboost-dev libboost-filesystem-dev \
+    libboost-test-dev \
+    libraw-dev libceres-dev
+```
 
-* Ubuntu / Redhat / macOS
-	
-	Install aces_container
-	
-	```sh
-	git clone https://github.com/ampas/aces_container.git
-	cd aces_container	
-	
-  mkdir build && cd build
-	cmake ..
-	make
-	sudo make install	
-	```
-	
-###### LibRaw
+### RedHat
 
-LibRaw is a library that processes RAW files from digital cameras. It handles image pre-processing for rawtoaces. LibRaw can be downloaded from [http://www.libraw.org/download](http://www.libraw.org/download) or installed using one of the commands below.
+```sh
+$ sudo yum install cmake
+$ build_scripts/install_aces_container.bash
+$ sudo yum install eigen3-devel ceres-solver-devel LibRaw-devel boost-devel imath
+```
 
-* Ubuntu
-	
-	```sh
-	$ sudo apt-get install libraw-dev
-	```
-	
-* Redhat
-	
-	```sh
-	$ yum install libraw1394-devel
-	```
-	
-* macOS
-	
-	Install homebrew if not already installed
-	
-	```sh
-	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-	```
-	
-	Install libraw
-	
-	```sh
-	$ brew install libraw
-	```
-	
-###### Boost
+### Windows
 
-Boost has multiple C++ libraries that support tasks related to linear algebra, multithreading, image processing, unit testing, etc. It handles data loading and unit testing for rawtoaces. Boost can be downloaded from [http://www.boost.org/](http://www.boost.org/) or installed using one of the commands below.
+Install cmake first via [installer](https://cmake.org/download/) or with Chocolatey:
 
-* Ubuntu
-	
-	```sh
-	$ sudo apt-get install libboost-all-dev
-	```
-	
-* Redhat
-	
-	```sh
-	$ yum install boost-devel
-	```
-	
-* macOS
-	
-	Install homebrew if not already installed
-	
-	```sh
-	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-	```
-	
-	Install boost
-	
-	```sh
-	$ brew install boost
-	```
-	
-###### Ceres Solver
+```sh
+$ choco install cmake
+```
 
-Ceres Solver is an open source library for solving Non-linear Least Squares problems with bounds constraints and unconstrained optimization problems. It processes non-linear regression for rawtoaces. Ceres Solver can be downloaded from [http://ceres-solver.org/](http://ceres-solver.org/) or installed using one of the commands below.
+```sh
+$ build_scripts/install_aces_container.bash
+$ vcpkg install \
+    libraw:x64-windows \
+    ceres:x64-windows \
+    imath:x64-windows \
+    boost-system:x64-windows \
+    boost-foreach:x64-windows \
+    boost-filesystem:x64-windows \
+    boost-test:x64-windows \
+    boost-property-tree:x64-windows
+```
 
-* Linux (e.g. Ubuntu)
-	
-	Install `google-glog + gflags`
-	
-	``` sh
-	sudo apt-get install libgoogle-glog-dev
-	```
-	
-	Install `BLAS & LAPACK`
-	
-	``` sh
-	sudo apt-get install libatlas-base-dev
-	```
-	
-	Install `Eigen3`
-	
-	``` sh
-	sudo apt-get install libeigen3-dev
-	```
-	
-	Install `SuiteSparse and CXSparse` (*optional*)
-	
- 	``` sh
-	sudo apt-get install libsuitesparse-dev
-	sudo add-apt-repository ppa:bzindovic/suitesparse-bugfix-1319687
-	sudo apt-get update
-	sudo apt-get install libsuitesparse-dev
-	```
-	
-	Build, Test and Install `Ceres` (choose last version by replacing `version#` in the following commands)
-	
-	``` sh
-	wget http://ceres-solver.org/ceres-solver-version#.tar.gz
-	tar zxf ceres-solver-version#.tar.gz
-	mkdir ceres-bin
-	cd ceres-bin
-	cmake ../ceres-solver-version#
-	make -j3
-	make test
-	sudo make install
-	```
-	
-* macOS
-	
-	Install homebrew if not already installed
-	
-	```sh
-	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-	```
-	
-	Install ceres-solver
-	
-	```sh
-	$ brew tap homebrew/homebrew-science
-	$ brew install ceres-solver --HEAD
-	```
-	
-	If there are errors with regard to a version mis-match of the *Eigen* library, please consider brew-installing required libraries first and then buiding Ceres from source (see above).
-	
-	In case of any linking errors you should take ownership of CMAKE then run linker:
-	
-	```sh
-	sudo chown -R $USER:admin /usr/local/lib/cmake
-	$ brew link ceres-solver
-	```
-	
-	In case of any GFlag errors AFTER running the next step (rawtoaces installation) you should repeat the install of ceres and follow the instructions shown in terminal to switch the version.
+## Build and Install
 
-	```sh
-	$ brew install ceres-solver --HEAD
-	```
+#### From Source
 	
-	This should present something like:
+From the root source directory:
+	
+```sh
+$ git clone https://github.com/ampas/rawtoaces
+$ cd rawtoaces
+$ cmake -S . -B build
+$ cmake --build build
+$ sudo cmake --install build # Optional if you want it to be accessible system wide
+```
 
-	`homebrew/science/ceres-solver-HEAD-97cefd4_4` already installed, however linked version is 1.12.0_4
-	You can use `brew switch ceres-solver HEAD-97cefd4_4` to link to this version.
-	
-	Therefore you would enter:
-	
-	```sh
-	$ brew switch ceres-solver HEAD-97cefd4_4
-	```
-	
-	And then repeat installation of rawtoaces in the next step.
+The default process will install `librawtoaces_idt_${rawtoaces_version}.dylib` and `librawtoaces_util_${rawtoaces_version}.dylib` to `/usr/local/lib`, a few header files to `/usr/local/include/rawtoaces/include` and a number of data files into `/usr/local/include/rawtoaces/data`.
 
-## Installation
-
-* Docker
+#### Docker
 
 Assuming you have [Docker](https://www.docker.com/) installed, installing and
 running rawtoaces is relatively straightforward except for the compilation of
@@ -271,47 +123,17 @@ the 2Go that Docker allocates by default. Thus you will need to increase the
 memory in Docker preferences: Preferences --> Resources --> Advanced, 8Go
 should be enough.
 
-	From the root source directory,	build the container:
-
+* From the root source directory, build the container:
+ 
 	```sh
 	$ docker build -f "Dockerfile" -t rawtoaces:latest "."
 	```
 
-	Then to run it from a directory with images:
+* Then to run it from a directory with images:
 
 	```sh
 	$ docker run -it --rm -v $PWD:/tmp -w /tmp rawtoaces:latest rawtoaces IMG_1234.CR2
 	```
-
-* macOS
-	
-	Install homebrew if not already installed
-	
-	```sh
-	/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-	```
-	
-	Install rawtoaces
-	
-	```sh
-	$ brew install rawtoaces
-	```
-	
-* From Source
-	
-	From the root source directory:
-	
-	```sh
-	$ git clone https://github.com/ampas/rawtoaces
-	$ cd rawtoaces
-	$ mkdir build && cd build
-	$ cmake ..
-	$ make
-	$ sudo make install
-	```
-	
-
-The default process will install `librawtoaces_idt_${rawtoaces_version}.dylib` and `librawtoaces_util_${rawtoaces_version}.dylib` to `/usr/local/lib`, a few header files to `/usr/local/include/rawtoaces/include` and a number of data files into `/usr/local/include/rawtoaces/data`.
 	
 ## Usage
 

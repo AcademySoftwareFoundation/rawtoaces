@@ -14,7 +14,7 @@ else()
   set( RAWTOACES_INCLUDE_DIRS "${RAWTOACES_CMAKE_DIR}/@CONF_REL_INCLUDE_DIR@" )
 endif
 
-# setup our library dependencies (i.e. ilmbase)
+# setup our library dependencies (i.e. Imath)
 include( "${RAWTOACES_CMAKE_DIR}/RAWTOACESLibraryDepends.cmake" )
 
 set( RAWTOACES_LIBRARIES RAWTOACES )

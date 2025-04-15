@@ -39,7 +39,6 @@ jobs:
       CXX: ${{matrix.cxx_compiler}}
       CC: ${{matrix.cc_compiler}}
       CMAKE_CXX_STANDARD: ${{matrix.cxx_std}}
-      OPENEXR_VERSION: ${{matrix.openexr_ver}}
     steps:
       - uses: actions/checkout@v4
 

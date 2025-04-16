@@ -38,10 +38,10 @@ To build `rawtoaces` you would need to sutisfy these dependencies:
 | Library          | Min Version| Purpose  | Link to installation instruction |
 | -------          | -----------| -------- | -------------------------------- |
 | `cmake`          | `3.10`     | | [CMake download](https://cmake.org/download/)|
-| `ceres`          | `1.14.0`   | Ceres Solver is an open source library for solving Non-linear Least Squares problems with bounds constraints and unconstrained optimization problems. It processes non-linear regression for rawtoaces.  | [Ceres Solver installation](http://ceres-solver.org/installation.html)|
+| `ceres`          | `1.12.0`   | Ceres Solver is an open source library for solving Non-linear Least Squares problems with bounds constraints and unconstrained optimization problems. It processes non-linear regression for rawtoaces.  | [Ceres Solver installation](http://ceres-solver.org/installation.html)|
 | `imath`          | `3.1.8`    | Provides the half data type used for representing 16-bit floating-point values. It's used by rawtoaces for storing high dynamic range (HDR) data in a compact format. | [Imath installation](https://imath.readthedocs.io/en/latest/install.html#install)|
-| `libraw`         | `0.19.5`   | LibRaw is a library that processes RAW files from digital cameras. It handles image pre-processing for rawtoaces. | [LibRaw download](http://www.libraw.org/download) |
-| `boost`          | `1.80.0`   | Boost has multiple C++ libraries that support tasks related to linear algebra, multithreading, image processing, unit testing, etc. It handles data loading and unit testing for rawtoaces. | [Boost download](http://www.boost.org/) |
+| `libraw`         | `0.19.4`   | LibRaw is a library that processes RAW files from digital cameras. It handles image pre-processing for rawtoaces. | [LibRaw download](http://www.libraw.org/download) |
+| `boost`          | `1.76.0`   | Boost has multiple C++ libraries that support tasks related to linear algebra, multithreading, image processing, unit testing, etc. It handles data loading and unit testing for rawtoaces. | [Boost download](http://www.boost.org/) |
 | `aces_container` | `latest`   | ACES Container is the reference implementation for a file writer intended to be used with the Academy Color Encoding System (ACES). `rawtoaces` relies on it to produce images that comply with the ACES container specification (SMPTE S2065-4). | [ACES Container installation](https://github.com/ampas/aces_container?tab=readme-ov-file#installation) |
 
 

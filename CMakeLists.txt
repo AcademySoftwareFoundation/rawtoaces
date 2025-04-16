@@ -57,6 +57,7 @@ foreach( p LIB BIN INCLUDE CMAKE )
 endforeach()
 
 option( ENABLE_SHARED "Enable Shared Libraries" ON )
+option( RTA_CENTOS7_CERES_HACK "Work around broken config in ceres-solver 1.12" OFF )
 
 if ( ENABLE_SHARED )
   set ( DO_SHARED SHARED )

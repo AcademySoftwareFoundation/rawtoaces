@@ -18,6 +18,7 @@ target_link_libraries(
         Boost::filesystem
         Imath::Imath
         Imath::ImathConfig
+	Eigen3::Eigen
 )
 
 if ( ${Ceres_VERSION_MAJOR} GREATER 1 )

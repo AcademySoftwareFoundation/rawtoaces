@@ -1028,12 +1028,14 @@ void Idt::loadCMF( const string &path )
         BOOST_FOREACH (
             ptree::value_type &row, pt.get_child( "spectral_data.data.main" ) )
         {
-            _cmf[i]._wl = atoi( ( row.first ).c_str() );
+            uint16_t wl = atoi( ( row.first ).c_str() );
 
-            if ( _cmf[i]._wl < 380 || _cmf[i]._wl % 5 )
+            if ( wl < 380 || wl % 5 )
                 continue;
-            else if ( _cmf[i]._wl > 780 )
+            else if ( wl > 780 )
                 break;
+
+            _cmf[i]._wl = wl;
 
             vector<double> data;
             BOOST_FOREACH ( ptree::value_type &cell, row.second )

@@ -9,6 +9,75 @@ on:
     #branches: [ "master" ]
 
 jobs:
+  aswf_old:
+    name: "VFX${{matrix.vfxyear}} ${{matrix.desc}}"
+    strategy:
+      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
+      fail-fast: false
+      
+      matrix:
+        include:
+          - desc: gcc11
+            nametag: linux-vfx2022-gcc11
+            os: ubuntu-latest
+            container: aswf/ci-osl:2022-clang11
+            vfxyear: 2022
+            cxx_std: 17
+          - desc: clang14
+            nametag: linux-vfx2022-clang14
+            os: ubuntu-latest
+            container: aswf/ci-osl:2022-clang11
+            vfxyear: 2022
+            cc_compiler: clang
+            cxx_compiler: clang++
+            cxx_std: 17
+        
+    runs-on: ${{ matrix.os }}
+    container:
+      image: ${{ matrix.container }}
+      volumes:
+        - /node20217:/node20217:rw,rshared
+        - /node20217:/__e/node20:ro,rshared
+    env:
+      CXX: ${{matrix.cxx_compiler}}
+      CC: ${{matrix.cc_compiler}}
+      CMAKE_CXX_STANDARD: ${{matrix.cxx_std}}
+      OPENEXR_VERSION: ${{matrix.openexr_ver}}
+    steps:
+      - name: install nodejs20glibc2.17
+        run: |
+          curl --silent https://unofficial-builds.nodejs.org/download/release/v20.18.1/node-v20.18.1-linux-x64-glibc-217.tar.xz | tar -xJ --strip-components 1 -C /node20217 -f -
+            
+      - name: Checkout repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: '0'
+
+      - name: Yum config
+        shell: bash
+        run: |
+          yum-config-manager --disable centos-sclo-rh || true
+          sed -i 's,^mirrorlist=,#,; s,^#baseurl=http://mirror\.centos\.org/centos/$releasever,baseurl=https://vault.centos.org/7.9.2009,' /etc/yum.repos.d/CentOS-Base.repo
+          
+      - name: Dependencies
+        shell: bash
+        run: |
+            build_scripts/install_aces_container.bash
+            sudo yum install --setopt=tsflags=nodocs -y eigen3-devel ceres-solver-devel LibRaw-devel
+
+      - name: Configure CMake
+        # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+        # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+        run: >
+            cmake -B build -S . -DRTA_CENTOS7_CERES_HACK=ON
+
+      - name: Build
+        run: sudo cmake --build build
+
+      - name: Test
+        working-directory: build
+        run: ctest --rerun-failed --output-on-failure
+
   aswf:
     name: "VFX${{matrix.vfxyear}} ${{matrix.desc}}"
     runs-on: ${{ matrix.os }}
@@ -28,17 +97,34 @@ jobs:
             vfxyear: 2023
             cxx_std: 17
           - desc: clang15 # /C++17 boost1.8 exr3.1
-            nametag: linux-vfx2022-clang13
+            nametag: linux-vfx2022-clang15
             os: ubuntu-latest
             container: aswf/ci-osl:2023-clang15
             vfxyear: 2023
             cc_compiler: clang
             cxx_compiler: clang++
             cxx_std: 17
+            
+          - desc: gcc11
+            nametag: linux-vfx2024
+            os: ubuntu-latest
+            container: aswf/ci-osl:2024-clang17
+            vfxyear: 2024
+            cxx_std: 17
+          - desc: clang17
+            nametag: linux-vfx2024-clang17
+            os: ubuntu-latest
+            container: aswf/ci-osl:2024-clang17
+            vfxyear: 2024
+            cc_compiler: clang
+            cxx_compiler: clang++
+            cxx_std: 17
+
     env:
       CXX: ${{matrix.cxx_compiler}}
       CC: ${{matrix.cc_compiler}}
       CMAKE_CXX_STANDARD: ${{matrix.cxx_std}}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -96,14 +182,17 @@ jobs:
             c_compiler: gcc
             cpp_compiler: g++
             install_deps: install_deps_linux
+            build_shared_libs: ON
           - os: ubuntu-latest
             c_compiler: clang
             cpp_compiler: clang++
             install_deps: install_deps_linux
+            build_shared_libs: ON
           - os: macos-latest
             c_compiler: clang
             cpp_compiler: clang++
             install_deps: install_deps_mac
+            build_shared_libs: ON
         exclude:
           - os: windows-latest
             c_compiler: gcc
@@ -115,7 +204,7 @@ jobs:
             c_compiler: cl
           - os: macos-latest
             c_compiler: gcc
-
+      
     steps:
     - uses: actions/checkout@v4
 
@@ -139,7 +228,7 @@ jobs:
         cmake
         -B ${{ steps.strings.outputs.build-output-dir }}
         -S ${{ github.workspace }}
-        -DCXX_STANDARD=C++14
+        -DCXX_STANDARD=C++17
         -DCMAKE_TOOLCHAIN_FILE="${{ matrix.toolchain_file }}"
         -DENABLE_SHARED="${{ matrix.build_shared_libs }}"
         

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: apache-2.0
+// SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
 #ifndef _USAGE_h__

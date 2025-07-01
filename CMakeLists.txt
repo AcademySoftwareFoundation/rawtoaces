@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.11)
 project( RAWTOACES )
 
 set( RAWTOACES_MAJOR_VERSION 1 )
@@ -99,8 +99,37 @@ install( FILES "${PROJECT_BINARY_DIR}/RAWTOACESLibraryDepends.cmake" DESTINATION
   "${INSTALL_CMAKE_DIR}" COMPONENT dev )
 endif( )
 
+###############################################################################
+##
+##  Fetch data files from rawtoaces-data
+##
+include(FetchContent)
+
+FetchContent_Declare(
+  rawtoaces_data
+  GIT_REPOSITORY https://github.com/antond-weta/rawtoaces-data
+  GIT_TAG origin/main
+)
+
+FetchContent_MakeAvailable(rawtoaces_data)
+
+###############################################################################
+
 if ( APPLE OR UNIX )
-	install (DIRECTORY data DESTINATION include/rawtoaces)
+    install (
+        DIRECTORY
+            ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/camera
+            ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/cmf
+            ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/illuminant
+            ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/training
+        DESTINATION include/rawtoaces/data
+    )
+    
+    install (
+        FILES
+            ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/LICENSE
+        DESTINATION include/rawtoaces/data
+    )
 endif()
 
 ### to build rawtoaces ###

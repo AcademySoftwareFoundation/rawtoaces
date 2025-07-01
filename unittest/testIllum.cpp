@@ -14,6 +14,8 @@
 #include <rawtoaces/mathOps.h>
 #include <rawtoaces/rta.h>
 
+#define DATA_PATH "../_deps/rawtoaces_data-src/"
+
 using namespace std;
 using namespace rta;
 
@@ -85,7 +87,7 @@ BOOST_AUTO_TEST_CASE( TestIllum_readSPD )
     Illum illumObject;
 
     boost::filesystem::path illumPath = boost::filesystem::absolute(
-        "../../data/illuminant/iso7589_stutung_380_780_5.json" );
+        DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
     illumObject.readSPD( illumPath.string(), "iso7589" );
 
     double iso7589[81] = {

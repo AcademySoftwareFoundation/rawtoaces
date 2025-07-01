@@ -37,7 +37,7 @@ To build `rawtoaces` you would need to sutisfy these dependencies:
 
 | Library          | Min Version| Purpose  | Link to installation instruction |
 | -------          | -----------| -------- | -------------------------------- |
-| `cmake`          | `3.10`     | | [CMake download](https://cmake.org/download/)|
+| `cmake`          | `3.11`     | | [CMake download](https://cmake.org/download/)|
 | `ceres`          | `1.12.0`   | Ceres Solver is an open source library for solving Non-linear Least Squares problems with bounds constraints and unconstrained optimization problems. It processes non-linear regression for rawtoaces.  | [Ceres Solver installation](http://ceres-solver.org/installation.html)|
 | `imath`          | `3.1.8`    | Provides the half data type used for representing 16-bit floating-point values. It's used by rawtoaces for storing high dynamic range (HDR) data in a compact format. | [Imath installation](https://imath.readthedocs.io/en/latest/install.html#install)|
 | `libraw`         | `0.19.4`   | LibRaw is a library that processes RAW files from digital cameras. It handles image pre-processing for rawtoaces. | [LibRaw download](http://www.libraw.org/download) |

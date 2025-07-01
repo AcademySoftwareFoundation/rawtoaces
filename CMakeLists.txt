@@ -107,7 +107,7 @@ include(FetchContent)
 
 FetchContent_Declare(
   rawtoaces_data
-  GIT_REPOSITORY https://github.com/antond-weta/rawtoaces-data
+  GIT_REPOSITORY https://github.com/AcademySoftwareFoundation/rawtoaces-data
   GIT_TAG origin/main
 )
 

@@ -14,6 +14,8 @@
 #include <rawtoaces/mathOps.h>
 #include <rawtoaces/rta.h>
 
+#define DATA_PATH "../_deps/rawtoaces_data-src/"
+
 using namespace std;
 using namespace rta;
 
@@ -174,7 +176,7 @@ BOOST_AUTO_TEST_CASE( TestSpst_LoadSpst )
 
     Spst                   *spstTest     = new Spst();
     boost::filesystem::path absolutePath = boost::filesystem::absolute(
-        "../../data/camera/arri_d21_380_780_5.json" );
+        DATA_PATH "camera/arri_d21_380_780_5.json" );
 
     BOOST_CHECK_NO_THROW(
         spstTest->loadSpst( absolutePath.string(), brand, model ) );

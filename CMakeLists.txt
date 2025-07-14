@@ -101,7 +101,7 @@ include(FetchContent)
 FetchContent_Declare(
   rawtoaces_data
   GIT_REPOSITORY https://github.com/AcademySoftwareFoundation/rawtoaces-data
-  GIT_TAG origin/main
+  GIT_TAG 4db0acc872965ecdbbf578664be20abf17c18e8c # v0.1.0
 )
 
 FetchContent_MakeAvailable(rawtoaces_data)
@@ -111,11 +111,8 @@ FetchContent_MakeAvailable(rawtoaces_data)
 if ( APPLE OR UNIX )
     install (
         DIRECTORY
-            ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/camera
-            ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/cmf
-            ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/illuminant
-            ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/training
-        DESTINATION include/rawtoaces/data
+            ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/data
+        DESTINATION include/rawtoaces
     )
     
     install (

@@ -17,7 +17,7 @@
 using namespace std;
 using namespace rta;
 
-#define DATA_PATH "../_deps/rawtoaces_data-src/"
+#define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 
 BOOST_AUTO_TEST_CASE( TestIDT_DataAccess )
 {

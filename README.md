@@ -247,7 +247,7 @@ You can use the environment varilable of `AMPAS_DATA_PATH` to specify the reposi
 	
 #### Spectral Datasets
 
-The spectral data have been moved to a separate repository [rawtoaces-data](https://github.com/AcademySoftwareFoundation/rawtoaces-data).
+The spectral data are located in a separate repository [rawtoaces-data](https://github.com/AcademySoftwareFoundation/rawtoaces-data).
 The build scripts of rawtoaces will fetch and install the data automatically. Please refer to that repository for the information on the data usage and schema.
 
 ### Conversion using camera file metadata

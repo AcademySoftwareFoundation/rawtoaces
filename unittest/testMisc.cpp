@@ -7,7 +7,7 @@
 
 #include <rawtoaces/define.h>
 
-#define DATA_PATH "../_deps/rawtoaces_data-src/"
+#define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 
 using namespace std;
 

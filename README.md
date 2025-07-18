@@ -483,7 +483,7 @@ The following commands will convert RAW to ACES using the camera file metadata f
 
 ## Known Issues
 
-For a list of currently known issues see the [issues list](https://github.com/ampas/rawtoaces/issues) in github. Please add any issue found to the github list.
+For a list of currently known issues see the [issues list](https://github.com/AcademySoftwareFoundation/rawtoaces/issues) in github. Please add any issue found to the github list.
 
 ## Installation for Redhat
 

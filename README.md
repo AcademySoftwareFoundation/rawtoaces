@@ -105,7 +105,7 @@ $ vcpkg install \
 From the root source directory:
 	
 ```sh
-$ git clone https://github.com/ampas/rawtoaces
+$ git clone https://github.com/AcademySoftwareFoundation/rawtoaces
 $ cd rawtoaces
 $ cmake -S . -B build
 $ cmake --build build

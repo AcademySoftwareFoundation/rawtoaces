@@ -1,8 +1,15 @@
 cmake_minimum_required(VERSION 3.5)
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
+set( UTIL_PUBLIC_HEADER
+    ../../include/rawtoaces/acesrender.h
+)
+
 add_library ( ${RAWTOACESLIB} ${DO_SHARED}
     acesrender.cpp
+
+    # Make the headers visible in IDEs. This should not affect the builds.
+    ${UTIL_PUBLIC_HEADER}
 )
 
 if ( AcesContainer_FOUND )
@@ -31,14 +38,17 @@ else ()
     target_link_libraries(${RAWTOACESLIB} PUBLIC ${libraw_LIBRARIES} ${libraw_LDFLAGS_OTHER} )
 endif ()
 
-
 set_target_properties( ${RAWTOACESLIB} PROPERTIES
-  SOVERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${RAWTOACES_PATCH_VERSION}
-  VERSION ${RAWTOACES_VERSION} )
-
-install(FILES
-  ${PROJECT_SOURCE_DIR}/include/rawtoaces/acesrender.h	 	
- 	DESTINATION include/rawtoaces
+    OUTPUT_NAME "rawtoaces_util"
+    EXPORT_NAME "rawtoaces_util"
+    PUBLIC_HEADER "${UTIL_PUBLIC_HEADER}"
+    SOVERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${RAWTOACES_PATCH_VERSION}
+    VERSION ${RAWTOACES_VERSION}
 )
 
-install( TARGETS ${RAWTOACESLIB} DESTINATION ${INSTALL_LIB_DIR} )
+install( TARGETS ${RAWTOACESLIB}
+    EXPORT RAWTOACESTargets
+    LIBRARY DESTINATION ${INSTALL_LIB_DIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    PUBLIC_HEADER DESTINATION include/rawtoaces
+)

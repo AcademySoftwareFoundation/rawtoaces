@@ -69,10 +69,14 @@ jobs:
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
         # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
         run: >
-            cmake -B build -S . -DRTA_CENTOS7_CERES_HACK=ON
+          cmake 
+          -B build 
+          -S . 
+          -D RTA_CENTOS7_CERES_HACK=ON
 
       - name: Build
-        run: sudo cmake --build build
+        run: |
+          sudo cmake --build build
 
       - name: Test
         working-directory: build
@@ -145,17 +149,36 @@ jobs:
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
         # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
         run: >
-            cmake -B build -S .
-#            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-#            -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-#            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          cmake -B build -S .
+          -D CMAKE_INSTALL_PREFIX=${{ steps.strings.outputs.build-output-dir }}/../install
 
       - name: Build
-        run: sudo cmake --build build
+        run: |
+          sudo cmake --build build
+          sudo cmake --install build
 
       - name: Test
         working-directory: build
         run: ctest --rerun-failed --output-on-failure
+        
+      - name: Configure config_tests
+        run: >
+          cmake
+          -B build_config_test
+          -S ./unittest/config_tests
+          -D RAWTOACES_DIR=${{ steps.strings.outputs.build-output-dir }}/../install/lib/cmake/RAWTOACES
+
+      - name: Build config_tests
+        run: >
+          cmake --build build_config_test --config Release
+        
+      - name: Test config_tests
+        run: >
+          ctest 
+          --build-config Release
+          --rerun-failed 
+          --output-on-failure 
+          --test-dir build_config_test
 
 ##################################
 
@@ -228,16 +251,39 @@ jobs:
         cmake
         -B ${{ steps.strings.outputs.build-output-dir }}
         -S ${{ github.workspace }}
-        -DCXX_STANDARD=C++17
-        -DCMAKE_TOOLCHAIN_FILE="${{ matrix.toolchain_file }}"
-        -DENABLE_SHARED="${{ matrix.build_shared_libs }}"
+        -D CMAKE_INSTALL_PREFIX=${{ steps.strings.outputs.build-output-dir }}/../install
+        -D CXX_STANDARD=C++17
+        -D CMAKE_TOOLCHAIN_FILE="${{ matrix.toolchain_file }}"
+        -D ENABLE_SHARED="${{ matrix.build_shared_libs }}"
         
     - name: Build
       # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+      run: |
+        cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+        cmake --install ${{ steps.strings.outputs.build-output-dir }}
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest --build-config ${{ matrix.build_type }} --rerun-failed --output-on-failure
+
+    - name: Configure config_tests
+      run: >
+        cmake
+        -B ${{ steps.strings.outputs.build-output-dir }}/../build_config_test
+        -S ${{ github.workspace }}/unittest/config_tests
+        -D RAWTOACES_DIR=${{ steps.strings.outputs.build-output-dir }}/../install/lib/cmake/RAWTOACES
+        -D CMAKE_TOOLCHAIN_FILE="${{ matrix.toolchain_file }}"
+
+    - name: Build config_tests
+      run: >
+        cmake --build ${{ steps.strings.outputs.build-output-dir }}/../build_config_test --config ${{ matrix.build_type }}
+        
+    - name: Test config_tests
+      run: >
+        ctest 
+        --build-config ${{ matrix.build_type }} 
+        --rerun-failed 
+        --output-on-failure 
+        --test-dir ${{ steps.strings.outputs.build-output-dir }}/../build_config_test

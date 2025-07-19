@@ -1,21 +1,18 @@
-# CMake config file for RAWTOACES
-# defines the following variables:
-#
-# RAWTOACES_INCLUDE_DIRS
-# RAWTOACES_LIBRARIES
-# RAWTOACES_EXECUTABLE
+cmake_minimum_required(VERSION 3.10)
 
-# find paths
-get_filename_component( RAWTOACES_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH )
-if( EXISTS "${RAWTOACES_CMAKE_DIR}/CMakeCache.txt" )
-  # build tree...
-  include( "${RAWTOACES_CMAKE_DIR}/RAWTOACESBuildTreeSettings.cmake" )
-else()
-  set( RAWTOACES_INCLUDE_DIRS "${RAWTOACES_CMAKE_DIR}/@CONF_REL_INCLUDE_DIR@" )
-endif
+set(rawtoaces_VERSION "@RAWTOACES_VERSION@")
 
-# setup our library dependencies (i.e. Imath)
-include( "${RAWTOACES_CMAKE_DIR}/RAWTOACESLibraryDepends.cmake" )
+@PACKAGE_INIT@
 
-set( RAWTOACES_LIBRARIES RAWTOACES )
-set( RAWTOACES_EXECUTABLE rawtoaces )
+include(${CMAKE_CURRENT_LIST_DIR}/RAWTOACESTargets.cmake)
+
+include(CMakeFindDependencyMacro)
+
+find_dependency ( AcesContainer )
+find_dependency ( Eigen3 )
+find_dependency ( Ceres )
+find_dependency ( libraw )
+find_dependency ( Imath )
+find_dependency ( Boost COMPONENTS system filesystem )
+
+check_required_components(rawtoaces)

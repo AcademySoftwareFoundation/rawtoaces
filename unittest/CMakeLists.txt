@@ -1,6 +1,8 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 add_definitions (-DBOOST_TEST_DYN_LINK)
+
+################################################################################
 
 add_executable (
 	Test_Spst
@@ -10,11 +12,13 @@ add_executable (
 target_link_libraries(
     Test_Spst
     PUBLIC
-        ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
+        ${RAWTOACESIDTLIB}
         Boost::unit_test_framework
 )
+
+add_test ( NAME Test_Spst COMMAND Test_Spst )
+
+################################################################################
 
 add_executable (
 	Test_IDT
@@ -24,13 +28,13 @@ add_executable (
 target_link_libraries(
     Test_IDT
     PUBLIC
-        ${RAWTOACESLIB}
-        Imath::Imath
-        Imath::ImathConfig
-        Boost::boost
-        Boost::filesystem
+        ${RAWTOACESIDTLIB}
         Boost::unit_test_framework
 )
+
+add_test ( NAME Test_IDT COMMAND Test_IDT )
+
+################################################################################
 
 add_executable (
 	Test_Illum
@@ -40,11 +44,13 @@ add_executable (
 target_link_libraries(
     Test_Illum
     PUBLIC
-        ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
+        ${RAWTOACESIDTLIB}
         Boost::unit_test_framework
 )
+
+add_test ( NAME Test_Illum COMMAND Test_Illum )
+
+################################################################################
 
 add_executable (
 	Test_DNGIdt
@@ -54,11 +60,13 @@ add_executable (
 target_link_libraries(
     Test_DNGIdt
     PUBLIC
-        ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
+        ${RAWTOACESIDTLIB}
         Boost::unit_test_framework
 )
+
+add_test ( NAME Test_DNGIdt COMMAND Test_DNGIdt )
+
+################################################################################
 
 add_executable (
 	Test_Math
@@ -68,11 +76,13 @@ add_executable (
 target_link_libraries(
     Test_Math
     PUBLIC
-        ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
+        ${RAWTOACESIDTLIB}
         Boost::unit_test_framework
 )
+
+add_test ( NAME Test_Math  COMMAND Test_Math )
+
+################################################################################
 
 add_executable (
     Test_Logic
@@ -82,11 +92,13 @@ add_executable (
 target_link_libraries(
     Test_Logic
     PUBLIC
-        ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
+        ${RAWTOACESIDTLIB}
         Boost::unit_test_framework
 )
+
+add_test ( NAME Test_Logic COMMAND Test_Logic )
+
+################################################################################
 
 add_executable (
 	Test_Misc
@@ -96,30 +108,8 @@ add_executable (
 target_link_libraries(
     Test_Misc
     PUBLIC
-        ${RAWTOACESLIB}
-        Boost::boost
-        Boost::filesystem
+        ${RAWTOACESIDTLIB}
         Boost::unit_test_framework
 )
 
-
-if ( ${Ceres_VERSION_MAJOR} GREATER 1 )
-    target_include_directories( Test_Spst PUBLIC ${CERES_INCLUDE_DIRS} )
-    target_include_directories( Test_IDT  PUBLIC ${CERES_INCLUDE_DIRS} )
-
-    target_link_libraries( Test_Spst PUBLIC Ceres::ceres )
-    target_link_libraries( Test_IDT  PUBLIC Ceres::ceres )
-else ()
-    target_link_libraries( Test_Spst PUBLIC ${CERES_LIBRARIES} )
-    target_link_libraries( Test_IDT PUBLIC ${CERES_LIBRARIES} )
-endif ()
-
-
-add_test ( NAME Test_Spst   COMMAND Test_Spst   )
-add_test ( NAME Test_IDT    COMMAND Test_IDT    )
-add_test ( NAME Test_Illum  COMMAND Test_Illum  )
-add_test ( NAME Test_DNGIdt COMMAND Test_DNGIdt )
-add_test ( NAME Test_Math   COMMAND Test_Math   )
-add_test ( NAME Test_Misc   COMMAND Test_Misc   )
-
-
+add_test ( NAME Test_Misc COMMAND Test_Misc )

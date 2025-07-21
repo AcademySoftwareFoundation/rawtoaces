@@ -43,6 +43,7 @@ jobs:
       CC: ${{matrix.cc_compiler}}
       CMAKE_CXX_STANDARD: ${{matrix.cxx_std}}
       OPENEXR_VERSION: ${{matrix.openexr_ver}}
+
     steps:
       - name: install nodejs20glibc2.17
         run: |
@@ -70,7 +71,7 @@ jobs:
         # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
         run: >
           cmake 
-          -B build 
+          -B build
           -S . 
           -D RTA_CENTOS7_CERES_HACK=ON
 
@@ -150,7 +151,7 @@ jobs:
         # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
         run: >
           cmake -B build -S .
-          -D CMAKE_INSTALL_PREFIX=${{ steps.strings.outputs.build-output-dir }}/../install
+          -D CMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
 
       - name: Build
         run: |
@@ -166,7 +167,7 @@ jobs:
           cmake
           -B build_config_test
           -S ./unittest/config_tests
-          -D RAWTOACES_DIR=${{ steps.strings.outputs.build-output-dir }}/../install/lib/cmake/RAWTOACES
+          -D RAWTOACES_DIR=${{ github.workspace }}/install/lib/cmake/RAWTOACES
 
       - name: Build config_tests
         run: >
@@ -229,61 +230,53 @@ jobs:
             c_compiler: gcc
       
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set reusable strings
-      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
-      id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+      - name: Dependencies
+        shell: bash
+        run: |
+          build_scripts/install_aces_container.bash
+          build_scripts/${{ matrix.install_deps }}.bash
 
-    - name: Dependencies
-      shell: bash
-      run: |
-        build_scripts/install_aces_container.bash
-        build_scripts/${{ matrix.install_deps }}.bash
+      - name: Configure CMake
+        # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+        # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+        run: >
+          cmake
+          -B build
+          -S ${{ github.workspace }}
+          -D CMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
+          -D CXX_STANDARD=C++17
+          -D CMAKE_TOOLCHAIN_FILE="${{ matrix.toolchain_file }}"
+          -D ENABLE_SHARED="${{ matrix.build_shared_libs }}"
+          
+      - name: Build
+        # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+        run: |
+          cmake --build build --config ${{ matrix.build_type }}
+          cmake --install build
 
-    - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: >
-        cmake
-        -B ${{ steps.strings.outputs.build-output-dir }}
-        -S ${{ github.workspace }}
-        -D CMAKE_INSTALL_PREFIX=${{ steps.strings.outputs.build-output-dir }}/../install
-        -D CXX_STANDARD=C++17
-        -D CMAKE_TOOLCHAIN_FILE="${{ matrix.toolchain_file }}"
-        -D ENABLE_SHARED="${{ matrix.build_shared_libs }}"
-        
-    - name: Build
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      run: |
-        cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
-        cmake --install ${{ steps.strings.outputs.build-output-dir }}
+      - name: Test
+        # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+        # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+        run: ctest --build-config ${{ matrix.build_type }} --rerun-failed --output-on-failure
 
-    - name: Test
-      working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest --build-config ${{ matrix.build_type }} --rerun-failed --output-on-failure
+      - name: Configure config_tests
+        run: >
+          cmake
+          -B build_config_test
+          -S ${{ github.workspace }}/unittest/config_tests
+          -D RAWTOACES_DIR=${{ github.workspace }}/install/lib/cmake/RAWTOACES
+          -D CMAKE_TOOLCHAIN_FILE="${{ matrix.toolchain_file }}"
 
-    - name: Configure config_tests
-      run: >
-        cmake
-        -B ${{ steps.strings.outputs.build-output-dir }}/../build_config_test
-        -S ${{ github.workspace }}/unittest/config_tests
-        -D RAWTOACES_DIR=${{ steps.strings.outputs.build-output-dir }}/../install/lib/cmake/RAWTOACES
-        -D CMAKE_TOOLCHAIN_FILE="${{ matrix.toolchain_file }}"
-
-    - name: Build config_tests
-      run: >
-        cmake --build ${{ steps.strings.outputs.build-output-dir }}/../build_config_test --config ${{ matrix.build_type }}
-        
-    - name: Test config_tests
-      run: >
-        ctest 
-        --build-config ${{ matrix.build_type }} 
-        --rerun-failed 
-        --output-on-failure 
-        --test-dir ${{ steps.strings.outputs.build-output-dir }}/../build_config_test
+      - name: Build config_tests
+        run: >
+          cmake --build build_config_test --config ${{ matrix.build_type }}
+          
+      - name: Test config_tests
+        run: >
+          ctest 
+          --build-config ${{ matrix.build_type }} 
+          --rerun-failed 
+          --output-on-failure 
+          --test-dir build_config_test

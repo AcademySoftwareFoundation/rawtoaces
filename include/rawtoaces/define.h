@@ -343,10 +343,14 @@ inline vector<string> openDir( string path = "." )
 {
     vector<string> paths;
 
-    for ( auto &i: boost::filesystem::directory_iterator( path ) )
+    if ( boost::filesystem::exists( path ) )
     {
-        if ( i.status().type() != boost::filesystem::file_type::directory_file )
-            paths.push_back( i.path().string() );
+        for ( auto &i: boost::filesystem::directory_iterator( path ) )
+        {
+            if ( i.status().type() !=
+                 boost::filesystem::file_type::directory_file )
+                paths.push_back( i.path().string() );
+        }
     }
 
     return paths;
@@ -448,7 +452,11 @@ inline dataPath &pathsFinder()
         const char *env;
 
         vector<string> &PATHs = cdp.paths;
-        env                   = getenv( "AMPAS_DATA_PATH" );
+
+        env = getenv( "RAWTOACES_DATA_PATH" );
+        if ( !env )
+            // Fallback to the old environment variable.
+            env = getenv( "AMPAS_DATA_PATH" );
 
         if ( env )
             path = env;

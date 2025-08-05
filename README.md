@@ -242,7 +242,7 @@ By default, `rawtoaces` will determine the adopted white by finding the set of w
 
 	$ rawtoaces --wb-method 1 D60 --mat-method 0 input.raw
 	
-You can use the environment varilable of `AMPAS_DATA_PATH` to specify the repository for your own datasets. If you have spectral sensitivity data for your camera but it is not included with `rawtoaces` you may place that data in `/usr/local/include/rawtoaces/data/camera` or place the data in the folder pointed by `AMPAS_DATA_PATH`.
+You can use the environment variable of `RAWTOACES_DATA_PATH` to specify the repository for your own datasets. If you have spectral sensitivity data for your camera but it is not included with `rawtoaces` you may place that data in `/usr/local/include/rawtoaces/data/camera` or place the data in the folder pointed by `RAWTOACES_DATA_PATH`. The rawtoaces versions prior to v1.1 used the environment variable `AMPAS_DATA_PATH`, the old name is still supported for backward compatibility. If both variables are present, `RAWTOACES_DATA_PATH` takes priority.
 
 	
 #### Spectral Datasets

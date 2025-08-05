@@ -97,7 +97,7 @@ void usage( const char *prog )
         "                            3=Average a grey box for white balance <x y w h>\n"
         "                            4=Use custom white balance  <r g b g>\n"
         "                            (default = 0)\n"
-        "  --mat-method [0-2]      IDT matrix calculation method\n"
+        "  --mat-method [0-3]      IDT matrix calculation method\n"
         "                            0=Calculate matrix from camera spec sens\n"
         "                            1=Use file metadata color matrix\n"
         "                            2=Use adobe coeffs included in libraw\n"
@@ -876,7 +876,7 @@ int AcesRender::unpack( const char *pathToRaw )
 //	inputs:
 //      const char *     : camera spectral sensitivity path
 //                         (either in the environment variable of
-//                          "AMPAS_CAMERA_SENSITIVITIES_PATH"
+//                          "${RAWTOACES_DATA_PATH}/camera"
 //                          such as  "/usr/local/include/rawtoaces/data/camera"
 //                          or specified by users)
 //      libraw_iparams_t : main parameters read from RAW
@@ -916,8 +916,9 @@ int AcesRender::fetchCameraSenPath( const libraw_iparams_t &P )
 //
 //	inputs:
 //      const char *  : type of light source ("unknown" if not specified)
-//                      (in the environment variable of "AMPAS_ILLUMINANT_PATH"
-//                       such as "/usr/local/include/rawtoaces/data/Illuminant")
+//                      (in the environment variable of
+//                       "${RAWTOACES_DATA_PATH}/illuminant" such as
+//                       "/usr/local/include/rawtoaces/data/illuminant")
 //
 //	outputs:
 //		int : "1" means loading/injecting light source datasets successfully,

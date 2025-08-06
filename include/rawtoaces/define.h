@@ -57,6 +57,7 @@
 #include <string>
 #include <algorithm>
 #include <boost/filesystem.hpp>
+#include <iostream>
 
 #ifndef WIN32
 #    include <sys/stat.h>
@@ -455,8 +456,17 @@ inline dataPath &pathsFinder()
 
         env = getenv( "RAWTOACES_DATA_PATH" );
         if ( !env )
+        {
             // Fallback to the old environment variable.
             env = getenv( "AMPAS_DATA_PATH" );
+
+            if ( env )
+            {
+                std::cerr << "Warning: The environment variable "
+                          << "AMPAS_DATA_PATH is now deprecated. Please use "
+                          << "RAWTOACES_DATA_PATH instead." << std::endl;
+            }
+        }
 
         if ( env )
             path = env;

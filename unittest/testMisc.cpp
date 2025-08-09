@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE( Test_LowerCase )
     char text_test[] = "rawtoaces";
 
     lowerCase( text );
-    FORI( strlen( text ) - 1 )
+    FORI( strlen( text ) )
     BOOST_CHECK_EQUAL( text[i], text_test[i] );
 };
 

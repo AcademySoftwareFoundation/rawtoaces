@@ -86,7 +86,7 @@ void Illum::setIllumIndex( const double &index )
 //      const char *: type of light source if user specifies
 //
 //	outputs:
-//		int: If successufully parsed, private data members (e.g., _data)
+//		int: If successfully parsed, private data members (e.g., _data)
 //           will be filled and return 1; Otherwise, return 0
 
 int Illum::readSPD( const string &path, const string &type )
@@ -203,7 +203,7 @@ vector<double> Illum::cctToxy( const double &cctd ) const
 //      const int: cct / correlated color temperature
 //
 //	outputs:
-//		int: If successufully processed, private data members (e.g., _data)
+//		int: If successfully processed, private data members (e.g., _data)
 //           will be filled and return 1; Otherwise, return 0
 
 void Illum::calDayLightSPD( const int &cct )
@@ -341,7 +341,7 @@ const double Illum::getIllumIndex() const
 //      const int: temp / temperature
 //
 //	outputs:
-//		int: If successufully processed, private data members (e.g., _data)
+//		int: If successfully processed, private data members (e.g., _data)
 //           will be filled and return 1; Otherwise, return 0
 
 void Illum::calBlackBodySPD( const int &cct )
@@ -520,7 +520,7 @@ char *Spst::getModel()
 //      N/A
 //
 //	outputs:
-//	    uint8_t: Wavelength increment value (e.g., 5nm, 10nm) of the
+//	    int: Wavelength increment value (e.g., 5nm, 10nm) of the
 //               camera's sensitivity
 
 int Spst::getWLIncrement()
@@ -807,7 +807,7 @@ void Idt::scaleLSC( Illum &Illuminant )
 //      const char *: camera model  (from libraw)
 //
 //	outputs:
-//		boolean: If successufully parsed, _cameraSpst will be filled and return 1;
+//		boolean: If successfully parsed, _cameraSpst will be filled and return 1;
 //               Otherwise, return 0
 
 int Idt::loadCameraSpst(
@@ -825,7 +825,7 @@ int Idt::loadCameraSpst(
 //      string: type of light source if user specifies
 //
 //	outputs:
-//		int: If successufully parsed, _bestIllum will be filled and return 1;
+//		int: If successfully parsed, _bestIllum will be filled and return 1;
 //               Otherwise, return 0
 
 int Idt::loadIlluminant( const vector<string> &paths, string type )
@@ -914,7 +914,7 @@ int Idt::loadIlluminant( const vector<string> &paths, string type )
 //		string : path to the 190-patch training data
 //
 //	outputs:
-//		_trainingSpec: If successufully parsed, _trainingSpec will be filled
+//		_trainingSpec: If successfully parsed, _trainingSpec will be filled
 
 void Idt::loadTrainingData( const string &path )
 {
@@ -961,7 +961,7 @@ void Idt::loadTrainingData( const string &path )
 //		string : path to the CIE 1931 Color Matching Functions data
 //
 //	outputs:
-//		_cmf: If successufully parsed, _cmf will be filled
+//		_cmf: If successfully parsed, _cmf will be filled
 
 void Idt::loadCMF( const string &path )
 {

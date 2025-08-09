@@ -1969,8 +1969,10 @@ const vector<string> AcesRender::getSupportedCameras() const
 void AcesRender::printLibRawCameras()
 {
     const char **cl = _rawProcessor->cameraList();
-    while ( *( cl + 1 ) != NULL )
+    while ( *cl != nullptr )
+    {
         printf( "%s\n", *cl++ );
+    }
 }
 
 //	=====================================================================

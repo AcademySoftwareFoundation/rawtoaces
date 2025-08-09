@@ -23,17 +23,18 @@ The output image complies with the ACES Container specification [(SMPTE S2065-4)
 
 The source code contains the following:
 
-* [`cmake/`](./cmake) - CMake modules for locating dependencies (e.g., `libraw `)
+* [`build_scripts/`](./build_scripts) - Helper scripts for installing dependencies
+* [`cmake/`](./cmake) - CMake modules for locating dependencies (e.g., `libraw`)
 * [`config/`](./config) - CMake configuration files
 * [`data/`](./data) - Data files containing camera sensitivity, light source, color matching function and 190 training patch data
-* [`lib/`](./lib) - IDT and math libraries
-* [`src/`](./src) - AcesRender wrapper library and C++ header file containing `rawtoaces` usage information
-* [`test/`](./test) - Sample testing materials such as a ".NEF" RAW image and a camera spectral sensitivity data file
-* [`main.cpp`](main.cpp) - C++ source code file for call routines to process images
+* [`include/`](./include) - Public header files for the `rawtoaces` library
+* [`src/`](./src) - Source code for `rawtoaces` utilities and IDT implementation
+* [`unittest/`](./unittest) - Unit tests for `rawtoaces`
+* [`main.cpp`](./src/rawtoaces/main.cpp) - C++ source file for call routines to process images
 
 ## Prerequisites
 
-To build `rawtoaces` you would need to sutisfy these dependencies:
+To build `rawtoaces` you would need to satisfy these dependencies:
 
 | Library          | Min Version| Purpose  | Link to installation instruction |
 | -------          | -----------| -------- | -------------------------------- |
@@ -112,7 +113,7 @@ $ cmake --build build
 $ sudo cmake --install build # Optional if you want it to be accessible system wide
 ```
 
-The default process will install `librawtoaces_idt_${rawtoaces_version}.dylib` and `librawtoaces_util_${rawtoaces_version}.dylib` to `/usr/local/lib`, a few header files to `/usr/local/include/rawtoaces/include` and a number of data files into `/usr/local/include/rawtoaces/data`.
+The default process will install `librawtoaces_idt_${rawtoaces_version}.dylib` and `librawtoaces_util_${rawtoaces_version}.dylib` to `/usr/local/lib`, a few header files to `/usr/local/include/rawtoaces` and a number of data files into `/usr/local/include/rawtoaces/data`.
 
 #### Docker
 

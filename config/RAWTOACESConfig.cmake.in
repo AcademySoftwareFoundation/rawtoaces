@@ -13,6 +13,6 @@ find_dependency ( Eigen3 )
 find_dependency ( Ceres )
 find_dependency ( libraw )
 find_dependency ( Imath )
-find_dependency ( Boost COMPONENTS system filesystem )
+find_dependency ( Boost COMPONENTS system )
 
 check_required_components(rawtoaces)

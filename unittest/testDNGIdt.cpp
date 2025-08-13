@@ -3,7 +3,7 @@
 
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <boost/test/tools/floating_point_comparison.hpp>
 
 #include <rawtoaces/rta.h>
@@ -50,8 +50,8 @@ BOOST_AUTO_TEST_CASE( TestIDT_LightSourceToColorTemp )
 
 BOOST_AUTO_TEST_CASE( TestIDT_XYZToColorTemperature )
 {
-    LibRaw                  rawProcessor;
-    boost::filesystem::path pathToRaw = boost::filesystem::absolute(
+    LibRaw                rawProcessor;
+    std::filesystem::path pathToRaw = std::filesystem::absolute(
         "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
     int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
     ret     = rawProcessor.unpack();
@@ -69,8 +69,8 @@ BOOST_AUTO_TEST_CASE( TestIDT_XYZToColorTemperature )
 
 BOOST_AUTO_TEST_CASE( TestIDT_XYZtoCameraWeightedMatrix )
 {
-    LibRaw                  rawProcessor;
-    boost::filesystem::path pathToRaw = boost::filesystem::absolute(
+    LibRaw                rawProcessor;
+    std::filesystem::path pathToRaw = std::filesystem::absolute(
         "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
     int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
     ret     = rawProcessor.unpack();
@@ -91,8 +91,8 @@ BOOST_AUTO_TEST_CASE( TestIDT_XYZtoCameraWeightedMatrix )
 
 BOOST_AUTO_TEST_CASE( TestIDT_FindXYZtoCameraMtx )
 {
-    LibRaw                  rawProcessor;
-    boost::filesystem::path pathToRaw = boost::filesystem::absolute(
+    LibRaw                rawProcessor;
+    std::filesystem::path pathToRaw = std::filesystem::absolute(
         "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
     int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
     ret     = rawProcessor.unpack();
@@ -142,8 +142,8 @@ BOOST_AUTO_TEST_CASE( TestIDT_MatrixRGBtoXYZ )
 BOOST_AUTO_TEST_CASE( TestIDT_GetDNGCATMatrix )
 {
 
-    LibRaw                  rawProcessor;
-    boost::filesystem::path pathToRaw = boost::filesystem::absolute(
+    LibRaw                rawProcessor;
+    std::filesystem::path pathToRaw = std::filesystem::absolute(
         "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
     int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
     ret     = rawProcessor.unpack();
@@ -164,8 +164,8 @@ BOOST_AUTO_TEST_CASE( TestIDT_GetDNGCATMatrix )
 BOOST_AUTO_TEST_CASE( TestIDT_GetDNGIDTMatrix )
 {
 
-    LibRaw                  rawProcessor;
-    boost::filesystem::path pathToRaw = boost::filesystem::absolute(
+    LibRaw                rawProcessor;
+    std::filesystem::path pathToRaw = std::filesystem::absolute(
         "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
     int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
     ret     = rawProcessor.unpack();

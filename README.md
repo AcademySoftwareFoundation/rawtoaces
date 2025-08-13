@@ -64,7 +64,8 @@ $ sudo apt-get -f cmake
 $ build_scripts/install_aces_container.bash
 $ sudo apt-get -f install \
     libimath-dev \
-    libboost-dev libboost-filesystem-dev \
+    libboost-dev \
+    libboost-system-dev \
     libboost-test-dev \
     libraw-dev libceres-dev
 ```
@@ -93,7 +94,6 @@ $ vcpkg install \
     imath:x64-windows \
     boost-system:x64-windows \
     boost-foreach:x64-windows \
-    boost-filesystem:x64-windows \
     boost-test:x64-windows \
     boost-property-tree:x64-windows
 ```

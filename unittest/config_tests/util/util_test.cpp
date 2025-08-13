@@ -9,7 +9,7 @@
 
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <boost/test/tools/floating_point_comparison.hpp>
 
 #include <rawtoaces/acesrender.h>
@@ -33,9 +33,9 @@ BOOST_AUTO_TEST_CASE( Test_AcesRender )
 
     const int argc = sizeof( argv ) / sizeof( argv[0] );
 
-    boost::filesystem::path pathToRaw = boost::filesystem::absolute(
+    std::filesystem::path pathToRaw = std::filesystem::absolute(
         "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
-    BOOST_CHECK( boost::filesystem::exists( pathToRaw ) );
+    BOOST_CHECK( std::filesystem::exists( pathToRaw ) );
 
     std::cerr << "IMAGE PATH " << pathToRaw.string() << std::endl;
 

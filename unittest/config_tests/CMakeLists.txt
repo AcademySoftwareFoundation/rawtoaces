@@ -25,7 +25,6 @@ endif()
 find_package ( Boost REQUIRED
     COMPONENTS
         system
-        filesystem
         unit_test_framework
 )
 

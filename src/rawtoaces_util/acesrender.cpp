@@ -11,6 +11,8 @@
 
 #include <aces/aces_Writer.h>
 
+#include <mutex>
+
 #ifndef WIN32
 #    include <fcntl.h>
 #    include <sys/mman.h>
@@ -18,8 +20,6 @@
 
 using namespace std;
 using namespace boost::property_tree;
-
-#include <boost/filesystem.hpp>
 
 //  =====================================================================
 //  Prepare the matching between string flags and single character flag
@@ -954,7 +954,7 @@ vector<string> findFiles( string filePath, vector<string> searchPaths )
     {
         string path = i + "/" + filePath;
 
-        if ( boost::filesystem::exists( path ) )
+        if ( std::filesystem::exists( path ) )
             foundFiles.push_back( path );
     }
 

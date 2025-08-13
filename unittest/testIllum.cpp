@@ -8,7 +8,7 @@
 
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <boost/test/tools/floating_point_comparison.hpp>
 
 #include <rawtoaces/mathOps.h>
@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE( TestIllum_readSPD )
 {
     Illum illumObject;
 
-    boost::filesystem::path illumPath = boost::filesystem::absolute(
+    std::filesystem::path illumPath = std::filesystem::absolute(
         DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
     illumObject.readSPD( illumPath.string(), "iso7589" );
 

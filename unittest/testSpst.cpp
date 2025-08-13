@@ -8,7 +8,7 @@
 
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <boost/test/tools/floating_point_comparison.hpp>
 
 #include <rawtoaces/mathOps.h>
@@ -174,9 +174,9 @@ BOOST_AUTO_TEST_CASE( TestSpst_LoadSpst )
     memcpy( model, "d21", len );
     model[len] = '\0';
 
-    Spst                   *spstTest     = new Spst();
-    boost::filesystem::path absolutePath = boost::filesystem::absolute(
-        DATA_PATH "camera/arri_d21_380_780_5.json" );
+    Spst                 *spstTest = new Spst();
+    std::filesystem::path absolutePath =
+        std::filesystem::absolute( DATA_PATH "camera/arri_d21_380_780_5.json" );
 
     BOOST_CHECK_NO_THROW(
         spstTest->loadSpst( absolutePath.string(), brand, model ) );

@@ -56,8 +56,9 @@
 
 #include <string>
 #include <algorithm>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <iostream>
+#include <vector>
 
 #ifndef WIN32
 #    include <sys/stat.h>
@@ -344,13 +345,18 @@ inline vector<string> openDir( string path = "." )
 {
     vector<string> paths;
 
-    if ( boost::filesystem::exists( path ) )
+    if ( std::filesystem::exists( path ) )
     {
-        for ( auto &i: boost::filesystem::directory_iterator( path ) )
+        if ( std::filesystem::is_directory( path ) )
         {
-            if ( i.status().type() !=
-                 boost::filesystem::file_type::directory_file )
-                paths.push_back( i.path().string() );
+            auto it = std::filesystem::directory_iterator( path );
+            for ( auto filename: it )
+            {
+                if ( !std::filesystem::is_directory( filename ) )
+                {
+                    paths.push_back( filename.path().string() );
+                }
+            }
         }
     }
 

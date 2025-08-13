@@ -18,6 +18,7 @@
 
 using namespace std;
 using namespace rta;
+using namespace rta::core;
 
 BOOST_AUTO_TEST_CASE( TestSpst_DefaultConstructor )
 {

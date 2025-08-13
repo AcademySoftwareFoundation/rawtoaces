@@ -16,6 +16,7 @@
 
 using namespace std;
 using namespace rta;
+using namespace rta::core;
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 

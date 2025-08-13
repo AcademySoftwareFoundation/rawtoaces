@@ -147,7 +147,7 @@ void usage( const char *prog )
 
 AcesRender::AcesRender()
 {
-    _idt          = new Idt();
+    _idt          = new core::Idt();
     _image        = new libraw_processed_image_t();
     _rawProcessor = new LibRawAces();
 
@@ -261,8 +261,8 @@ const AcesRender &AcesRender::operator=( const AcesRender &acesrender )
 
         if ( _idt != nullptr )
             delete _idt;
-        _idt = (Idt *)malloc( sizeof( Idt ) );
-        memcpy( _idt, acesrender._idt, sizeof( Idt ) );
+        _idt = (core::Idt *)malloc( sizeof( core::Idt ) );
+        memcpy( _idt, acesrender._idt, sizeof( core::Idt ) );
 
         if ( _rawProcessor != nullptr )
             delete _rawProcessor;
@@ -1680,17 +1680,50 @@ void AcesRender::applyCAT( float *pixels, int channel, uint32_t total )
 
 float *AcesRender::renderDNG()
 {
-#ifdef P
-#    undef P
+    assert( _image && _rawProcessor->imgdata.idata.dng_version );
+
+    rta::core::Metadata metadata;
+
+    metadata.neutralRGB.resize( 3 );
+    metadata.calibration[0].xyz2rgbMatrix.resize( 9 );
+    metadata.calibration[1].xyz2rgbMatrix.resize( 9 );
+    metadata.calibration[0].cameraCalibrationMatrix.resize( 9 );
+    metadata.calibration[1].cameraCalibrationMatrix.resize( 9 );
+
+    const libraw_colordata_t &color = _rawProcessor->imgdata.rawdata.color;
+
+#if LIBRAW_VERSION >= LIBRAW_MAKE_VERSION( 0, 20, 0 )
+    metadata.baselineExposure =
+        static_cast<double>( color.dng_levels.baseline_exposure );
+#else
+    metadata.baselineExposure = static_cast<double>( color.baseline_exposure );
 #endif
 
-#define P _rawProcessor->imgdata.idata
+    for ( int i = 0; i < 3; i++ )
+    {
+        metadata.neutralRGB[i] = 1.0 / static_cast<double>( color.cam_mul[i] );
+    }
 
-    assert( _image && P.dng_version );
+    for ( int k = 0; k < 2; k++ )
+    {
+        metadata.calibration[k].illuminant =
+            static_cast<double>( color.dng_color[k].illuminant );
 
-    DNGIdt *dng = new DNGIdt( _rawProcessor->imgdata.rawdata );
-    _catm       = dng->getDNGCATMatrix();
-    _idtm       = dng->getDNGIDTMatrix();
+        for ( int i = 0; i < 3; i++ )
+        {
+            for ( int j = 0; j < 3; j++ )
+            {
+                metadata.calibration[k].xyz2rgbMatrix[i * 3 + j] =
+                    color.dng_color[k].colormatrix[i][j];
+                metadata.calibration[k].cameraCalibrationMatrix[i * 3 + j] =
+                    color.dng_color[k].calibration[i][j];
+            }
+        }
+    }
+
+    core::DNGIdt *dng = new core::DNGIdt( metadata );
+    _catm             = dng->getDNGCATMatrix();
+    _idtm             = dng->getDNGIDTMatrix();
 
     if ( _opts.verbosity > 1 )
     {

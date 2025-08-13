@@ -4,7 +4,7 @@
 #ifndef _ACESRENDER_h__
 #define _ACESRENDER_h__
 
-#include <rawtoaces/rta.h>
+#include <rawtoaces/rawtoaces_core.h>
 
 #include <unordered_map>
 #include <libraw/libraw.h>

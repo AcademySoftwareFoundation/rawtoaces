@@ -11,7 +11,7 @@ add_executable( test_core
 target_link_libraries(
     test_core
     PUBLIC
-        rawtoaces_idt
+        rawtoaces_core
         Boost::boost
         Boost::unit_test_framework
 )

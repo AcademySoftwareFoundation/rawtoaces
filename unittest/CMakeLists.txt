@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 
 add_definitions (-DBOOST_TEST_DYN_LINK)
 
@@ -12,7 +12,7 @@ add_executable (
 target_link_libraries(
     Test_Spst
     PUBLIC
-        ${RAWTOACESIDTLIB}
+        ${RAWTOACES_CORE_LIB}
         Boost::unit_test_framework
 )
 
@@ -28,7 +28,7 @@ add_executable (
 target_link_libraries(
     Test_IDT
     PUBLIC
-        ${RAWTOACESIDTLIB}
+        ${RAWTOACES_CORE_LIB}
         Boost::unit_test_framework
 )
 
@@ -44,7 +44,7 @@ add_executable (
 target_link_libraries(
     Test_Illum
     PUBLIC
-        ${RAWTOACESIDTLIB}
+        ${RAWTOACES_CORE_LIB}
         Boost::unit_test_framework
 )
 
@@ -60,7 +60,7 @@ add_executable (
 target_link_libraries(
     Test_DNGIdt
     PUBLIC
-        ${RAWTOACESIDTLIB}
+        ${RAWTOACES_CORE_LIB}
         Boost::unit_test_framework
 )
 
@@ -84,7 +84,7 @@ add_executable (
 target_link_libraries(
     Test_Math
     PUBLIC
-        ${RAWTOACESIDTLIB}
+        ${RAWTOACES_CORE_LIB}
         Boost::unit_test_framework
 )
 
@@ -100,7 +100,7 @@ add_executable (
 target_link_libraries(
     Test_Logic
     PUBLIC
-        ${RAWTOACESIDTLIB}
+        ${RAWTOACES_CORE_LIB}
         Boost::unit_test_framework
 )
 
@@ -116,7 +116,7 @@ add_executable (
 target_link_libraries(
     Test_Misc
     PUBLIC
-        ${RAWTOACESIDTLIB}
+        ${RAWTOACES_CORE_LIB}
         Boost::unit_test_framework
 )
 

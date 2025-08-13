@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.12)
 project( RAWTOACES )
 
 if( NOT DEFINED CMAKE_CXX_STANDARD )
@@ -11,7 +11,7 @@ set( RAWTOACES_MINOR_VERSION 1 )
 set( RAWTOACES_PATCH_VERSION 0 )
 set( RAWTOACES_VERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${RAWTOACES_PATCH_VERSION} )
 
-set(RAWTOACESIDTLIB "rawtoaces_idt")
+set(RAWTOACES_CORE_LIB "rawtoaces_core")
 set(RAWTOACESLIB "rawtoaces_util")
 
 set( CMAKE_MACOSX_RPATH 1 )
@@ -77,7 +77,7 @@ include ( configure.cmake )
 ##   Build
 
 add_definitions( -DPACKAGE="RAWTOACES" -DVERSION="${RAWTOACES_VERSION}" )
-add_subdirectory("src/${RAWTOACESIDTLIB}")
+add_subdirectory("src/${RAWTOACES_CORE_LIB}")
 add_subdirectory("src/${RAWTOACESLIB}")
 add_subdirectory("src/rawtoaces")
 

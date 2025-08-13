@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
 set( UTIL_PUBLIC_HEADER
@@ -24,7 +24,7 @@ endif()
  
 target_link_libraries ( ${RAWTOACESLIB}
     PUBLIC
-        ${RAWTOACESIDTLIB}
+        ${RAWTOACES_CORE_LIB}
     INTERFACE
         Eigen3::Eigen
         Imath::Imath

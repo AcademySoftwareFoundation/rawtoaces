@@ -6,8 +6,9 @@
 #include <filesystem>
 #include <boost/test/tools/floating_point_comparison.hpp>
 
-#include <rawtoaces/rta.h>
 #include <libraw/libraw.h>
+
+#include <rawtoaces/rawtoaces_core.h>
 
 using namespace std;
 using namespace rta;

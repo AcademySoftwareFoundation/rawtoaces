@@ -12,7 +12,7 @@
 #include <boost/test/tools/floating_point_comparison.hpp>
 
 #include <rawtoaces/mathOps.h>
-#include <rawtoaces/rta.h>
+#include <rawtoaces/rawtoaces_core.h>
 
 using namespace std;
 using namespace rta;

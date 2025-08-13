@@ -1,21 +1,21 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
-set( IDT_PUBLIC_HEADER
+set( CORE_PUBLIC_HEADER
     ../../include/rawtoaces/define.h
     ../../include/rawtoaces/mathOps.h
-    ../../include/rawtoaces/rta.h
+    ../../include/rawtoaces/rawtoaces_core.h
 )
 
-add_library( ${RAWTOACESIDTLIB} ${DO_SHARED}
-    rta.cpp
+add_library( ${RAWTOACES_CORE_LIB} ${DO_SHARED}
+    rawtoaces_core.cpp
 
     # Make the headers visible in IDEs. This should not affect the builds.
-    ${IDT_PUBLIC_HEADER}
+    ${CORE_PUBLIC_HEADER}
 )
 
 target_link_libraries(
-    ${RAWTOACESIDTLIB}
+    ${RAWTOACES_CORE_LIB}
     PUBLIC
         Boost::boost
         Boost::system
@@ -25,26 +25,26 @@ target_link_libraries(
 )
 
 if ( ${Ceres_VERSION_MAJOR} GREATER 1 )
-    target_link_libraries( ${RAWTOACESIDTLIB} PUBLIC Ceres::ceres )
+    target_link_libraries( ${RAWTOACES_CORE_LIB} PUBLIC Ceres::ceres )
 else ()
-    target_include_directories(${RAWTOACESIDTLIB} PUBLIC ${CERES_INCLUDE_DIRS})
-    target_link_libraries(${RAWTOACESIDTLIB} PUBLIC ${CERES_LIBRARIES})
+    target_include_directories(${RAWTOACES_CORE_LIB} PUBLIC ${CERES_INCLUDE_DIRS})
+    target_link_libraries(${RAWTOACES_CORE_LIB} PUBLIC ${CERES_LIBRARIES})
 endif ()
 
-target_include_directories( ${RAWTOACESIDTLIB} PUBLIC
+target_include_directories( ${RAWTOACES_CORE_LIB} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>
     $<INSTALL_INTERFACE:./include>
 )
 
-set_target_properties( ${RAWTOACESIDTLIB} PROPERTIES
-    OUTPUT_NAME "rawtoaces_idt"
-    EXPORT_NAME "rawtoaces_idt"
-    PUBLIC_HEADER "${IDT_PUBLIC_HEADER}"
+set_target_properties( ${RAWTOACES_CORE_LIB} PROPERTIES
+    OUTPUT_NAME "rawtoaces_core"
+    EXPORT_NAME "rawtoaces_core"
+    PUBLIC_HEADER "${CORE_PUBLIC_HEADER}"
     SOVERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${RAWTOACES_PATCH_VERSION}
     VERSION ${RAWTOACES_VERSION}
 )
 
-install( TARGETS ${RAWTOACESIDTLIB}
+install( TARGETS ${RAWTOACES_CORE_LIB}
     EXPORT RAWTOACESTargets
     LIBRARY DESTINATION ${INSTALL_LIB_DIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}

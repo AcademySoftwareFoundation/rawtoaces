@@ -13,7 +13,7 @@
 
 #include <rawtoaces/define.h>
 #include <rawtoaces/mathOps.h>
-#include <rawtoaces/rta.h>
+#include <rawtoaces/rawtoaces_core.h>
 
 BOOST_AUTO_TEST_CASE( Test_InvertD )
 {

@@ -1628,7 +1628,7 @@ DNGIdt::findXYZtoCameraMtx( const vector<double> &neutralRGB ) const
         lerror =
             mir - ccttoMired( XYZToColorTemperature( mulVector(
                       invertV( XYZtoCameraWeightedMatrix( mir, mir1, mir2 ) ),
-                      _metadata.neutralRGB ) ) );
+                      neutralRGB ) ) );
 
         if ( std::fabs( lerror - 0.0 ) <= 1e-09 )
         {

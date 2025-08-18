@@ -113,13 +113,13 @@ jobs:
           - desc: gcc11
             nametag: linux-vfx2024
             os: ubuntu-latest
-            container: aswf/ci-osl:2024-clang17
+            container: aswf/ci-osl:2024-clang17.2
             vfxyear: 2024
             cxx_std: 17
           - desc: clang17
             nametag: linux-vfx2024-clang17
             os: ubuntu-latest
-            container: aswf/ci-osl:2024-clang17
+            container: aswf/ci-osl:2024-clang17.2
             vfxyear: 2024
             cc_compiler: clang
             cxx_compiler: clang++

@@ -8,6 +8,5 @@ vcpkg install \
     imath:x64-windows \
     boost-system:x64-windows \
     boost-foreach:x64-windows \
-    boost-filesystem:x64-windows \
     boost-test:x64-windows \
     boost-property-tree:x64-windows

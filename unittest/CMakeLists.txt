@@ -64,6 +64,14 @@ target_link_libraries(
         Boost::unit_test_framework
 )
 
+if ( LIBRAW_CONFIG_FOUND )
+    target_link_libraries ( Test_DNGIdt PUBLIC libraw::raw )
+else ()
+    target_include_directories(Test_DNGIdt PUBLIC ${libraw_INCLUDE_DIR} )
+    target_link_directories(Test_DNGIdt PUBLIC ${libraw_LIBRARY_DIRS} )
+    target_link_libraries(Test_DNGIdt PUBLIC ${libraw_LIBRARIES} ${libraw_LDFLAGS_OTHER} )
+endif ()
+
 add_test ( NAME Test_DNGIdt COMMAND Test_DNGIdt )
 
 ################################################################################

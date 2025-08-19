@@ -13,7 +13,6 @@ target_link_libraries(
     PUBLIC
         rawtoaces_idt
         Boost::boost
-        Boost::filesystem
         Boost::unit_test_framework
 )
 

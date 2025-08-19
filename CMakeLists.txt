@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.11)
 project( RAWTOACES )
 
+if( NOT DEFINED CMAKE_CXX_STANDARD )
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set( RAWTOACES_MAJOR_VERSION 1 )
 set( RAWTOACES_MINOR_VERSION 1 )
 set( RAWTOACES_PATCH_VERSION 0 )
@@ -18,8 +23,8 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 if (NOT CONFIGURED_ONCE)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${warnings}")
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${warnings}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${warnings}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${warnings}")
 endif()
 
 ## Make install directories overridable

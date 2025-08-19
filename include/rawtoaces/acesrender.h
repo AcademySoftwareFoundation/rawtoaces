@@ -7,6 +7,7 @@
 #include <rawtoaces/rta.h>
 
 #include <unordered_map>
+#include <libraw/libraw.h>
 
 using namespace rta;
 
@@ -72,7 +73,7 @@ private:
     const AcesRender &operator=( const AcesRender &acesrender );
 
     char                     *_pathToRaw;
-    Idt                      *_idt;
+    core::Idt                *_idt;
     libraw_processed_image_t *_image;
     LibRawAces               *_rawProcessor;
 

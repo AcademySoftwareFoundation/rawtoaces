@@ -3,7 +3,7 @@
 
 #define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
 #include <rawtoaces/define.h>
 
@@ -13,10 +13,10 @@ using namespace std;
 
 BOOST_AUTO_TEST_CASE( Test_OpenDir )
 {
-    boost::filesystem::path absolutePath =
-        boost::filesystem::canonical( DATA_PATH "illuminant" );
+    std::filesystem::path absolutePath =
+        std::filesystem::canonical( DATA_PATH "illuminant" );
 
-    boost::filesystem::path absolutePath_test = boost::filesystem::canonical(
+    std::filesystem::path absolutePath_test = std::filesystem::canonical(
         DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
 
     vector<string> fPaths = openDir( absolutePath.string() );

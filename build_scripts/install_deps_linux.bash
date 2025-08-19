@@ -6,6 +6,7 @@ time sudo apt-get update
 
 time sudo apt-get -q -f install -y \
     libimath-dev \
-    libboost-dev libboost-filesystem-dev \
+    libboost-dev \
+    libboost-system-dev \
     libboost-test-dev \
     libraw-dev libceres-dev

@@ -34,6 +34,7 @@ target_link_libraries ( ${RAWTOACESLIB}
 if ( LIBRAW_CONFIG_FOUND )
     target_link_libraries ( ${RAWTOACESLIB} PUBLIC libraw::raw )
 else ()
+    target_include_directories(${RAWTOACESLIB} PUBLIC ${libraw_INCLUDE_DIR} )
     target_link_directories(${RAWTOACESLIB} PUBLIC ${libraw_LIBRARY_DIRS} )
     target_link_libraries(${RAWTOACESLIB} PUBLIC ${libraw_LIBRARIES} ${libraw_LDFLAGS_OTHER} )
 endif ()

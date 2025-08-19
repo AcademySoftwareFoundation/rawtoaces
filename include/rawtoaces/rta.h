@@ -1,26 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
-#ifndef _RTA_h__
-#define _RTA_h__
+#pragma once
 
 #include "define.h"
 
 #include <stdint.h>
-#include <libraw/libraw.h>
 
 using namespace std;
 
 namespace rta
 {
-struct CIEXYZ
+namespace core
 {
-    CIEXYZ(){};
-    CIEXYZ( double X, double Y, double Z ) : _Xt( X ), _Yt( Y ), _Zt( Z ){};
-    double _Xt;
-    double _Yt;
-    double _Zt;
-};
 
 struct trainSpec
 {
@@ -171,12 +163,61 @@ private:
     vector<vector<double>> _idt;
 };
 
+struct Metadata
+{
+    struct Calibration
+    {
+        unsigned short      illuminant = 0;
+        std::vector<double> cameraCalibrationMatrix;
+        std::vector<double> xyz2rgbMatrix;
+
+        friend bool operator==( const Calibration &c1, const Calibration &c2 )
+        {
+            if ( c1.illuminant != c2.illuminant )
+                return false;
+            if ( c1.cameraCalibrationMatrix != c2.cameraCalibrationMatrix )
+                return false;
+            if ( c1.xyz2rgbMatrix != c2.xyz2rgbMatrix )
+                return false;
+
+            return true;
+        }
+
+        friend bool operator!=( const Calibration &c1, const Calibration &c2 )
+        {
+            return !( c1 == c2 );
+        }
+    } calibration[2];
+
+    std::vector<double> neutralRGB;
+    double              baselineExposure = 0.0;
+
+    friend bool operator==( const Metadata &m1, const Metadata &m2 )
+    {
+        if ( m1.calibration[0] != m2.calibration[0] )
+            return false;
+        if ( m1.calibration[1] != m2.calibration[1] )
+            return false;
+        if ( m1.baselineExposure != m2.baselineExposure )
+            return false;
+        if ( m1.neutralRGB != m2.neutralRGB )
+            return false;
+
+        return true;
+    }
+
+    friend bool operator!=( const Metadata &m1, const Metadata &m2 )
+    {
+        return !( m1 == m2 );
+    }
+};
+
 class DNGIdt
 {
+    core::Metadata _metadata;
+
 public:
-    DNGIdt();
-    DNGIdt( libraw_rawdata_t R );
-    virtual ~DNGIdt();
+    DNGIdt( const core::Metadata &metadata );
 
     double ccttoMired( const double cct ) const;
     double robertsonLength(
@@ -196,16 +237,8 @@ public:
     void                   getCameraXYZMtxAndWhitePoint();
 
 private:
-    vector<double> _cameraCalibration1DNG;
-    vector<double> _cameraCalibration2DNG;
     vector<double> _cameraToXYZMtx;
-    vector<double> _xyz2rgbMatrix1DNG;
-    vector<double> _xyz2rgbMatrix2DNG;
-    vector<double> _analogBalanceDNG;
-    vector<double> _neutralRGBDNG;
     vector<double> _cameraXYZWhitePoint;
-    vector<double> _calibrateIllum;
-    double         _baseExpo;
 };
 
 struct Objfun
@@ -222,5 +255,5 @@ struct Objfun
     const vector<vector<double>> _outLAB;
 };
 
+} // namespace core
 } // namespace rta
-#endif

@@ -19,7 +19,6 @@ target_link_libraries(
     PUBLIC
         Boost::boost
         Boost::system
-        Boost::filesystem
         Imath::Imath
         Imath::ImathConfig
         Eigen3::Eigen
@@ -30,14 +29,6 @@ if ( ${Ceres_VERSION_MAJOR} GREATER 1 )
 else ()
     target_include_directories(${RAWTOACESIDTLIB} PUBLIC ${CERES_INCLUDE_DIRS})
     target_link_libraries(${RAWTOACESIDTLIB} PUBLIC ${CERES_LIBRARIES})
-endif ()
-
-if ( LIBRAW_CONFIG_FOUND )
-    target_link_libraries ( ${RAWTOACESIDTLIB} PUBLIC libraw::raw )
-else ()
-    target_include_directories(${RAWTOACESIDTLIB} PUBLIC ${libraw_INCLUDE_DIR} )
-    target_link_directories(${RAWTOACESIDTLIB} PUBLIC ${libraw_LIBRARY_DIRS} )
-    target_link_libraries(${RAWTOACESIDTLIB} PUBLIC ${libraw_LIBRARIES} ${libraw_LDFLAGS_OTHER} )
 endif ()
 
 target_include_directories( ${RAWTOACESIDTLIB} PUBLIC

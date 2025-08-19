@@ -26,11 +26,10 @@ The source code contains the following:
 * [`build_scripts/`](./build_scripts) - Helper scripts for installing dependencies
 * [`cmake/`](./cmake) - CMake modules for locating dependencies (e.g., `libraw`)
 * [`config/`](./config) - CMake configuration files
-* [`data/`](./data) - Data files containing camera sensitivity, light source, color matching function and 190 training patch data
+* [`docs/`](./docs) - Credits and changes information
 * [`include/`](./include) - Public header files for the `rawtoaces` library
-* [`src/`](./src) - Source code for `rawtoaces` utilities and IDT implementation
+* [`src/`](./src) - Source code for the core library, utility library, and the command line tool
 * [`unittest/`](./unittest) - Unit tests for `rawtoaces`
-* [`main.cpp`](./src/rawtoaces/main.cpp) - C++ source file for call routines to process images
 
 ## Prerequisites
 

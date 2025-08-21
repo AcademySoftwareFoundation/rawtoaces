@@ -5,10 +5,12 @@ set( CORE_PUBLIC_HEADER
     ../../include/rawtoaces/define.h
     ../../include/rawtoaces/mathOps.h
     ../../include/rawtoaces/rawtoaces_core.h
+    ../../include/rawtoaces/spectral_data.h
 )
 
 add_library( ${RAWTOACES_CORE_LIB} ${DO_SHARED}
     rawtoaces_core.cpp
+    spectral_data.cpp
 
     # Make the headers visible in IDEs. This should not affect the builds.
     ${CORE_PUBLIC_HEADER}

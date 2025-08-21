@@ -16,68 +16,9 @@
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 
-using namespace std;
-using namespace rta;
-using namespace rta::core;
-
-BOOST_AUTO_TEST_CASE( TestIllum_DefaultConstructor )
-{
-    Illum *illumObject = new Illum();
-
-    BOOST_CHECK_EQUAL( illumObject->getIllumInc(), 5 );
-
-    delete illumObject;
-};
-
-BOOST_AUTO_TEST_CASE( TestIllum_DefaultConstructor2 )
-{
-    Illum *illumObject = new Illum( "d50" );
-
-    BOOST_CHECK_EQUAL( illumObject->getIllumType(), "d50" );
-    BOOST_CHECK_EQUAL( illumObject->getIllumInc(), 5 );
-
-    delete illumObject;
-};
-
-BOOST_AUTO_TEST_CASE( TestIllum_IllumType )
-{
-    Illum *illumObject = new Illum( "d50" );
-
-    illumObject->setIllumType( "3200k" );
-    BOOST_CHECK_EQUAL(
-        std::strcmp( illumObject->getIllumType().c_str(), "3200k" ), 0 );
-
-    delete illumObject;
-};
-
-BOOST_AUTO_TEST_CASE( TestIllum_IllumInc )
-{
-    Illum *illumObject = new Illum();
-
-    illumObject->setIllumInc( 10 );
-    BOOST_CHECK_EQUAL( illumObject->getIllumInc(), 10 );
-
-    delete illumObject;
-};
-
-BOOST_AUTO_TEST_CASE( TestIllum_IllumIndex )
-{
-    Illum *illumObject = new Illum();
-
-    illumObject->setIllumIndex( 10.99999 );
-
-    BOOST_CHECK_CLOSE( illumObject->getIllumIndex(), 10.99999, 1e-5 );
-
-    delete illumObject;
-};
-
 BOOST_AUTO_TEST_CASE( TestIllum_cctToxy )
 {
-    Illum illumObject;
-
-    illumObject.setIllumType( "d50" );
-
-    vector<double> xy = illumObject.cctToxy( 5000 * 1.4387752 / 1.438 );
+    vector<double> xy = rta::core::cctToxy( 5000 * 1.4387752 / 1.438 );
 
     BOOST_CHECK_CLOSE( xy[0], 0.3456619734948, 1e-9 );
     BOOST_CHECK_CLOSE( xy[1], 0.3586032641691, 1e-9 );
@@ -85,11 +26,11 @@ BOOST_AUTO_TEST_CASE( TestIllum_cctToxy )
 
 BOOST_AUTO_TEST_CASE( TestIllum_readSPD )
 {
-    Illum illumObject;
+    rta::core::SpectralData illuminant;
 
     std::filesystem::path illumPath = std::filesystem::absolute(
         DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
-    illumObject.readSPD( illumPath.string(), "iso7589" );
+    illuminant.load( illumPath.string(), false );
 
     double iso7589[81] = {
         0.0400000000000, 0.0500000000000, 0.0600000000000, 0.0700000000000,
@@ -115,22 +56,18 @@ BOOST_AUTO_TEST_CASE( TestIllum_readSPD )
         1.0000000000000
     };
 
-    BOOST_CHECK_EQUAL( illumObject.getIllumType(), "iso7589" );
-    BOOST_CHECK_EQUAL( illumObject.getIllumInc(), 5 );
+    BOOST_CHECK_EQUAL( illuminant.illuminant, "iso7589" );
+    BOOST_CHECK_EQUAL( illuminant["power"].shape.step, 5 );
 
-    vector<double> illumTestData = illumObject.getIllumData();
+    vector<double> &illumTestData = illuminant["power"].values;
     BOOST_CHECK_EQUAL( illumTestData.size(), 81 );
     FORI( 81 ) BOOST_CHECK_CLOSE( illumTestData[i], iso7589[i], 1e-5 );
 };
 
 BOOST_AUTO_TEST_CASE( TestIllum_calDayLightSPD )
 {
-    Illum illumObject;
-
-    illumObject.setIllumType( "d50" );
-    illumObject.setIllumInc( 5 );
-
-    illumObject.calDayLightSPD( 50 );
+    rta::core::Spectrum illuminant;
+    calDayLightSPD( 50, illuminant );
 
     const double spd[81] = {
         24.4978949755877,  27.1891380970612,  29.8803812185346,
@@ -162,19 +99,15 @@ BOOST_AUTO_TEST_CASE( TestIllum_calDayLightSPD )
         82.9181817864939,  80.5938616113981,  78.2695414363022
     };
 
-    vector<double> data = illumObject.getIllumData();
+    vector<double> &data = illuminant.values;
     FORI( data.size() )
     BOOST_CHECK_CLOSE( data[i], spd[i], 1e-5 );
 };
 
 BOOST_AUTO_TEST_CASE( TestIllum_calBlackBodySPD )
 {
-    Illum illumObject;
-
-    illumObject.setIllumType( "3200k" );
-    illumObject.setIllumInc( 5 );
-
-    illumObject.calBlackBodySPD( 3200 );
+    rta::core::Spectrum illuminant;
+    calBlackBodySPD( 3200, illuminant );
 
     const double spd[81] = {
         0.3431975190, 0.3748818425, 0.4082252416, 0.4432167268, 0.4798395347,
@@ -196,7 +129,7 @@ BOOST_AUTO_TEST_CASE( TestIllum_calBlackBodySPD )
         4.0789051818
     };
 
-    vector<double> data = illumObject.getIllumData();
+    vector<double> &data = illuminant.values;
     FORI( data.size() )
     BOOST_CHECK_CLOSE( data[i] * 1e-12, spd[i], 1e-5 );
 };

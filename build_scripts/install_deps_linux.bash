@@ -9,4 +9,5 @@ time sudo apt-get -q -f install -y \
     libboost-dev \
     libboost-system-dev \
     libboost-test-dev \
-    libraw-dev libceres-dev
+    libraw-dev libceres-dev \
+    nlohmann-json3-dev

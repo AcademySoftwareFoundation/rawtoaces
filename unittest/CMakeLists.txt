@@ -5,18 +5,18 @@ add_definitions (-DBOOST_TEST_DYN_LINK)
 ################################################################################
 
 add_executable (
-	Test_Spst
-	testSpst.cpp
+	Test_SpectralData
+	test_SpectralData.cpp
 )
 
 target_link_libraries(
-    Test_Spst
+    Test_SpectralData
     PUBLIC
         ${RAWTOACES_CORE_LIB}
         Boost::unit_test_framework
 )
 
-add_test ( NAME Test_Spst COMMAND Test_Spst )
+add_test ( NAME Test_SpectralData COMMAND Test_SpectralData )
 
 ################################################################################
 

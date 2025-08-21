@@ -1,56 +1,6 @@
-///////////////////////////////////////////////////////////////////////////
-// Copyright (c) 2013 Academy of Motion Picture Arts and Sciences
-// ("A.M.P.A.S."). Portions contributed by others as indicated.
-// All rights reserved.
-//
-// A worldwide, royalty-free, non-exclusive right to copy, modify, create
-// derivatives, and use, in source and binary forms, is hereby granted,
-// subject to acceptance of this license. Performance of any of the
-// aforementioned acts indicates acceptance to be bound by the following
-// terms and conditions:
-//
-//  * Copies of source code, in whole or in part, must retain the
-//    above copyright notice, this list of conditions and the
-//    Disclaimer of Warranty.
-//
-//  * Use in binary form must retain the above copyright notice,
-//    this list of conditions and the Disclaimer of Warranty in the
-//    documentation and/or other materials provided with the distribution.
-//
-//  * Nothing in this license shall be deemed to grant any rights to
-//    trademarks, copyrights, patents, trade secrets or any other
-//    intellectual property of A.M.P.A.S. or any contributors, except
-//    as expressly stated herein.
-//
-//  * Neither the name "A.M.P.A.S." nor the name of any other
-//    contributors to this software may be used to endorse or promote
-//    products derivative of or based on this software without express
-//    prior written permission of A.M.P.A.S. or the contributors, as
-//    appropriate.
-//
-// This license shall be construed pursuant to the laws of the State of
-// California, and any disputes related thereto shall be subject to the
-// jurisdiction of the courts therein.
-//
-// Disclaimer of Warranty: THIS SOFTWARE IS PROVIDED BY A.M.P.A.S. AND
-// CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
-// BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS
-// FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT ARE DISCLAIMED. IN NO
-// EVENT SHALL A.M.P.A.S., OR ANY CONTRIBUTORS OR DISTRIBUTORS, BE LIABLE
-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, RESITUTIONARY,
-// OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
-// THE POSSIBILITY OF SUCH DAMAGE.
-//
-// WITHOUT LIMITING THE GENERALITY OF THE FOREGOING, THE ACADEMY
-// SPECIFICALLY DISCLAIMS ANY REPRESENTATIONS OR WARRANTIES WHATSOEVER
-// RELATED TO PATENT OR OTHER INTELLECTUAL PROPERTY RIGHTS IN THE ACADEMY
-// COLOR ENCODING SYSTEM, OR APPLICATIONS THEREO,  HELD BY PARTIES OTHER
-// THAN A.M.P.A.S., WHETHER DISCLOSED OR UNDISCLOSED.
-///////////////////////////////////////////////////////////////////////////
+// SPDX-License-Identifier: Apache-2.0
+// Copyright Contributors to the rawtoaces Project.
+
 #ifndef _DEFINE_h__
 #define _DEFINE_h__
 
@@ -97,8 +47,6 @@
 typedef float  float32_t;
 typedef double float64_t;
 
-using namespace std;
-
 enum matMethods_t
 {
     matMethod0,
@@ -133,9 +81,9 @@ struct Option
     matMethods_t mat_method;
     wbMethods_t  wb_method;
 
-    char          *illumType;
-    float          scale;
-    vector<string> envPaths;
+    char                    *illumType;
+    float                    scale;
+    std::vector<std::string> envPaths;
 
 #ifndef WIN32
     void *iobuffer;
@@ -144,13 +92,13 @@ struct Option
 
 struct dataPath
 {
-    string         os;
-    vector<string> paths;
+    std::string              os;
+    std::vector<std::string> paths;
 };
 
-static float                  custom_Matrix[3][3] = { 0.0 };
-static float                  custom_Buffer[9]    = { 0.0 };
-static vector<vector<double>> custom_idtm;
+static float                            custom_Matrix[3][3] = { 0.0 };
+static float                            custom_Buffer[9]    = { 0.0 };
+static std::vector<std::vector<double>> custom_idtm;
 
 const double pi = 3.1416;
 // 216.0/24389.0
@@ -165,8 +113,8 @@ const double bk = 1.380662 * 1e-23;
 // Speed of light ([m/s] meters per second)
 const double bc = 2.99792458 * 1e8;
 
-const double dmin = numeric_limits<double>::min();
-const double dmax = numeric_limits<double>::max();
+const double dmin = std::numeric_limits<double>::min();
+const double dmax = std::numeric_limits<double>::max();
 
 // clang-format off
 
@@ -341,9 +289,9 @@ static const double cat02[3][3] = {
 // clang-format on
 
 // Function to Open Directories
-inline vector<string> openDir( string path = "." )
+inline std::vector<std::string> openDir( std::string path = "." )
 {
-    vector<string> paths;
+    std::vector<std::string> paths;
 
     if ( std::filesystem::exists( path ) )
     {
@@ -364,15 +312,15 @@ inline vector<string> openDir( string path = "." )
 };
 
 // Function to clear the memories occupied by vectors
-template <typename T> inline void clearVM( vector<T> vct )
+template <typename T> inline void clearVM( std::vector<T> vct )
 {
-    vector<T>().swap( vct );
+    std::vector<T>().swap( vct );
 };
 
 // Function to covert upper-case to lower-case
 inline void lowerCase( char *tex )
 {
-    string tmp( tex );
+    std::string tmp( tex );
 
     FORI( tmp.size() )
     tex[i] = tolower( tex[i] );
@@ -381,12 +329,12 @@ inline void lowerCase( char *tex )
 // Function to check if a value is numeric
 inline bool isNumeric( const char *val )
 {
-    string base = "0123456789E-.";
-    string input( val );
+    const std::string base = "0123456789E-.";
+    std::string       input( val );
 
     return (
         input.find_first_not_of( base.substr( 0, base.size() ) ) ==
-        string::npos );
+        std::string::npos );
 };
 
 // Function to check if a input is a alphabetic letter
@@ -399,10 +347,10 @@ inline bool isCTLetterDigit( const char c )
 
 // Function to check if a string is a valid input
 // to represent color temperature(s) (e.g., D60, 3200K)
-inline bool isValidCT( string str )
+inline bool isValidCT( std::string str )
 {
-    int i      = 0;
-    int length = str.length();
+    int    i      = 0;
+    size_t length = str.length();
 
     if ( length == 0 )
         return false;
@@ -455,10 +403,10 @@ inline dataPath &pathsFinder()
 
     if ( firstTime )
     {
-        string      path;
+        std::string path;
         const char *env;
 
-        vector<string> &PATHs = cdp.paths;
+        std::vector<std::string> &PATHs = cdp.paths;
 
         env = getenv( "RAWTOACES_DATA_PATH" );
         if ( !env )
@@ -500,10 +448,10 @@ inline dataPath &pathsFinder()
             size_t end = path.find( ':', pos );
 #endif
 
-            if ( end == string::npos )
+            if ( end == std::string::npos )
                 end = path.size();
 
-            string pathItem = path.substr( pos, end - pos );
+            std::string pathItem = path.substr( pos, end - pos );
 
             if ( find( PATHs.begin(), PATHs.end(), pathItem ) == PATHs.end() )
                 PATHs.push_back( pathItem );

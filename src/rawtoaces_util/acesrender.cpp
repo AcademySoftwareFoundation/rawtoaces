@@ -3,6 +3,7 @@
 
 #include <rawtoaces/acesrender.h>
 #include <rawtoaces/mathOps.h>
+#include <rawtoaces/spectral_data.h>
 
 #include <Imath/half.h>
 #include <boost/property_tree/ptree.hpp>

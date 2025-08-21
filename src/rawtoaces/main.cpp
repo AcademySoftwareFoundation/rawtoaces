@@ -23,7 +23,7 @@ int main( int argc, char *argv[] )
     int arg = Render.configureSettings( argc, argv );
 
     // Gather all the raw images from arg list
-    vector<string> RAWs;
+    std::vector<std::string> RAWs;
     for ( ; arg < argc; arg++ )
     {
         if ( stat( argv[arg], &st ) != 0 )
@@ -37,8 +37,9 @@ int main( int argc, char *argv[] )
 
         if ( st.st_mode & S_IFDIR )
         {
-            vector<string> files = openDir( static_cast<string>( argv[arg] ) );
-            for ( vector<string>::iterator file = files.begin();
+            std::vector<std::string> files =
+                openDir( static_cast<std::string>( argv[arg] ) );
+            for ( std::vector<std::string>::iterator file = files.begin();
                   file != files.end();
                   ++file )
             {
@@ -74,7 +75,7 @@ int main( int argc, char *argv[] )
     // Process RAW files ...
     FORI( RAWs.size() )
     {
-        string raw = ( RAWs[i] ).c_str();
+        std::string raw = ( RAWs[i] ).c_str();
 
         timerstart_timeval();
         Render.preprocessRaw( raw.c_str() );
@@ -88,13 +89,13 @@ int main( int argc, char *argv[] )
 
         timerstart_timeval();
 
-        string output;
-        size_t pos = raw.rfind( '.' );
+        std::string output;
+        size_t      pos = raw.rfind( '.' );
         if ( pos != std::string::npos )
         {
             output = raw.substr( 0, pos );
         }
-        output += "_aces.exr";
+        output += "_aces2.exr";
 
         Render.outputACES( output.c_str() );
         if ( opts.use_timing )

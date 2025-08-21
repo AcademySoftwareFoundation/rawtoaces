@@ -4,13 +4,14 @@
 #ifndef _MATHOPS_h__
 #define _MATHOPS_h__
 
-#include "define.h"
+#include <rawtoaces/define.h>
 
 #include <cfloat>
 
 #include <Eigen/Core>
 #include <ceres/ceres.h>
 
+using namespace std;
 using namespace Eigen;
 
 // Non-class functions
@@ -164,8 +165,8 @@ template <typename T> T sumVector( const vector<T> &vct )
 
 template <typename T> T sumVectorM( const vector<vector<T>> &vct )
 {
-    int row = vct.size();
-    int col = vct[0].size();
+    size_t row = vct.size();
+    size_t col = vct[0].size();
 
     T                                   sum = T( 0 );
     Eigen::Matrix<T, Eigen::Dynamic, 1> v;

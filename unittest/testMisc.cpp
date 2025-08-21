@@ -9,8 +9,6 @@
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 
-using namespace std;
-
 BOOST_AUTO_TEST_CASE( Test_OpenDir )
 {
     std::filesystem::path absolutePath =
@@ -19,10 +17,10 @@ BOOST_AUTO_TEST_CASE( Test_OpenDir )
     std::filesystem::path absolutePath_test = std::filesystem::canonical(
         DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
 
-    vector<string> fPaths = openDir( absolutePath.string() );
+    std::vector<std::string> fPaths = openDir( absolutePath.string() );
 
     BOOST_CHECK_EQUAL( fPaths.size(), 1 );
-    vector<string>::iterator it = fPaths.begin();
+    std::vector<std::string>::iterator it = fPaths.begin();
     BOOST_CHECK_EQUAL( absolutePath_test.string(), *it );
 };
 
@@ -65,43 +63,43 @@ BOOST_AUTO_TEST_CASE( Test_IsCTLetterDigit )
 
 BOOST_AUTO_TEST_CASE( Test_IsValidCT )
 {
-    string val1 = "D6500";
+    std::string val1 = "D6500";
     BOOST_CHECK_EQUAL( true, isValidCT( val1 ) );
 
-    string val2 = "d6500";
+    std::string val2 = "d6500";
     BOOST_CHECK_EQUAL( true, isValidCT( val2 ) );
 
-    string val3 = "3200K";
+    std::string val3 = "3200K";
     BOOST_CHECK_EQUAL( true, isValidCT( val3 ) );
 
-    string val4 = "32.00K";
+    std::string val4 = "32.00K";
     BOOST_CHECK_EQUAL( false, isValidCT( val4 ) );
 
-    string val5 = "6500";
+    std::string val5 = "6500";
     BOOST_CHECK_EQUAL( true, isValidCT( val5 ) );
 
-    string val6 = "65";
+    std::string val6 = "65";
     BOOST_CHECK_EQUAL( true, isValidCT( val6 ) );
 
-    string val7 = "iso-3200";
+    std::string val7 = "iso-3200";
     BOOST_CHECK_EQUAL( true, isValidCT( val7 ) );
 
-    string val8 = "iso_3200";
+    std::string val8 = "iso_3200";
     BOOST_CHECK_EQUAL( false, isValidCT( val8 ) );
 
-    string val9 = "d65k";
+    std::string val9 = "d65k";
     BOOST_CHECK_EQUAL( false, isValidCT( val9 ) );
 };
 
 BOOST_AUTO_TEST_CASE( Test_PathsFinder )
 {
-    dataPath                 dps = pathsFinder();
-    vector<string>::iterator it  = dps.paths.begin();
+    dataPath                           dps = pathsFinder();
+    std::vector<std::string>::iterator it  = dps.paths.begin();
 
 #ifdef WIN32
-    string first = ".";
+    std::string first = ".";
 #else
-    string first = "/usr/local/include/rawtoaces/data";
+    std::string first = "/usr/local/include/rawtoaces/data";
 #endif
 
     BOOST_CHECK_EQUAL( first, *it );

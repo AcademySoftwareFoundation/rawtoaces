@@ -5,13 +5,14 @@
 #define _ACESRENDER_h__
 
 #include <rawtoaces/rawtoaces_core.h>
+#include <rawtoaces/define.h>
 
 #include <unordered_map>
 #include <libraw/libraw.h>
 
 using namespace rta;
 
-void create_key( unordered_map<string, char> &keys );
+void create_key( std::unordered_map<std::string, char> &keys );
 void usage( const char *prog );
 
 class LibRawAces : virtual public LibRaw
@@ -57,13 +58,13 @@ public:
     float *renderNonDNG();
     float *renderIDT();
 
-    const vector<string>            getSupportedIllums() const;
-    const vector<string>            getSupportedCameras() const;
-    const vector<vector<double>>    getIDTMatrix() const;
-    const vector<vector<double>>    getCATMatrix() const;
-    const vector<double>            getWB() const;
-    const libraw_processed_image_t *getImageBuffer() const;
-    const struct Option             getSettings() const;
+    const std::vector<std::string>         getSupportedIllums() const;
+    const std::vector<std::string>         getSupportedCameras() const;
+    const std::vector<std::vector<double>> getIDTMatrix() const;
+    const std::vector<std::vector<double>> getCATMatrix() const;
+    const std::vector<double>              getWB() const;
+    const libraw_processed_image_t        *getImageBuffer() const;
+    const struct Option                    getSettings() const;
 
 private:
     AcesRender();
@@ -77,11 +78,11 @@ private:
     libraw_processed_image_t *_image;
     LibRawAces               *_rawProcessor;
 
-    Option                 _opts;
-    vector<vector<double>> _idtm;
-    vector<vector<double>> _catm;
-    vector<double>         _wbv;
-    vector<string>         _illuminants;
-    vector<string>         _cameras;
+    Option                           _opts;
+    std::vector<std::vector<double>> _idtm;
+    std::vector<std::vector<double>> _catm;
+    std::vector<double>              _wbv;
+    std::vector<std::string>         _illuminants;
+    std::vector<std::string>         _cameras;
 };
 #endif

@@ -14,143 +14,23 @@
 #include <rawtoaces/mathOps.h>
 #include <rawtoaces/rawtoaces_core.h>
 
-using namespace std;
-using namespace rta;
-using namespace rta::core;
-
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"
-
-BOOST_AUTO_TEST_CASE( TestIDT_DataAccess )
-{
-    char   *brand1, *brand2, *brand3;
-    char   *model1, *model2, *model3;
-    uint8_t len = 6;
-
-    brand1 = (char *)malloc( len + 1 );
-    memset( brand1, 0x0, len );
-    memcpy( brand1, "", len );
-    brand1[len] = '\0';
-
-    brand2 = (char *)malloc( len + 1 );
-    memset( brand2, 0x0, len );
-    memcpy( brand2, "b2", len );
-    brand2[len] = '\0';
-
-    brand3 = (char *)malloc( len + 1 );
-    memset( brand3, 0x0, len );
-    memcpy( brand3, "brand3", len );
-    brand3[len] = '\0';
-
-    model1 = (char *)malloc( len + 1 );
-    memset( model1, 0x0, len );
-    memcpy( model1, "", len );
-    model1[len] = '\0';
-
-    model2 = (char *)malloc( len + 1 );
-    memset( model2, 0x0, len );
-    memcpy( model2, "m2", len );
-    model2[len] = '\0';
-
-    model3 = (char *)malloc( len + 1 );
-    memset( model3, 0x0, len );
-    memcpy( model3, "model3", len );
-    model3[len] = '\0';
-
-    vector<RGBSen> rgbsen1, rgbsen2, rgbsen3;
-    for ( int i = 0; i < 81; i++ )
-    {
-        rgbsen1.push_back( RGBSen( 1.00000001, 1.0, 0.999999999 ) );
-        rgbsen2.push_back( RGBSen( 1.0, 1.0, 1.0 ) );
-        rgbsen3.push_back( RGBSen( -0.9999999999999, 1e-3, 1.0000000000001 ) );
-    }
-
-    Spst *spstobject1 = new Spst();
-
-    spstobject1->setBrand( brand1 );
-    spstobject1->setModel( model1 );
-    spstobject1->setWLIncrement( 5 );
-    spstobject1->setSensitivity( rgbsen1 );
-
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject1->getBrand(), "" ), 0 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject1->getModel(), "" ), 0 );
-    BOOST_CHECK_EQUAL( int( spstobject1->getWLIncrement() ), 5 );
-
-    vector<RGBSen> rgbsen_cp = spstobject1->getSensitivity();
-
-    FORI( 81 )
-    {
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._RSen, 1.00000001, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._GSen, 1.0, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._BSen, 0.999999999, 1e-5 );
-    }
-
-    Spst spstobject2( brand2, model2, 10, rgbsen2 );
-
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject2.getBrand(), "b2" ), 0 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject2.getModel(), "m2" ), 0 );
-    BOOST_CHECK_EQUAL( int( spstobject2.getWLIncrement() ), 10 );
-
-    rgbsen_cp.clear();
-    rgbsen_cp = spstobject2.getSensitivity();
-
-    FORI( 81 )
-    {
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._RSen, 1.0, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._GSen, 1.0, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._BSen, 1.0, 1e-5 );
-    }
-
-    Spst spstobject3( spstobject2 );
-
-    spstobject3.setBrand( brand3 );
-    spstobject3.setModel( model3 );
-    spstobject3.setWLIncrement( 20 );
-    spstobject3.setSensitivity( rgbsen3 );
-
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject3.getBrand(), "brand3" ), 0 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstobject3.getModel(), "model3" ), 0 );
-    BOOST_CHECK_EQUAL( int( spstobject3.getWLIncrement() ), 20 );
-
-    rgbsen_cp.clear();
-    rgbsen_cp = spstobject3.getSensitivity();
-
-    FORI( 81 )
-    {
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._RSen, -0.9999999999999, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._GSen, 1e-3, 1e-5 );
-        BOOST_CHECK_CLOSE( rgbsen_cp[i]._BSen, 1.0000000000001, 1e-5 );
-    }
-
-    //    free ( model1 );
-    //    free ( model2 );
-    //    free ( model3 );
-    //    free ( brand1 );
-    //    free ( brand2 );
-    //    free ( brand3 );
-};
 
 BOOST_AUTO_TEST_CASE( TestIDT_LoadCameraSpst )
 {
-    uint8_t len   = 6;
-    char   *brand = (char *)malloc( len + 1 );
-
-    memset( brand, 0x0, len );
-    memcpy( brand, "arri", len );
-    brand[len] = '\0';
-
-    char *model = (char *)malloc( len + 1 );
-    memset( model, 0x0, len );
-    memcpy( model, "d21", len );
-    model[len] = '\0';
-
-    Idt                  *idtTest = new Idt();
     std::filesystem::path absolutePath =
         std::filesystem::absolute( DATA_PATH "camera/arri_d21_380_780_5.json" );
 
-    idtTest->loadCameraSpst( absolutePath.string(), brand, model );
+    rta::core::SpectralData camera;
+    bool                    result;
 
-    const Spst           spstTest   = idtTest->getCameraSpst();
-    const vector<RGBSen> rgbsenTest = spstTest.getSensitivity();
+    BOOST_CHECK_NO_THROW( result = camera.load( absolutePath.string() ) );
+    BOOST_CHECK( result );
+    BOOST_CHECK_EQUAL( camera.manufacturer, "arri" );
+    BOOST_CHECK_EQUAL( camera.model, "d21" );
+    BOOST_CHECK_EQUAL( camera.data.size(), 1 );
+    BOOST_CHECK_EQUAL( camera.data.count( "main" ), 1 );
+    BOOST_CHECK_EQUAL( camera.data.at( "main" ).size(), 3 );
 
     double rgb[81][3] = { { 0.000188205, 8.59E-05, 9.58E-05 },
                           { 0.000440222, 0.000166118, 0.000258734 },
@@ -234,31 +114,31 @@ BOOST_AUTO_TEST_CASE( TestIDT_LoadCameraSpst )
                           { 0.000149065, 7.26E-05, 5.84E-05 },
                           { 3.71E-05, 0.0, 2.70E-06 } };
 
-    BOOST_CHECK_EQUAL( int( rgbsenTest.size() ), 81 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstTest.getBrand(), "arri" ), 0 );
-    BOOST_CHECK_EQUAL( std::strcmp( spstTest.getModel(), "d21" ), 0 );
-    BOOST_CHECK_EQUAL( int( spstTest.getWLIncrement() ), 5 );
-
-    FORI( 81 )
+    const std::string channels[3] = { "R", "G", "B" };
+    for ( size_t i = 0; i < 3; i++ )
     {
-        BOOST_CHECK_CLOSE( double( rgbsenTest[i]._RSen ), rgb[i][0], 1e-5 );
-        BOOST_CHECK_CLOSE( double( rgbsenTest[i]._GSen ), rgb[i][1], 1e-5 );
-        BOOST_CHECK_CLOSE( double( rgbsenTest[i]._BSen ), rgb[i][2], 1e-5 );
+        const rta::core::Spectrum &spectrum = camera[channels[i]];
+        BOOST_CHECK_EQUAL( spectrum.shape.first, 380 );
+        BOOST_CHECK_EQUAL( spectrum.shape.last, 780 );
+        BOOST_CHECK_EQUAL( spectrum.shape.step, 5 );
+        BOOST_CHECK_EQUAL( spectrum.values.size(), 81 );
+
+        for ( size_t j = 0; j < 81; j++ )
+        {
+            BOOST_CHECK_CLOSE( spectrum.values[j], rgb[j][i], 1e-5 );
+        }
     }
 };
 
 BOOST_AUTO_TEST_CASE( TestIDT_LoadIlluminant )
 {
-    Idt *idtTest = new Idt();
-
-    vector<string>        illumPaths;
     std::filesystem::path absolutePath = std::filesystem::absolute(
         DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
-    illumPaths.push_back( absolutePath.string() );
 
-    BOOST_CHECK_NO_THROW( idtTest->loadIlluminant( illumPaths, "iso7589" ) );
-
-    Illum illumTest = ( idtTest->getIlluminants() )[0];
+    bool                    result;
+    rta::core::SpectralData illuminant;
+    BOOST_CHECK_NO_THROW( result = illuminant.load( absolutePath.string() ) );
+    BOOST_CHECK( result );
 
     double iso7589[81] = {
         0.0400000000000, 0.0500000000000, 0.0600000000000, 0.0700000000000,
@@ -284,26 +164,24 @@ BOOST_AUTO_TEST_CASE( TestIDT_LoadIlluminant )
         1.0000000000000
     };
 
-    BOOST_CHECK_EQUAL( illumTest.getIllumType(), "iso7589" );
-    BOOST_CHECK_EQUAL( illumTest.getIllumInc(), 5 );
+    BOOST_CHECK_EQUAL( illuminant.illuminant, "iso7589" );
+    BOOST_CHECK_EQUAL( illuminant["power"].shape.step, 5 );
 
-    vector<double> illumTestData = illumTest.getIllumData();
-    BOOST_CHECK_EQUAL( int( illumTestData.size() ), 81 );
+    vector<double> &illumTestData = illuminant["power"].values;
+    BOOST_CHECK_EQUAL( illumTestData.size(), 81 );
     FORI( 81 ) BOOST_CHECK_CLOSE( illumTestData[i], iso7589[i], 1e-5 );
-
-    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE( TestIDT_LoadTrainingData )
 {
-    Idt *idtTest = new Idt();
-
     std::filesystem::path absolutePath = std::filesystem::absolute(
         DATA_PATH "training/training_spectral.json" );
 
-    BOOST_CHECK_NO_THROW( idtTest->loadTrainingData( absolutePath.string() ) );
-
-    const vector<trainSpec> TS_test = idtTest->getTrainingSpec();
+    bool                    result;
+    rta::core::SpectralData training_data;
+    BOOST_CHECK_NO_THROW(
+        result = training_data.load( absolutePath.string() ) );
+    BOOST_CHECK( result );
 
     float TS[81][3] = { { 0.0600000000, 0.0649000000, 0.1365000000 },
                         { 0.0501123560, 0.0706580560, 0.1696284150 },
@@ -387,25 +265,26 @@ BOOST_AUTO_TEST_CASE( TestIDT_LoadTrainingData )
                         { 0.8433958970, 0.0812493900, 0.7826001500 },
                         { 0.8866000000, 0.0808000000, 0.7809000000 } };
 
-    FORI( 81 )
+    for ( size_t i = 1; i < 81; i++ )
     {
-        BOOST_CHECK_CLOSE( TS[i][0], TS_test[i]._data[0], 1e-5 );
-        BOOST_CHECK_CLOSE( TS[i][1], TS_test[i]._data[1], 1e-5 );
-        BOOST_CHECK_CLOSE( TS[i][2], TS_test[i]._data[2], 1e-5 );
+        BOOST_CHECK_CLOSE( TS[i][0], training_data["patch1"].values[i], 1e-5 );
+        BOOST_CHECK_CLOSE( TS[i][1], training_data["patch2"].values[i], 1e-5 );
+        BOOST_CHECK_CLOSE( TS[i][2], training_data["patch3"].values[i], 1e-5 );
     }
-
-    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE( TestIDT_LoadCMF )
 {
-    Idt *idtTest = new Idt();
-
     std::filesystem::path absolutePath =
         std::filesystem::absolute( DATA_PATH "cmf/cmf_1931.json" );
 
-    BOOST_CHECK_NO_THROW( idtTest->loadCMF( absolutePath.string() ) );
-    vector<CMF> cmfTest = idtTest->getCMF();
+    bool                    result;
+    rta::core::SpectralData spectral_data;
+    BOOST_CHECK_NO_THROW(
+        result = spectral_data.load( absolutePath.string() ) );
+    BOOST_CHECK( result );
+
+    auto &data = spectral_data.data["main"];
 
     double cmf[401][3] = { { 0.001368, 3.90E-05, 0.006450001 },
                            { 0.00150205, 4.28E-05, 0.007083216 },
@@ -811,53 +690,87 @@ BOOST_AUTO_TEST_CASE( TestIDT_LoadCMF )
 
     FORI( 81 )
     {
-        BOOST_CHECK_CLOSE( cmfTest[i]._xbar, cmf[i * 5][0], 1e-5 );
-        BOOST_CHECK_CLOSE( cmfTest[i]._ybar, cmf[i * 5][1], 1e-5 );
-        BOOST_CHECK_CLOSE( cmfTest[i]._zbar, cmf[i * 5][2], 1e-5 );
+        BOOST_CHECK_CLOSE( spectral_data["X"].values[i], cmf[i * 5][0], 1e-5 );
+        BOOST_CHECK_CLOSE( spectral_data["Y"].values[i], cmf[i * 5][1], 1e-5 );
+        BOOST_CHECK_CLOSE( spectral_data["Z"].values[i], cmf[i * 5][2], 1e-5 );
     }
-
-    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE( TestIDT_Verbose )
 {
-    Idt *idtTest = new Idt();
+    rta::core::Idt idtTest;
 
-    idtTest->setVerbosity( 1 );
-    BOOST_CHECK_EQUAL( idtTest->getVerbosity(), 1 );
+    idtTest.setVerbosity( 1 );
+    BOOST_CHECK_EQUAL( idtTest.getVerbosity(), 1 );
 
-    idtTest->setVerbosity( 3 );
-    BOOST_CHECK_EQUAL( idtTest->getVerbosity(), 3 );
-
-    delete idtTest;
+    idtTest.setVerbosity( 3 );
+    BOOST_CHECK_EQUAL( idtTest.getVerbosity(), 3 );
 };
+
+void load_camera_helper(
+    rta::core::Idt    &idt,
+    const std::string &camera_path,
+    const std::string &camera_make,
+    const std::string &camera_model,
+    const std::string &illuminant_name = "",
+    bool               load_training   = false,
+    bool               load_observer   = false )
+{
+    std::filesystem::path absoluteCameraPath =
+        std::filesystem::absolute( DATA_PATH + camera_path );
+    int load_camera_result = idt.loadCameraSpst(
+        absoluteCameraPath.string(), camera_make, camera_model );
+    BOOST_CHECK_EQUAL( load_camera_result, 1 );
+
+    const auto &camera = idt.getCameraSpst();
+
+    if ( !illuminant_name.empty() )
+    {
+        std::filesystem::path absoluteIlluminantPath =
+            std::filesystem::absolute(
+                DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
+        vector<string> illumPaths;
+        illumPaths.push_back( absoluteIlluminantPath.string() );
+
+        std::filesystem::path absoluteCameraPath = std::filesystem::absolute(
+            DATA_PATH "camera/nikon_d200_380_780_5.json" );
+
+        int load_illuminant_result =
+            idt.loadIlluminant( illumPaths, illuminant_name );
+        BOOST_CHECK_EQUAL( load_illuminant_result, 1 );
+    }
+
+    if ( load_training )
+    {
+        std::filesystem::path absoluteTrainingPath = std::filesystem::absolute(
+            DATA_PATH "training/training_spectral.json" );
+
+        idt.loadTrainingData( absoluteTrainingPath.string() );
+    }
+
+    if ( load_observer )
+    {
+        std::filesystem::path observerPath =
+            std::filesystem::absolute( DATA_PATH "cmf/cmf_1931.json" );
+        idt.loadCMF( observerPath.string() );
+    }
+}
 
 BOOST_AUTO_TEST_CASE( TestIDT_scaleLSC )
 {
-    uint8_t len   = 6;
-    char   *brand = (char *)malloc( len + 1 );
+    bool result;
 
-    memset( brand, 0x0, len );
-    memcpy( brand, "nikon", len );
-    brand[len] = '\0';
-
-    char *model = (char *)malloc( len + 1 );
-    memset( model, 0x0, len );
-    memcpy( model, "d200", len );
-    model[len] = '\0';
-
-    Idt   *idtTest   = new Idt();
-    Illum *illumTest = new Illum();
-
-    std::filesystem::path pathIllum = std::filesystem::absolute(
+    std::filesystem::path absoluteIlluminantPath = std::filesystem::absolute(
         DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
-    illumTest->readSPD( pathIllum.string(), "iso7589" );
+    rta::core::SpectralData illuminant;
+    BOOST_CHECK_NO_THROW(
+        result = illuminant.load( absoluteIlluminantPath.string() ) );
+    BOOST_CHECK( result );
 
-    std::filesystem::path pathSpst = std::filesystem::absolute(
-        DATA_PATH "camera/nikon_d200_380_780_5.json" );
-    idtTest->loadCameraSpst( pathSpst.string(), brand, model );
-
-    idtTest->scaleLSC( *illumTest );
+    rta::core::Idt idt;
+    load_camera_helper(
+        idt, "camera/nikon_d200_380_780_5.json", "nikon", "d200" );
+    idt.scaleLSC( illuminant );
 
     double scaledIllum[81] = {
         0.00546219526, 0.00682774407, 0.00819329289, 0.00955884170,
@@ -883,253 +796,58 @@ BOOST_AUTO_TEST_CASE( TestIDT_scaleLSC )
         0.13655488148
     };
 
-    const vector<double> illumDataScaled = illumTest->getIllumData();
+    const vector<double> illumDataScaled = illuminant["power"].values;
 
     BOOST_CHECK_EQUAL( illumDataScaled.size(), 81 );
-    BOOST_CHECK_EQUAL( illumTest->getIllumType(), "iso7589" );
-    BOOST_CHECK_EQUAL( illumTest->getIllumInc(), 5 );
+    BOOST_CHECK_EQUAL( illuminant.illuminant, "iso7589" );
+    BOOST_CHECK_EQUAL( illuminant["power"].shape.step, 5 );
     FORI( 81 ) BOOST_CHECK_CLOSE( illumDataScaled[i], scaledIllum[i], 1e-5 );
-
-    free( model );
-    free( brand );
-    delete illumTest;
-    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE( TestIDT_CalCM )
 {
-    Idt *idtTest = new Idt();
+    rta::core::Idt idt;
+    load_camera_helper(
+        idt, "camera/arri_d21_380_780_5.json", "arri", "d21", "iso7589" );
+    idt.chooseIllumType( "iso7589", 0 );
 
-    uint8_t len   = 6;
-    char   *brand = (char *)malloc( len + 1 );
+    vector<double> CM_test = idt.calCM();
 
-    memset( brand, 0x0, len );
-    memcpy( brand, "arri", len );
-    brand[len] = '\0';
+    float CM[81] = { 1.0000000000, 1.4418439699, 1.8703081160 };
 
-    char *model = (char *)malloc( len + 1 );
-    memset( model, 0x0, len );
-    memcpy( model, "d21", len );
-    model[len] = '\0';
-
-    std::filesystem::path pathSpst =
-        std::filesystem::absolute( DATA_PATH "camera/arri_d21_380_780_5.json" );
-    idtTest->loadCameraSpst( pathSpst.string(), brand, model );
-
-    std::filesystem::path pathIllum = std::filesystem::absolute(
-        DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
-    vector<string> illumPaths;
-    illumPaths.push_back( pathIllum.string() );
-    idtTest->loadIlluminant( illumPaths, "iso7589" );
-
-    // need to choose the best illuminant
-    idtTest->chooseIllumType( "iso7589", 0 );
-    vector<double> CM_test = idtTest->calCM();
-
-    float CM[81] = {
-        1.0000000000, 1.4418439699, 1.8703081160, 0.0000000000, 0.0400000000,
-        0.0500000000, 0.0600000000, 0.0700000000, 0.0800000000, 0.0900000000,
-        0.1000000000, 0.1100000000, 0.1200000000, 0.1325000000, 0.1450000000,
-        0.1575000000, 0.1700000000, 0.1800000000, 0.1900000000, 0.2025000000,
-        0.2150000000, 0.2275000000, 0.2400000000, 0.2525000000, 0.2650000000,
-        0.2800000000, 0.2950000000, 0.3075000000, 0.3200000000, 0.3350000000,
-        0.3500000000, 0.3650000000, 0.3800000000, 0.3925000000, 0.4050000000,
-        0.4225000000, 0.4400000000, 0.4550000000, 0.4700000000, 0.4850000000,
-        0.5000000000, 0.5125000000, 0.5250000000, 0.5400000000, 0.5550000000,
-        0.5675000000, 0.5800000000, 0.5950000000, 0.6100000000, 0.6225000000,
-        0.6350000000, 0.6475000000, 0.6600000000, 0.6750000000, 0.6900000000,
-        0.7025000000, 0.7150000000, 0.7275000000, 0.7400000000, 0.7525000000,
-        0.7650000000, 0.7750000000, 0.7850000000, 0.7975000000, 0.8100000000,
-        0.8225000000, 0.8350000000, 0.8475000000, 0.8600000000, 0.8700000000,
-        0.8800000000, 0.8900000000, 0.9000000000, 0.9100000000, 0.9200000000,
-        0.9275000000, 0.9350000000, 0.9450000000, 0.9550000000, 0.9650000000,
-        0.9750000000
-    };
-
-    FORI( 81 )
-    {
-        FORI( 3 ) BOOST_CHECK_CLOSE( CM[i], CM_test[i], 1e-5 );
-    }
-
-    free( model );
-    free( brand );
-    delete idtTest;
+    FORI( 3 ) BOOST_CHECK_CLOSE( CM[i], CM_test[i], 1e-5 );
 };
 
 BOOST_AUTO_TEST_CASE( TestIDT_CalWB )
 {
-    Idt *idtTest = new Idt();
+    rta::core::Idt idt;
+    load_camera_helper(
+        idt, "camera/nikon_d200_380_780_5.json", "nikon", "d200", "iso7589" );
+    idt.chooseIllumType( "iso7589", 0 );
 
-    uint8_t len   = 6;
-    char   *brand = (char *)malloc( len + 1 );
-
-    memset( brand, 0x0, len );
-    memcpy( brand, "nikon", len );
-    brand[len] = '\0';
-
-    char *model = (char *)malloc( len + 1 );
-    memset( model, 0x0, len );
-    memcpy( model, "d200", len );
-    model[len] = '\0';
-
-    std::filesystem::path pathSpst = std::filesystem::absolute(
-        DATA_PATH "camera/nikon_d200_380_780_5.json" );
-    idtTest->loadCameraSpst( pathSpst.string(), brand, model );
-
-    std::filesystem::path pathIllum = std::filesystem::absolute(
-        DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
-    vector<string> illumPaths;
-    illumPaths.push_back( pathIllum.string() );
-    idtTest->loadIlluminant( illumPaths, "iso7589" );
-
-    Illum          bestIllum = ( idtTest->getIlluminants() )[0];
-    vector<double> WB_test   = idtTest->calWB( bestIllum, 0 );
+    rta::core::SpectralData best_illuminant = idt.getBestIllum();
+    vector<double>          WB_test         = idt.calWB( best_illuminant, 0 );
 
     double WB[3] = { 1.1397265, 1.0000000, 2.3240151 };
     FORI( WB_test.size() )
     {
         BOOST_CHECK_CLOSE( WB[i], WB_test[i], 1e-5 );
     }
-
-    free( model );
-    free( brand );
-    delete idtTest;
-};
-
-BOOST_AUTO_TEST_CASE( TestIDT_SetIlluminants )
-{
-    Idt   *idtTest    = new Idt();
-    Illum *illumTest1 = new Illum();
-    Illum *illumTest2 = new Illum( "d50" );
-    Illum *illumTest3 = new Illum( "3200k" );
-
-    std::filesystem::path pathIllum = std::filesystem::absolute(
-        DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
-    illumTest1->readSPD( pathIllum.string(), "iso7589" );
-
-    illumTest2->calDayLightSPD( 50 );
-    illumTest3->calBlackBodySPD( 3200 );
-
-    idtTest->setIlluminants( *illumTest1 );
-    idtTest->setIlluminants( *illumTest2 );
-    idtTest->setIlluminants( *illumTest3 );
-
-    vector<Illum> illumTests = idtTest->getIlluminants();
-
-    BOOST_CHECK_EQUAL( illumTests[0].getIllumType(), "iso7589" );
-    BOOST_CHECK_EQUAL( illumTests[1].getIllumType(), "d50" );
-    BOOST_CHECK_EQUAL( illumTests[2].getIllumType(), "3200k" );
-
-    const double daylight[81] = {
-        24.4978949755877,  27.1891380970612,  29.8803812185346,
-        39.6005856124086,  49.3207900062826,  52.9234909452740,
-        56.5261918842655,  58.2863692933629,  60.0465467024602,
-        58.9374754654423,  57.8284042284244,  66.3321986672105,
-        74.8359931059968,  81.0470608788071,  87.2581286516173,
-        88.9401444234118,  90.6221601952063,  90.9994142932283,
-        91.3766683912501,  93.2463519723246,  95.1160355533991,
-        93.5424463111289,  91.9688570688586,  93.8487650824512,
-        95.7286730960438,  96.1730210585583,  96.6173690210728,
-        96.8745483082553,  97.1317275954378,  99.6163972828030,
-        102.1010669701683, 101.4285401947830, 100.7560134193976,
-        101.5368117967032, 102.3176101740087, 101.1588050870044,
-        100.0000000000000, 98.8672487920966,  97.7344975841932,
-        98.3256924971888,  98.9168874101845,  96.2071139031367,
-        93.4973403960889,  95.5913911756801,  97.6854419552712,
-        98.4757935279747,  99.2661451006782,  99.1520792059532,
-        99.0380133112281,  97.3779908297348,  95.7179683482415,
-        97.2852940116115,  98.8526196749816,  97.2575832997790,
-        95.6625469245764,  96.9235194654881,  98.1844920063998,
-        100.5908749767109, 102.9972579470220, 101.0620719501407,
-        99.1268859532593,  93.2512715124010,  87.3756570715427,
-        89.4866296124544,  91.5976021533661,  92.2403288193421,
-        92.8830554853180,  84.8664480824888,  76.8498406796596,
-        81.6780321648151,  86.5062236499707,  89.5403942033879,
-        92.5745647568050,  85.4000426306844,  78.2255205045638,
-        67.9569774467047,  57.6884343888457,  70.3033080876698,
-        82.9181817864939,  80.5938616113981,  78.2695414363022
-    };
-
-    const double blackbody[81] = {
-        0.3431975190, 0.3748818425, 0.4082252416, 0.4432167268, 0.4798395347,
-        0.5180713262, 0.5578844164, 0.5992460295, 0.6421185769, 0.6864599527,
-        0.7322238438, 0.7793600511, 0.8278148175, 0.8775311606, 0.9284492064,
-        0.9805065220, 1.0336384449, 1.0877784058, 1.1428582447, 1.1988085174,
-        1.2555587916, 1.3130379308, 1.3711743665, 1.4298963557, 1.4891322260,
-        1.5488106048, 1.6088606344, 1.6692121729, 1.7297959793, 1.7905438844,
-        1.8513889471, 1.9122655966, 1.9731097607, 2.0338589799, 2.0944525099,
-        2.1548314100, 2.2149386205, 2.2747190285, 2.3341195224, 2.3930890364,
-        2.4515785855, 2.5095412906, 2.5669323963, 2.6237092793, 2.6798314508,
-        2.7352605507, 2.7899603370, 2.8438966678, 2.8970374799, 2.9493527605,
-        3.0008145169, 3.0513967400, 3.1010753667, 3.1498282370, 3.1976350505,
-        3.2444773190, 3.2903383182, 3.3352030371, 3.3790581264, 3.4218918459,
-        3.4636940107, 3.5044559371, 3.5441703881, 3.5828315187, 3.6204348211,
-        3.6569770704, 3.6924562703, 3.7268715994, 3.7602233581, 3.7925129165,
-        3.8237426623, 3.8539159505, 3.8830370536, 3.9111111129, 3.9381440909,
-        3.9641427249, 3.9891144819, 4.0130675142, 4.0360106171, 4.0579531872,
-        4.0789051818
-    };
-
-    vector<double> daylight_Test  = illumTest2->getIllumData();
-    vector<double> blackbody_Test = illumTest3->getIllumData();
-
-    FORI( blackbody_Test.size() )
-    {
-        BOOST_CHECK_CLOSE( daylight[i], daylight_Test[i], 1e-5 );
-        BOOST_CHECK_CLOSE( blackbody[i], blackbody_Test[i] * 1e-12, 1e-5 );
-    }
-
-    delete idtTest;
-    delete illumTest1;
-    delete illumTest2;
-    delete illumTest3;
 };
 
 BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumSrc )
 {
-    Idt *idtTest = new Idt();
-
-    uint8_t len   = 6;
-    char   *brand = (char *)malloc( len + 1 );
-    memset( brand, 0x0, len );
-    memcpy( brand, "nikon", len );
-    brand[len] = '\0';
-
-    char *model = (char *)malloc( len + 1 );
-    memset( model, 0x0, len );
-    memcpy( model, "d200", len );
-    model[len] = '\0';
-
-    std::filesystem::path pathSpst = std::filesystem::absolute(
-        DATA_PATH "camera/nikon_d200_380_780_5.json" );
-    idtTest->loadCameraSpst( pathSpst.string(), brand, model );
-
-    std::filesystem::path pathIllum =
-        std::filesystem::absolute( DATA_PATH "illuminant" );
-
-    vector<string> iFiles = openDir( pathIllum.string() );
-    vector<string> illumPaths;
-    for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end();
-          ++file )
-    {
-        string fn( *file );
-        if ( fn.find( ".json" ) == std::string::npos )
-            continue;
-        illumPaths.push_back( fn );
-    }
-    idtTest->loadIlluminant( illumPaths, "na" );
-
-    std::filesystem::path absolutePath = std::filesystem::absolute(
-        DATA_PATH "training/training_spectral.json" );
-    idtTest->loadTrainingData( absolutePath.string() );
+    rta::core::Idt idt;
+    load_camera_helper(
+        idt, "camera/nikon_d200_380_780_5.json", "nikon", "d200", "na", true );
 
     float          wb[3] = { 1.0, 1.0, 1.0 };
     vector<double> wbv( wb, wb + 3 );
-    idtTest->chooseIllumSrc( wbv, 1 );
+    idt.chooseIllumSrc( wbv, 1 );
 
-    const Illum    bestIllum      = idtTest->getBestIllum();
-    string         illumType_Test = bestIllum.getIllumType();
-    vector<double> illumData_Test = bestIllum.getIllumData();
+    const auto    &best_illuminant = idt.getBestIllum();
+    string         illumType_Test  = best_illuminant.illuminant;
+    vector<double> illumData_Test  = best_illuminant["power"].values;
 
     double illumData[81] = {
         0.0106671894, 0.0120341268, 0.0134010642, 0.0179595785, 0.0225180928,
@@ -1154,57 +872,26 @@ BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumSrc )
     BOOST_CHECK_EQUAL( illumType_Test, "d45" );
     FORI( illumData_Test.size() )
     BOOST_CHECK_CLOSE( illumData[i], illumData_Test[i], 1e-5 );
-
-    free( model );
-    free( brand );
-    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumType )
 {
-    Idt *idtTest = new Idt();
-
-    uint8_t len   = 6;
-    char   *brand = (char *)malloc( len + 1 );
-    memset( brand, 0x0, len );
-    memcpy( brand, "nikon", len );
-    brand[len] = '\0';
-
-    char *model = (char *)malloc( len + 1 );
-    memset( model, 0x0, len );
-    memcpy( model, "d200", len );
-    model[len] = '\0';
-
-    std::filesystem::path pathSpst = std::filesystem::absolute(
-        DATA_PATH "camera/nikon_d200_380_780_5.json" );
-    idtTest->loadCameraSpst( pathSpst.string(), brand, model );
-
-    std::filesystem::path pathIllum =
-        std::filesystem::absolute( DATA_PATH "illuminant" );
-
-    vector<string> iFiles = openDir( pathIllum.string() );
-    vector<string> illumPaths;
-    for ( vector<string>::iterator file = iFiles.begin(); file != iFiles.end();
-          ++file )
-    {
-        string fn( *file );
-        if ( fn.find( ".json" ) == std::string::npos )
-            continue;
-        illumPaths.push_back( fn );
-    }
-    idtTest->loadIlluminant( illumPaths, "iso7589" );
-
-    std::filesystem::path absolutePath = std::filesystem::absolute(
-        DATA_PATH "training/training_spectral.json" );
-    idtTest->loadTrainingData( absolutePath.string() );
+    rta::core::Idt idt;
+    load_camera_helper(
+        idt,
+        "camera/nikon_d200_380_780_5.json",
+        "nikon",
+        "d200",
+        "iso7589",
+        true );
 
     float          wb[3] = { 1.0, 1.0, 1.0 };
     vector<double> wbv( wb, wb + 3 );
-    idtTest->chooseIllumType( "iso7589", 1 );
+    idt.chooseIllumType( "iso7589", 1 );
 
-    const Illum    bestIllum      = idtTest->getBestIllum();
-    string         illumType_Test = bestIllum.getIllumType();
-    vector<double> illumData_Test = bestIllum.getIllumData();
+    const auto    &best_illuminant = idt.getBestIllum();
+    string         illumType_Test  = best_illuminant.illuminant;
+    vector<double> illumData_Test  = best_illuminant["power"].values;
 
     double illumData[81] = {
         0.0054621953, 0.0068277441, 0.0081932929, 0.0095588417, 0.0109243905,
@@ -1229,44 +916,22 @@ BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumType )
     BOOST_CHECK_EQUAL( illumType_Test, "iso7589" );
     FORI( illumData_Test.size() )
     BOOST_CHECK_CLOSE( illumData[i], illumData_Test[i], 1e-5 );
-
-    free( model );
-    free( brand );
-    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE( TestIDT_CalTI )
 {
-    Idt *idtTest = new Idt();
-
-    uint8_t len   = 6;
-    char   *brand = (char *)malloc( len + 1 );
-    memset( brand, 0x0, len );
-    memcpy( brand, "nikon", len );
-    brand[len] = '\0';
-
-    char *model = (char *)malloc( len + 1 );
-    memset( model, 0x0, len );
-    memcpy( model, "d200", len );
-    model[len] = '\0';
-
-    std::filesystem::path pathSpst = std::filesystem::absolute(
-        DATA_PATH "camera/nikon_d200_380_780_5.json" );
-    idtTest->loadCameraSpst( pathSpst.string(), brand, model );
-
-    std::filesystem::path pathIllum = std::filesystem::absolute(
-        DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
-    vector<string> illumPaths;
-    illumPaths.push_back( pathIllum.string() );
-    idtTest->loadIlluminant( illumPaths, "iso7589" );
-
-    std::filesystem::path absolutePath = std::filesystem::absolute(
-        DATA_PATH "training/training_spectral.json" );
-    idtTest->loadTrainingData( absolutePath.string() );
+    rta::core::Idt idt;
+    load_camera_helper(
+        idt,
+        "camera/nikon_d200_380_780_5.json",
+        "nikon",
+        "d200",
+        "iso7589",
+        true );
 
     // need to choose the best illuminant
-    idtTest->chooseIllumType( "iso7589", 0 );
-    vector<vector<double>> TI_test = idtTest->calTI();
+    idt.chooseIllumType( "iso7589", 0 );
+    auto TI_test = idt.calTI();
 
     double TI[81]
              [190] = { { 0.0003277317, 0.0003544965, 0.0007455897, 0.0010897080,
@@ -5158,51 +4823,35 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalTI )
                          0.1049424264, 0.1240054879, 0.1219844756, 0.1052018807,
                          0.0989613226, 0.0936083713 } };
 
-    FORIJ( 81, 190 )
-    BOOST_CHECK_CLOSE( TI[i][j], TI_test[i][j], 1e-4 );
-
-    free( model );
-    free( brand );
-    delete idtTest;
+    for ( size_t i = 0; i < 190; i++ )
+    {
+        const rta::core::Spectrum &spectrum = TI_test[i];
+        for ( size_t j = 0; j < 81; j++ )
+        {
+            BOOST_CHECK_CLOSE( TI[j][i], spectrum.values[j], 1e-4 );
+        }
+    }
 };
 
 BOOST_AUTO_TEST_CASE( TestIDT_CalXYZ )
 {
-    uint8_t len   = 6;
-    char   *brand = (char *)malloc( len + 1 );
+    rta::core::Idt idt;
+    load_camera_helper(
+        idt,
+        "camera/nikon_d200_380_780_5.json",
+        "nikon",
+        "d200",
+        "iso7589",
+        true,
+        true );
 
-    memset( brand, 0x0, len );
-    memcpy( brand, "nikon", len );
-    brand[len] = '\0';
+    // need to choose the best illuminant
+    idt.chooseIllumType( "iso7589", 0 );
+    auto TI_test = idt.calTI();
 
-    char *model = (char *)malloc( len + 1 );
-    memset( model, 0x0, len );
-    memcpy( model, "d200", len );
-    model[len] = '\0';
-
-    Idt *idtTest = new Idt();
-
-    std::filesystem::path pathSpst = std::filesystem::absolute(
-        DATA_PATH "camera/nikon_d200_380_780_5.json" );
-    idtTest->loadCameraSpst( pathSpst.string(), brand, model );
-
-    std::filesystem::path pathIllum = std::filesystem::absolute(
-        DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
-    vector<string> illumPaths;
-    illumPaths.push_back( pathIllum.string() );
-    idtTest->loadIlluminant( illumPaths, "iso7589" );
-
-    std::filesystem::path pathCMF =
-        std::filesystem::absolute( DATA_PATH "cmf/cmf_1931.json" );
-    idtTest->loadCMF( pathCMF.string() );
-
-    std::filesystem::path pathTS = std::filesystem::absolute(
-        DATA_PATH "training/training_spectral.json" );
-    idtTest->loadTrainingData( pathTS.string() );
-
-    idtTest->chooseIllumType( "iso7589", 0 );
-    vector<vector<double>> TI       = idtTest->calTI();
-    vector<vector<double>> XYZ_test = idtTest->calXYZ( TI );
+    idt.chooseIllumType( "iso7589", 0 );
+    vector<rta::core::Spectrum> TI       = idt.calTI();
+    vector<vector<double>>      XYZ_test = idt.calXYZ( TI );
 
     double XYZ[190][3] = { { 0.0179976319, 0.0180404631, 0.0195495429 },
                            { 0.0855118682, 0.0896534488, 0.0901537219 },
@@ -5397,45 +5046,23 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalXYZ )
 
     FORIJ( 190, 3 )
     BOOST_CHECK_CLOSE( XYZ[i][j], XYZ_test[i][j], 1e-5 );
-
-    free( model );
-    free( brand );
-    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE( TestIDT_CalRGB )
 {
-    uint8_t len   = 6;
-    char   *brand = (char *)malloc( len + 1 );
+    rta::core::Idt idt;
+    load_camera_helper(
+        idt,
+        "camera/nikon_d200_380_780_5.json",
+        "nikon",
+        "d200",
+        "iso7589",
+        true,
+        true );
 
-    memset( brand, 0x0, len );
-    memcpy( brand, "nikon", len );
-    brand[len] = '\0';
-
-    char *model = (char *)malloc( len + 1 );
-    memset( model, 0x0, len );
-    memcpy( model, "d200", len );
-    model[len] = '\0';
-
-    Idt *idtTest = new Idt();
-
-    std::filesystem::path pathSpst = std::filesystem::absolute(
-        DATA_PATH "camera/nikon_d200_380_780_5.json" );
-    idtTest->loadCameraSpst( pathSpst.string(), brand, model );
-
-    std::filesystem::path pathIllum = std::filesystem::absolute(
-        DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
-    vector<string> illumPaths;
-    illumPaths.push_back( pathIllum.string() );
-    idtTest->loadIlluminant( illumPaths, "iso7589" );
-
-    std::filesystem::path pathTS = std::filesystem::absolute(
-        DATA_PATH "training/training_spectral.json" );
-    idtTest->loadTrainingData( pathTS.string() );
-
-    idtTest->chooseIllumType( "iso7589", 0 );
-    vector<vector<double>> TI       = idtTest->calTI();
-    vector<vector<double>> RGB_test = idtTest->calRGB( TI );
+    idt.chooseIllumType( "iso7589", 0 );
+    vector<rta::core::Spectrum> TI       = idt.calTI();
+    vector<vector<double>>      RGB_test = idt.calRGB( TI );
 
     double RGB[190][3] = { { 0.0202216733, 0.0193805976, 0.0242277400 },
                            { 0.0895652372, 0.0893690961, 0.0891448525 },
@@ -5630,56 +5257,28 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalRGB )
 
     FORIJ( 190, 3 )
     BOOST_CHECK_CLOSE( RGB[i][j], RGB_test[i][j], 1e-5 );
-
-    free( model );
-    free( brand );
-    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE( TestIDT_CurveFit )
 {
-    uint8_t len   = 6;
-    char   *brand = (char *)malloc( len + 1 );
+    rta::core::Idt idt;
+    load_camera_helper(
+        idt,
+        "camera/nikon_d200_380_780_5.json",
+        "nikon",
+        "d200",
+        "iso7589",
+        true,
+        true );
 
-    memset( brand, 0x0, len );
-    memcpy( brand, "nikon", len );
-    brand[len] = '\0';
+    idt.chooseIllumType( "iso7589", 0 );
+    vector<rta::core::Spectrum> TI        = idt.calTI();
+    vector<vector<double>>      XYZ_test  = idt.calXYZ( TI );
+    vector<vector<double>>      RGB_test  = idt.calRGB( TI );
+    double                      BStart[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
 
-    char *model = (char *)malloc( len + 1 );
-    memset( model, 0x0, len );
-    memcpy( model, "d200", len );
-    model[len] = '\0';
-
-    Idt *idtTest = new Idt();
-
-    std::filesystem::path pathSpst = std::filesystem::absolute(
-        DATA_PATH "camera/nikon_d200_380_780_5.json" );
-    idtTest->loadCameraSpst( pathSpst.string(), brand, model );
-
-    std::filesystem::path pathIllum = std::filesystem::absolute(
-        DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
-    vector<string> illumPaths;
-    illumPaths.push_back( pathIllum.string() );
-    idtTest->loadIlluminant( illumPaths, "iso7589" );
-
-    std::filesystem::path pathTS = std::filesystem::absolute(
-        DATA_PATH "training/training_spectral.json" );
-    idtTest->loadTrainingData( pathTS.string() );
-
-    std::filesystem::path absolutePath =
-        std::filesystem::absolute( DATA_PATH "cmf/cmf_1931.json" );
-    idtTest->loadCMF( absolutePath.string() );
-
-    idtTest->chooseIllumType( "iso7589", 0 );
-    vector<vector<double>> TI        = idtTest->calTI();
-    vector<vector<double>> XYZ_test  = idtTest->calXYZ( TI );
-    vector<vector<double>> RGB_test  = idtTest->calRGB( TI );
-    double                 BStart[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
-
-    int succeed = idtTest->curveFit( RGB_test, XYZ_test, BStart );
-    vector<vector<double>> IDT_test;
-    if ( succeed )
-        IDT_test = idtTest->getIDT();
+    BOOST_CHECK( idt.curveFit( RGB_test, XYZ_test, BStart ) );
+    vector<vector<double>> IDT_test = idt.getIDT();
 
     float IDT[3][3] = { { 0.7447691479, 0.1434200377, 0.1118108144 },
                         { 0.0451759890, 1.0082622042, -0.0534381932 },
@@ -5687,51 +5286,23 @@ BOOST_AUTO_TEST_CASE( TestIDT_CurveFit )
 
     FORIJ( 3, 3 )
     BOOST_CHECK_CLOSE( IDT[i][j], IDT_test[i][j], 1e-5 );
-
-    free( model );
-    free( brand );
-    delete idtTest;
 };
 
 BOOST_AUTO_TEST_CASE( TestIDT_CalIDT )
 {
-    uint8_t len   = 6;
-    char   *brand = (char *)malloc( len + 1 );
+    rta::core::Idt idt;
+    load_camera_helper(
+        idt,
+        "camera/arri_d21_380_780_5.json",
+        "arri",
+        "d21",
+        "iso7589",
+        true,
+        true );
+    idt.chooseIllumType( "iso7589", 0 );
 
-    memset( brand, 0x0, len );
-    memcpy( brand, "arri", len );
-    brand[len] = '\0';
-
-    char *model = (char *)malloc( len + 1 );
-    memset( model, 0x0, len );
-    memcpy( model, "d21", len );
-    model[len] = '\0';
-
-    Idt *idtTest = new Idt();
-
-    std::filesystem::path pathSpst =
-        std::filesystem::absolute( DATA_PATH "camera/arri_d21_380_780_5.json" );
-    idtTest->loadCameraSpst( pathSpst.string(), brand, model );
-
-    std::filesystem::path pathIllum = std::filesystem::absolute(
-        DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
-    vector<string> illumPaths;
-    illumPaths.push_back( pathIllum.string() );
-    idtTest->loadIlluminant( illumPaths, "iso7589" );
-
-    std::filesystem::path pathTS = std::filesystem::absolute(
-        DATA_PATH "training/training_spectral.json" );
-    idtTest->loadTrainingData( pathTS.string() );
-
-    std::filesystem::path absolutePath =
-        std::filesystem::absolute( DATA_PATH "cmf/cmf_1931.json" );
-    idtTest->loadCMF( absolutePath.string() );
-
-    idtTest->chooseIllumType( "iso7589", 0 );
-    int                    succeed = idtTest->calIDT();
-    vector<vector<double>> IDT_test;
-    if ( succeed )
-        IDT_test = idtTest->getIDT();
+    BOOST_CHECK( idt.calIDT() );
+    vector<vector<double>> IDT_test = idt.getIDT();
 
     float IDT[3][3] = { { 1.0915120600, -0.2516916464, 0.1601795864 },
                         { -0.0089998772, 1.2147199060, -0.2057200288 },
@@ -5739,8 +5310,4 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalIDT )
 
     FORIJ( 3, 3 )
     BOOST_CHECK_CLOSE( IDT[i][j], IDT_test[i][j], 1e-4 );
-
-    free( model );
-    free( brand );
-    delete idtTest;
 };

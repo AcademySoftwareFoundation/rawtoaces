@@ -3,10 +3,12 @@ include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
 set( UTIL_PUBLIC_HEADER
     ../../include/rawtoaces/acesrender.h
+    ../../include/rawtoaces/usage_timer.h
 )
 
 add_library ( ${RAWTOACESLIB} ${DO_SHARED}
     acesrender.cpp
+    usage_timer.cpp
 
     # Make the headers visible in IDEs. This should not affect the builds.
     ${UTIL_PUBLIC_HEADER}
@@ -34,7 +36,6 @@ target_link_libraries ( ${RAWTOACESLIB}
 if ( LIBRAW_CONFIG_FOUND )
     target_link_libraries ( ${RAWTOACESLIB} PUBLIC libraw::raw )
 else ()
-    target_include_directories(${RAWTOACESLIB} PUBLIC ${libraw_INCLUDE_DIR} )
     target_link_directories(${RAWTOACESLIB} PUBLIC ${libraw_LIBRARY_DIRS} )
     target_link_libraries(${RAWTOACESLIB} PUBLIC ${libraw_LIBRARIES} ${libraw_LDFLAGS_OTHER} )
 endif ()

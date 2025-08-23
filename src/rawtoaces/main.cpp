@@ -2,7 +2,7 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include <rawtoaces/acesrender.h>
-#include <rawtoaces/usage.h>
+#include <rawtoaces/usage_timer.h>
 
 int main( int argc, char *argv[] )
 {
@@ -72,22 +72,23 @@ int main( int argc, char *argv[] )
         exit( -1 );
     }
 
+    rta::util::UsageTimer usage_timer;
+    usage_timer.enabled = opts.use_timing;
+
     // Process RAW files ...
     FORI( RAWs.size() )
     {
         std::string raw = ( RAWs[i] ).c_str();
 
-        timerstart_timeval();
+        usage_timer.reset();
         Render.preprocessRaw( raw.c_str() );
-        if ( opts.use_timing )
-            timerprint( "AcesRender::preprocessRaw()", raw.c_str() );
+        usage_timer.print( raw, "AcesRender::preprocessRaw()" );
 
-        timerstart_timeval();
+        usage_timer.reset();
         Render.postprocessRaw();
-        if ( opts.use_timing )
-            timerprint( "AcesRender::postprocessRaw()", raw.c_str() );
+        usage_timer.print( raw, "AcesRender::postprocessRaw()" );
 
-        timerstart_timeval();
+        usage_timer.reset();
 
         std::string output;
         size_t      pos = raw.rfind( '.' );
@@ -98,8 +99,7 @@ int main( int argc, char *argv[] )
         output += "_aces.exr";
 
         Render.outputACES( output.c_str() );
-        if ( opts.use_timing )
-            timerprint( "AcesRender::outputACES()", raw.c_str() );
+        usage_timer.print( raw, "AcesRender::outputACES()" );
     }
 
     return 0;

@@ -28,7 +28,7 @@ void UsageTimer::reset()
         _start_time = (double)start_timeval.tv_sec * 1000.0 +
                       (double)start_timeval.tv_usec / 1000.0;
 #else
-        LARGE_INTEGER start_timeval, unit;
+        LARGE_INTEGER unit, start_timeval;
         QueryPerformanceCounter( &start_timeval );
         QueryPerformanceFrequency( &unit );
         _start_time =
@@ -47,18 +47,18 @@ void UsageTimer::print( const std::string &path, const std::string &message )
         gettimeofday( &end_timeval, NULL );
         double end_time = (double)end_timeval.tv_sec * 1000.0 +
                           (double)end_timeval.tv_usec / 1000.0;
-        float msec = (float)( end_time - _start_time );
 #else
-        LARGE_INTEGER end_timeval, unit;
+        LARGE_INTEGER unit, end_timeval;
         QueryPerformanceCounter( &end_timeval );
         QueryPerformanceFrequency( &unit );
         double end_time =
             (double)end_timeval.QuadPart * 1000.0 / (double)unit.QuadPart;
-        float msec = (float)( end_time - _start_time );
 #endif
 
+        double diff_msec = end_time - _start_time;
+
         std::cerr << "Timing: " << path << "/" << message << ": " << std::fixed
-                  << std::setprecision( 3 ) << msec << std::defaultfloat
+                  << std::setprecision( 3 ) << diff_msec << std::defaultfloat
                   << std::setprecision( (int)std::cout.precision() ) << "msec"
                   << std::endl;
     }

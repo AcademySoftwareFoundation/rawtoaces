@@ -95,7 +95,7 @@ int main( int argc, char *argv[] )
         {
             output = raw.substr( 0, pos );
         }
-        output += "_aces2.exr";
+        output += "_aces.exr";
 
         Render.outputACES( output.c_str() );
         if ( opts.use_timing )

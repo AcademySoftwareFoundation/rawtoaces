@@ -5,6 +5,7 @@
 
 #include <assert.h>
 #include <fstream>
+#include <iostream>
 #include <nlohmann/json.hpp>
 
 namespace rta
@@ -152,15 +153,16 @@ double Spectrum::integrate()
 
 double Spectrum::max() const
 {
-    double result = std::numeric_limits<float>::lowest();
-    for ( auto &v: values )
-        result = std::max( result, v );
-    return result;
+    if ( values.empty() )
+        return 0;
+    return *std::max_element( values.begin(), values.end() );
 }
 
 inline void
 parse_string( nlohmann::json &j, std::string &dst, const std::string &key )
 {
+    assert( !key.empty() );
+    
     auto &v = j[key];
     if ( v.is_null() )
         dst = "";
@@ -225,8 +227,6 @@ bool SpectralData::load( const std::string &path, bool reshape )
 
         nlohmann::json spectral_index = file_data["spectral_data"]["index"];
 
-        //        std::map<std::string, std::vector<std::string>> channels;
-
         for ( auto &[set_name, set_channels]: spectral_index.items() )
         {
             auto set_entry =
@@ -258,6 +258,10 @@ bool SpectralData::load( const std::string &path, bool reshape )
 
                     if ( shape.step != 0 && new_step != shape.step )
                     {
+                        std::cerr << "Error: Inconsistent wavelength step " <<
+                            "detected in " << path << ". Expected: " <<
+                            shape.step << ", got: " << new_step << "." <<
+                            std::endl;
                         return false;
                     }
 
@@ -293,9 +297,16 @@ bool SpectralData::load( const std::string &path, bool reshape )
             }
         }
     }
-    catch ( nlohmann::detail::parse_error error )
+    catch ( nlohmann::detail::parse_error &error )
     {
-
+        std::cerr << "Error: JSON parsing of " << path << " failed with error: "
+            << error.what() << std::endl;
+        return false;
+    }
+    catch ( const std::exception &error )
+    {
+        std::cerr << "Error: JSON parsing of " << path << " failed with error: "
+            << error.what() << std::endl;
         return false;
     }
 

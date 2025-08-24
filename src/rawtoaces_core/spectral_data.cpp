@@ -258,10 +258,10 @@ bool SpectralData::load( const std::string &path, bool reshape )
 
                     if ( shape.step != 0 && new_step != shape.step )
                     {
-                        std::cerr << "Error: Inconsistent wavelength step " <<
-                            "detected in " << path << ". Expected: " <<
-                            shape.step << ", got: " << new_step << "." <<
-                            std::endl;
+                        std::cerr << "Error: Inconsistent wavelength step "
+                                  << "detected in " << path
+                                  << ". Expected: " << shape.step
+                                  << ", got: " << new_step << "." << std::endl;
                         return false;
                     }
 
@@ -299,14 +299,14 @@ bool SpectralData::load( const std::string &path, bool reshape )
     }
     catch ( nlohmann::detail::parse_error &error )
     {
-        std::cerr << "Error: JSON parsing of " << path << " failed with error: "
-            << error.what() << std::endl;
+        std::cerr << "Error: JSON parsing of " << path
+                  << " failed with error: " << error.what() << std::endl;
         return false;
     }
     catch ( const std::exception &error )
     {
-        std::cerr << "Error: JSON parsing of " << path << " failed with error: "
-            << error.what() << std::endl;
+        std::cerr << "Error: JSON parsing of " << path
+                  << " failed with error: " << error.what() << std::endl;
         return false;
     }
 

@@ -25,6 +25,9 @@ public:
     /// - parameter path: The file math to print.
     /// - parameter message: The message to print.
     void print( const std::string &path, const std::string &message );
+
+private:
+    double _start_time;
 };
 
 } //namespace util

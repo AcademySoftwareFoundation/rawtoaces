@@ -23,40 +23,34 @@ void UsageTimer::reset()
     if ( enabled )
     {
 #ifndef WIN32
-        struct timeval start_timeval;
-        gettimeofday( &start_timeval, NULL );
-        _start_time = (double)start_timeval.tv_sec * 1000.0 +
-                      (double)start_timeval.tv_usec / 1000.0;
+        gettimeofday( &_start_timeval, NULL );
 #else
-        LARGE_INTEGER unit, start_timeval;
-        QueryPerformanceCounter( &start_timeval );
-        QueryPerformanceFrequency( &unit );
-        _start_time =
-            (double)start_timeval.QuadPart * 1000.0 / (double)unit.QuadPart;
+        QueryPerformanceCounter( &_start_timeval );
 #endif
+        _initialized = true;
     }
 }
 
 void UsageTimer::print( const std::string &path, const std::string &message )
 {
-    if ( enabled )
+    if ( enabled && _initialized )
     {
 #ifndef WIN32
         struct timeval end_timeval;
         gettimeofday( &end_timeval, NULL );
-        double end_time = (double)end_timeval.tv_sec * 1000.0 +
-                          (double)end_timeval.tv_usec / 1000.0;
+        float msec = ( end_timeval.tv_sec - _start_timeval.tv_sec ) * 1000.0f +
+                     ( end_timeval.tv_usec - _start_timeval.tv_usec ) / 1000.0f;
 #else
         LARGE_INTEGER unit, end_timeval;
         QueryPerformanceCounter( &end_timeval );
         QueryPerformanceFrequency( &unit );
-        double end_time =
-            (double)end_timeval.QuadPart * 1000.0 / (double)unit.QuadPart;
+
+        float msec = (float)( end_timeval.QuadPart - _start_timeval.QuadPart );
+        msec /= (float)unit.QuadPart / 1000.0f;
 #endif
 
         std::cerr << "Timing: " << path << "/" << message << ": " << std::fixed
-                  << std::setprecision( 3 ) << end_time - _start_time
-                  << std::defaultfloat
+                  << std::setprecision( 3 ) << msec << std::defaultfloat
                   << std::setprecision( (int)std::cout.precision() ) << "msec"
                   << std::endl;
     }

@@ -121,3 +121,19 @@ target_link_libraries(
 )
 
 add_test ( NAME Test_Misc COMMAND Test_Misc )
+
+################################################################################
+
+add_executable (
+	Test_UsageTimer
+	testUsageTimer.cpp
+)
+
+target_link_libraries(
+    Test_UsageTimer
+    PUBLIC
+        ${RAWTOACESLIB}
+        Boost::unit_test_framework
+)
+
+add_test ( NAME Test_UsageTimer COMMAND Test_UsageTimer )

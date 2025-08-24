@@ -32,6 +32,11 @@ target_link_libraries ( ${RAWTOACESLIB}
         Imath::Imath
         Imath::ImathConfig
 )
+
+target_include_directories( ${RAWTOACESLIB} PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>
+    $<INSTALL_INTERFACE:./include>
+)
     
 if ( LIBRAW_CONFIG_FOUND )
     target_link_libraries ( ${RAWTOACESLIB} PUBLIC libraw::raw )

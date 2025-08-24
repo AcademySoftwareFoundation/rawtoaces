@@ -197,6 +197,12 @@ bool SpectralData::load( const std::string &path, bool reshape )
     try
     {
         std::ifstream  i( path );
+        if ( !i.is_open() )
+        {
+            std::cerr << "Error: Failed to open file " << path << "."
+                      << std::endl;
+            return false;
+        }
         nlohmann::json file_data = nlohmann::json::parse( i );
 
         nlohmann::json &h = file_data["header"];

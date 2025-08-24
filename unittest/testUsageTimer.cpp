@@ -158,7 +158,6 @@ BOOST_AUTO_TEST_CASE( TestEmptyStrings )
 BOOST_AUTO_TEST_CASE( TestMultipleIndependentInstances )
 {
     // This test verifies that multiple instances work independently
-    // (the race condition is fixed)
     UsageTimer timer1;
     UsageTimer timer2;
 
@@ -226,8 +225,8 @@ BOOST_AUTO_TEST_CASE( TestTimingAccuracy )
     float timeValue = extractTimeFromOutput( output );
 
     // Should be approximately 100ms (with some tolerance)
-    BOOST_CHECK_GT( timeValue, 80.0f );  // Allow for some overhead
-    BOOST_CHECK_LT( timeValue, 200.0f ); // Allow for some overhead
+    BOOST_CHECK_GT( timeValue, 95.0f );  // Allow for some overhead
+    BOOST_CHECK_LT( timeValue, 110.0f ); // Allow for some overhead
 }
 
 BOOST_AUTO_TEST_CASE( TestUninitializedTimer )

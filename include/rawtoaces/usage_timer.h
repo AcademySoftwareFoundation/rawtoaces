@@ -27,12 +27,8 @@ public:
     void print( const std::string &path, const std::string &message );
 
 private:
-#ifndef WIN32
-    struct timeval _start_timeval = {0, 0};
-#else
-    LARGE_INTEGER _start_timeval = {0};
-#endif
-    bool _initialized = false;
+    double _start_time  = 0.0;
+    bool   _initialized = false;
 };
 
 } //namespace util

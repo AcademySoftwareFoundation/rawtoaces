@@ -162,7 +162,7 @@ inline void
 parse_string( nlohmann::json &j, std::string &dst, const std::string &key )
 {
     assert( !key.empty() );
-    
+
     auto &v = j[key];
     if ( v.is_null() )
         dst = "";

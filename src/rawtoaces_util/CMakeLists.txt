@@ -6,46 +6,30 @@ set( UTIL_PUBLIC_HEADER
     ../../include/rawtoaces/usage_timer.h
 )
 
-add_library ( ${RAWTOACESLIB} ${DO_SHARED}
+add_library ( ${RAWTOACES_UTIL_LIB} ${DO_SHARED}
     acesrender.cpp
     usage_timer.cpp
 
     # Make the headers visible in IDEs. This should not affect the builds.
     ${UTIL_PUBLIC_HEADER}
 )
-
-if ( AcesContainer_FOUND )
-    target_include_directories ( ${RAWTOACESLIB} PRIVATE ${AcesContainer_INCLUDE_DIRS} )
-    target_link_directories    ( ${RAWTOACESLIB} PUBLIC  ${AcesContainer_LIBRARY_DIRS} )
-    target_link_libraries      ( ${RAWTOACESLIB}
-        PUBLIC
-            ${AcesContainer_LIBRARIES}
-            ${AcesContainer_LDFLAGS_OTHER}
-    )
-endif()
  
-target_link_libraries ( ${RAWTOACESLIB}
+target_link_libraries ( ${RAWTOACES_UTIL_LIB}
     PUBLIC
         ${RAWTOACES_CORE_LIB}
-    INTERFACE
-        Eigen3::Eigen
-        Imath::Imath
-        Imath::ImathConfig
+        OpenImageIO::OpenImageIO
+#    INTERFACE
+#        Eigen3::Eigen
+#        Imath::Imath
+#        Imath::ImathConfig
 )
 
-target_include_directories( ${RAWTOACESLIB} PUBLIC
+target_include_directories( ${RAWTOACES_UTIL_LIB} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>
     $<INSTALL_INTERFACE:./include>
 )
-    
-if ( LIBRAW_CONFIG_FOUND )
-    target_link_libraries ( ${RAWTOACESLIB} PUBLIC libraw::raw )
-else ()
-    target_link_directories(${RAWTOACESLIB} PUBLIC ${libraw_LIBRARY_DIRS} )
-    target_link_libraries(${RAWTOACESLIB} PUBLIC ${libraw_LIBRARIES} ${libraw_LDFLAGS_OTHER} )
-endif ()
 
-set_target_properties( ${RAWTOACESLIB} PROPERTIES
+set_target_properties( ${RAWTOACES_UTIL_LIB} PROPERTIES
     OUTPUT_NAME "rawtoaces_util"
     EXPORT_NAME "rawtoaces_util"
     PUBLIC_HEADER "${UTIL_PUBLIC_HEADER}"
@@ -53,7 +37,7 @@ set_target_properties( ${RAWTOACESLIB} PROPERTIES
     VERSION ${RAWTOACES_VERSION}
 )
 
-install( TARGETS ${RAWTOACESLIB}
+install( TARGETS ${RAWTOACES_UTIL_LIB}
     EXPORT RAWTOACESTargets
     LIBRARY DESTINATION ${INSTALL_LIB_DIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}

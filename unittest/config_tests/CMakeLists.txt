@@ -31,16 +31,6 @@ find_package ( Boost REQUIRED
 # the Ceres::ceres alias in not getting defined on the config side
 find_package ( Ceres CONFIG REQUIRED )
 
-# the find_dependency() on the config side doesn't seem to work on Windows
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    find_package (libraw CONFIG QUIET )
-    if (libraw_FOUND )
-        set ( LIBRAW_CONFIG_FOUND TRUE )
-    else ()
-        find_package(libraw MODULE REQUIRED)
-    endif ()
-endif ()
-
 find_package(RAWTOACES CONFIG REQUIRED)
 
 enable_testing()

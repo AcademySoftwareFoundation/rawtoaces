@@ -6,8 +6,6 @@
 #include <filesystem>
 #include <boost/test/tools/floating_point_comparison.hpp>
 
-#include <libraw/libraw.h>
-
 #include <rawtoaces/rawtoaces_core.h>
 #include <rawtoaces/define.h>
 
@@ -48,62 +46,37 @@ BOOST_AUTO_TEST_CASE( TestIDT_LightSourceToColorTemp )
     BOOST_CHECK_CLOSE( ct, 2856.0, 1e-5 );
 };
 
-void init_metadata( const LibRaw &libraw, rta::core::Metadata &metadata )
+void init_metadata( rta::core::Metadata &metadata )
 {
-    metadata.neutralRGB.resize( 3 );
-    metadata.calibration[0].xyz2rgbMatrix.resize( 9 );
-    metadata.calibration[1].xyz2rgbMatrix.resize( 9 );
-    metadata.calibration[0].cameraCalibrationMatrix.resize( 9 );
-    metadata.calibration[1].cameraCalibrationMatrix.resize( 9 );
+    metadata.baselineExposure = 2.4;
 
-    const libraw_colordata_t &color = libraw.imgdata.rawdata.color;
+    metadata.neutralRGB = { 0.6289999865031245, 1, 0.79040003045288199 };
 
-#if LIBRAW_VERSION >= LIBRAW_MAKE_VERSION( 0, 20, 0 )
-    metadata.baselineExposure =
-        static_cast<double>( color.dng_levels.baseline_exposure );
-#else
-    metadata.baselineExposure = static_cast<double>( color.baseline_exposure );
-#endif
+    metadata.calibration[0].illuminant = 17;
+    metadata.calibration[1].illuminant = 21;
 
-    for ( int i = 0; i < 3; i++ )
-    {
-        metadata.neutralRGB[i] = 1.0 / static_cast<double>( color.cam_mul[i] );
-    }
+    metadata.calibration[0].xyz2rgbMatrix = {
+        1.3119699954986572,   -0.49678999185562134, 0.011559999547898769,
+        -0.41723001003265381, 1.4423700571060181,   0.045279998332262039,
+        0.067230001091957092, 0.21709999442100525,  0.72650998830795288
+    };
 
-    for ( int k = 0; k < 2; k++ )
-    {
-        metadata.calibration[k].illuminant =
-            static_cast<double>( color.dng_color[k].illuminant );
-
-        for ( int i = 0; i < 3; i++ )
-        {
-            for ( int j = 0; j < 3; j++ )
-            {
-                metadata.calibration[k].xyz2rgbMatrix[i * 3 + j] =
-                    color.dng_color[k].colormatrix[i][j];
-                metadata.calibration[k].cameraCalibrationMatrix[i * 3 + j] =
-                    color.dng_color[k].calibration[i][j];
-            }
-        }
-    }
+    metadata.calibration[1].xyz2rgbMatrix = {
+        1.0088499784469604,    -0.27351000905036926, -0.082580000162124634,
+        -0.48996999859809875,  1.3444099426269531,   0.11174000054597855,
+        -0.064060002565383911, 0.32997000217437744,  0.5391700267791748
+    };
 }
 
 BOOST_AUTO_TEST_CASE( TestIDT_XYZToColorTemperature )
 {
-    LibRaw                rawProcessor;
-    std::filesystem::path pathToRaw = std::filesystem::absolute(
-        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
-    int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
-    ret     = rawProcessor.unpack();
-
     rta::core::Metadata metadata;
-    init_metadata( rawProcessor, metadata );
+    init_metadata( metadata );
     rta::core::DNGIdt  *di     = new rta::core::DNGIdt( metadata );
     double              XYZ[3] = { 0.9731171910, 1.0174927152, 0.9498565880 };
     std::vector<double> XYZVector( XYZ, XYZ + 3 );
     double              cct = di->XYZToColorTemperature( XYZVector );
 
-    rawProcessor.recycle();
     delete di;
 
     BOOST_CHECK_CLOSE( cct, 5564.6648479019, 1e-5 );
@@ -111,14 +84,8 @@ BOOST_AUTO_TEST_CASE( TestIDT_XYZToColorTemperature )
 
 BOOST_AUTO_TEST_CASE( TestIDT_XYZtoCameraWeightedMatrix )
 {
-    LibRaw                rawProcessor;
-    std::filesystem::path pathToRaw = std::filesystem::absolute(
-        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
-    int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
-    ret     = rawProcessor.unpack();
-
     rta::core::Metadata metadata;
-    init_metadata( rawProcessor, metadata );
+    init_metadata( metadata );
     rta::core::DNGIdt *di = new rta::core::DNGIdt( metadata );
     double mirs[3]        = { 158.8461538462, 350.1400560224, 153.8461538462 };
     double matrix[9]      = { 1.0165710542,  -0.2791973987, -0.0801820653,
@@ -126,7 +93,6 @@ BOOST_AUTO_TEST_CASE( TestIDT_XYZtoCameraWeightedMatrix )
                               -0.0607157824, 0.3270949763,  0.5439419519 };
     std::vector<double> result =
         di->XYZtoCameraWeightedMatrix( mirs[0], mirs[1], mirs[2] );
-    rawProcessor.recycle();
     delete di;
 
     FORI( countSize( matrix ) )
@@ -135,14 +101,8 @@ BOOST_AUTO_TEST_CASE( TestIDT_XYZtoCameraWeightedMatrix )
 
 BOOST_AUTO_TEST_CASE( TestIDT_FindXYZtoCameraMtx )
 {
-    LibRaw                rawProcessor;
-    std::filesystem::path pathToRaw = std::filesystem::absolute(
-        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
-    int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
-    ret     = rawProcessor.unpack();
-
     rta::core::Metadata metadata;
-    init_metadata( rawProcessor, metadata );
+    init_metadata( metadata );
     rta::core::DNGIdt *di = new rta::core::DNGIdt( metadata );
     double neutralRGB[3]  = { 0.6289999865, 1.0000000000, 0.7904000305 };
     double matrix[9]      = { 1.0616656923,  -0.3124143737, -0.0661770211,
@@ -151,7 +111,6 @@ BOOST_AUTO_TEST_CASE( TestIDT_FindXYZtoCameraMtx )
     std::vector<double> neutralRGBVector( neutralRGB, neutralRGB + 3 );
     std::vector<double> result = di->findXYZtoCameraMtx( neutralRGBVector );
 
-    rawProcessor.recycle();
     delete di;
 
     FORI( countSize( matrix ) )
@@ -178,7 +137,8 @@ BOOST_AUTO_TEST_CASE( TestIDT_MatrixRGBtoXYZ )
     double XYZ[9]          = { 0.952552395938, 0.000000000000, 0.000093678632,
                                0.343966449765, 0.728166096613, -0.072132546379,
                                0.000000000000, 0.000000000000, 1.008825184352 };
-    std::vector<double> result = di->matrixRGBtoXYZ( chromaticitiesACES );
+    std::vector<double> result =
+        di->matrixRGBtoXYZ( rta::core::chromaticitiesACES );
     delete di;
 
     FORI( countSize( XYZ ) )
@@ -187,22 +147,14 @@ BOOST_AUTO_TEST_CASE( TestIDT_MatrixRGBtoXYZ )
 
 BOOST_AUTO_TEST_CASE( TestIDT_GetDNGCATMatrix )
 {
-
-    LibRaw                rawProcessor;
-    std::filesystem::path pathToRaw = std::filesystem::absolute(
-        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
-    int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
-    ret     = rawProcessor.unpack();
-
     rta::core::Metadata metadata;
-    init_metadata( rawProcessor, metadata );
+    init_metadata( metadata );
     rta::core::DNGIdt *di = new rta::core::DNGIdt( metadata );
     double matrix[3][3]   = { { 0.9907763427, -0.0022862289, 0.0209908807 },
                               { -0.0017882434, 0.9941341374, 0.0083008330 },
                               { 0.0003777587, 0.0015609315, 1.1063201101 } };
     std::vector<std::vector<double>> result = di->getDNGCATMatrix();
 
-    rawProcessor.recycle();
     delete di;
 
     FORIJ( 3, 3 )
@@ -211,22 +163,14 @@ BOOST_AUTO_TEST_CASE( TestIDT_GetDNGCATMatrix )
 
 BOOST_AUTO_TEST_CASE( TestIDT_GetDNGIDTMatrix )
 {
-
-    LibRaw                rawProcessor;
-    std::filesystem::path pathToRaw = std::filesystem::absolute(
-        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
-    int ret = rawProcessor.open_file( ( pathToRaw.string() ).c_str() );
-    ret     = rawProcessor.unpack();
-
     rta::core::Metadata metadata;
-    init_metadata( rawProcessor, metadata );
+    init_metadata( metadata );
     rta::core::DNGIdt *di = new rta::core::DNGIdt( metadata );
     double matrix[3][3]   = { { 1.0536466144, 0.0039044182, 0.0049084502 },
                               { -0.4899562165, 1.3614787986, 0.1020844728 },
                               { -0.0024498461, 0.0060497128, 1.0139159537 } };
     std::vector<std::vector<double>> result = di->getDNGIDTMatrix();
 
-    rawProcessor.recycle();
     delete di;
 
     FORIJ( 3, 3 )

@@ -415,9 +415,6 @@ void Idt::chooseIllumSrc( const vector<double> &src, int highlight )
         vector<double> wb_tmp  = calWB( _Illuminants[i], highlight );
         double         sse_tmp = calSSE( wb_tmp, src );
 
-        printf( "%s, %f \n", _Illuminants[i].illuminant.c_str(), sse_tmp );
-        printf( "%f, %f, %f\n ", wb_tmp[0], wb_tmp[1], wb_tmp[2] );
-
         if ( sse_tmp < sse )
         {
             sse              = sse_tmp;

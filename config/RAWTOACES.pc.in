@@ -7,5 +7,5 @@ RAWTOACES_includedir=@INSTALL_INCLUDE_DIR@/rawtoaces
 Name: RAWTOACES
 Description: RAWTOACES raw image to ACES
 Version: @RAWTOACES_VERSION@
-Libs: -L${libdir} -lCeres -lraw -lAcesContainer -lHalf
+Libs: -L${libdir} -lCeres
 Cflags: -I${RAWTOACES_includedir}

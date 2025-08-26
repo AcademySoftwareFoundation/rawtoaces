@@ -20,13 +20,13 @@ jobs:
           - desc: gcc11
             nametag: linux-vfx2022-gcc11
             os: ubuntu-latest
-            container: aswf/ci-osl:2022-clang11
+            container: aswf/ci-osl:2022-clang11.10
             vfxyear: 2022
             cxx_std: 17
           - desc: clang14
             nametag: linux-vfx2022-clang14
             os: ubuntu-latest
-            container: aswf/ci-osl:2022-clang11
+            container: aswf/ci-osl:2022-clang11.10
             vfxyear: 2022
             cc_compiler: clang
             cxx_compiler: clang++
@@ -62,8 +62,7 @@ jobs:
       - name: Dependencies
         shell: bash
         run: |
-            build_scripts/install_aces_container.bash
-            sudo yum install --setopt=tsflags=nodocs -y eigen3-devel ceres-solver-devel LibRaw-devel json-devel
+            sudo yum install --setopt=tsflags=nodocs -y eigen3-devel ceres-solver-devel json-devel
 
       - name: Configure CMake
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -77,11 +76,15 @@ jobs:
 
       - name: Build
         run: |
-          sudo cmake --build build
+          sudo cmake --build build --config Release
 
       - name: Test
         working-directory: build
-        run: ctest --rerun-failed --output-on-failure
+        run: >
+          ctest 
+          --build-config Release
+          --rerun-failed
+          --output-on-failure
 
   aswf:
     name: "VFX${{matrix.vfxyear}} ${{matrix.desc}}"
@@ -146,8 +149,7 @@ jobs:
       - name: Dependencies
         shell: bash
         run: |
-            build_scripts/install_aces_container.bash
-            sudo yum install --setopt=tsflags=nodocs -y eigen3-devel ceres-solver-devel LibRaw-devel json-devel
+            sudo yum install --setopt=tsflags=nodocs -y eigen3-devel ceres-solver-devel json-devel
 
       - name: Configure CMake
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -230,7 +232,6 @@ jobs:
       - name: Dependencies
         shell: bash
         run: |
-          build_scripts/install_aces_container.bash
           build_scripts/${{ matrix.install_deps }}.bash
 
       - name: Configure CMake
@@ -254,7 +255,8 @@ jobs:
       - name: Test
         # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
         # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-        run: ctest --build-config ${{ matrix.build_type }} --rerun-failed --output-on-failure
+        working-directory: build
+        run: ctest --build-config Release --rerun-failed --output-on-failure
 
       - name: Configure config_tests
         run: >

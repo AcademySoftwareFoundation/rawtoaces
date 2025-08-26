@@ -44,61 +44,10 @@
         for ( int j = 0; j < val2; j++ )
 #define countSize( a ) ( static_cast<int>( sizeof( a ) / sizeof( ( a )[0] ) ) )
 
-typedef float  float32_t;
-typedef double float64_t;
-
-enum matMethods_t
+namespace rta
 {
-    matMethod0,
-    matMethod1,
-    matMethod2,
-    matMethod3
-};
-enum wbMethods_t
+namespace core
 {
-    wbMethod0,
-    wbMethod1,
-    wbMethod2,
-    wbMethod3,
-    wbMethod4
-};
-
-struct Option
-{
-    int ret;
-    int use_bigfile;
-    int use_timing;
-    int use_illum;
-    int use_mul;
-    int use_mmap;
-    int msize;
-    int verbosity;
-    int highlight;
-    int get_illums;
-    int get_cameras;
-    int get_libraw_cameras;
-
-    matMethods_t mat_method;
-    wbMethods_t  wb_method;
-
-    char                    *illumType;
-    float                    scale;
-    std::vector<std::string> envPaths;
-
-#ifndef WIN32
-    void *iobuffer;
-#endif
-};
-
-struct dataPath
-{
-    std::string              os;
-    std::vector<std::string> paths;
-};
-
-static float                            custom_Matrix[3][3] = { 0.0 };
-static float                            custom_Buffer[9]    = { 0.0 };
-static std::vector<std::vector<double>> custom_idtm;
 
 const double pi = 3.1416;
 // 216.0/24389.0
@@ -122,6 +71,14 @@ static const double XYZ_w[3] = {0.952646074569846, 1.0,    1.00882518435159};
 static const double d50  [3] = {0.9642,            1.0000, 0.8250};
 static const double d60  [3] = {0.952646074569846, 1.0000, 1.00882518435159};
 static const double d65  [3] = {0.9547,            1.0000, 1.0883};
+
+static const std::vector<double> ACES_white_XYZ = {
+    0.952646074569846, 1.0,    1.00882518435159
+};
+
+static const std::vector<double> D65_white_XYZ = {
+    0.9547, 1.0000, 1.0883
+};
 
 static const double neutral3[3][3] = {
     {1.0, 0.0, 0.0},
@@ -204,6 +161,13 @@ static const double XYZ_D65_acesrgb_4[4][4] = {
 };
 
 static const double XYZ_acesrgb_3[3][3] = {
+    {  1.0498110175, 0.0000000000, -0.0000974845 },
+    { -0.4959030231, 1.3733130458,  0.0982400361 },
+    {  0.0000000000, 0.0000000000,  0.9912520182 }
+};
+
+
+static const std::vector<std::vector<double>> XYZ_to_ACES = {
     {  1.0498110175, 0.0000000000, -0.0000974845 },
     { -0.4959030231, 1.3733130458,  0.0982400361 },
     {  0.0000000000, 0.0000000000,  0.9912520182 }
@@ -395,71 +359,7 @@ inline bool isValidCT( std::string str )
     return true;
 };
 
-// Function to get environment variable for camera data
-inline dataPath &pathsFinder()
-{
-    static dataPath cdp;
-    static bool     firstTime = 1;
-
-    if ( firstTime )
-    {
-        std::string path;
-        const char *env;
-
-        std::vector<std::string> &PATHs = cdp.paths;
-
-        env = getenv( "RAWTOACES_DATA_PATH" );
-        if ( !env )
-        {
-            // Fallback to the old environment variable.
-            env = getenv( "AMPAS_DATA_PATH" );
-
-            if ( env )
-            {
-                std::cerr << "Warning: The environment variable "
-                          << "AMPAS_DATA_PATH is now deprecated. Please use "
-                          << "RAWTOACES_DATA_PATH instead." << std::endl;
-            }
-        }
-
-        if ( env )
-            path = env;
-
-        if ( path == "" )
-        {
-#if defined( WIN32 ) || defined( WIN64 )
-            path   = ".";
-            cdp.os = "WIN";
-#else
-            // clang-format off
-            path   = "/usr/local/include/rawtoaces/data";
-            cdp.os = "UNIX";
-            // clang-format on
-#endif
-        }
-
-        size_t pos = 0;
-
-        while ( pos < path.size() )
-        {
-#if defined( WIN32 ) || defined( WIN64 )
-            size_t end = path.find( ';', pos );
-#else
-            size_t end = path.find( ':', pos );
-#endif
-
-            if ( end == std::string::npos )
-                end = path.size();
-
-            std::string pathItem = path.substr( pos, end - pos );
-
-            if ( find( PATHs.begin(), PATHs.end(), pathItem ) == PATHs.end() )
-                PATHs.push_back( pathItem );
-
-            pos = end + 1;
-        }
-    }
-    return cdp;
-};
+} // namespace core
+} // namespace rta
 
 #endif

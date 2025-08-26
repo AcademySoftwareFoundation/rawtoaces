@@ -12,7 +12,7 @@ set( RAWTOACES_PATCH_VERSION 0 )
 set( RAWTOACES_VERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${RAWTOACES_PATCH_VERSION} )
 
 set(RAWTOACES_CORE_LIB "rawtoaces_core")
-set(RAWTOACESLIB "rawtoaces_util")
+set(RAWTOACES_UTIL_LIB "rawtoaces_util")
 
 set( CMAKE_MACOSX_RPATH 1 )
 
@@ -78,7 +78,7 @@ include ( configure.cmake )
 
 add_definitions( -DPACKAGE="RAWTOACES" -DVERSION="${RAWTOACES_VERSION}" )
 add_subdirectory("src/${RAWTOACES_CORE_LIB}")
-add_subdirectory("src/${RAWTOACESLIB}")
+add_subdirectory("src/${RAWTOACES_UTIL_LIB}")
 add_subdirectory("src/rawtoaces")
 
 enable_testing()

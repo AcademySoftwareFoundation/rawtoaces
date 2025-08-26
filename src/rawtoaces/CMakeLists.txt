@@ -6,17 +6,7 @@ add_executable( rawtoaces
 
 target_link_libraries ( rawtoaces
     PUBLIC
-        ${RAWTOACESLIB}
-    INTERFACE
-        Boost::headers
+        ${RAWTOACES_UTIL_LIB}
 )
-
-if ( LIBRAW_CONFIG_FOUND )
-    target_link_libraries ( rawtoaces PUBLIC libraw::raw )
-else ()
-    target_link_directories(rawtoaces PUBLIC ${libraw_LIBRARY_DIRS} )
-    target_link_libraries(rawtoaces PUBLIC ${libraw_LIBRARIES} ${libraw_LDFLAGS_OTHER} )
-endif ()
-
 
 install( TARGETS rawtoaces DESTINATION ${INSTALL_BIN_DIR} )

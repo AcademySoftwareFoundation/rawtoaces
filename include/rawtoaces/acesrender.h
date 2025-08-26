@@ -1,88 +1,266 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
-#ifndef _ACESRENDER_h__
-#define _ACESRENDER_h__
+#pragma once
 
-#include <rawtoaces/rawtoaces_core.h>
-#include <rawtoaces/define.h>
+#include <OpenImageIO/imagebuf.h>
 
-#include <unordered_map>
-#include <libraw/libraw.h>
-
-using namespace rta;
+namespace rta
+{
+namespace util
+{
 
 void create_key( std::unordered_map<std::string, char> &keys );
-void usage( const char *prog );
 
-class LibRawAces : virtual public LibRaw
+/// Collect all files from a given`path` into batchs. If the `path` is a
+/// directory, create an entry in `batches` and fill it with the file names
+/// from that directory. If the `path` is a file, add its name to the first
+/// entry in `batches`.
+/// - parameter path: path to a file or directory to process.
+/// - parameter batches: the collection of batches to fill in.
+/// - returns `false` if the file or directory requested in `path` does not
+/// exist.
+bool collect_image_files(
+    const std::string &path, std::vector<std::vector<std::string>> &batches );
+
+class ImageConverter
 {
 public:
-    LibRawAces(){};
-    ~LibRawAces(){};
+    // TODO:
+    // Removed options comparing to v1.1:
+    // -P - bad pixels
+    // -K - dark frame
+    // -j - fuji-rotate
+    // -m - median filter
+    // -f - four-colour RGB
+    // -T - print Libraw-supported cameras
+    // -F - use big file
+    // -E - mmap-ed IO
+    // -s - image index in the file
+    struct Settings
+    {
+        /// The  white balancing method to use for conversion can be specified
+        ///
+        enum class WBMethod
+        {
+            /// Use the metadata provided in the image file. This mode is mostly
+            /// usable with DNG files, as the information needed for conversion
+            /// is mandatory in the DNG format.
+            Metadata,
+            /// White balance to a specified illuminant. See the `illuminant`
+            /// property for more information on the supported illuminants. This
+            /// mode can only be used if spectral sensitivities are available for
+            /// the camera.
+            Illuminant,
+            /// Calculate white balance by averaging over a specified region of
+            /// the image. See `wbBox`. In this mode if an empty box if provided,
+            /// white balancing is done by averaging over the whole image.
+            Box,
+            /// Use custom white balancing multipliers. This mode is useful if
+            /// the white balancing coefficients are calculated by an external
+            /// tool.
+            Custom
+        } wbMethod = WBMethod::Metadata;
 
-    void show() { printf( "I am here with LibRawAces.\n" ); }
-};
+        enum class MatrixMethod
+        {
+            /// Use the camera spectral sensitivity curves to solve for the colour
+            /// conversion matrix. In this mode the illuminant is either provided
+            /// directly in `illuminant` if `wbMethod` ==
+            /// `WBMethod::Illuminant`, or the best illuminant is derived from the
+            /// white balancing multipliers.
+            Spectral,
+            /// Use the metadata provided in the image file. This mode is mostly
+            /// usable with DNG files, as the information needed for conversion
+            /// is mandatory in the DNG format.
+            Metadata,
+            /// Use the Adobe colour matrix for the camera supplied in LibRaw.
+            Adobe,
+            /// Specify a custom matrix in `colourMatrix`. This mode is useful if
+            /// the matrix is calculated by an external tool.
+            Custom
+        } matrixMethod = MatrixMethod::Spectral;
 
-class AcesRender
-{
-public:
-    static AcesRender &getInstance();
+        /// An illuminant to use for white balancing and/or colour matrix
+        /// calculation. Only used when `wbMethod` ==
+        /// `WBMethod::Illuminant` and `matrixMethod` == `MatrixMethod::Spectral`.
+        /// An illuminant can be provided as a black body correlated colour
+        /// temperature, like `3200K`; or a D-series illuminant, like `D56`;
+        /// or any other illuminant, in such case it must be present in the data
+        /// folder.
+        std::string illuminant;
 
-    int configureSettings( int argc, char *argv[] );
-    int fetchCameraSenPath( const libraw_iparams_t &P );
-    int fetchIlluminant( const char *illumType = "na" );
+        float headroom           = 6.0;
+        int   wbBox[4]           = { 0 };
+        float customWB[4]        = { 1.0, 1.0, 1.0, 1.0 };
+        float customMatrix[3][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
 
-    int openRawPath( const char *pathToRaw );
-    int unpack( const char *pathToRaw );
-    int dcraw();
+        // Libraw-specific options:
+        bool        auto_bright              = false;
+        float       adjust_maximum_threshold = 0.75;
+        int         black_level              = -1;
+        int         saturation_level         = -1;
+        bool        half_size                = false;
+        bool        green_matching           = false;
+        int         highlight_mode           = 0;
+        int         flip                     = 0;
+        int         cropbox[4]               = { 0, 0, 0, 0 };
+        float       aberration[2]            = { 1.0f, 1.0f };
+        float       denoise_threshold        = 0;
+        float       scale                    = 1.0f;
+        std::string demosaic_algorithm       = "AHD";
 
-    int  prepareIDT( const libraw_iparams_t &P, float *M );
-    int  prepareWB( const libraw_iparams_t &P );
-    int  preprocessRaw( const char *path );
-    int  postprocessRaw();
-    void outputACES( const char *path );
+        // Global config:
+        std::vector<std::string> database_directories;
 
-    void initialize( const dataPath &dp );
-    void setPixels( libraw_processed_image_t *image );
-    void gatherSupportedIllums();
-    void gatherSupportedCameras();
-    void printLibRawCameras();
-    void applyWB( float *pixels, int bits, uint32_t total );
-    void applyIDT( float *pixels, int bits, uint32_t total );
-    void applyCAT( float *pixels, int channel, uint32_t total );
-    void acesWrite( const char *name, float *aces, float ratio = 1.0 ) const;
+        // Diagnostic:
+        bool use_timing = false;
+        int  verbosity  = 0;
 
-    float *renderACES();
-    float *renderDNG();
-    float *renderNonDNG();
-    float *renderIDT();
+    } settings;
 
-    const std::vector<std::string>         getSupportedIllums() const;
-    const std::vector<std::string>         getSupportedCameras() const;
-    const std::vector<std::vector<double>> getIDTMatrix() const;
-    const std::vector<std::vector<double>> getCATMatrix() const;
-    const std::vector<double>              getWB() const;
-    const libraw_processed_image_t        *getImageBuffer() const;
-    const struct Option                    getSettings() const;
+    static void usage( const char *prog );
+
+    /// Configure the converter using the command line parameters and
+    /// environment variables. This is optional, the `settings` struct can also
+    /// be modified manually.
+    int configure_settings( int argc, char const *const argv[] );
+
+    /// Collects all illuminants supported by this version.
+    std::vector<std::string> supported_illuminants();
+
+    /// Collects all camera models for which spectral sensitivity data is
+    /// available in the database.
+    std::vector<std::string> supported_cameras();
+
+    /// Configures the converter using the requested white balance and colour
+    /// matrix method, and the metadata of the file provided in `input_file`.
+    /// This method loads the metadata from the given image file and
+    /// initialises the options to give the OIIO raw image reader to
+    /// decode the pixels.
+    /// - parameter input_filename:
+    ///    A file name of the raw image file to read the metadata from.
+    /// - parameter options:
+    ///    Conversion hints to be passed to OIIO when reading an image file.
+    ///    The list can be pre- or post- updated with other hints, unrelated to
+    ///    the rawtoaces conversion.
+    /// - returns
+    ///    `true` if configured successfully.
+    bool configure(
+        const std::string &input_filename, OIIO::ParamValueList &options );
+
+    /// Configures the converter using the requested white balance and colour
+    /// matrix method, and the metadata of the given OIIO::ImageSpec object.
+    /// Use this method if you already have an image read from file to save
+    /// on disk operations.
+    /// - parameter imageSpec:
+    ///    An image spec obtained from OIIO::ImageInput or OIIO::ImageBuf.
+    /// - parameter hints:
+    ///    Conversion hints to be passed to OIIO when reading an image file.
+    ///    The list can be pre- or post- updated with other hints, unrelated to
+    ///    the rawtoaces conversion.
+    /// - returns
+    ///    `true` if configured successfully.
+    bool
+    configure( const OIIO::ImageSpec &imageSpec, OIIO::ParamValueList &hints );
+
+    /// Load an image from a given `path` into a `buffer` using the `hints`
+    /// calculated by the `configure` method. The hints can be manually
+    /// modified prior to invoking this method.
+    bool load_image(
+        const std::string          &path,
+        const OIIO::ParamValueList &hints,
+        OIIO::ImageBuf             &buffer );
+
+    /// Apply the colour space conversion matrix (or matrices) to convert the
+    /// image buffer from the raw camera colour space to ACES.
+    /// - parameter dst:
+    ///     Destination image buffer.
+    /// - parameter src:
+    ///     Source image buffer, can be the same as `dst` for in-place
+    ///     conversion.
+    /// - returns
+    ///    `true` if applied successfully.
+    bool apply_matrix(
+        OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
+
+    /// Apply the headroom scale to image buffer.
+    /// - parameter dst:
+    ///     Destination image buffer.
+    /// - parameter src:
+    ///     Source image buffer, can be the same as `dst` for in-place
+    ///     conversion.
+    /// - returns
+    ///    `true` if applied successfully.
+    bool apply_scale(
+        OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
+
+    /// Apply the cropping mode as specified in crop_mode.
+    /// - parameter dst:
+    ///     Destination image buffer.
+    /// - parameter src:
+    ///     Source image buffer, can be the same as `dst` for in-place
+    ///     conversion.
+    /// - returns
+    ///    `true` if applied successfully.
+    bool apply_crop(
+        OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
+
+    /// Make output file path and check if it is writable.
+    /// - parameter path:
+    ///     A reference to a variable containing the input file path. The output file path gets generated
+    ///     in-place.
+    /// - parameter suffix:
+    ///     A suffix to add to the file name.
+    /// - returns
+    ///    `true` if the file can be written, e.g. the output directory exists, or creating directories
+    ///     is allowed; the file does not exist or overwriting is allowed.
+    bool
+    make_output_path( std::string &path, const std::string &suffix = "_aces" );
+
+    /// Saves the image into ACES Container.
+    /// - parameter output_filename:
+    ///     Full path to the file to be saved.
+    /// - parameter buf:
+    ///     Image buffer to be saved.
+    /// - returns
+    ///    `true` if saved successfully.
+    bool
+    save_image( const std::string &output_filename, const OIIO::ImageBuf &buf );
+
+    /// A convenience single-call method to process an image. This is equivalent to calling the following
+    /// methods sequentially: `make_output_path`->`configure`->`apply_matrix`->
+    /// `apply_scale`->`apply_crop`->`save`.
+    /// - parameter input_filename:
+    ///     Full path to the file to be converted.
+    /// - returns
+    ///    `true` if processed successfully.
+    bool process_image( const std::string &input_filename );
+
+    /// Get the solved white balance multipliers of the currently processed
+    /// image. The multipliers become available after calling either of the
+    /// two `configure` methods.
+    /// - returns a reference to the multipliers vector.
+    const std::vector<double> &get_WB_multipliers();
+
+    /// Get the solved input transform matrix of the currently processed image.
+    /// The multipliers become available after calling either of the two
+    /// `configure` methods.
+    /// - returns a reference to the matrix.
+    const std::vector<std::vector<double>> &get_IDT_matrix();
+
+    /// Get the solved chromatic adaptation transform matrix of the currently
+    /// processed image. The multipliers become available after calling either
+    /// of the two `configure` methods.
+    /// - returns a reference to the matrix.
+    const std::vector<std::vector<double>> &get_CAT_matrix();
 
 private:
-    AcesRender();
-    ~AcesRender();
-    static AcesRender &getPrivateInstance();
-
-    const AcesRender &operator=( const AcesRender &acesrender );
-
-    char                     *_pathToRaw;
-    core::Idt                *_idt;
-    libraw_processed_image_t *_image;
-    LibRawAces               *_rawProcessor;
-
-    Option                           _opts;
-    std::vector<std::vector<double>> _idtm;
-    std::vector<std::vector<double>> _catm;
-    std::vector<double>              _wbv;
-    std::vector<std::string>         _illuminants;
-    std::vector<std::string>         _cameras;
+    // Solved transform of the current image.
+    std::vector<std::vector<double>> _IDT_matrix;
+    std::vector<std::vector<double>> _CAT_matrix;
+    std::vector<double>              _WB_multipliers;
 };
-#endif
+
+} //namespace util
+} //namespace rta

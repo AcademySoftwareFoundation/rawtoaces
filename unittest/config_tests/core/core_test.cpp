@@ -18,11 +18,11 @@
 BOOST_AUTO_TEST_CASE( Test_InvertD )
 {
     double a = 1.0;
-    BOOST_CHECK_CLOSE( invertD( a ), 1.0, 1e-9 );
+    BOOST_CHECK_CLOSE( rta::core::invertD( a ), 1.0, 1e-9 );
 
     double b = 1000.0;
-    BOOST_CHECK_CLOSE( invertD( b ), 0.001, 1e-9 );
+    BOOST_CHECK_CLOSE( rta::core::invertD( b ), 0.001, 1e-9 );
 
     double c = 1000000.0;
-    BOOST_CHECK_CLOSE( invertD( c ), 0.000001, 1e-9 );
+    BOOST_CHECK_CLOSE( rta::core::invertD( c ), 0.000001, 1e-9 );
 };

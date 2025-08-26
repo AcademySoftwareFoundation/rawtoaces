@@ -2,105 +2,58 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include <rawtoaces/acesrender.h>
-#include <rawtoaces/usage_timer.h>
+
+#include <set>
 
 int main( int argc, char *argv[] )
 {
-    if ( argc == 1 )
-        usage( argv[0] );
-
-    struct stat st;
-    AcesRender &Render = AcesRender::getInstance();
-
 #ifndef WIN32
     putenv( (char *)"TZ=UTC" );
 #else
     _putenv( (char *)"TZ=UTC" );
 #endif
 
-    // Fetch conditions and conduct some pre-processing
-    Render.initialize( pathsFinder() );
-    int arg = Render.configureSettings( argc, argv );
+    if ( argc == 1 )
+        rta::util::ImageConverter::usage( argv[0] );
+
+    rta::util::ImageConverter converter;
+
+    int arg = converter.configure_settings( argc, argv );
+
+    // Create a separate batch for each input directory.
+    // Reserve the first batch for the individual input files.
+    std::vector<std::vector<std::string>> batches( 1 );
 
     // Gather all the raw images from arg list
-    std::vector<std::string> RAWs;
     for ( ; arg < argc; arg++ )
     {
-        if ( stat( argv[arg], &st ) != 0 )
-        {
-            fprintf(
-                stderr,
-                "Error: The directory or file may not exist - \"%s\"...",
-                argv[arg] );
-            continue;
-        }
+        std::string path = argv[arg];
 
-        if ( st.st_mode & S_IFDIR )
+        if ( !rta::util::collect_image_files( path, batches ) )
         {
-            std::vector<std::string> files =
-                openDir( static_cast<std::string>( argv[arg] ) );
-            for ( std::vector<std::string>::iterator file = files.begin();
-                  file != files.end();
-                  ++file )
-            {
-                if ( stat( file->c_str(), &st ) == 0 &&
-                     ( st.st_mode & S_IFREG ) )
-                    RAWs.push_back( *file );
-            }
-        }
-        else if ( st.st_mode & S_IFREG )
-        {
-            RAWs.push_back( argv[arg] );
+            std::cerr << "File or directory not found: " << path << std::endl;
+            return 1;
         }
     }
-
-    // Load illuminant dataset(s)
-    int    read = 0;
-    Option opts = Render.getSettings();
-    if ( !opts.illumType )
-        read = Render.fetchIlluminant();
-    else
-        read = Render.fetchIlluminant( opts.illumType );
-
-    if ( !read )
-    {
-        fprintf(
-            stderr,
-            "\nError: No matching light source. "
-            "Please find available options by "
-            "\"rawtoaces --valid-illum\".\n" );
-        exit( -1 );
-    }
-
-    rta::util::UsageTimer usage_timer;
-    usage_timer.enabled = opts.use_timing;
 
     // Process RAW files ...
-    FORI( RAWs.size() )
+    bool empty  = true;
+    bool result = true;
+    for ( auto const &batch: batches )
     {
-        std::string raw = ( RAWs[i] ).c_str();
-
-        usage_timer.reset();
-        Render.preprocessRaw( raw.c_str() );
-        usage_timer.print( raw, "AcesRender::preprocessRaw()" );
-
-        usage_timer.reset();
-        Render.postprocessRaw();
-        usage_timer.print( raw, "AcesRender::postprocessRaw()" );
-
-        usage_timer.reset();
-
-        std::string output;
-        size_t      pos = raw.rfind( '.' );
-        if ( pos != std::string::npos )
+        for ( auto const &input_filename: batch )
         {
-            output = raw.substr( 0, pos );
+            empty  = false;
+            result = converter.process_image( input_filename );
+            if ( !result )
+                break;
         }
-        output += "_aces.exr";
-
-        Render.outputACES( output.c_str() );
-        usage_timer.print( raw, "AcesRender::outputACES()" );
+        if ( !result )
+            break;
     }
 
-    return 0;
+    if ( empty )
+        rta::util::ImageConverter::usage( argv[0] );
+
+    return result ? 0 : 1;
 }

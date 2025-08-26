@@ -13,6 +13,8 @@
 
 #include <rawtoaces/mathOps.h>
 
+using namespace rta::core;
+
 BOOST_AUTO_TEST_CASE( Test_InvertD )
 {
     double a = 1.0;

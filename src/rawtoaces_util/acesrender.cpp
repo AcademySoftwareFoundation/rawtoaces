@@ -2,25 +2,20 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include <rawtoaces/acesrender.h>
+#include <rawtoaces/rawtoaces_core.h>
 #include <rawtoaces/mathOps.h>
-#include <rawtoaces/spectral_data.h>
+#include <rawtoaces/usage_timer.h>
 
-#include <Imath/half.h>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/foreach.hpp>
+#include <filesystem>
 
-#include <aces/aces_Writer.h>
+#include <OpenImageIO/imageio.h>
+#include <OpenImageIO/imagebuf.h>
+#include <OpenImageIO/imagebufalgo.h>
 
-#include <mutex>
-
-#ifndef WIN32
-#    include <fcntl.h>
-#    include <sys/mman.h>
-#endif
-
-using namespace std;
-using namespace boost::property_tree;
+namespace rta
+{
+namespace util
+{
 
 //  =====================================================================
 //  Prepare the matching between string flags and single character flag
@@ -43,20 +38,15 @@ void create_key( unordered_map<string, char> &keys )
     keys["--valid-cameras"] = 'Q';
     keys["-c"]              = 'c';
     keys["-C"]              = 'C';
-    keys["-P"]              = 'P';
-    keys["-K"]              = 'K';
     keys["-k"]              = 'k';
     keys["-S"]              = 'S';
     keys["-n"]              = 'n';
     keys["-H"]              = 'H';
     keys["-t"]              = 't';
-    keys["-j"]              = 'j';
     keys["-W"]              = 'W';
     keys["-b"]              = 'b';
     keys["-q"]              = 'q';
     keys["-h"]              = 'h';
-    keys["-f"]              = 'f';
-    keys["-m"]              = 'm';
     keys["-s"]              = 's';
     keys["-G"]              = 'G';
     keys["-B"]              = 'B';
@@ -77,7 +67,7 @@ void create_key( unordered_map<string, char> &keys )
 //  outputs:
 //      N/A
 
-void usage( const char *prog )
+void ImageConverter::usage( const char *prog )
 {
     printf( "%s - convert RAW digital camera files to ACES\n", prog );
     printf( "\n" );
@@ -106,7 +96,6 @@ void usage( const char *prog )
         "                            (default = 0)\n"
         "                            (default = /usr/local/include/rawtoaces/data/camera)\n"
         "  --headroom float        Set highlight headroom factor (default = 6.0)\n"
-        "  --cameras               Show a list of supported cameras/models by LibRaw\n"
         "  --valid-illums          Show a list of illuminants\n"
         "  --valid-cameras         Show a list of cameras/models with available\n"
         "                          spectral sensitivity datasets\n"
@@ -114,267 +103,553 @@ void usage( const char *prog )
         "Raw conversion options:\n"
         "  -c float                Set adjust maximum threshold (default = 0.75)\n"
         "  -C <r b>                Correct chromatic aberration\n"
-        "  -P <file>               Fix the dead pixels listed in this file\n"
-        "  -K <file>               Subtract dark frame (16-bit raw PGM)\n"
         "  -k <num>                Set the darkness level\n"
         "  -S <num>                Set the saturation level\n"
         "  -n <num>                Set threshold for wavelet denoising\n"
         "  -H [0-9]                Highlight mode (0=clip, 1=unclip, 2=blend, 3+=rebuild) (default = 0)\n"
         "  -t [0-7]                Flip image (0=none, 3=180, 5=90CCW, 6=90CW)\n"
-        "  -j                      Don't stretch or rotate raw pixels\n"
         "  -W                      Don't automatically brighten the image\n"
         "  -b <num>                Adjust brightness (default = 1.0)\n"
-        "  -q [0-3]                Set the interpolation quality\n"
+        "  -q [0-12]                Demosaicing algorithm (0=linear, 1=VNG, 2=PPG, 3=AHD, 4=DCB, 5=AHD-Mod, 6=AFD, 7=VCD, 8=Mixed, 9=LMMSE, 10=AMaZE, 11=DHT, 12=AAHD)\n"
         "  -h                      Half-size color image (twice as fast as \"-q 0\")\n"
-        "  -f                      Interpolate RGGB as four colors\n"
-        "  -m <num>                Apply a 3x3 median filter to R-G and B-G\n"
-        "  -s [0..N-1]             Select one raw image from input file\n"
         "  -G                      Use green_matching() filter\n"
         "  -B <x y w h>            Use cropbox\n"
         "\n"
         "Benchmarking options:\n"
         "  -v                      Verbose: print progress messages (repeated -v will add verbosity)\n"
-        "  -F                      Use FILE I/O instead of streambuf API\n"
-        "  -d                      Detailed timing report\n"
-#ifndef WIN32
-        "  -E                      Use mmap()-ed buffer instead of plain FILE I/O\n"
-#endif
-    );
+        "  -d                      Detailed timing report\n" );
     exit( -1 );
 };
 
 //  =====================================================================
-//	Defaul Constructor
 
-AcesRender::AcesRender()
+std::vector<std::string> collect_data_files(
+    const std::vector<std::string> &directories, const std::string &type )
 {
-    _idt          = new core::Idt();
-    _image        = new libraw_processed_image_t();
-    _rawProcessor = new LibRawAces();
+    std::vector<std::string> result;
 
-    _idtm.resize( 3 );
-    _wbv.resize( 3 );
-    _catm.resize( 3 );
-
-    FORI( 3 )
+    for ( const auto &path: directories )
     {
-        _idtm[i].resize( 3 );
-        _catm[i].resize( 3 );
-
-        _wbv[i]               = 1.0;
-        FORJ( 3 ) _idtm[i][j] = neutral3[i][j];
-        FORJ( 3 ) _catm[i][j] = neutral3[i][j];
+        if ( std::filesystem::is_directory( path ) )
+        {
+            auto type_path = path + "/" + type;
+            if ( std::filesystem::exists( type_path ) )
+            {
+                auto it = std::filesystem::directory_iterator( type_path );
+                for ( auto filename2: it )
+                {
+                    auto p = filename2.path();
+                    if ( filename2.path().extension() == ".json" )
+                    {
+                        result.push_back( filename2.path().string() );
+                    }
+                }
+            }
+        }
     }
+    return result;
 }
 
-//  =====================================================================
-//	Defaul Destructor
-
-AcesRender::~AcesRender()
+bool check_and_add_file(
+    const std::filesystem::path &path, std::vector<std::string> &batch )
 {
-    if ( _pathToRaw )
+    if ( std::filesystem::is_regular_file( path ) ||
+         std::filesystem::is_symlink( path ) )
     {
-        delete _pathToRaw;
-        _pathToRaw = nullptr;
-    }
+        static const std::set<std::string> ignore_filenames = { ".DS_Store" };
+        std::string                        filename = path.filename().string();
+        if ( ignore_filenames.count( filename ) > 0 )
+            return false;
 
-    if ( _idt )
+        static const std::set<std::string> ignore_extensions = {
+            ".exr", ".EXR", ".jpg", ".JPG", ".jpeg", ".JPEG"
+        };
+        std::string extension = path.extension().string();
+        if ( ignore_extensions.count( extension ) > 0 )
+            return false;
+
+        batch.push_back( path.string() );
+    }
+    else
     {
-        delete _idt;
-        _idt = nullptr;
+        std::cerr << "Not a regular file: " << path << std::endl;
     }
-
-    if ( _image )
-    {
-        delete _image;
-        _image = nullptr;
-    }
-
-    if ( _rawProcessor )
-    {
-        delete _rawProcessor;
-        _rawProcessor = nullptr;
-    }
-
-    vector<vector<double>>().swap( _idtm );
-    vector<vector<double>>().swap( _catm );
-    vector<double>().swap( _wbv );
-    vector<string>().swap( _illuminants );
-    vector<string>().swap( _cameras );
+    return true;
 }
 
-//	=====================================================================
-//	Get the only instance of the "AcesRender" class
-//
-//	inputs:
-//      N/A
-//
-//	outputs:
-//      static AcesRender & : the referece to the only instance by calling
-//      the private getPrivateInstance() function
-
-AcesRender &AcesRender::getInstance()
+bool collect_image_files(
+    const std::string &path, std::vector<std::vector<std::string>> &batches )
 {
-
-    return getPrivateInstance();
-}
-
-//	=====================================================================
-//	Initialize the single instance of the "AcesRender" class privately
-//
-//	inputs:
-//      N/A
-//
-//	outputs:
-//      static AcesRender &  : the referece to the only instance
-//      of "AcesRender" class
-
-AcesRender &AcesRender::getPrivateInstance()
-{
-
-    mutex mtx;
-    mtx.lock();
-    static AcesRender acesrender;
-    mtx.unlock();
-
-    return acesrender;
-}
-
-//	=====================================================================
-//	Operator = overloading in "AcesRender" class
-//
-//	inputs:
-//      const AcesRender & : acesrender
-//
-//	outputs:
-//      const AcesRender & : current instance filled with data from
-//      acesrender
-
-const AcesRender &AcesRender::operator=( const AcesRender &acesrender )
-{
-    if ( this != &acesrender )
+    if ( !std::filesystem::exists( path ) )
     {
-        clearVM( _idtm );
-        clearVM( _catm );
-        clearVM( _wbv );
-        clearVM( _illuminants );
-        clearVM( _cameras );
-
-        if ( _idt != nullptr )
-            delete _idt;
-        _idt = (core::Idt *)malloc( sizeof( core::Idt ) );
-        memcpy( _idt, acesrender._idt, sizeof( core::Idt ) );
-
-        if ( _rawProcessor != nullptr )
-            delete _rawProcessor;
-        _rawProcessor = (LibRawAces *)malloc( sizeof( LibRawAces ) );
-        memcpy(
-            (void *)_rawProcessor,
-            (void *)acesrender._rawProcessor,
-            sizeof( LibRawAces ) );
-
-        if ( _image != nullptr )
-            delete _image;
-        _image = (libraw_processed_image_t *)malloc(
-            sizeof( libraw_processed_image_t ) );
-        memcpy( _image, acesrender._image, sizeof( libraw_processed_image_t ) );
-
-        _idtm        = acesrender._idtm;
-        _catm        = acesrender._catm;
-        _wbv         = acesrender._wbv;
-        _illuminants = acesrender._illuminants;
-        _cameras     = acesrender._cameras;
-        _opts        = acesrender._opts;
+        return false;
     }
 
-    return *this;
+    auto canonical_filename = std::filesystem::canonical( path );
+
+    if ( std::filesystem::is_directory( path ) )
+    {
+        std::vector<std::string> &curr_batch = batches.emplace_back();
+        auto it = std::filesystem::directory_iterator( path );
+
+        for ( auto filename2: it )
+        {
+            if ( !check_and_add_file( filename2, curr_batch ) )
+                continue;
+        }
+    }
+    else
+    {
+        check_and_add_file( path, batches[0] );
+    }
+
+    return true;
 }
 
-//	=====================================================================
-//	Initialize the process by first setting up default values for "_opts"
-//  and some flags for "_rawProcessor"
-//
-//	inputs:
-//      struct dataPath : data path of the processed environment variable
-//
-//	outputs:
-//      N/A : _opts will be set up by the default values;
-//            A few parameters of "_rawProcessor" (imgdata.params)
-//            will be given a set of initial values
-
-void AcesRender::initialize( const dataPath &dp )
+// Adapted from define.h pathsFinder()
+std::vector<std::string> database_paths()
 {
-    _opts.use_bigfile        = 0;
-    _opts.use_timing         = 0;
-    _opts.use_illum          = 0;
-    _opts.use_mul            = 0;
-    _opts.verbosity          = 0;
-    _opts.mat_method         = matMethod0;
-    _opts.wb_method          = wbMethod0;
-    _opts.highlight          = 0;
-    _opts.scale              = 6.0;
-    _opts.highlight          = 0;
-    _opts.get_illums         = 0;
-    _opts.get_cameras        = 0;
-    _opts.get_libraw_cameras = 0;
+    std::vector<std::string> result;
 
-#ifndef WIN32
-    _opts.iobuffer = 0;
+#if defined( WIN32 ) || defined( WIN64 )
+    const std::string separator    = ";";
+    const std::string default_path = ".";
+#else
+    char              separator    = ':';
+    const std::string default_path = "/usr/local/share/rawtoaces/data";
 #endif
 
-    struct stat st;
-    FORI( dp.paths.size() )
+    std::string path;
+
+    const char *env = getenv( "RAWTOACES_DATA_PATH" );
+    if ( !env )
     {
-        if ( !stat( ( dp.paths )[i].c_str(), &st ) )
-            _opts.envPaths.push_back( ( dp.paths )[i] );
+        // Fallback to the old environment variable.
+        env = getenv( "AMPAS_DATA_PATH" );
+
+        if ( env )
+        {
+            std::cerr << "Warning: The environment variable "
+                      << "AMPAS_DATA_PATH is now deprecated. Please use "
+                      << "RAWTOACES_DATA_PATH instead." << std::endl;
+        }
     }
 
-#ifndef WIN32
-    _opts.msize    = 0;
-    _opts.use_mmap = 0;
-#endif
+    if ( path.empty() )
+    {
+        path = default_path;
+    }
 
-#ifdef OUT
-#    undef OUT
-#endif
+    size_t pos = 0;
 
-#define OUT _rawProcessor->imgdata.params
+    while ( pos < path.size() )
+    {
+        size_t end = path.find( separator, pos );
 
-    //  General set-up for _rawProcessor->imgdata.params
-    OUT.output_color = 5;
-    OUT.output_bps   = 16;
-    OUT.highlight    = 0;
-    //    OUT.use_camera_matrix = 0;
-    OUT.gamm[0]        = 1.0;
-    OUT.gamm[1]        = 1.0;
-    OUT.no_auto_bright = 1;
-    OUT.use_camera_wb  = 0;
-    OUT.use_auto_wb    = 0;
+        if ( end == std::string::npos )
+            end = path.size();
+
+        std::string pathItem = path.substr( pos, end - pos );
+
+        if ( find( result.begin(), result.end(), pathItem ) == result.end() )
+            result.push_back( pathItem );
+
+        pos = end + 1;
+    }
+
+    return result;
+};
+
+bool fetch_camera_make_and_model(
+    const OIIO::ImageSpec &spec,
+    std::string           &camera_make,
+    std::string           &camera_model )
+{
+    camera_make = spec["cameraMake"];
+    if ( camera_make.empty() )
+    {
+        std::cerr << "Missing the camera manufacturer name in the file "
+                  << "metadata." << std::endl;
+        return false;
+    }
+
+    camera_model = spec["cameraModel"];
+    if ( camera_model.empty() )
+    {
+        std::cerr << "Missing the camera model name in the file metadata. "
+                  << std::endl;
+        return false;
+    }
+
+    return true;
 }
 
-//	=====================================================================
-//	Configure settings by taking in user specified options
-//
-//	inputs:
-//      int argc        : number of user input
-//      char * argv[]   : an array of user input
-//
-//	outputs:
-//      N/A : _opts will be ready by digesting the user input;
-//            _rawProcessor (imgdata.params) will take initial
-//            set of values from user inputs
-
-int AcesRender::configureSettings( int argc, char *argv[] )
+vector<string> findFiles( string filePath, vector<string> searchPaths )
 {
-#ifdef OUT
-#    undef OUT
-#endif
+    vector<string> foundFiles;
 
-#define OUT _rawProcessor->imgdata.params
+    for ( auto &i: searchPaths )
+    {
+        string path = i + "/" + filePath;
+
+        if ( std::filesystem::exists( path ) )
+            foundFiles.push_back( path );
+    }
+
+    return foundFiles;
+}
+
+bool configure_solver(
+    core::Idt                      &solver,
+    const std::vector<std::string> &directories,
+    const std::string              &camera_make,
+    const std::string              &camera_model,
+    const std::string              &illuminant = "" )
+{
+    bool success = true;
+
+    auto camera_files = collect_data_files( directories, "camera" );
+    for ( auto &camera_file: camera_files )
+    {
+        success = solver.loadCameraSpst(
+            camera_file, camera_make.c_str(), camera_model.c_str() );
+        if ( success )
+            break;
+    }
+
+    if ( !success )
+    {
+        std::cerr << "Failed to find spectral data for camera " << camera_make
+                  << " " << camera_model << std::endl;
+        return false;
+    }
+
+    std::vector<std::string> found =
+        findFiles( "training/training_spectral.json", directories );
+    if ( found.size() )
+    {
+        // loading training data (190 patches)
+        solver.loadTrainingData( found[0] );
+    }
+
+    found = findFiles( "cmf/cmf_1931.json", directories );
+    if ( found.size() )
+    {
+        solver.loadCMF( found[0] );
+    }
+
+    if ( illuminant.empty() )
+    {
+        auto illuminant_files = collect_data_files( directories, "illuminant" );
+        solver.loadIlluminant( illuminant_files );
+    }
+    else
+    {
+        auto illuminant_files = collect_data_files( directories, "illuminant" );
+        solver.loadIlluminant( illuminant_files, illuminant );
+    }
+
+    return true;
+}
+
+bool solve_illuminant_from_WB(
+    const std::vector<std::string> &directories,
+    const std::string              &camera_make,
+    const std::string              &camera_model,
+    const std::vector<double>      &wb_mults,
+    float                           highlight,
+    bool                            verbosity,
+    std::string                    &out_illuminant )
+{
+    core::Idt solver;
+    solver.setVerbosity( verbosity );
+    if ( !configure_solver(
+             solver, directories, camera_make, camera_model, "" ) )
+    {
+        return false;
+    }
+
+    solver.chooseIllumSrc( wb_mults, highlight );
+    out_illuminant = solver.getBestIllum().illuminant;
+    return true;
+}
+
+bool solve_WB_from_illuminant(
+    const std::vector<std::string> &directories,
+    const std::string              &camera_make,
+    const std::string              &camera_model,
+    const std::string              &illuminant,
+    float                           highlight,
+    bool                            verbosity,
+    std::vector<double>            &out_WB )
+{
+    core::Idt solver;
+    solver.setVerbosity( verbosity );
+    if ( !configure_solver(
+             solver, directories, camera_make, camera_model, illuminant ) )
+    {
+        return false;
+    }
+
+    solver.chooseIllumType( illuminant, highlight );
+    out_WB = solver.getWB();
+    return true;
+}
+
+bool solve_matrix_from_illuminant(
+    const std::vector<std::string>   &directories,
+    const std::string                &camera_make,
+    const std::string                &camera_model,
+    const std::string                &illuminant,
+    float                             highlight,
+    bool                              verbosity,
+    std::vector<std::vector<double>> &out_matrix )
+{
+    core::Idt solver;
+    solver.setVerbosity( verbosity );
+    if ( !configure_solver(
+             solver, directories, camera_make, camera_model, illuminant ) )
+    {
+        return false;
+    }
+
+    solver.chooseIllumType( illuminant, highlight );
+    if ( !solver.calIDT() )
+    {
+        return false;
+    }
+
+    out_matrix = solver.getIDT();
+    return true;
+}
+
+bool prepare_transform_spectral(
+    const OIIO::ImageSpec            &imageSpec,
+    const ImageConverter::Settings   &settings,
+    std::vector<double>              &WB_multipliers,
+    std::vector<std::vector<double>> &IDT_matrix,
+    std::vector<std::vector<double>> &CAT_matrix )
+{
+    std::string lower_illuminant = OIIO::Strutil::lower( settings.illuminant );
+
+    std::string camera_make, camera_model;
+    if ( !fetch_camera_make_and_model( imageSpec, camera_make, camera_model ) )
+        return false;
+
+    bool        success = false;
+    std::string best_illuminant;
+
+    if ( lower_illuminant.empty() )
+    {
+        std::vector<double> wb_multipliers( 4 );
+
+        if ( WB_multipliers.size() == 4 )
+        {
+            for ( int i = 0; i < 3; i++ )
+                wb_multipliers[i] = WB_multipliers[i];
+        }
+        else
+        {
+            auto attr = imageSpec.find_attribute( "raw:pre_mul" );
+            for ( int i = 0; i < 4; i++ )
+                wb_multipliers[i] = attr->get_float_indexed( i );
+        }
+
+        if ( wb_multipliers[3] != 0 )
+            wb_multipliers[1] = ( wb_multipliers[1] + wb_multipliers[3] ) / 2.0;
+        wb_multipliers.resize( 3 );
+
+        float min_val = std::numeric_limits<float>::max();
+        for ( int i = 0; i < 3; i++ )
+            if ( min_val > wb_multipliers[i] )
+                min_val = wb_multipliers[i];
+
+        if ( min_val > 0 && min_val != 1 )
+            for ( int i = 0; i < 3; i++ )
+                wb_multipliers[i] /= min_val;
+
+        success = solve_illuminant_from_WB(
+            settings.database_directories,
+            camera_make,
+            camera_model,
+            wb_multipliers,
+            settings.highlight_mode,
+            settings.verbosity,
+            best_illuminant );
+
+        if ( !success )
+        {
+            std::cerr << "ERROR: Failed to find a suitable illuminant."
+                      << std::endl;
+            return false;
+        }
+
+        if ( settings.verbosity > 0 )
+        {
+            std::cerr << "Found illuminant: " << best_illuminant << std::endl;
+        }
+    }
+    else
+    {
+        best_illuminant = lower_illuminant;
+        success         = solve_WB_from_illuminant(
+            settings.database_directories,
+            camera_make,
+            camera_model,
+            lower_illuminant,
+            settings.highlight_mode,
+            settings.verbosity,
+            WB_multipliers );
+
+        if ( !success )
+        {
+            std::cerr << "ERROR: Failed to calculate the white balancing "
+                      << "weights." << std::endl;
+            return false;
+        }
+
+        if ( settings.verbosity > 0 )
+        {
+            std::cerr << "White balance coefficients:" << std::endl;
+            for ( auto &i: WB_multipliers )
+            {
+                std::cerr << i << " ";
+            }
+            std::cerr << std::endl;
+        }
+    }
+
+    success = solve_matrix_from_illuminant(
+        settings.database_directories,
+        camera_make,
+        camera_model,
+        best_illuminant,
+        settings.highlight_mode,
+        settings.verbosity,
+        IDT_matrix );
+
+    if ( !success )
+    {
+        std::cerr << "Failed to calculate the input transform matrix."
+                  << std::endl;
+        return false;
+    }
+
+    if ( settings.verbosity > 0 )
+    {
+        std::cerr << "Input transform matrix:" << std::endl;
+        for ( auto &i: IDT_matrix )
+        {
+            for ( auto &j: i )
+            {
+                std::cerr << j << " ";
+            }
+            std::cerr << std::endl;
+        }
+    }
+
+    // CAT is embedded in IDT in spectral mode
+    CAT_matrix.resize( 0 );
+
+    return true;
+}
+
+bool prepare_transform_DNG(
+    const OIIO::ImageSpec            &imageSpec,
+    const ImageConverter::Settings   &settings,
+    std::vector<std::vector<double>> &IDT_matrix,
+    std::vector<std::vector<double>> &CAT_matrix )
+{
+    std::string camera_make, camera_model;
+    if ( !fetch_camera_make_and_model( imageSpec, camera_make, camera_model ) )
+        return false;
+
+    core::Metadata metadata;
+
+    metadata.baselineExposure =
+        imageSpec.get_float_attribute( "raw:dng:baseline_exposure" );
+
+    metadata.neutralRGB.resize( 3 );
+    for ( int i = 0; i < 3; i++ )
+    {
+        metadata.neutralRGB[i] =
+            1.0 /
+            imageSpec.find_attribute( "raw:cam_mul" )->get_float_indexed( i );
+    }
+
+    for ( size_t k = 0; k < 2; k++ )
+    {
+        auto &calibration = metadata.calibration[k];
+        calibration.xyz2rgbMatrix.resize( 9 );
+        calibration.cameraCalibrationMatrix.resize( 9 );
+
+        auto index_string = std::to_string( k + 1 );
+
+        auto key = "raw:dng:calibration_illuminant" + index_string;
+        metadata.calibration[k].illuminant = imageSpec.get_int_attribute( key );
+
+        for ( int i = 0; i < 3; i++ )
+        {
+            for ( int j = 0; j < 3; j++ )
+            {
+                auto key1 = "raw:dng:color_matrix" + index_string;
+                calibration.xyz2rgbMatrix[i * 3 + j] =
+                    imageSpec.find_attribute( key1 )->get_float_indexed(
+                        i * 3 + j );
+
+                auto key2 = "raw:dng:camera_calibration" + index_string;
+                calibration.cameraCalibrationMatrix[i * 3 + j] =
+                    imageSpec.find_attribute( key2 )->get_float_indexed(
+                        i * 4 + j );
+            }
+        }
+    }
+
+    core::DNGIdt solver( metadata );
+    IDT_matrix = solver.getDNGIDTMatrix();
+
+    if ( settings.verbosity > 0 )
+    {
+        std::cerr << "Input transform matrix:" << std::endl;
+        for ( auto &i: IDT_matrix )
+        {
+            for ( auto &j: i )
+            {
+                std::cerr << j << " ";
+            }
+            std::cerr << std::endl;
+        }
+    }
+
+    // Do not apply CAT for DNG
+    CAT_matrix.resize( 0 );
+    return true;
+}
+
+bool prepare_transform_nonDNG(
+    const OIIO::ImageSpec            &imageSpec,
+    const ImageConverter::Settings   &settings,
+    std::vector<std::vector<double>> &IDT_matrix,
+    std::vector<std::vector<double>> &CAT_matrix )
+{
+    // Do not apply IDT for non-DNG
+    IDT_matrix.resize( 0 );
+
+    CAT_matrix = rta::core::getCAT(
+        rta::core::D65_white_XYZ, rta::core::ACES_white_XYZ );
+
+    return true;
+}
+
+int ImageConverter::configure_settings( int argc, char const *const argv[] )
+{
+    settings.database_directories = database_paths();
 
     char *cp, *sp;
     int   arg;
-    argv[argc] = (char *)"";
+
+    static unordered_map<string, char> keys;
+    create_key( keys );
 
     for ( arg = 1; arg < argc; )
     {
@@ -386,9 +661,6 @@ int AcesRender::configureSettings( int argc, char *argv[] )
         }
 
         arg++;
-
-        static unordered_map<string, char> keys;
-        create_key( keys );
 
         char opt = keys[key];
 
@@ -419,73 +691,102 @@ int AcesRender::configureSettings( int argc, char *argv[] )
         {
             case 'I': usage( argv[0] ); break;
             case 'V': printf( "%s\n", VERSION ); break;
-            case 'v': _opts.verbosity++; break;
-            case 'G': OUT.green_matching = 1; break;
+            case 'v': settings.verbosity++; break;
+            case 'G': settings.green_matching = true; break;
             case 'c':
-                OUT.adjust_maximum_thr = (float)atof( argv[arg++] );
+                settings.adjust_maximum_threshold = (float)atof( argv[arg++] );
                 break;
-            case 'n': OUT.threshold = (float)atof( argv[arg++] ); break;
-            case 'b': OUT.bright = (float)atof( argv[arg++] ); break;
-            case 'P': OUT.bad_pixels = argv[arg++]; break;
-            case 'K': OUT.dark_frame = argv[arg++]; break;
+            case 'n':
+                settings.denoise_threshold = (float)atof( argv[arg++] );
+                break;
+            case 'b':
+                settings.scale = (float)atof( argv[arg++] );
+                break;
+                //            case 'P': OUT.bad_pixels = argv[arg++]; break;
+                //            case 'K': OUT.dark_frame = argv[arg++]; break;
             case 'C': {
-                OUT.aber[0] = 1.0 / atof( argv[arg++] );
-                OUT.aber[2] = 1.0 / atof( argv[arg++] );
+                settings.aberration[0] = 1.0 / atof( argv[arg++] );
+                settings.aberration[1] = 1.0 / atof( argv[arg++] );
                 break;
             }
-            case 'k': OUT.user_black = atoi( argv[arg++] ); break;
-            case 'S': OUT.user_sat = atoi( argv[arg++] ); break;
-            case 't': OUT.user_flip = atoi( argv[arg++] ); break;
-            case 'q': OUT.user_qual = atoi( argv[arg++] ); break;
-            case 'm': OUT.med_passes = atoi( argv[arg++] ); break;
+            case 'k': settings.black_level = atoi( argv[arg++] ); break;
+            case 'S': settings.saturation_level = atoi( argv[arg++] ); break;
+            case 't': settings.flip = atoi( argv[arg++] ); break;
+            case 'q':
+                switch ( atoi( argv[arg++] ) )
+                {
+                    case 0: settings.demosaic_algorithm = "linear"; break;
+                    case 1: settings.demosaic_algorithm = "VNG"; break;
+                    case 2: settings.demosaic_algorithm = "PPG"; break;
+                    case 3: settings.demosaic_algorithm = "AHD"; break;
+                    case 4: settings.demosaic_algorithm = "DCB"; break;
+                    case 5: settings.demosaic_algorithm = "AHD-Mod"; break;
+                    case 6: settings.demosaic_algorithm = "AFD"; break;
+                    case 7: settings.demosaic_algorithm = "VCD"; break;
+                    case 8: settings.demosaic_algorithm = "Mixed"; break;
+                    case 9: settings.demosaic_algorithm = "LMMSE"; break;
+                    case 10: settings.demosaic_algorithm = "AMaZE"; break;
+                    case 11: settings.demosaic_algorithm = "DHT"; break;
+                    case 12: settings.demosaic_algorithm = "AAHD"; break;
+                    default: settings.demosaic_algorithm = "AHD"; break;
+                }
+                break;
+                //            case 'm': OUT.med_passes = atoi( argv[arg++] ); break;
             case 'h':
-                OUT.half_size = 1;
-                // no break:  "-h" implies "-f"
-            case 'f': OUT.four_color_rgb = 1; break;
-            case 'B': FORI( 4 ) OUT.cropbox[i] = atoi( argv[arg++] ); break;
-            case 'j': OUT.use_fuji_rotate = 0; break;
-            case 'W': OUT.no_auto_bright = 1; break;
-            case 'F': _opts.use_bigfile = 1; break;
-            case 'd': _opts.use_timing = 1; break;
-            case 'Q':
-                _opts.get_cameras = 1;
+                settings.half_size = true;
+                //                // no break:  "-h" implies "-f"
+                //            case 'f': OUT.four_color_rgb = 1;
+                break;
+            case 'B':
+                FORI( 4 ) settings.cropbox[i] = atoi( argv[arg++] );
+                break;
+                //            case 'j': OUT.use_fuji_rotate = 0; break;
+            case 'W':
+                settings.auto_bright = false;
+                break;
+                //            case 'F': _opts.use_bigfile = 1; break;
+            case 'd': settings.use_timing = 1; break;
+            case 'Q': {
+                // gather a list of cameras supported
+                auto cameras = supported_cameras();
+                std::cerr << std::endl
+                          << "The following cameras' "
+                          << "sensitivity data is available:" << std::endl;
+                for ( const auto &camera: cameras )
                 {
-                    // gather a list of cameras supported
-                    gatherSupportedCameras();
-                    vector<string> clist = getSupportedCameras();
-                    printf(
-                        "\nThe following cameras' sensitivity data is available:\n\n" );
-                    FORI( clist.size() ) printf( "%s \n", clist[i].c_str() );
-
-                    break;
+                    std::cerr << std::endl << camera;
                 }
-            case 'z':
-                _opts.get_illums = 1;
+                std::cerr << std::endl;
+                break;
+            }
+            case 'z': {
+                // gather a list of illuminants supported
+                auto illuminants = supported_illuminants();
+                std::cerr << std::endl
+                          << "The following illuminants "
+                          << "are available:" << std::endl;
+                for ( const auto &illuminant: illuminants )
                 {
-                    // gather a list of illuminants supported
-                    gatherSupportedIllums();
-                    vector<string> ilist = getSupportedIllums();
-                    printf( "\nThe following illuminants are available:\n\n" );
-                    FORI( ilist.size() ) printf( "%s \n", ilist[i].c_str() );
-
-                    break;
+                    std::cerr << std::endl << illuminant;
                 }
-            case 'T':
-                _opts.get_libraw_cameras = 1;
-                {
-                    // print a list of cameras supported by LibRaw
-                    printLibRawCameras();
-                    break;
-                }
-            case 'M': _opts.scale = atof( argv[arg++] ); break;
+                std::cerr << std::endl;
+                break;
+            }
+                //            case 'T':
+                //                _opts.get_libraw_cameras = 1;
+                //                {
+                //                    // print a list of cameras supported by LibRaw
+                //                    printLibRawCameras();
+                //                    break;
+                //                }
+            case 'M': settings.headroom = atof( argv[arg++] ); break;
             case 'H': {
-                OUT.highlight   = atoi( argv[arg++] );
-                _opts.highlight = OUT.highlight;
+                settings.highlight_mode = atoi( argv[arg++] );
                 break;
             }
             case 'p': {
-                _opts.mat_method = matMethods_t( atoi( argv[arg++] ) );
-                if ( _opts.mat_method > 3 || _opts.mat_method < 0 )
+                int mat_method = atoi( argv[arg++] );
+                if ( mat_method > 3 || mat_method < 0 )
                 {
                     fprintf(
                         stderr,
@@ -495,10 +796,11 @@ int AcesRender::configureSettings( int argc, char *argv[] )
                     exit( -1 );
                 }
 
-                if ( _opts.mat_method == matMethod3 )
+                settings.matrixMethod = Settings::MatrixMethod( mat_method );
+                if ( settings.matrixMethod == Settings::MatrixMethod::Custom )
                 {
-
-                    bool flag = false;
+                    float custom_buffer[9] = { 0.0 };
+                    bool  flag             = false;
                     FORI( 9 )
                     {
                         if ( isalpha( argv[arg][0] ) )
@@ -508,10 +810,10 @@ int AcesRender::configureSettings( int argc, char *argv[] )
                                 "\nError: Non-numeric argument to "
                                 "\"%s %i\" \n",
                                 key.c_str(),
-                                _opts.mat_method );
+                                settings.matrixMethod );
                             exit( -1 );
                         }
-                        custom_Buffer[i] =
+                        custom_buffer[i] =
                             static_cast<float>( atof( argv[arg++] ) );
                         if ( i == 8 )
                         {
@@ -519,15 +821,14 @@ int AcesRender::configureSettings( int argc, char *argv[] )
                         }
                     }
 
-                    // For testing purposes FORI(9){ cout<<custom_Buffer[i]<<endl;}
                     if ( flag )
                     {
                         FORI( 3 )
                         {
                             FORJ( 3 )
                             {
-                                custom_Matrix[i][j] = custom_Buffer[i * 3 + j];
-                                //cout<< custom_Matrix[i][j]<<endl;
+                                settings.customMatrix[i][j] =
+                                    custom_buffer[i * 3 + j];
                             }
                         }
                     }
@@ -548,76 +849,89 @@ int AcesRender::configureSettings( int argc, char *argv[] )
                     }
                 }
 
-                _opts.wb_method = wbMethods_t( atoi( argv[arg++] ) );
+                int wb_method = atoi( argv[arg++] );
 
-                // 1
-                if ( _opts.wb_method == wbMethod1 )
-                {
-                    _opts.use_illum = 1;
-                    _opts.illumType = static_cast<char *>( argv[arg++] );
-                    lowerCase( _opts.illumType );
-
-                    if ( !isValidCT( string( _opts.illumType ) ) )
-                    {
-                        fprintf(
-                            stderr,
-                            "\nError: white balance method 1 requires a valid "
-                            "illuminant (e.g., D60, 3200K) to be specified\n" );
-                        exit( -1 );
-                    }
-                }
-                // 3
-                if ( _opts.wb_method == wbMethod3 )
-                {
-                    FORI( 4 )
-                    {
-                        if ( !isdigit( argv[arg][0] ) )
-                        {
-                            fprintf(
-                                stderr,
-                                "\nError: Non-numeric argument to "
-                                "\"%s %i\" \n",
-                                key.c_str(),
-                                _opts.wb_method );
-                            exit( -1 );
-                        }
-                        OUT.greybox[i] =
-                            static_cast<float>( atof( argv[arg++] ) );
-                    }
-                }
-                // 4
-                else if ( _opts.wb_method == wbMethod4 )
-                {
-                    _opts.use_mul = 1;
-                    FORI( 4 )
-                    {
-                        if ( !isdigit( argv[arg][0] ) )
-                        {
-                            fprintf(
-                                stderr,
-                                "\nError: Non-numeric argument to "
-                                "\"%s %i\" \n",
-                                key.c_str(),
-                                _opts.wb_method );
-                            exit( -1 );
-                        }
-                        OUT.user_mul[i] =
-                            static_cast<float>( atof( argv[arg++] ) );
-                    }
-                }
-                else if ( _opts.wb_method > 4 || _opts.wb_method < 0 )
+                if ( wb_method > 4 || wb_method < 0 )
                 {
                     fprintf(
                         stderr,
-                        "\nError: Invalid argument to \"%s\" \n",
+                        "\nError: Invalid argument to "
+                        "\"%s\" \n",
                         key.c_str() );
                     exit( -1 );
                 }
+
+                settings.wbMethod = Settings::WBMethod( wb_method );
+
+                switch ( wb_method )
+                {
+                    case 0:
+                        settings.wbMethod = Settings::WBMethod::Metadata;
+                        break;
+                    case 1:
+                        settings.wbMethod = Settings::WBMethod::Illuminant;
+                        settings.illuminant =
+                            OIIO::Strutil::lower( argv[arg++] );
+
+                        if ( !rta::core::isValidCT( settings.illuminant ) )
+                        {
+                            fprintf(
+                                stderr,
+                                "\nError: white balance method 1 requires a valid "
+                                "illuminant (e.g., D60, 3200K) to be specified\n" );
+                            exit( -1 );
+                        }
+                        break;
+                    case 2: settings.wbMethod = Settings::WBMethod::Box; break;
+                    case 3:
+                        settings.wbMethod = Settings::WBMethod::Box;
+
+                        FORI( 4 )
+                        {
+                            if ( !isdigit( argv[arg][0] ) )
+                            {
+                                fprintf(
+                                    stderr,
+                                    "\nError: Non-numeric argument to "
+                                    "\"%s %i\" \n",
+                                    key.c_str(),
+                                    settings.wbMethod );
+                                exit( -1 );
+                            }
+                            settings.wbBox[i] =
+                                static_cast<float>( atof( argv[arg++] ) );
+                        }
+                        break;
+                    case 4:
+                        settings.wbMethod = Settings::WBMethod::Custom;
+
+                        FORI( 4 )
+                        {
+                            if ( !isdigit( argv[arg][0] ) )
+                            {
+                                fprintf(
+                                    stderr,
+                                    "\nError: Non-numeric argument to "
+                                    "\"%s %i\" \n",
+                                    key.c_str(),
+                                    settings.wbMethod );
+                                exit( -1 );
+                            }
+                            settings.customWB[i] =
+                                static_cast<float>( atof( argv[arg++] ) );
+                        }
+                        break;
+                    default:
+                        fprintf(
+                            stderr,
+                            "\nError: Invalid argument to "
+                            "\"%s\" \n",
+                            key.c_str() );
+                        exit( -1 );
+                }
+
                 break;
             }
-#ifndef WIN32
-            case 'E': _opts.use_mmap = 1; break;
-#endif
             default:
                 fprintf(
                     stderr, "\nError: Unknown option \"%s\".\n", key.c_str() );
@@ -625,1458 +939,559 @@ int AcesRender::configureSettings( int argc, char *argv[] )
         }
     }
 
+    if ( settings.wbMethod == Settings::WBMethod::Illuminant )
+    {
+        auto paths =
+            collect_data_files( settings.database_directories, "illuminant" );
+        core::Idt solver;
+        if ( !solver.loadIlluminant( paths, settings.illuminant ) )
+        {
+            std::cerr << std::endl
+                      << "Error: No matching light source. "
+                      << "Please find available options by "
+                      << "\"rawtoaces --valid-illum\"." << std::endl;
+        }
+    }
+
     return arg;
 }
 
-//	=====================================================================
-//	Set processed image buffer from libraw
-//
-//	inputs:
-//      libraw_processed_image_t     : processed RAW through libraw
-//
-//	outputs:
-//      N/A        : _image will point to the address of image
-
-void AcesRender::setPixels( libraw_processed_image_t *image )
+std::vector<std::string> ImageConverter::supported_illuminants()
 {
-    assert( image );
-    if ( _image != nullptr )
-        delete _image;
-    _image = image;
+    std::vector<std::string> result;
 
-    ////    Strange because memcpying on libraw_processed_image_t
-    //    will generate an error
-    //    if (_image != nullptr ) delete _image;
-    //    _image = (libraw_processed_image_t *) malloc(sizeof(libraw_processed_image_t));
-    //    memcpy(_image, image, sizeof(libraw_processed_image_t));
+    result.push_back( "Day-light (e.g., D60, D6025)" );
+    result.push_back( "Blackbody (e.g., 3200K)" );
+
+    auto files =
+        collect_data_files( settings.database_directories, "illuminant" );
+    for ( auto &file: files )
+    {
+        core::SpectralData data;
+        if ( data.load( file, false ) )
+        {
+            result.push_back( data.illuminant );
+        }
+    }
+
+    return result;
 }
 
-//	=====================================================================
-//	Gather supported Illuminants by reading from JSON files
-//
-//	inputs:
-//      N/A
-//
-//	outputs:
-//      N/A        : _illuminants be filled
-
-void AcesRender::gatherSupportedIllums()
+std::vector<std::string> ImageConverter::supported_cameras()
 {
+    std::vector<std::string> result;
 
-    if ( _illuminants.size() != 0 )
-        _illuminants.clear();
-
-    _illuminants.push_back( "Day-light (e.g., D60, D6025)" );
-    _illuminants.push_back( "Blackbody (e.g., 3200K)" );
-
-    std::unordered_map<string, int> record;
-
-    FORI( _opts.envPaths.size() )
+    auto files = collect_data_files( settings.database_directories, "camera" );
+    for ( auto &file: files )
     {
-        vector<string> iFiles = openDir(
-            static_cast<string>( ( _opts.envPaths )[i] ) + "/illuminant" );
-        for ( vector<string>::iterator file = iFiles.begin();
-              file != iFiles.end();
-              ++file )
+        core::SpectralData data;
+        if ( data.load( file, false ) )
         {
-            string path( *file );
-            try
-            {
-                ptree pt;
-                read_json( path, pt );
-                string tmp = pt.get<string>( "header.illuminant" );
+            std::string name = data.manufacturer + " / " + data.model;
+            result.push_back( name );
+        }
+    }
 
-                if ( record.find( tmp ) != record.end() )
-                    continue;
-                else
-                {
-                    _illuminants.push_back( tmp );
-                    record[tmp] = 1;
-                }
+    return result;
+}
+
+/// Normalise the metadata in the cases where the OIIO attribute name
+/// doesn't match the standard OpenEXR and/or ACES Container attribute name.
+/// We only check the attribute names which are set by the raw input plugin.
+void fix_metadata( OIIO::ImageSpec &spec )
+{
+    const std::map<std::string, std::string> standard_mapping = {
+        { "Make", "cameraMake" }, { "Model", "cameraModel" }
+    };
+
+    for ( auto i: standard_mapping )
+    {
+        auto &src_name = i.first;
+        auto &dst_name = i.second;
+
+        auto src_attribute = spec.find_attribute( src_name );
+        auto dst_attribute = spec.find_attribute( dst_name );
+
+        if ( dst_attribute == nullptr && src_attribute != nullptr )
+        {
+            auto type = src_attribute->type();
+            if ( type.arraylen == 0 )
+            {
+                if ( type.basetype == OIIO::TypeDesc::STRING )
+                    spec[dst_name] = src_attribute->get_string();
+                else if ( type.basetype == OIIO::TypeDesc::FLOAT )
+                    spec[dst_name] = src_attribute->get_float();
             }
-            catch ( std::exception const &e )
+            spec.erase_attribute( src_name );
+        }
+    }
+}
+
+bool ImageConverter::configure(
+    const std::string &input_filename, OIIO::ParamValueList &options )
+{
+    options["raw:ColorSpace"]    = "XYZ";
+    options["raw:use_camera_wb"] = 0;
+    options["raw:use_auto_wb"]   = 0;
+
+    OIIO::ImageSpec temp_spec;
+    temp_spec.extra_attribs = options;
+
+    OIIO::ImageSpec imageSpec;
+    auto imageInput = OIIO::ImageInput::create( "raw", false, &temp_spec );
+    bool result     = imageInput->open( input_filename, imageSpec, temp_spec );
+    if ( !result )
+    {
+        return false;
+    }
+
+    fix_metadata( imageSpec );
+    return configure( imageSpec, options );
+}
+
+bool ImageConverter::configure(
+    const OIIO::ImageSpec &imageSpec, OIIO::ParamValueList &options )
+{
+    options["raw:use_camera_wb"] = 0;
+    options["raw:use_auto_wb"]   = 0;
+
+    options["raw:auto_bright"]        = (int)settings.auto_bright;
+    options["raw:adjust_maximum_thr"] = settings.adjust_maximum_threshold;
+    options["raw:user_black"]         = settings.black_level;
+    options["raw:user_sat"]           = settings.saturation_level;
+    options["raw:half_size"]          = (int)settings.half_size;
+    options["raw:user_flip"]          = settings.flip;
+    options["raw:HighlightMode"]      = settings.highlight_mode;
+    options["raw:Demosaic"]           = settings.demosaic_algorithm;
+    options["raw:threshold"]          = settings.denoise_threshold;
+
+    if ( settings.cropbox[2] != 0 && settings.cropbox[3] != 0 )
+    {
+        options.attribute(
+            "raw:cropbox",
+            OIIO::TypeDesc( OIIO::TypeDesc::INT, 4 ),
+            settings.cropbox );
+    }
+
+    bool is_DNG =
+        imageSpec.extra_attribs.find( "raw:dng:version" )->get_int() > 0;
+
+    switch ( settings.wbMethod )
+    {
+        case Settings::WBMethod::Metadata: {
+            float user_mul[4];
+
+            for ( int i = 0; i < 4; i++ )
             {
-                std::cerr << e.what() << std::endl;
+                user_mul[i] = imageSpec.find_attribute( "raw:cam_mul" )
+                                  ->get_float_indexed( i );
             }
-        }
-    }
-}
 
-//	=====================================================================
-//	Gather supported cameras by reading from JSON files
-//
-//	inputs:
-//      N/A
-//
-//	outputs:
-//      N/A        : _cameras be filled
+            options.attribute(
+                "raw:user_mul",
+                OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
+                user_mul );
 
-void AcesRender::gatherSupportedCameras()
-{
-
-    if ( _cameras.size() != 0 )
-        _cameras.clear();
-
-    std::unordered_map<string, int> record;
-
-    FORI( _opts.envPaths.size() )
-    {
-        vector<string> iFiles =
-            openDir( static_cast<string>( ( _opts.envPaths )[i] ) + "/camera" );
-        for ( vector<string>::iterator file = iFiles.begin();
-              file != iFiles.end();
-              ++file )
-        {
-            string path( *file );
-            try
+            //            if ( _read_raw )
             {
-                ptree pt;
-                read_json( path, pt );
-                string tmp = pt.get<string>( "header.manufacturer" );
-                tmp += ( " / " + pt.get<string>( "header.model" ) );
-
-                if ( record.find( tmp ) != record.end() )
-                    continue;
-                else
-                {
-                    _cameras.push_back( tmp );
-                    record[tmp] = 1;
-                }
-            }
-            catch ( std::exception const &e )
-            {
-                std::cerr << e.what() << std::endl;
-            }
-        }
-    }
-}
-
-//	=====================================================================
-//  Open the RAW file from the path to the file
-//
-//	inputs:
-//      const char *       : path to the raw file
-//
-//	outputs:
-//		int                : "1" means raw file successfully opened;
-//                           "0" means error when opening the file
-
-int AcesRender::openRawPath( const char *pathToRaw )
-{
-    assert( pathToRaw != nullptr );
-
-#ifndef WIN32
-    //    void *iobuffer=0;
-    struct stat st;
-
-    if ( _opts.use_mmap )
-    {
-        int file = open( pathToRaw, O_RDONLY );
-
-        if ( file < 0 )
-        {
-            fprintf(
-                stderr,
-                "\nError: Cannot open %s: %s\n\n",
-                pathToRaw,
-                strerror( errno ) );
-            _opts.ret = 0;
-
-            return 0;
-        }
-
-        if ( fstat( file, &st ) )
-        {
-            fprintf(
-                stderr,
-                "\nError: Cannot stat %s: %s\n\n",
-                pathToRaw,
-                strerror( errno ) );
-            close( file );
-            _opts.ret = 0;
-
-            return 0;
-        }
-
-        int pgsz       = getpagesize();
-        _opts.msize    = ( ( st.st_size + pgsz - 1 ) / pgsz ) * pgsz;
-        _opts.iobuffer = mmap(
-            NULL, size_t( _opts.msize ), PROT_READ, MAP_PRIVATE, file, 0 );
-        if ( !_opts.iobuffer )
-        {
-            fprintf(
-                stderr,
-                "\nError: Cannot mmap %s: %s\n\n",
-                pathToRaw,
-                strerror( errno ) );
-            close( file );
-            _opts.ret = 0;
-
-            return 0;
-        }
-
-        close( file );
-        if ( ( _opts.ret =
-                   _rawProcessor->open_buffer( _opts.iobuffer, st.st_size ) !=
-                   LIBRAW_SUCCESS ) )
-        {
-            fprintf(
-                stderr,
-                "\nError: Cannot open_buffer %s: %s\n\n",
-                pathToRaw,
-                libraw_strerror( _opts.ret ) );
-        }
-    }
-    else
-#endif
-    {
-#if ( LIBRAW_VERSION < LIBRAW_MAKE_VERSION( 0, 20, 0 ) )
-        if ( _opts.use_bigfile )
-            _opts.ret = _rawProcessor->open_file( pathToRaw, 1 );
-        else
-            _opts.ret = _rawProcessor->open_file( pathToRaw );
-#else
-        _opts.ret = _rawProcessor->open_file( pathToRaw );
-#endif
-    }
-
-    unpack( pathToRaw );
-
-    return _opts.ret;
-}
-
-//	=====================================================================
-//  Unpack the RAW file based on the path to the file (after openRawPath)
-//
-//	inputs:
-//      const char *       : path to the raw file
-//
-//	outputs:
-//		int                : "1" means raw file successfully unpacked;
-//                           "0" means error when unpacking the file
-
-int AcesRender::unpack( const char *pathToRaw )
-{
-    assert( _opts.ret == LIBRAW_SUCCESS && pathToRaw != nullptr );
-
-    if ( ( _opts.ret = _rawProcessor->unpack() ) != LIBRAW_SUCCESS )
-    {
-        fprintf(
-            stderr,
-            "\nError: Cannot unpack %s: %s\n\n",
-            pathToRaw,
-            libraw_strerror( _opts.ret ) );
-    }
-
-    return _opts.ret;
-}
-
-//	=====================================================================
-//	Read camera spectral sensitivity data from path
-//
-//	inputs:
-//      const char *     : camera spectral sensitivity path
-//                         (either in the environment variable of
-//                          "${RAWTOACES_DATA_PATH}/camera"
-//                          such as  "/usr/local/include/rawtoaces/data/camera"
-//                          or specified by users)
-//      libraw_iparams_t : main parameters read from RAW
-//
-//	outputs:
-//		int              : "1" means loading/injecting camera spectral
-//                         sensitivity data successfully;
-//                         "0" means error in reading/injecting data
-
-int AcesRender::fetchCameraSenPath( const libraw_iparams_t &P )
-{
-    int readC = 0;
-
-    FORI( _opts.envPaths.size() )
-    {
-        vector<string> cFiles =
-            openDir( static_cast<string>( ( _opts.envPaths )[i] ) + "/camera" );
-        for ( vector<string>::iterator file = cFiles.begin();
-              file != cFiles.end();
-              ++file )
-        {
-            string fn( *file );
-
-            if ( fn.find( ".json" ) == std::string::npos )
-                continue;
-            readC = _idt->loadCameraSpst( fn, P.make, P.model );
-            if ( readC )
-                return 1;
-        }
-    }
-
-    return readC;
-}
-
-//	=====================================================================
-//	Fetch light source data to calcuate white balance coefficients
-//
-//	inputs:
-//      const char *  : type of light source ("unknown" if not specified)
-//                      (in the environment variable of
-//                       "${RAWTOACES_DATA_PATH}/illuminant" such as
-//                       "/usr/local/include/rawtoaces/data/illuminant")
-//
-//	outputs:
-//		int : "1" means loading/injecting light source datasets successfully,
-//            "0" means error / no illumiant data has been loaded
-
-int AcesRender::fetchIlluminant( const char *illumType )
-{
-    vector<string> paths;
-
-    FORI( _opts.envPaths.size() )
-    {
-        vector<string> iFiles =
-            openDir( ( _opts.envPaths )[i] + "/illuminant" );
-        for ( vector<string>::iterator file = iFiles.begin();
-              file != iFiles.end();
-              ++file )
-        {
-            string fn( *file );
-            if ( fn.find( ".json" ) == std::string::npos )
-                continue;
-            paths.push_back( fn );
-        }
-    }
-
-    return _idt->loadIlluminant( paths, static_cast<string>( illumType ) );
-}
-
-vector<string> findFiles( string filePath, vector<string> searchPaths )
-{
-    vector<string> foundFiles;
-
-    for ( auto &i: searchPaths )
-    {
-        string path = i + "/" + filePath;
-
-        if ( std::filesystem::exists( path ) )
-            foundFiles.push_back( path );
-    }
-
-    return foundFiles;
-}
-
-//	=====================================================================
-//  Calculate IDT matrix from camera spectral sensitivity data and the
-//  selected or specified light source data. THe best White balance
-//  coefficients will be generated in the process of obtaining IDT.
-//
-//	inputs:
-//      libraw_iparams_t              : main parameters read from RAW
-//      libraw_colordata_t            : color information from RAW
-//
-//	outputs:
-//		int                           : "1" means IDT matrix generated;
-//                                      "0" means error in calculation.
-
-int AcesRender::prepareIDT( const libraw_iparams_t &P, float *M )
-{
-    // _rawProcessor->imgdata.idata
-    int read = fetchCameraSenPath( P );
-
-    if ( !read )
-    {
-        fprintf(
-            stderr,
-            "\nError: No matching cameras found. "
-            "Please use other options for "
-            "\"--mat-method\" and/or \"--wb-method\".\n" );
-        exit( -1 );
-    }
-
-    vector<string> foundFiles =
-        findFiles( "training/training_spectral.json", _opts.envPaths );
-    if ( foundFiles.size() )
-    {
-        // loading training data (190 patches)
-        _idt->loadTrainingData( foundFiles[0] );
-    }
-
-    foundFiles = findFiles( "cmf/cmf_1931.json", _opts.envPaths );
-    if ( foundFiles.size() )
-    {
-        _idt->loadCMF( foundFiles[0] );
-    }
-
-    _idt->setVerbosity( _opts.verbosity );
-    if ( _opts.illumType )
-        _idt->chooseIllumType( _opts.illumType, _opts.highlight );
-    else
-    {
-        vector<double> mulV( M, M + 3 );
-        _idt->chooseIllumSrc( mulV, _opts.highlight );
-    }
-
-    if ( _opts.verbosity > 1 )
-        printf( "Regressing IDT matrix coefficients ...\n" );
-
-    if ( _idt->calIDT() )
-    {
-        _idtm = _idt->getIDT();
-        _wbv  = _idt->getWB();
-
-        return 1;
-    }
-
-    return 0;
-}
-
-//	=====================================================================
-//  Calculate just white balance coefficients from camera spectral
-//  sensitivity data and the best or specified light source data.
-//  IDT matrix will not be calculated here, as curve-fitting may
-//  take more time
-//
-//	inputs:
-//      libraw_iparams_t   : main parameters read from RAW
-//      libraw_colordata_t : color information from RAW
-//
-//	outputs:
-//		int                : "1" means white balance coefficients generated;
-//                           "0" means error during calculation
-
-int AcesRender::prepareWB( const libraw_iparams_t &P )
-{
-    int read = fetchCameraSenPath( P );
-
-    if ( !read )
-    {
-        fprintf(
-            stderr,
-            "\nError: No matching cameras found. "
-            "Please use other options for "
-            "\"--wb-method\".\n" );
-        exit( -1 );
-    }
-
-    assert( _opts.illumType );
-    read = fetchIlluminant( _opts.illumType );
-
-    if ( !read )
-    {
-        fprintf(
-            stderr,
-            "\nError: No matching light source. "
-            "Please find available options by "
-            "\"rawtoaces --valid-illum\".\n" );
-        exit( -1 );
-    }
-    else
-    {
-        vector<string> foundFiles =
-            findFiles( "training/training_spectral.json", _opts.envPaths );
-        if ( foundFiles.size() )
-        {
-            // loading training data (190 patches)
-            _idt->loadTrainingData( foundFiles[0] );
-        }
-
-        foundFiles = findFiles( "cmf/cmf_1931.json", _opts.envPaths );
-        if ( foundFiles.size() )
-        {
-            _idt->loadCMF( foundFiles[0] );
-        }
-
-        // choose the best light source based on
-        // as-shot white balance coefficients
-        _idt->chooseIllumType( _opts.illumType, _opts.highlight );
-
-        if ( _opts.verbosity > 1 )
-        {
-            printf(
-                "Calculating White Balance Coefficients "
-                "from Spectral Sensitivity ...\n" );
-            printf(
-                "Applying Calculated White Balance "
-                "Coefficients ...\n" );
-        }
-
-        _wbv = _idt->getWB();
-
-        return 1;
-    }
-
-    return 0;
-}
-
-//  =====================================================================
-//  Conduct dcraw process on the RAW
-//
-//  inputs:
-//      const char *       : path to the raw file
-//
-//  outputs:
-//      int                : "1" means raw file successfully pre-processed;
-//                           "0" means error when pre-processing the file
-
-int AcesRender::dcraw()
-{
-    assert( _opts.ret == LIBRAW_SUCCESS );
-
-    if ( LIBRAW_SUCCESS != ( _opts.ret = _rawProcessor->dcraw_process() ) )
-    {
-        fprintf(
-            stderr,
-            "Error: Cannot do postpocessing: %s\n\n",
-            libraw_strerror( _opts.ret ) );
-        _opts.ret = errno;
-
-        if ( LIBRAW_FATAL_ERROR( _opts.ret ) )
-            exit( 1 );
-    }
-
-    return _opts.ret;
-}
-
-//  =====================================================================
-//  Preprocess the RAW file based on the path to the file
-//
-//  inputs:
-//      const char *       : path to the raw file
-//
-//  outputs:
-//      int                : "1" means raw file successfully pre-processed;
-//                           "0" means error when pre-processing the file
-
-int AcesRender::preprocessRaw( const char *path )
-{
-    assert( path != nullptr );
-
-    size_t len = strlen( path );
-    _pathToRaw = (char *)malloc( len + 1 );
-    memset( _pathToRaw, 0x0, len );
-    memcpy( _pathToRaw, path, len );
-    _pathToRaw[len] = '\0';
-
-    // if ( _opts.verbosity > 2 )
-    //     _rawProcessor->set_progress_handler ( my_progress_callback,
-    //                                         ( void * )"Sample data passed" );
-    // Start rawtoaces
-    if ( _opts.verbosity )
-    {
-        printf( "\nStarting rawtoaces ...\n" );
-        printf( "Processing %s ...\n", path );
-    }
-
-#ifdef LIBRAW_USE_OPENMP
-    if ( _opts.verbosity )
-        printf( "Using %d threads\n", omp_get_max_threads() );
-#endif
-
-    if ( openRawPath( path ) )
-        unpack( path );
-
-    return _opts.ret;
-}
-
-//  =====================================================================
-//  Postprocess the RAW file
-//
-//  inputs:
-//      N/A
-//
-//  outputs:
-//      int                : "1" means raw file successfully pre-processed;
-//                           "0" means error when pre-processing the file
-
-int AcesRender::postprocessRaw()
-{
-    assert( _opts.ret == LIBRAW_SUCCESS );
-
-#ifdef OUT
-#    undef OUT
-#endif
-
-#define OUT _rawProcessor->imgdata.params
-#define P _rawProcessor->imgdata.idata
-#define C _rawProcessor->imgdata.color
-
-    if ( _opts.verbosity > 1 )
-        printf(
-            "The camera has been identified as a %s %s ...\n",
-            P.make,
-            P.model );
-
-    switch ( _opts.wb_method )
-    {
-            // 0
-        case wbMethod0: {
-            _opts.use_mul = 1;
-            vector<double> mulV( C.cam_mul, C.cam_mul + 3 );
-
-            FORI( 3 ) OUT.user_mul[i] = static_cast<float>( mulV[i] );
-
-            if ( _opts.verbosity > 1 )
-            {
-                printf( "White Balance method is 0 - " );
-                printf(
-                    "Using white balance factors from "
-                    "file metadata ...\n" );
+                _WB_multipliers.resize( 4 );
+                for ( size_t i = 0; i < 4; i++ )
+                    _WB_multipliers[i] = user_mul[i];
             }
             break;
         }
-        // 1
-        case wbMethod1: {
-            if ( prepareWB( _rawProcessor->imgdata.idata ) )
+        case Settings::WBMethod::Illuminant: {
+            std::string lower_illuminant =
+                OIIO::Strutil::lower( settings.illuminant );
+            break;
+        }
+        case Settings::WBMethod::Box:
+
+            if ( settings.wbBox[2] == 0 || settings.wbBox[3] == 0 )
             {
-                _opts.use_mul             = 1;
-                vector<double> wbv        = getWB();
-                FORI( 3 ) OUT.user_mul[i] = static_cast<float>( wbv[i] );
+                // Empty box, use whole image.
+                options["raw:use_auto_wb"] = 1;
             }
             else
             {
-                fprintf(
-                    stderr,
-                    "\nError: Cannot obtain a set of White "
-                    "Balance Coefficient Factors \n" );
-                _opts.ret = errno;
-                return 0;
+                int32_t box[4];
+                for ( int i = 0; i < 4; i++ )
+                {
+                    box[i] = settings.wbBox[i];
+                }
+                options.attribute(
+                    "raw:greybox",
+                    OIIO::TypeDesc( OIIO::TypeDesc::INT, 4 ),
+                    box );
             }
-
-            if ( _opts.verbosity > 1 )
-            {
-                printf( "White Balance calculation method is 1 - " );
-                printf(
-                    "Using white balance factors calculated from "
-                    "spec sens and user specified illuminant ...\n" );
-            }
-
             break;
-        }
-        // 2
-        case wbMethod2: {
-            OUT.use_auto_wb = 1;
 
-            if ( _opts.verbosity > 1 )
+        case Settings::WBMethod::Custom:
+            options.attribute(
+                "raw:user_mul",
+                OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
+                settings.customWB );
+
+            //            if ( _read_raw )
             {
-                printf( "White Balance calculation method is 2 - " );
-                printf(
-                    "Using white balance factors calculate by "
-                    "averaging the entire image ...\n" );
+                _WB_multipliers.resize( 4 );
+                for ( size_t i = 0; i < 4; i++ )
+                    _WB_multipliers[i] = settings.customWB[i];
             }
-
             break;
-        }
-        // 3
-        case wbMethod3: {
-            if ( _opts.verbosity > 1 )
-            {
-                printf( "White Balance calculation method is 3 - " );
-                printf(
-                    "Using white balance factors calculated by "
-                    "averaging a grey box ...\n" );
-            }
 
-            break;
-        }
-        // 4
-        case wbMethod4: {
-            _opts.use_mul = 1;
-            double sc     = dmax;
-
-            FORI( P.colors )
-            {
-                if ( OUT.user_mul[i] <= sc )
-                    sc = OUT.user_mul[i];
-            }
-
-            if ( sc != 1.0 )
-            {
-                fprintf(
-                    stderr,
-                    "\nWarning: The smallest channel  "
-                    "multiplier should be 1.0.\n\n" );
-            }
-
-            if ( _opts.verbosity > 1 )
-            {
-                printf( "White Balance calculation method is 4 - " );
-                printf( "Using user-supplied white balance factors ...\n" );
-            }
-
-            break;
-        }
-        default: {
-            fprintf(
-                stderr,
-                "White Balance method is must be 0, 1, 2, 3, "
-                "or 4 \n" );
-            exit( -1 );
-            break;
-        }
+        default:
+            std::cerr
+                << "ERROR: This white balancing method has not been configured "
+                << "properly." << std::endl;
+            return false;
     }
 
-    //  Set parameters for --mat-method
-    switch ( _opts.mat_method )
+    switch ( settings.matrixMethod )
     {
-        // 0
-        case matMethod0: {
-            OUT.output_color      = 0;
-            OUT.use_camera_matrix = 0;
-
-            if ( _opts.verbosity > 1 )
-            {
-                printf( "IDT matrix calculation method is 0 - " );
-                printf( "Calculating IDT matrix using camera spec sens ...\n" );
-            }
-
+        case Settings::MatrixMethod::Spectral:
+            options["raw:ColorSpace"]        = "raw";
+            options["raw:use_camera_matrix"] = 0;
             break;
-        }
-        // 1
-        case matMethod1:
-            OUT.use_camera_matrix = 3;
-
-            if ( P.dng_version )
-            {
-                OUT.use_camera_matrix = 1;
-
-                if ( _opts.verbosity > 1 )
-                    printf( "DNG file uses embeded color profile. \n " );
-            }
-
-            if ( _opts.verbosity > 1 )
-            {
-                printf( "IDT matrix calculation method is 1 - " );
-                printf( "Calculating IDT matrix using file metadata ...\n" );
-            }
-
+        case Settings::MatrixMethod::Metadata:
+            options["raw:ColorSpace"]        = "XYZ";
+            options["raw:use_camera_matrix"] = is_DNG ? 1 : 3;
             break;
-        // 2
-        case matMethod2:
-            OUT.use_camera_matrix = 1;
-
-            if ( _opts.verbosity > 1 )
-            {
-                printf( "IDT matrix calculation method is 2 - " );
-                printf(
-                    "Calculating IDT matrix using adobe coeffs included in libraw ...\n" );
-            }
-
+        case Settings::MatrixMethod::Adobe:
+            options["raw:ColorSpace"]        = "XYZ";
+            options["raw:use_camera_matrix"] = 1;
             break;
-            // 3
-        case matMethod3:
-            OUT.output_color = 0;
-            if ( _opts.verbosity > 1 )
-            {
-                printf( "IDT matrix calculation method is 3 - " );
-                printf( "IDT matrix is custom defined ...\n" );
-            }
+        case Settings::MatrixMethod::Custom:
+            options["raw:ColorSpace"]        = "raw";
+            options["raw:use_camera_matrix"] = 0;
 
+            _IDT_matrix.resize( 3 );
+            for ( int i = 0; i < 3; i++ )
+            {
+                _IDT_matrix[i].resize( 3 );
+                for ( int j = 0; j < 3; j++ )
+                {
+                    _IDT_matrix[i][j] = settings.customMatrix[i][j];
+                }
+            }
             break;
         default:
-            fprintf(
-                stderr,
-                "IDT matrix calculation method is must be 0, 1, 2, 3\n" );
-            exit( -1 );
-            break;
+            std::cerr
+                << "ERROR: This matrix method has not been configured properly."
+                << std::endl;
+            return false;
     }
 
-    // Set four_color_rgb to 0 when half_size is set to 1
-    if ( OUT.half_size == 1 )
-        OUT.four_color_rgb = 0;
+    bool spectral_white_balance =
+        settings.wbMethod == Settings::WBMethod::Illuminant;
+    bool spectral_matrix =
+        settings.matrixMethod == Settings::MatrixMethod::Spectral;
 
-    if ( P.dng_version && OUT.output_color != 0 )
+    if ( spectral_white_balance || spectral_matrix )
     {
-        OUT.use_camera_matrix = 1;
-        OUT.use_camera_wb     = 1;
-    }
-
-    _opts.ret = dcraw();
-    if ( _opts.mat_method == matMethod0 )
-        if ( !prepareIDT( P, C.pre_mul ) )
-            _opts.ret = errno;
-
-    libraw_processed_image_t *image =
-        _rawProcessor->dcraw_make_mem_image( &( _opts.ret ) );
-    setPixels( image );
-
-    return _opts.ret;
-}
-
-//	=====================================================================
-//	Render ACES Buffer
-//
-//	inputs:
-//      N/A
-//
-//	outputs:
-//      N/A        : either call renderIDT() or renderDNG()
-//                   or renderNonDNG()
-
-float *AcesRender::renderACES()
-{
-#ifdef P
-#    undef P
-#endif
-
-#define P _rawProcessor->imgdata.idata
-    if ( !_rawProcessor->imgdata.params.output_color )
-    {
-        cout << "rendering IDT" << endl;
-        return renderIDT();
-    }
-    else
-    {
-        if ( P.dng_version )
+        if ( !prepare_transform_spectral(
+                 imageSpec,
+                 settings,
+                 _WB_multipliers,
+                 _IDT_matrix,
+                 _CAT_matrix ) )
         {
-            cout << "rendering DNG" << endl;
-            return renderDNG();
+            std::cerr << "ERROR: the colour space transform has not been "
+                      << "configured properly (spectral mode)." << std::endl;
+            return false;
+        }
+
+        if ( spectral_white_balance )
+        {
+            float user_mul[4];
+
+            for ( int i = 0; i < _WB_multipliers.size(); i++ )
+            {
+                user_mul[i] = _WB_multipliers[i];
+            }
+            if ( _WB_multipliers.size() == 3 )
+                user_mul[3] = _WB_multipliers[1];
+
+            options.attribute(
+                "raw:user_mul",
+                OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
+                user_mul );
+        }
+    }
+
+    if ( settings.matrixMethod == Settings::MatrixMethod::Metadata )
+    {
+        if ( is_DNG )
+        {
+            options["raw:use_camera_matrix"] = 1;
+            options["raw:use_camera_wb"]     = 1;
+
+            if ( !prepare_transform_DNG(
+                     imageSpec, settings, _IDT_matrix, _CAT_matrix ) )
+            {
+                std::cerr << "ERROR: the colour space transform has not been "
+                          << "configured properly (metadata mode)."
+                          << std::endl;
+                return false;
+            }
         }
         else
         {
-            cout << "rendering NonDNG" << endl;
-            return renderNonDNG();
-        }
-    }
-}
-//	=====================================================================
-//	Write rendered ACES Buffer into an OpenEXR Image File
-//
-//	inputs:
-//      N/A
-//
-//	outputs:
-//      N/A        : An ACES file will be generated
-
-void AcesRender::outputACES( const char *path )
-{
-#ifdef C
-#    undef C
-#endif
-
-#define C _rawProcessor->imgdata.color
-
-    assert( _pathToRaw != nullptr );
-
-    float *aces = renderACES();
-    if ( _opts.verbosity > 1 )
-    {
-        if ( _opts.mat_method && !P.dng_version )
-        {
-            vector<vector<double>> camXYZ( 3, vector<double>( 3, 1.0 ) );
-            FORIJ( 3, 3 ) camXYZ[i][j]    = C.cam_xyz[i][j];
-            vector<vector<double>> camcat = mulVector( camXYZ, _catm );
-
-            printf( "The Approximate IDT matrix is ...\n" );
-            FORI( 3 )
-            printf(
-                "   %f, %f, %f\n", camcat[i][0], camcat[i][1], camcat[i][2] );
-        }
-        // printing white balance coefficients
-        printf( "The final white balance coefficients are ...\n" );
-        printf( "   %f   %f   %f\n", C.pre_mul[0], C.pre_mul[1], C.pre_mul[2] );
-        printf( "Writing ACES file to %s ...\n", path );
-    }
-
-    if ( _opts.highlight > 0 )
-    {
-        float ratio =
-            ( *( std::max_element( C.pre_mul, C.pre_mul + 3 ) ) /
-              *( std::min_element( C.pre_mul, C.pre_mul + 3 ) ) );
-        acesWrite( path, aces, ratio );
-    }
-    else
-        acesWrite( path, aces );
-
-#ifndef WIN32
-    if ( _opts.use_mmap && _opts.iobuffer )
-    {
-        munmap( _opts.iobuffer, size_t( _opts.msize ) );
-        _opts.iobuffer = 0;
-    }
-#endif
-
-    _rawProcessor->recycle();
-
-    if ( _opts.verbosity )
-        printf( "Finished\n\n" );
-}
-
-//	=====================================================================
-//  Apply white balance values to each pixel
-//  ( We actually do not need it here because white-balancing
-//  happens before demosaicing )
-//
-//	inputs:
-//      float *          : pixels (R/G/B)
-//      uint8_t          : number of channels
-//      uint32_t         : the size of pixels
-//
-//	outputs:
-//		N/A              : pixel values modified by multiplying
-//                         white balance coefficients
-
-void AcesRender::applyWB( float *pixels, int bits, uint32_t total )
-{
-    double min_wb = *min_element( _wbv.begin(), _wbv.end() );
-    double target = 1.0;
-
-    if ( bits == 8 )
-        target /= INV_255;
-    else if ( bits == 16 )
-        target /= INV_65535;
-
-    if ( !pixels )
-    {
-        fprintf( stderr, "\nThe pixels cannot be found. \n" );
-        exit( 1 );
-    }
-    else
-    {
-        for ( uint32_t i = 0; i < total; i += 3 )
-        {
-            pixels[i]     = clip( _wbv[0] * pixels[i] / min_wb, target );
-            pixels[i + 1] = clip( _wbv[1] * pixels[i + 1] / min_wb, target );
-            pixels[i + 2] = clip( _wbv[2] * pixels[i + 2] / min_wb, target );
-        }
-    }
-}
-
-//	=====================================================================
-//  Apply IDT matrix to each pixel
-//
-//	inputs:
-//      float *   : pixels (R/G/B)
-//      uint8_t   : number of channels
-//      uint32_t  : the size of pixels
-//      vector < vector <double> >: 3 x 3 IDT matrix
-//
-//	outputs:
-//		N/A       : pixel values modified by mutiplying IDT matrix
-
-void AcesRender::applyIDT( float *pixels, int channel, uint32_t total )
-{
-    assert( pixels );
-    cout << "applying IDT" << endl;
-
-    if ( _opts.mat_method != matMethod3 )
-    {
-
-        if ( channel == 4 )
-        {
-            _idtm.resize( 4 );
-            FORI( 4 ) _idtm[i].resize( 4 );
-
-            _idtm[0][3] = 0.0;
-            _idtm[1][3] = 0.0;
-            _idtm[2][3] = 0.0;
-            _idtm[3][0] = 0.0;
-            _idtm[3][1] = 0.0;
-            _idtm[3][2] = 0.0;
-            _idtm[3][3] = 1.0;
-        }
-
-        if ( channel != 3 && channel != 4 )
-        {
-            fprintf(
-                stderr,
-                "\nError: Currently support 3 channels "
-                "and 4 channels. \n" );
-            exit( 1 );
-        }
-
-        pixels = mulVectorArray( pixels, total, channel, _idtm );
-
-        FORI( 3 )
-        {
-
-            cout << _idtm[i][0] << " " << _idtm[i][1] << " " << _idtm[i][2]
-                 << endl;
-        }
-    }
-    else if ( _opts.mat_method == matMethod3 )
-    {
-        cout << "Using custom defined matrix for IDT" << endl;
-        custom_idtm.resize( 3 );
-
-        FORI( 3 )
-        {
-            custom_idtm[i].resize( 3 );
-
-            FORJ( 3 )
-            custom_idtm[i][j] = static_cast<double>( custom_Matrix[i][j] );
-        }
-
-        if ( channel == 4 )
-        {
-            custom_idtm.resize( 4 );
-            FORI( 4 ) custom_idtm[i].resize( 4 );
-
-            custom_idtm[0][3] = 0.0;
-            custom_idtm[1][3] = 0.0;
-            custom_idtm[2][3] = 0.0;
-            custom_idtm[3][0] = 0.0;
-            custom_idtm[3][1] = 0.0;
-            custom_idtm[3][2] = 0.0;
-            custom_idtm[3][3] = 1.0;
-        }
-
-        if ( channel != 3 && channel != 4 )
-        {
-            fprintf(
-                stderr,
-                "\nError: Currently support 3 channels "
-                "and 4 channels. \n" );
-            exit( 1 );
-        }
-
-        pixels = mulVectorArray( pixels, total, channel, custom_idtm );
-
-        FORI( 3 )
-        {
-
-            cout << custom_idtm[i][0] << " " << custom_idtm[i][1] << " "
-                 << custom_idtm[i][2] << endl;
-        }
-    }
-}
-
-//	=====================================================================
-//  Apply CAT matrix (e.g., D65 to D60) to each pixel
-//  It will be used if using adobe coeffs from "libraw"
-//
-//	inputs:
-//      float *   : pixels (R/G/B)
-//      uint8_t   : number of channels
-//      uint32_t  : the size of pixels
-//
-//	outputs:
-//		N/A       : pixel values modified by mutiplying CAT matrix
-
-void AcesRender::applyCAT( float *pixels, int channel, uint32_t total )
-{
-    assert( pixels );
-
-    if ( channel != 3 && channel != 4 )
-    {
-        fprintf(
-            stderr,
-            "\nError: Currenly support 3 channels "
-            "and 4 channels. \n" );
-        exit( 1 );
-    }
-
-    // will use calCAT() inside rawtoaces
-    vector<double> dIV( d65, d65 + 3 );
-    vector<double> dOV( d60, d60 + 3 );
-    _catm = getCAT( dIV, dOV );
-
-    pixels = mulVectorArray( pixels, total, channel, _catm );
-}
-
-//	=====================================================================
-//  Convert DNG RAW to aces file
-//
-//	inputs:
-//      vector < float > : camera to display matrix
-//
-//	outputs:
-//		float * : an array of converted aces values
-
-float *AcesRender::renderDNG()
-{
-    assert( _image && _rawProcessor->imgdata.idata.dng_version );
-
-    rta::core::Metadata metadata;
-
-    metadata.neutralRGB.resize( 3 );
-    metadata.calibration[0].xyz2rgbMatrix.resize( 9 );
-    metadata.calibration[1].xyz2rgbMatrix.resize( 9 );
-    metadata.calibration[0].cameraCalibrationMatrix.resize( 9 );
-    metadata.calibration[1].cameraCalibrationMatrix.resize( 9 );
-
-    const libraw_colordata_t &color = _rawProcessor->imgdata.rawdata.color;
-
-#if LIBRAW_VERSION >= LIBRAW_MAKE_VERSION( 0, 20, 0 )
-    metadata.baselineExposure =
-        static_cast<double>( color.dng_levels.baseline_exposure );
-#else
-    metadata.baselineExposure = static_cast<double>( color.baseline_exposure );
-#endif
-
-    for ( int i = 0; i < 3; i++ )
-    {
-        metadata.neutralRGB[i] = 1.0 / static_cast<double>( color.cam_mul[i] );
-    }
-
-    for ( int k = 0; k < 2; k++ )
-    {
-        metadata.calibration[k].illuminant =
-            static_cast<double>( color.dng_color[k].illuminant );
-
-        for ( int i = 0; i < 3; i++ )
-        {
-            for ( int j = 0; j < 3; j++ )
+            if ( !prepare_transform_nonDNG(
+                     imageSpec, settings, _IDT_matrix, _CAT_matrix ) )
             {
-                metadata.calibration[k].xyz2rgbMatrix[i * 3 + j] =
-                    color.dng_color[k].colormatrix[i][j];
-                metadata.calibration[k].cameraCalibrationMatrix[i * 3 + j] =
-                    color.dng_color[k].calibration[i][j];
+                std::cerr << "ERROR: the colour space transform has not been "
+                          << "configured properly (Adobe mode)." << std::endl;
+                return false;
             }
         }
     }
-
-    core::DNGIdt *dng = new core::DNGIdt( metadata );
-    _catm             = dng->getDNGCATMatrix();
-    _idtm             = dng->getDNGIDTMatrix();
-
-    if ( _opts.verbosity > 1 )
+    else if ( settings.matrixMethod == Settings::MatrixMethod::Adobe )
     {
-        printf( "The Approximate IDT matrix is ...\n" );
-        FORI( 3 )
-        printf( "   %f, %f, %f\n", _idtm[i][0], _idtm[i][1], _idtm[i][2] );
+        if ( !prepare_transform_nonDNG(
+                 imageSpec, settings, _IDT_matrix, _CAT_matrix ) )
+        {
+            std::cerr << "ERROR: the colour space transform has not been "
+                      << "configured properly (Adobe mode)." << std::endl;
+            return false;
+        }
     }
 
-    ushort  *pixels = (ushort *)_image->data;
-    uint32_t total  = _image->width * _image->height * _image->colors;
-    float   *aces   = new ( std::nothrow ) float[total];
-    FORI( total )
-    aces[i] = static_cast<float>( pixels[i] );
-
-    if ( _opts.verbosity > 1 )
-        printf( "Applying IDT Matrix ...\n" );
-
-    applyIDT( aces, _image->colors, total );
-    delete dng;
-
-    return aces;
+    return true;
 }
 
-//	=====================================================================
-//  Convert Non-DNG RAW to aces file (no IDT involved)
-//
-//	inputs:  N/A
-//
-//	outputs:
-//		float * : an array of converted aces code values
-
-float *AcesRender::renderNonDNG()
+bool ImageConverter::load_image(
+    const std::string          &path,
+    const OIIO::ParamValueList &hints,
+    OIIO::ImageBuf             &buffer )
 {
-    assert( _image );
+    OIIO::ImageSpec imageSpec;
+    imageSpec.extra_attribs = hints;
+    buffer = OIIO::ImageBuf( path, 0, 0, nullptr, &imageSpec, nullptr );
 
-    ushort  *pixels = (ushort *)_image->data; //Getting the image data
-    uint32_t total  = _image->width * _image->height *
-                     _image->colors; //Total number of data pixels
-    float *aces = new ( std::nothrow ) float[total];
+    return buffer.read(
+        0, 0, 0, buffer.nchannels(), true, OIIO::TypeDesc::FLOAT );
+}
 
-    FORI( total ) aces[i] = static_cast<float>( pixels[i] );
+bool apply_matrix(
+    const std::vector<std::vector<double>> &matrix,
+    OIIO::ImageBuf                         &dst,
+    const OIIO::ImageBuf                   &src,
+    OIIO::ROI                               roi )
+{
+    float M[4][4];
 
-    if ( _opts.mat_method > 0 )
+    size_t n = matrix.size();
+
+    if ( n )
     {
-        applyCAT(
-            aces,
-            _image->colors,
-            total ); // Apply Chromatic Adaptation Transform
+        size_t m = matrix[0].size();
+
+        for ( size_t i = 0; i < n; i++ )
+        {
+            for ( size_t j = 0; j < m; j++ )
+            {
+                M[j][i] = matrix[i][j];
+            }
+
+            for ( size_t j = m; j < 4; j++ )
+                M[j][i] = 0;
+        }
+
+        for ( size_t i = n; i < 4; i++ )
+        {
+            for ( size_t j = 0; j < m; j++ )
+                M[j][i] = 0;
+            for ( size_t j = m; j < 4; j++ )
+                M[j][i] = 1;
+        }
     }
 
-    vector<vector<double>> XYZ_acesrgb(
-        _image->colors, vector<double>( _image->colors ) );
-    if ( _image->colors == 3 )
+    return OIIO::ImageBufAlgo::colormatrixtransform( dst, src, M, false, roi );
+}
+
+bool ImageConverter::apply_matrix(
+    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi )
+{
+    bool success = true;
+
+    if ( !roi.defined() )
+        roi = dst.roi();
+
+    if ( _IDT_matrix.size() )
     {
-        FORIJ( 3, 3 )
-        XYZ_acesrgb[i][j] = XYZ_acesrgb_3
-            [i][j]; //Populating a new vector with a pre-defined array.
-        aces = mulVectorArray( aces, total, 3, XYZ_acesrgb );
-    }
-    else if ( _image->colors == 4 )
-    {
-        FORIJ( 4, 4 ) XYZ_acesrgb[i][j] = XYZ_acesrgb_4[i][j];
-        aces = mulVectorArray( aces, total, 4, XYZ_acesrgb );
-    }
-    else
-    {
-        fprintf(
-            stderr,
-            "\nError: Currenly support 3 channels "
-            "and 4 channels. \n" );
-        exit( 1 );
+        success = rta::util::apply_matrix( _IDT_matrix, dst, src, roi );
+        if ( !success )
+            return false;
     }
 
-    return aces;
-}
-
-//	=====================================================================
-//  Convert Non-DNG RAW to aces file through IDT
-//
-//	inputs:  N/A
-//
-//	outputs:
-//		float * : an array of aces values for each pixel
-
-float *AcesRender::renderIDT()
-{
-    assert( _image );
-    ushort  *pixels = (ushort *)_image->data;
-    uint32_t total  = _image->width * _image->height * _image->colors;
-    float   *aces   = new ( std::nothrow ) float[total];
-
-    FORI( total )
+    if ( _CAT_matrix.size() )
     {
-        aces[i] = static_cast<float>( pixels[i] );
+        success = rta::util::apply_matrix( _CAT_matrix, dst, dst, roi );
+        if ( !success )
+            return false;
+
+        success = rta::util::apply_matrix( core::XYZ_to_ACES, dst, dst, roi );
+        if ( !success )
+            return false;
     }
 
-    if ( _opts.verbosity > 1 )
-        printf( "Applying IDT Matrix ...\n" );
+    return success;
+}
 
-    applyIDT( aces, _image->colors, total );
-
-    return aces;
-};
-
-//	=====================================================================
-//  Write processed image file to an aces-compliant openexr file
-//
-//	inputs:
-//      const char *               : the name of output file
-//      float *                    : an array of converted aces values
-//
-//	outputs:
-//		N/A                        : an aces file should be generated in
-//                                   the same folder
-
-void AcesRender::acesWrite( const char *name, float *aces, float ratio ) const
+bool ImageConverter::apply_scale(
+    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi )
 {
-    assert( aces );
+    return OIIO::ImageBufAlgo::mul(
+        dst, src, settings.headroom * settings.scale );
+}
 
-    uint16_t width    = _image->width;
-    uint16_t height   = _image->height;
-    uint8_t  channels = _image->colors;
-    uint8_t  bits     = _image->bits;
-
-    halfBytes *halfIn = new ( std::nothrow )
-        halfBytes[channels * width * height];
-
-    FORI( channels * width * height )
+bool ImageConverter::apply_crop(
+    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi )
+{
+    if ( !OIIO::ImageBufAlgo::copy( dst, src ) )
     {
-        if ( bits == 8 )
-            aces[i] = (double)aces[i] * INV_255 * ( _opts.scale ) * ratio;
-        else if ( bits == 16 )
-            aces[i] = (double)aces[i] * INV_65535 * ( _opts.scale ) * ratio;
+        return false;
+    }
+    dst.specmod().full_x      = dst.specmod().x;
+    dst.specmod().full_y      = dst.specmod().y;
+    dst.specmod().full_width  = dst.specmod().width;
+    dst.specmod().full_height = dst.specmod().height;
 
-        Imath::half tmpV( aces[i] );
-        halfIn[i] = tmpV.bits();
+    return true;
+}
+
+bool ImageConverter::make_output_path(
+    std::string &path, const std::string &suffix )
+{
+    std::filesystem::path temp_path( path );
+
+    temp_path.replace_extension();
+    temp_path += suffix + ".exr";
+
+    path = temp_path.string();
+    return true;
+}
+
+bool ImageConverter::save_image(
+    const std::string &output_filename, const OIIO::ImageBuf &buf )
+{
+    const float chromaticities[] = { 0.7347, 0.2653, 0,       1,
+                                     0.0001, -0.077, 0.32168, 0.33767 };
+
+    OIIO::ImageSpec imageSpec = buf.spec();
+    imageSpec.set_format( OIIO::TypeDesc::HALF );
+    imageSpec["acesImageContainerFlag"] = 1;
+    imageSpec["compression"]            = "none";
+    imageSpec.attribute(
+        "chromaticities",
+        OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 8 ),
+        chromaticities );
+
+    auto imageOutput = OIIO::ImageOutput::create( "exr" );
+    bool result      = imageOutput->open( output_filename, imageSpec );
+    if ( result )
+    {
+        result = buf.write( imageOutput.get() );
+    }
+    return result;
+}
+
+bool ImageConverter::process_image( const std::string &input_filename )
+{
+    std::string output_filename = input_filename;
+    if ( !make_output_path( output_filename ) )
+    {
+        return ( false );
     }
 
-    vector<std::string> filenames;
-    filenames.push_back( name );
+    util::UsageTimer usage_timer;
+    usage_timer.enabled = settings.use_timing;
 
-    aces_Writer x;
+    // ___ Configure transform ___
 
-    MetaWriteClip writeParams;
-
-    writeParams.duration        = 1;
-    writeParams.outputFilenames = filenames;
-
-    writeParams.outputRows = height;
-    writeParams.outputCols = width;
-
-    writeParams.hi                   = x.getDefaultHeaderInfo();
-    libraw_iparams_t *iparams        = &_rawProcessor->imgdata.idata;
-    writeParams.hi.originalImageFlag = 1;
-    writeParams.hi.software          = "rawtoaces v0.1";
-    writeParams.hi.cameraMake        = string( iparams->make );
-    writeParams.hi.cameraModel       = string( iparams->model );
-    writeParams.hi.cameraLabel =
-        writeParams.hi.cameraMake + " " + writeParams.hi.cameraModel;
-
-    libraw_lensinfo_t *lens         = &_rawProcessor->imgdata.lens;
-    writeParams.hi.lensMake         = string( lens->LensMake );
-    writeParams.hi.lensModel        = string( lens->Lens );
-    writeParams.hi.lensSerialNumber = string( lens->LensSerial );
-
-    libraw_imgother_t *other   = &_rawProcessor->imgdata.other;
-    writeParams.hi.isoSpeed    = other->iso_speed;
-    writeParams.hi.expTime     = other->shutter;
-    writeParams.hi.aperture    = other->aperture;
-    writeParams.hi.focalLength = other->focal_len;
-    writeParams.hi.comments    = string( other->desc );
-    writeParams.hi.artist      = string( other->artist );
-    writeParams.hi.channels.clear();
-
-    switch ( channels )
+    usage_timer.reset();
+    OIIO::ParamValueList hints;
+    if ( !configure( input_filename, hints ) )
     {
-        case 3:
-            writeParams.hi.channels.resize( 3 );
-            writeParams.hi.channels[0].name = "B";
-            writeParams.hi.channels[1].name = "G";
-            writeParams.hi.channels[2].name = "R";
-            break;
-        case 4:
-            writeParams.hi.channels.resize( 4 );
-            writeParams.hi.channels[0].name = "A";
-            writeParams.hi.channels[1].name = "B";
-            writeParams.hi.channels[2].name = "G";
-            writeParams.hi.channels[3].name = "R";
-            break;
-        case 6:
-            throw std::invalid_argument(
-                "Stereo RGB support not yet implemented" );
-        case 8:
-            throw std::invalid_argument(
-                "Stereo RGB support not yet implemented" );
-        default:
-            throw std::invalid_argument(
-                "Only RGB, RGBA or"
-                "stereo RGB[A] file supported" );
-            break;
+        std::cerr << "Failed to configure the reader for the file: "
+                  << input_filename << std::endl;
+        return ( false );
     }
+    usage_timer.print( input_filename, "configuring reader" );
 
-    DynamicMetadata dynamicMeta;
-    dynamicMeta.imageIndex   = 0;
-    dynamicMeta.imageCounter = 0;
+    // ___ Load image ___
 
-    x.configure( writeParams );
-    x.newImageObject( dynamicMeta );
-
-    FORI( height )
+    usage_timer.reset();
+    OIIO::ImageBuf buffer;
+    if ( !load_image( input_filename, hints, buffer ) )
     {
-        halfBytes *rgbData = halfIn + width * channels * i;
-        x.storeHalfRow( rgbData, i );
+        std::cerr << "Failed to read the file: " << input_filename << std::endl;
+        return ( false );
     }
+    usage_timer.print( input_filename, "reading image" );
 
-#if 0
-    std::cout << "saving aces file" << std::endl;
-    std::cout << "size " << width << "x" << height << "x"
-              << channels << std::endl;
-    std::cout << "size " << writeParams.outputCols << "x"
-              << writeParams.outputRows << std::endl;
-    std::cout << "duration " << writeParams.duration << std::endl;
-    std::cout << writeParams.hi;
-    std::cout << "\ndynamic meta" << std::endl;
-    std::cout << "imageIndex " << dynamicMeta.imageIndex << std::endl;
-    std::cout << "imageCounter " << dynamicMeta.imageCounter << std::endl;
-    std::cout << "timeCode " << dynamicMeta.timeCode << std::endl;
-    std::cout << "keyCode " << dynamicMeta.keyCode << std::endl;
-    std::cout << "capDate " << dynamicMeta.capDate << std::endl;
-    std::cout << "uuid " << dynamicMeta.uuid << std::endl;
-#endif
+    // ___ Apply matrix/matrices ___
 
-    delete[] halfIn;
-
-    x.saveImageObject();
-}
-
-//	=====================================================================
-//	Get a list of Supported Illuminants
-//
-//	inputs:
-//      N/A
-//
-//	outputs:
-//      vector < vector < string > > : _illuminant values
-//	=====================================================================
-
-const vector<string> AcesRender::getSupportedIllums() const
-{
-    return _illuminants;
-}
-
-//	=====================================================================
-//	Get a list of Supported Cameras
-//
-//	inputs:
-//      N/A
-//
-//	outputs:
-//      vector < string > : _cameras values/names
-
-const vector<string> AcesRender::getSupportedCameras() const
-{
-    return _cameras;
-}
-
-//	=====================================================================
-//	Print a list of Cameras Supported by LibRaw
-//
-//	inputs:
-//      N/A
-//
-//	outputs:
-//      N/A
-
-void AcesRender::printLibRawCameras()
-{
-    const char **cl = _rawProcessor->cameraList();
-    while ( *cl != nullptr )
+    usage_timer.reset();
+    if ( !apply_matrix( buffer, buffer ) )
     {
-        printf( "%s\n", *cl++ );
+        std::cerr << "Failed to apply colour space conversion to the file: "
+                  << input_filename << std::endl;
+        return ( false );
     }
+    usage_timer.print( input_filename, "applying transform matrix" );
+
+    // ___ Apply scale ___
+
+    usage_timer.reset();
+    if ( !apply_scale( buffer, buffer ) )
+    {
+        std::cerr << "Failed to apply scale to the file: " << input_filename
+                  << std::endl;
+        return ( false );
+    }
+    usage_timer.print( input_filename, "applying scale" );
+
+    // ___ Apply crop ___
+
+    usage_timer.reset();
+    if ( !apply_crop( buffer, buffer ) )
+    {
+        std::cerr << "Failed to apply crop to the file: " << input_filename
+                  << std::endl;
+        return ( false );
+    }
+    usage_timer.print( input_filename, "applying crop" );
+
+    // ___ Save image ___
+
+    usage_timer.reset();
+    if ( !save_image( output_filename, buffer ) )
+    {
+        std::cerr << "Failed to save the file: " << output_filename
+                  << std::endl;
+        return ( false );
+    }
+    usage_timer.print( input_filename, "writing image" );
+
+    return ( true );
 }
 
-//	=====================================================================
-//	Get IDT matrix
-//
-//	inputs:
-//      N/A
-//
-//	outputs:
-//      vector < vector < double > > : _idtm (3x3) values
-
-const vector<vector<double>> AcesRender::getIDTMatrix() const
+const std::vector<double> &ImageConverter::get_WB_multipliers()
 {
-    return _idtm;
+    return _WB_multipliers;
 }
 
-//	=====================================================================
-//	Get CAT matrix
-//
-//	inputs:
-//      N/A
-//
-//	outputs:
-//      vector < vector < double > > : _catm (3x3) values
-
-const vector<vector<double>> AcesRender::getCATMatrix() const
+const std::vector<std::vector<double>> &ImageConverter::get_IDT_matrix()
 {
-    return _catm;
+    return _IDT_matrix;
 }
 
-//	=====================================================================
-//	Get White Balance Coefficients
-//
-//	inputs:
-//      N/A
-//
-//	outputs:
-//      vector < double >  : _wbv (1x3) values
-
-const vector<double> AcesRender::getWB() const
+const std::vector<std::vector<double>> &ImageConverter::get_CAT_matrix()
 {
-    return _wbv;
+    return _CAT_matrix;
 }
 
-//	=====================================================================
-//	Get Image Buffer
-//
-//	inputs:
-//      N/A
-//
-//	outputs:
-//      libraw_processed_image_t : _image
-
-const libraw_processed_image_t *AcesRender::getImageBuffer() const
-{
-    assert( _image );
-
-    return _image;
-}
-
-//	=====================================================================
-//	Fetch user option list
-//
-//	inputs:
-//      NA
-//
-//	outputs:
-//      Options   :  _opts will be returned
-
-const struct Option AcesRender::getSettings() const
-{
-    return _opts;
-}
+} //namespace util
+} //namespace rta

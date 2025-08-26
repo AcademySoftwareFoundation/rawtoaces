@@ -8,11 +8,10 @@ include(${CMAKE_CURRENT_LIST_DIR}/RAWTOACESTargets.cmake)
 
 include(CMakeFindDependencyMacro)
 
-find_dependency ( AcesContainer )
 find_dependency ( Eigen3 )
 find_dependency ( Ceres )
-find_dependency ( libraw )
-find_dependency ( Imath )
 find_dependency ( Boost COMPONENTS system )
+find_dependency ( OpenImageIO )
+
 
 check_required_components(rawtoaces)

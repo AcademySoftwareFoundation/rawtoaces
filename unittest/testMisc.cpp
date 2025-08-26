@@ -9,6 +9,8 @@
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 
+using namespace rta::core;
+
 BOOST_AUTO_TEST_CASE( Test_OpenDir )
 {
     std::filesystem::path absolutePath =
@@ -89,18 +91,4 @@ BOOST_AUTO_TEST_CASE( Test_IsValidCT )
 
     std::string val9 = "d65k";
     BOOST_CHECK_EQUAL( false, isValidCT( val9 ) );
-};
-
-BOOST_AUTO_TEST_CASE( Test_PathsFinder )
-{
-    dataPath                           dps = pathsFinder();
-    std::vector<std::string>::iterator it  = dps.paths.begin();
-
-#ifdef WIN32
-    std::string first = ".";
-#else
-    std::string first = "/usr/local/include/rawtoaces/data";
-#endif
-
-    BOOST_CHECK_EQUAL( first, *it );
 };

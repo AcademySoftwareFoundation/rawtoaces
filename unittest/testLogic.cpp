@@ -7,6 +7,8 @@
 
 #include <rawtoaces/mathOps.h>
 
+using namespace rta::core;
+
 // This is a unit test to check the proper functioning of different logic in different functions.
 
 // To test the validity of getCAT function

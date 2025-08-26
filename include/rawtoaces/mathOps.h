@@ -14,6 +14,11 @@
 using namespace std;
 using namespace Eigen;
 
+namespace rta
+{
+namespace core
+{
+
 // Non-class functions
 inline double invertD( double val )
 {
@@ -591,5 +596,8 @@ vector<vector<T>> getCalcXYZt( const vector<vector<T>> &RGB, const T B[6] )
 
     return outCalcXYZt;
 };
+
+} // namespace core
+} // namespace rta
 
 #endif

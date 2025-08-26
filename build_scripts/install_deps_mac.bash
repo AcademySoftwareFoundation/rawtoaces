@@ -2,4 +2,4 @@
 
 set -ex
 
-brew install ceres-solver imath libraw boost nlohmann-json
+brew install ceres-solver imath boost nlohmann-json openimageio

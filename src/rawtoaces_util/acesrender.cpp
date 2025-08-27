@@ -194,8 +194,7 @@ bool collect_image_files(
 
         for ( auto filename2: it )
         {
-            if ( !check_and_add_file( filename2, curr_batch ) )
-                continue;
+            check_and_add_file( filename2, curr_batch );
         }
     }
     else
@@ -284,19 +283,20 @@ bool fetch_camera_make_and_model(
     return true;
 }
 
-vector<string> findFiles( string filePath, vector<string> searchPaths )
+std::vector<std::string> find_files(
+    const std::string &file_path, const std::vector<std::string> &search_paths )
 {
-    vector<string> foundFiles;
+    std::vector<std::string> found_files;
 
-    for ( auto &searchPath: searchPaths )
+    for ( auto &search_path: search_paths )
     {
-        string path = searchPath + "/" + filePath;
+        std::string full_path = search_path + "/" + file_path;
 
-        if ( std::filesystem::exists( path ) )
-            foundFiles.push_back( path );
+        if ( std::filesystem::exists( full_path ) )
+            found_files.push_back( full_path );
     }
 
-    return foundFiles;
+    return found_files;
 }
 
 bool configure_solver(
@@ -325,14 +325,15 @@ bool configure_solver(
     }
 
     std::vector<std::string> found_training_data =
-        findFiles( "training/training_spectral.json", directories );
+        find_files( "training/training_spectral.json", directories );
     if ( found_training_data.size() )
     {
         // loading training data (190 patches)
         solver.loadTrainingData( found_training_data[0] );
     }
 
-    std::vector<std::string> found_cmf_files = findFiles( "cmf/cmf_1931.json", directories );
+    std::vector<std::string> found_cmf_files =
+        find_files( "cmf/cmf_1931.json", directories );
     if ( found_cmf_files.size() )
     {
         solver.loadCMF( found_cmf_files[0] );
@@ -422,6 +423,25 @@ bool solve_matrix_from_illuminant(
     return true;
 }
 
+/// Check if an attribute of a given name exists
+/// and has the type we are expecting.
+const OIIO::ParamValue *find_and_check_attribute(
+    const OIIO::ImageSpec &imageSpec,
+    const std::string     &name,
+    OIIO::TypeDesc         type )
+{
+    auto attr = imageSpec.find_attribute( name );
+    if ( attr )
+    {
+        auto attr_type = attr->type();
+        if ( attr_type == type )
+        {
+            return attr;
+        }
+    }
+    return nullptr;
+}
+
 bool prepare_transform_spectral(
     const OIIO::ImageSpec            &imageSpec,
     const ImageConverter::Settings   &settings,
@@ -449,9 +469,15 @@ bool prepare_transform_spectral(
         }
         else
         {
-            auto attr = imageSpec.find_attribute( "raw:pre_mul" );
-            for ( int i = 0; i < 4; i++ )
-                wb_multipliers[i] = attr->get_float_indexed( i );
+            auto attr = find_and_check_attribute(
+                imageSpec,
+                "raw:pre_mul",
+                OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
+            if ( attr )
+            {
+                for ( int i = 0; i < 4; i++ )
+                    wb_multipliers[i] = attr->get_float_indexed( i );
+            }
         }
 
         if ( wb_multipliers[3] != 0 )
@@ -569,11 +595,13 @@ bool prepare_transform_DNG(
         imageSpec.get_float_attribute( "raw:dng:baseline_exposure" );
 
     metadata.neutralRGB.resize( 3 );
-    for ( int i = 0; i < 3; i++ )
+
+    auto attr = find_and_check_attribute(
+        imageSpec, "raw:cam_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
+    if ( attr )
     {
-        metadata.neutralRGB[i] =
-            1.0 /
-            imageSpec.find_attribute( "raw:cam_mul" )->get_float_indexed( i );
+        for ( int i = 0; i < 3; i++ )
+            metadata.neutralRGB[i] = 1.0 / attr->get_float_indexed( i );
     }
 
     for ( size_t k = 0; k < 2; k++ )
@@ -587,19 +615,33 @@ bool prepare_transform_DNG(
         auto key = "raw:dng:calibration_illuminant" + index_string;
         metadata.calibration[k].illuminant = imageSpec.get_int_attribute( key );
 
-        for ( int i = 0; i < 3; i++ )
+        auto key1         = "raw:dng:color_matrix" + index_string;
+        auto matrix1_attr = find_and_check_attribute(
+            imageSpec, key1, OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 12 ) );
+        if ( matrix1_attr )
         {
-            for ( int j = 0; j < 3; j++ )
+            for ( int i = 0; i < 3; i++ )
             {
-                auto key1 = "raw:dng:color_matrix" + index_string;
-                calibration.xyz2rgbMatrix[i * 3 + j] =
-                    imageSpec.find_attribute( key1 )->get_float_indexed(
-                        i * 3 + j );
+                for ( int j = 0; j < 3; j++ )
+                {
+                    calibration.xyz2rgbMatrix[i * 3 + j] =
+                        matrix1_attr->get_float_indexed( i * 3 + j );
+                }
+            }
+        }
 
-                auto key2 = "raw:dng:camera_calibration" + index_string;
-                calibration.cameraCalibrationMatrix[i * 3 + j] =
-                    imageSpec.find_attribute( key2 )->get_float_indexed(
-                        i * 4 + j );
+        auto key2         = "raw:dng:camera_calibration" + index_string;
+        auto matrix2_attr = find_and_check_attribute(
+            imageSpec, key2, OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 16 ) );
+        if ( matrix2_attr )
+        {
+            for ( int i = 0; i < 3; i++ )
+            {
+                for ( int j = 0; j < 3; j++ )
+                {
+                    calibration.cameraCalibrationMatrix[i * 3 + j] =
+                        matrix2_attr->get_float_indexed( i * 4 + j );
+                }
             }
         }
     }
@@ -771,13 +813,6 @@ int ImageConverter::configure_settings( int argc, char const *const argv[] )
                 std::cerr << std::endl;
                 break;
             }
-                //            case 'T':
-                //                _opts.get_libraw_cameras = 1;
-                //                {
-                //                    // print a list of cameras supported by LibRaw
-                //                    printLibRawCameras();
-                //                    break;
-                //                }
             case 'M': settings.headroom = atof( argv[arg++] ); break;
             case 'H': {
                 settings.highlight_mode = atoi( argv[arg++] );
@@ -949,6 +984,7 @@ int ImageConverter::configure_settings( int argc, char const *const argv[] )
                       << "Error: No matching light source. "
                       << "Please find available options by "
                       << "\"rawtoaces --valid-illum\"." << std::endl;
+            exit( -1 );
         }
     }
 
@@ -1080,30 +1116,31 @@ bool ImageConverter::configure(
         case Settings::WBMethod::Metadata: {
             float user_mul[4];
 
-            for ( int i = 0; i < 4; i++ )
+            auto attr = find_and_check_attribute(
+                imageSpec,
+                "raw:cam_mul",
+                OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
+            if ( attr )
             {
-                user_mul[i] = imageSpec.find_attribute( "raw:cam_mul" )
-                                  ->get_float_indexed( i );
-            }
+                for ( int i = 0; i < 4; i++ )
+                {
+                    user_mul[i] = attr->get_float_indexed( i );
+                }
 
-            options.attribute(
-                "raw:user_mul",
-                OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
-                user_mul );
+                options.attribute(
+                    "raw:user_mul",
+                    OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
+                    user_mul );
 
-            //            if ( _read_raw )
-            {
                 _WB_multipliers.resize( 4 );
                 for ( size_t i = 0; i < 4; i++ )
                     _WB_multipliers[i] = user_mul[i];
             }
             break;
         }
-        case Settings::WBMethod::Illuminant: {
-            std::string lower_illuminant =
-                OIIO::Strutil::lower( settings.illuminant );
+        case Settings::WBMethod::Illuminant:
+            // No configuration is required at this stage.
             break;
-        }
         case Settings::WBMethod::Box:
 
             if ( settings.wbBox[2] == 0 || settings.wbBox[3] == 0 )
@@ -1131,12 +1168,9 @@ bool ImageConverter::configure(
                 OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
                 settings.customWB );
 
-            //            if ( _read_raw )
-            {
-                _WB_multipliers.resize( 4 );
-                for ( size_t i = 0; i < 4; i++ )
-                    _WB_multipliers[i] = settings.customWB[i];
-            }
+            _WB_multipliers.resize( 4 );
+            for ( size_t i = 0; i < 4; i++ )
+                _WB_multipliers[i] = settings.customWB[i];
             break;
 
         default:
@@ -1375,6 +1409,11 @@ bool ImageConverter::make_output_path(
 bool ImageConverter::save_image(
     const std::string &output_filename, const OIIO::ImageBuf &buf )
 {
+    // ST2065-4 demands these conditions met by an OpenEXR file:
+    // - ACES AP0 chromaticities,
+    // - acesImageContainerFlag present,
+    // - no compression.
+
     const float chromaticities[] = { 0.7347, 0.2653, 0,       1,
                                      0.0001, -0.077, 0.32168, 0.33767 };
 

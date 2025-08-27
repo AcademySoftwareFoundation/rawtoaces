@@ -332,10 +332,10 @@ bool configure_solver(
         solver.loadTrainingData( found_training_data[0] );
     }
 
-    found = findFiles( "cmf/cmf_1931.json", directories );
-    if ( found.size() )
+    std::vector<std::string> found_cmf_files = findFiles( "cmf/cmf_1931.json", directories );
+    if ( found_cmf_files.size() )
     {
-        solver.loadCMF( found[0] );
+        solver.loadCMF( found_cmf_files[0] );
     }
 
     if ( illuminant.empty() )

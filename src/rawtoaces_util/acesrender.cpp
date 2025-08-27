@@ -1205,7 +1205,7 @@ bool ImageConverter::configure(
         {
             float user_mul[4];
 
-            for ( int i = 0; i < _WB_multipliers.size(); i++ )
+            for ( size_t i = 0; i < _WB_multipliers.size(); i++ )
             {
                 user_mul[i] = _WB_multipliers[i];
             }

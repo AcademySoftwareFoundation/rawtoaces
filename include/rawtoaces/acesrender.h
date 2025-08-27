@@ -37,6 +37,7 @@ public:
     // -F - use big file
     // -E - mmap-ed IO
     // -s - image index in the file
+	// -G - green_matching() filter
     struct Settings
     {
         /// The  white balancing method to use for conversion can be specified
@@ -101,7 +102,6 @@ public:
         int         black_level              = -1;
         int         saturation_level         = -1;
         bool        half_size                = false;
-        bool        green_matching           = false;
         int         highlight_mode           = 0;
         int         flip                     = 0;
         int         cropbox[4]               = { 0, 0, 0, 0 };

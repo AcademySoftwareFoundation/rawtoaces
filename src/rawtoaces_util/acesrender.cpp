@@ -48,12 +48,10 @@ void create_key( unordered_map<string, char> &keys )
     keys["-q"]              = 'q';
     keys["-h"]              = 'h';
     keys["-s"]              = 's';
-    keys["-G"]              = 'G';
     keys["-B"]              = 'B';
     keys["-v"]              = 'v';
     keys["-F"]              = 'F';
     keys["-d"]              = 'd';
-    keys["-E"]              = 'E';
     keys["-I"]              = 'I';
     keys["-V"]              = 'V';
 };
@@ -112,7 +110,6 @@ void ImageConverter::usage( const char *prog )
         "  -b <num>                Adjust brightness (default = 1.0)\n"
         "  -q [0-12]                Demosaicing algorithm (0=linear, 1=VNG, 2=PPG, 3=AHD, 4=DCB, 5=AHD-Mod, 6=AFD, 7=VCD, 8=Mixed, 9=LMMSE, 10=AMaZE, 11=DHT, 12=AAHD)\n"
         "  -h                      Half-size color image (twice as fast as \"-q 0\")\n"
-        "  -G                      Use green_matching() filter\n"
         "  -B <x y w h>            Use cropbox\n"
         "\n"
         "Benchmarking options:\n"
@@ -733,7 +730,6 @@ int ImageConverter::configure_settings( int argc, char const *const argv[] )
             case 'I': usage( argv[0] ); break;
             case 'V': printf( "%s\n", VERSION ); break;
             case 'v': settings.verbosity++; break;
-            case 'G': settings.green_matching = true; break;
             case 'c':
                 settings.adjust_maximum_threshold = (float)atof( argv[arg++] );
                 break;

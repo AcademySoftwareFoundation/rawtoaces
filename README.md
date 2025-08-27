@@ -186,29 +186,20 @@ A help message with a description of all command line options can be obtained by
 	Raw conversion options:
   	  -c float                Set adjust maximum threshold (default = 0.75)
   	  -C <r b>                Correct chromatic aberration
-  	  -P <file>               Fix the dead pixels listed in this file
-  	  -K <file>               Subtract dark frame (16-bit raw PGM)
   	  -k <num>                Set the darkness level
   	  -S <num>                Set the saturation level
   	  -n <num>                Set threshold for wavelet denoising
   	  -H [0-9]                Highlight mode (0=clip, 1=unclip, 2=blend, 3+=rebuild) (default = 0)
   	  -t [0-7]                Flip image (0=none, 3=180, 5=90CCW, 6=90CW)
-  	  -j                      Don't stretch or rotate raw pixels
   	  -W                      Don't automatically brighten the image
   	  -b <num>                Adjust brightness (default = 1.0)
   	  -q [0-3]                Set the interpolation quality
   	  -h                      Half-size color image (twice as fast as "-q 0")
-  	  -f                      Interpolate RGGB as four colors
-  	  -m <num>                Apply a 3x3 median filter to R-G and B-G
-  	  -s [0..N-1]             Select one raw image from input file
-  	  -G                      Use green_matching() filter
   	  -B <x y w h>            Use cropbox
 	
 	Benchmarking options:
   	  -v                      Verbose: print progress messages (repeated -v will add verbosity)
-  	  -F                      Use FILE I/O instead of streambuf API
   	  -d                      Detailed timing report
-  	  -E                      Use mmap()-ed buffer instead of plain FILE I/O
 		
 ### RAW conversion options
 	

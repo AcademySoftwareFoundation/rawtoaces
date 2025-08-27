@@ -37,7 +37,7 @@ public:
     // -F - use big file
     // -E - mmap-ed IO
     // -s - image index in the file
-	// -G - green_matching() filter
+    // -G - green_matching() filter
     struct Settings
     {
         /// The  white balancing method to use for conversion can be specified

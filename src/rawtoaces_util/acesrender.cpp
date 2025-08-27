@@ -324,12 +324,12 @@ bool configure_solver(
         return false;
     }
 
-    std::vector<std::string> found =
+    std::vector<std::string> found_training_data =
         findFiles( "training/training_spectral.json", directories );
-    if ( found.size() )
+    if ( found_training_data.size() )
     {
         // loading training data (190 patches)
-        solver.loadTrainingData( found[0] );
+        solver.loadTrainingData( found_training_data[0] );
     }
 
     found = findFiles( "cmf/cmf_1931.json", directories );

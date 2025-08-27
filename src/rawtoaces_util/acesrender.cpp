@@ -563,11 +563,11 @@ bool prepare_transform_spectral(
     if ( settings.verbosity > 0 )
     {
         std::cerr << "Input transform matrix:" << std::endl;
-        for ( auto &i: IDT_matrix )
+        for ( auto &row: IDT_matrix )
         {
-            for ( auto &j: i )
+            for ( auto &col: row )
             {
-                std::cerr << j << " ";
+                std::cerr << col << " ";
             }
             std::cerr << std::endl;
         }

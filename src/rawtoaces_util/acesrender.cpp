@@ -288,9 +288,9 @@ vector<string> findFiles( string filePath, vector<string> searchPaths )
 {
     vector<string> foundFiles;
 
-    for ( auto &i: searchPaths )
+    for ( auto &searchPath: searchPaths )
     {
-        string path = i + "/" + filePath;
+        string path = searchPath + "/" + filePath;
 
         if ( std::filesystem::exists( path ) )
             foundFiles.push_back( path );

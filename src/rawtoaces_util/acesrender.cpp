@@ -338,14 +338,13 @@ bool configure_solver(
         solver.loadCMF( found_cmf_files[0] );
     }
 
+    auto illuminant_files = collect_data_files( directories, "illuminant" );
     if ( illuminant.empty() )
     {
-        auto illuminant_files = collect_data_files( directories, "illuminant" );
         solver.loadIlluminant( illuminant_files );
     }
     else
     {
-        auto illuminant_files = collect_data_files( directories, "illuminant" );
         solver.loadIlluminant( illuminant_files, illuminant );
     }
 

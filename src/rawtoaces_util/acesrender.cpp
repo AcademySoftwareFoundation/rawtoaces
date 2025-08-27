@@ -536,9 +536,9 @@ bool prepare_transform_spectral(
         if ( settings.verbosity > 0 )
         {
             std::cerr << "White balance coefficients:" << std::endl;
-            for ( auto &i: WB_multipliers )
+            for ( auto &wb_multiplier: WB_multipliers )
             {
-                std::cerr << i << " ";
+                std::cerr << wb_multiplier << " ";
             }
             std::cerr << std::endl;
         }

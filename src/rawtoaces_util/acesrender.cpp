@@ -231,7 +231,11 @@ std::vector<std::string> database_paths()
         }
     }
 
-    if ( path.empty() )
+    if ( env )
+    {
+        path = env;
+    }
+    else
     {
         path = default_path;
     }
@@ -305,6 +309,7 @@ bool configure_solver(
 {
     bool success = true;
 
+    
     auto camera_files = collect_data_files( directories, "camera" );
     for ( auto &camera_file: camera_files )
     {

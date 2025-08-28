@@ -231,9 +231,12 @@ std::vector<std::string> database_paths()
         }
     }
 
-    if ( env ) {
+    if ( env )
+    {
         path = env;
-    } else {
+    }
+    else
+    {
         path = default_path;
     }
 

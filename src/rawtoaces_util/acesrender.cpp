@@ -1118,7 +1118,7 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     }
 
     auto aberration = arg_parser["chromatic-aberration"].as_vec<int>();
-    if ( crop.size() == 2 )
+    if ( aberration.size() == 2 )
     {
         for ( size_t i = 0; i < 2; i++ )
             settings.aberration[i] = aberration[i];

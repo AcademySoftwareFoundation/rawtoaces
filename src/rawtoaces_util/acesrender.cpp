@@ -1015,8 +1015,9 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
         {
             std::cerr << "Warning: the white balancing method was set to "
                       << "\"illuminant\", but no \"--illuminant\" parameter "
-                      << "provided. " << settings.illuminant << " will be used."
+                      << "provided. D55 will be used as default."
                       << std::endl;
+            settings.illuminant = "D55";  // Set default illuminant
         }
     }
     else

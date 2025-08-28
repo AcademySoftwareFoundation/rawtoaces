@@ -12,8 +12,7 @@ target_link_libraries(
     test_util
     PUBLIC
         rawtoaces_util
-        Boost::boost
-        Boost::unit_test_framework
+        OpenImageIO::OpenImageIO
 )
 
 add_test ( NAME test_util COMMAND test_util )

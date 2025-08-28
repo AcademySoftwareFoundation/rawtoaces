@@ -6,10 +6,8 @@
 #    include <windows.h>
 #endif
 
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
 #include <filesystem>
-#include <boost/test/tools/floating_point_comparison.hpp>
+#include <OpenImageIO/unittest.h>
 
 #include <rawtoaces/mathOps.h>
 #include <rawtoaces/rawtoaces_core.h>
@@ -17,7 +15,7 @@
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 
-BOOST_AUTO_TEST_CASE( TestIDT_LoadCameraSpst )
+void testIDT_LoadCameraSpst()
 {
     std::filesystem::path absolutePath =
         std::filesystem::absolute( DATA_PATH "camera/arri_d21_380_780_5.json" );
@@ -25,13 +23,13 @@ BOOST_AUTO_TEST_CASE( TestIDT_LoadCameraSpst )
     rta::core::SpectralData camera;
     bool                    result;
 
-    BOOST_CHECK_NO_THROW( result = camera.load( absolutePath.string() ) );
-    BOOST_CHECK( result );
-    BOOST_CHECK_EQUAL( camera.manufacturer, "arri" );
-    BOOST_CHECK_EQUAL( camera.model, "d21" );
-    BOOST_CHECK_EQUAL( camera.data.size(), 1 );
-    BOOST_CHECK_EQUAL( camera.data.count( "main" ), 1 );
-    BOOST_CHECK_EQUAL( camera.data.at( "main" ).size(), 3 );
+    result = camera.load( absolutePath.string() );
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_EQUAL( camera.manufacturer, "arri" );
+    OIIO_CHECK_EQUAL( camera.model, "d21" );
+    OIIO_CHECK_EQUAL( camera.data.size(), 1 );
+    OIIO_CHECK_EQUAL( camera.data.count( "main" ), 1 );
+    OIIO_CHECK_EQUAL( camera.data.at( "main" ).size(), 3 );
 
     double rgb[81][3] = { { 0.000188205, 8.59E-05, 9.58E-05 },
                           { 0.000440222, 0.000166118, 0.000258734 },
@@ -119,27 +117,27 @@ BOOST_AUTO_TEST_CASE( TestIDT_LoadCameraSpst )
     for ( size_t i = 0; i < 3; i++ )
     {
         const rta::core::Spectrum &spectrum = camera[channels[i]];
-        BOOST_CHECK_EQUAL( spectrum.shape.first, 380 );
-        BOOST_CHECK_EQUAL( spectrum.shape.last, 780 );
-        BOOST_CHECK_EQUAL( spectrum.shape.step, 5 );
-        BOOST_CHECK_EQUAL( spectrum.values.size(), 81 );
+        OIIO_CHECK_EQUAL( spectrum.shape.first, 380 );
+        OIIO_CHECK_EQUAL( spectrum.shape.last, 780 );
+        OIIO_CHECK_EQUAL( spectrum.shape.step, 5 );
+        OIIO_CHECK_EQUAL( spectrum.values.size(), 81 );
 
         for ( size_t j = 0; j < 81; j++ )
         {
-            BOOST_CHECK_CLOSE( spectrum.values[j], rgb[j][i], 1e-5 );
+            OIIO_CHECK_EQUAL_THRESH( spectrum.values[j], rgb[j][i], 1e-5 );
         }
     }
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_LoadIlluminant )
+void testIDT_LoadIlluminant()
 {
     std::filesystem::path absolutePath = std::filesystem::absolute(
         DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
 
     bool                    result;
     rta::core::SpectralData illuminant;
-    BOOST_CHECK_NO_THROW( result = illuminant.load( absolutePath.string() ) );
-    BOOST_CHECK( result );
+    result = illuminant.load( absolutePath.string() );
+    OIIO_CHECK_ASSERT( result );
 
     double iso7589[81] = {
         0.0400000000000, 0.0500000000000, 0.0600000000000, 0.0700000000000,
@@ -165,24 +163,23 @@ BOOST_AUTO_TEST_CASE( TestIDT_LoadIlluminant )
         1.0000000000000
     };
 
-    BOOST_CHECK_EQUAL( illuminant.illuminant, "iso7589" );
-    BOOST_CHECK_EQUAL( illuminant["power"].shape.step, 5 );
+    OIIO_CHECK_EQUAL( illuminant.illuminant, "iso7589" );
+    OIIO_CHECK_EQUAL( illuminant["power"].shape.step, 5 );
 
     vector<double> &illumTestData = illuminant["power"].values;
-    BOOST_CHECK_EQUAL( illumTestData.size(), 81 );
-    FORI( 81 ) BOOST_CHECK_CLOSE( illumTestData[i], iso7589[i], 1e-5 );
+    OIIO_CHECK_EQUAL( illumTestData.size(), 81 );
+    FORI( 81 ) OIIO_CHECK_EQUAL_THRESH( illumTestData[i], iso7589[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_LoadTrainingData )
+void testIDT_LoadTrainingData()
 {
     std::filesystem::path absolutePath = std::filesystem::absolute(
         DATA_PATH "training/training_spectral.json" );
 
     bool                    result;
     rta::core::SpectralData training_data;
-    BOOST_CHECK_NO_THROW(
-        result = training_data.load( absolutePath.string() ) );
-    BOOST_CHECK( result );
+    result = training_data.load( absolutePath.string() );
+    OIIO_CHECK_ASSERT( result );
 
     float TS[81][3] = { { 0.0600000000, 0.0649000000, 0.1365000000 },
                         { 0.0501123560, 0.0706580560, 0.1696284150 },
@@ -268,22 +265,24 @@ BOOST_AUTO_TEST_CASE( TestIDT_LoadTrainingData )
 
     for ( size_t i = 1; i < 81; i++ )
     {
-        BOOST_CHECK_CLOSE( TS[i][0], training_data["patch1"].values[i], 1e-5 );
-        BOOST_CHECK_CLOSE( TS[i][1], training_data["patch2"].values[i], 1e-5 );
-        BOOST_CHECK_CLOSE( TS[i][2], training_data["patch3"].values[i], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH(
+            TS[i][0], training_data["patch1"].values[i], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH(
+            TS[i][1], training_data["patch2"].values[i], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH(
+            TS[i][2], training_data["patch3"].values[i], 1e-5 );
     }
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_LoadCMF )
+void testIDT_LoadCMF()
 {
     std::filesystem::path absolutePath =
         std::filesystem::absolute( DATA_PATH "cmf/cmf_1931.json" );
 
     bool                    result;
     rta::core::SpectralData spectral_data;
-    BOOST_CHECK_NO_THROW(
-        result = spectral_data.load( absolutePath.string() ) );
-    BOOST_CHECK( result );
+    result = spectral_data.load( absolutePath.string() );
+    OIIO_CHECK_ASSERT( result );
 
     auto &data = spectral_data.data["main"];
 
@@ -691,9 +690,12 @@ BOOST_AUTO_TEST_CASE( TestIDT_LoadCMF )
 
     FORI( 81 )
     {
-        BOOST_CHECK_CLOSE( spectral_data["X"].values[i], cmf[i * 5][0], 1e-5 );
-        BOOST_CHECK_CLOSE( spectral_data["Y"].values[i], cmf[i * 5][1], 1e-5 );
-        BOOST_CHECK_CLOSE( spectral_data["Z"].values[i], cmf[i * 5][2], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH(
+            spectral_data["X"].values[i], cmf[i * 5][0], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH(
+            spectral_data["Y"].values[i], cmf[i * 5][1], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH(
+            spectral_data["Z"].values[i], cmf[i * 5][2], 1e-5 );
     }
 };
 
@@ -712,7 +714,7 @@ void load_camera_helper(
             std::filesystem::absolute( DATA_PATH + camera_path );
         bool result = idt.load_camera(
             absoluteCameraPath.string(), camera_make, camera_model );
-        BOOST_CHECK_EQUAL( result, true );
+        OIIO_CHECK_ASSERT( result );
     }
 
     if ( !illuminant_name.empty() )
@@ -724,7 +726,7 @@ void load_camera_helper(
         illumPaths.push_back( absoluteIlluminantPath.string() );
 
         bool result = idt.load_illuminant( illumPaths, illuminant_name );
-        BOOST_CHECK_EQUAL( result, true );
+        OIIO_CHECK_ASSERT( result );
     }
     else
     {
@@ -735,7 +737,7 @@ void load_camera_helper(
         illumPaths.push_back( absoluteIlluminantPath.string() );
 
         bool result = idt.load_illuminant( illumPaths, "" );
-        BOOST_CHECK_EQUAL( result, true );
+        OIIO_CHECK_ASSERT( result );
     }
 
     if ( load_training )
@@ -744,7 +746,7 @@ void load_camera_helper(
             DATA_PATH "training/training_spectral.json" );
 
         bool result = idt.load_training_data( absoluteTrainingPath.string() );
-        BOOST_CHECK_EQUAL( result, true );
+        OIIO_CHECK_ASSERT( result );
     }
 
     if ( load_observer )
@@ -752,7 +754,7 @@ void load_camera_helper(
         std::filesystem::path observerPath =
             std::filesystem::absolute( DATA_PATH "cmf/cmf_1931.json" );
         bool result = idt.load_observer( observerPath.string() );
-        BOOST_CHECK_EQUAL( result, true );
+        OIIO_CHECK_ASSERT( result );
     }
 }
 
@@ -762,11 +764,10 @@ void load_file( const std::string &path, rta::core::SpectralData &data )
 
     std::filesystem::path full_path =
         std::filesystem::absolute( DATA_PATH + path );
-    BOOST_CHECK_NO_THROW( result = data.load( full_path.string() ) );
-    BOOST_CHECK( result );
+    OIIO_CHECK_ASSERT( data.load( full_path.string() ) );
 }
 
-BOOST_AUTO_TEST_CASE( TestIDT_scaleLSC )
+void testIDT_scaleLSC()
 {
     rta::core::SpectralData illuminant;
     load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
@@ -802,13 +803,14 @@ BOOST_AUTO_TEST_CASE( TestIDT_scaleLSC )
 
     const vector<double> illumDataScaled = illuminant["power"].values;
 
-    BOOST_CHECK_EQUAL( illumDataScaled.size(), 81 );
-    BOOST_CHECK_EQUAL( illuminant.illuminant, "iso7589" );
-    BOOST_CHECK_EQUAL( illuminant["power"].shape.step, 5 );
-    FORI( 81 ) BOOST_CHECK_CLOSE( illumDataScaled[i], scaledIllum[i], 1e-5 );
+    OIIO_CHECK_EQUAL( illumDataScaled.size(), 81 );
+    OIIO_CHECK_EQUAL( illuminant.illuminant, "iso7589" );
+    OIIO_CHECK_EQUAL( illuminant["power"].shape.step, 5 );
+    FORI( 81 )
+    OIIO_CHECK_EQUAL_THRESH( illumDataScaled[i], scaledIllum[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_CalCM )
+void testIDT_CalCM()
 {
     rta::core::SpectralData illuminant;
     load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
@@ -820,10 +822,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalCM )
 
     float CM[81] = { 1.0000000000, 1.4418439699, 1.8703081160 };
 
-    FORI( 3 ) BOOST_CHECK_CLOSE( CM[i], CM_test[i], 1e-5 );
+    FORI( 3 ) OIIO_CHECK_EQUAL_THRESH( CM[i], CM_test[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_CalWB )
+void testIDT_CalWB()
 {
     rta::core::SpectralData illuminant;
     load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
@@ -836,11 +838,11 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalWB )
     double WB[3] = { 1.1397265, 1.0000000, 2.3240151 };
     FORI( WB_test.size() )
     {
-        BOOST_CHECK_CLOSE( WB[i], WB_test[i], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( WB[i], WB_test[i], 1e-5 );
     }
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumSrc )
+void testIDT_ChooseIllumSrc()
 {
     rta::core::SpectralSolver idt;
     load_camera_helper(
@@ -874,12 +876,12 @@ BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumSrc )
         0.0523097995
     };
 
-    BOOST_CHECK_EQUAL( illumType_Test, "d45" );
+    OIIO_CHECK_EQUAL( illumType_Test, "d45" );
     FORI( illumData_Test.size() )
-    BOOST_CHECK_CLOSE( illumData[i], illumData_Test[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( illumData[i], illumData_Test[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumType )
+void testIDT_ChooseIllumType()
 {
     rta::core::SpectralSolver idt;
     load_camera_helper(
@@ -918,12 +920,12 @@ BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumType )
         0.1365548815
     };
 
-    BOOST_CHECK_EQUAL( illumType_Test, "iso7589" );
+    OIIO_CHECK_EQUAL( illumType_Test, "iso7589" );
     FORI( illumData_Test.size() )
-    BOOST_CHECK_CLOSE( illumData[i], illumData_Test[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( illumData[i], illumData_Test[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_CalTI )
+void testIDT_CalTI()
 {
     rta::core::SpectralData camera;
     load_file( "camera/nikon_d200_380_780_5.json", camera );
@@ -4832,12 +4834,12 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalTI )
         const rta::core::Spectrum &spectrum = TI_test[i];
         for ( size_t j = 0; j < 81; j++ )
         {
-            BOOST_CHECK_CLOSE( TI[j][i], spectrum.values[j], 1e-4 );
+            OIIO_CHECK_EQUAL_THRESH( TI[j][i], spectrum.values[j], 1e-4 );
         }
     }
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_CalXYZ )
+void testIDT_CalXYZ()
 {
     rta::core::SpectralData camera;
     load_file( "camera/nikon_d200_380_780_5.json", camera );
@@ -5048,10 +5050,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalXYZ )
                            { 0.4603248290, 0.3206987361, 0.3960834297 } };
 
     FORIJ( 190, 3 )
-    BOOST_CHECK_CLOSE( XYZ[i][j], XYZ_test[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( XYZ[i][j], XYZ_test[i][j], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_CalRGB )
+void testIDT_CalRGB()
 {
     rta::core::SpectralData camera;
     load_file( "camera/nikon_d200_380_780_5.json", camera );
@@ -5262,10 +5264,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalRGB )
                            { 0.5608623445, 0.2394587589, 0.3637261707 } };
 
     FORIJ( 190, 3 )
-    BOOST_CHECK_CLOSE( RGB[i][j], RGB_test[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( RGB[i][j], RGB_test[i][j], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_CurveFit )
+void testIDT_CurveFit()
 {
     rta::core::SpectralData camera;
     load_file( "camera/nikon_d200_380_780_5.json", camera );
@@ -5289,17 +5291,17 @@ BOOST_AUTO_TEST_CASE( TestIDT_CurveFit )
 
     std::vector<std::vector<double>> IDT_test( 3, std::vector<double>( 3 ) );
 
-    BOOST_CHECK( rta::core::curveFit( RGB, XYZ, BStart, 0, IDT_test ) );
+    OIIO_CHECK_ASSERT( rta::core::curveFit( RGB, XYZ, BStart, 0, IDT_test ) );
 
     float IDT[3][3] = { { 0.7447691479, 0.1434200377, 0.1118108144 },
                         { 0.0451759890, 1.0082622042, -0.0534381932 },
                         { 0.0247144012, -0.1245524896, 1.0998380884 } };
 
     FORIJ( 3, 3 )
-    BOOST_CHECK_CLOSE( IDT[i][j], IDT_test[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_CalIDT )
+void testIDT_CalIDT()
 {
     rta::core::SpectralSolver idt;
     load_camera_helper(
@@ -5312,7 +5314,7 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalIDT )
         true );
     idt.select_illuminant( "iso7589", 0 );
 
-    BOOST_CHECK( idt.calculate_IDT_matrix() );
+    OIIO_CHECK_ASSERT( idt.calculate_IDT_matrix() );
     vector<vector<double>> IDT_test = idt.get_IDT_matrix();
 
     float IDT[3][3] = { { 1.0915120600, -0.2516916464, 0.1601795864 },
@@ -5320,5 +5322,25 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalIDT )
                         { -0.1312667887, -0.7361633199, 1.8674301085 } };
 
     FORIJ( 3, 3 )
-    BOOST_CHECK_CLOSE( IDT[i][j], IDT_test[i][j], 1e-4 );
+    OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-4 );
 };
+
+int main( int, char ** )
+{
+    testIDT_LoadCameraSpst();
+    testIDT_LoadIlluminant();
+    testIDT_LoadTrainingData();
+    testIDT_LoadCMF();
+    testIDT_scaleLSC();
+    testIDT_CalCM();
+    testIDT_CalWB();
+    testIDT_ChooseIllumSrc();
+    testIDT_ChooseIllumType();
+    testIDT_CalTI();
+    testIDT_CalXYZ();
+    testIDT_CalRGB();
+    testIDT_CurveFit();
+    testIDT_CalIDT();
+
+    return unit_test_failures;
+}

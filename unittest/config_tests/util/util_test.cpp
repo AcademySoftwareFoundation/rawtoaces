@@ -7,18 +7,15 @@
 #    include <windows.h>
 #endif
 
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
 #include <filesystem>
-#include <boost/test/tools/floating_point_comparison.hpp>
+#include <OpenImageIO/unittest.h>
 
 #include <rawtoaces/acesrender.h>
 
-BOOST_AUTO_TEST_CASE( Test_AcesRender )
+void test_AcesRender()
 {
     char const *const argv[] = {
         "dummy_binary_path",
-
     // getting "Subprocess aborted" in unit tests
     // when this is enabled on Mac, the tests fail on linux if
     // skipped completely.
@@ -35,16 +32,16 @@ BOOST_AUTO_TEST_CASE( Test_AcesRender )
 
     std::filesystem::path pathToRaw = std::filesystem::absolute(
         "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
-    BOOST_CHECK( std::filesystem::exists( pathToRaw ) );
+    OIIO_CHECK_ASSERT( std::filesystem::exists( pathToRaw ) );
 
     rta::util::ImageConverter converter;
 
     int arg = converter.configure_settings( argc, argv );
-    BOOST_CHECK_EQUAL( arg, argc - 1 );
-    BOOST_CHECK(
+    OIIO_CHECK_EQUAL( arg, argc - 1 );
+    OIIO_CHECK_ASSERT(
         converter.settings.wbMethod ==
         rta::util::ImageConverter::Settings::WBMethod::Metadata );
-    BOOST_CHECK(
+    OIIO_CHECK_ASSERT(
         converter.settings.matrixMethod ==
         rta::util::ImageConverter::Settings::MatrixMethod::Metadata );
 
@@ -54,7 +51,7 @@ BOOST_AUTO_TEST_CASE( Test_AcesRender )
     {
         OIIO::ParamValueList hints;
         bool result = converter.configure( pathToRaw.string(), hints );
-        BOOST_CHECK_EQUAL( result, true );
+        OIIO_CHECK_EQUAL( result, true );
 
         auto idt = converter.get_IDT_matrix();
 
@@ -64,6 +61,13 @@ BOOST_AUTO_TEST_CASE( Test_AcesRender )
 
         for ( size_t i = 0; i < 3; i++ )
             for ( size_t j = 0; j < 3; j++ )
-                BOOST_CHECK_CLOSE( idt[i][j], matrix[i][j], 1e-5 );
+                OIIO_CHECK_EQUAL_THRESH( idt[i][j], matrix[i][j], 1e-5 );
     }
 };
+
+int main( int, char ** )
+{
+    test_AcesRender();
+
+    return unit_test_failures;
+}

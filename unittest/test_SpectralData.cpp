@@ -6,10 +6,8 @@
 #    include <windows.h>
 #endif
 
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
 #include <filesystem>
-#include <boost/test/tools/floating_point_comparison.hpp>
+#include <OpenImageIO/unittest.h>
 
 #include <rawtoaces/mathOps.h>
 #include <rawtoaces/rawtoaces_core.h>
@@ -27,18 +25,18 @@ void check_Spectrum(
     const rta::core::Spectrum::Shape shape =
         rta::core::Spectrum::ReferenceShape )
 {
-    BOOST_CHECK_EQUAL( spectrum.shape.first, shape.first );
-    BOOST_CHECK_EQUAL( spectrum.shape.last, shape.last );
-    BOOST_CHECK_EQUAL( spectrum.shape.step, shape.step );
-    BOOST_CHECK_EQUAL(
+    OIIO_CHECK_EQUAL( spectrum.shape.first, shape.first );
+    OIIO_CHECK_EQUAL( spectrum.shape.last, shape.last );
+    OIIO_CHECK_EQUAL( spectrum.shape.step, shape.step );
+    OIIO_CHECK_EQUAL(
         spectrum.values.size(),
         ( shape.last - shape.first + shape.step ) / shape.step );
 
     for ( size_t i = 0; i < spectrum.values.size(); i++ )
-        BOOST_CHECK_EQUAL( spectrum.values[i], i );
+        OIIO_CHECK_EQUAL( spectrum.values[i], i );
 }
 
-BOOST_AUTO_TEST_CASE( TestSpectralData_Spectrum )
+void testSpectralData_Spectrum()
 {
     rta::core::Spectrum spectrum1;
     init_Spectrum( spectrum1 );
@@ -84,35 +82,35 @@ void init_SpectralData( rta::core::SpectralData &data )
 
 void check_SpectralData( const rta::core::SpectralData &data )
 {
-    BOOST_CHECK_EQUAL( data.manufacturer, "manufacturer" );
-    BOOST_CHECK_EQUAL( data.model, "model" );
-    BOOST_CHECK_EQUAL( data.illuminant, "illuminant" );
-    BOOST_CHECK_EQUAL( data.catalog_number, "catalog_number" );
-    BOOST_CHECK_EQUAL( data.description, "description" );
-    BOOST_CHECK_EQUAL( data.document_creator, "document_creator" );
-    BOOST_CHECK_EQUAL( data.unique_identifier, "unique_identifier" );
-    BOOST_CHECK_EQUAL( data.measurement_equipment, "measurement_equipment" );
-    BOOST_CHECK_EQUAL( data.laboratory, "laboratory" );
-    BOOST_CHECK_EQUAL( data.creation_date, "creation_date" );
-    BOOST_CHECK_EQUAL( data.comments, "comments" );
-    BOOST_CHECK_EQUAL( data.license, "license" );
-    BOOST_CHECK_EQUAL( data.units, "units" );
-    BOOST_CHECK_EQUAL( data.reflection_geometry, "reflection_geometry" );
-    BOOST_CHECK_EQUAL( data.transmission_geometry, "transmission_geometry" );
-    BOOST_CHECK_EQUAL( data.bandwidth_FWHM, "bandwidth_FWHM" );
-    BOOST_CHECK_EQUAL( data.bandwidth_corrected, "bandwidth_corrected" );
+    OIIO_CHECK_EQUAL( data.manufacturer, "manufacturer" );
+    OIIO_CHECK_EQUAL( data.model, "model" );
+    OIIO_CHECK_EQUAL( data.illuminant, "illuminant" );
+    OIIO_CHECK_EQUAL( data.catalog_number, "catalog_number" );
+    OIIO_CHECK_EQUAL( data.description, "description" );
+    OIIO_CHECK_EQUAL( data.document_creator, "document_creator" );
+    OIIO_CHECK_EQUAL( data.unique_identifier, "unique_identifier" );
+    OIIO_CHECK_EQUAL( data.measurement_equipment, "measurement_equipment" );
+    OIIO_CHECK_EQUAL( data.laboratory, "laboratory" );
+    OIIO_CHECK_EQUAL( data.creation_date, "creation_date" );
+    OIIO_CHECK_EQUAL( data.comments, "comments" );
+    OIIO_CHECK_EQUAL( data.license, "license" );
+    OIIO_CHECK_EQUAL( data.units, "units" );
+    OIIO_CHECK_EQUAL( data.reflection_geometry, "reflection_geometry" );
+    OIIO_CHECK_EQUAL( data.transmission_geometry, "transmission_geometry" );
+    OIIO_CHECK_EQUAL( data.bandwidth_FWHM, "bandwidth_FWHM" );
+    OIIO_CHECK_EQUAL( data.bandwidth_corrected, "bandwidth_corrected" );
 
-    BOOST_CHECK_EQUAL( data.data.size(), 1 );
-    BOOST_CHECK_EQUAL( data.data.count( "main" ), 1 );
-    BOOST_CHECK_EQUAL( data.data.at( "main" ).size(), 2 );
-    BOOST_CHECK_EQUAL( data.data.at( "main" )[0].first, "channel1" );
-    BOOST_CHECK_EQUAL( data.data.at( "main" )[1].first, "channel2" );
+    OIIO_CHECK_EQUAL( data.data.size(), 1 );
+    OIIO_CHECK_EQUAL( data.data.count( "main" ), 1 );
+    OIIO_CHECK_EQUAL( data.data.at( "main" ).size(), 2 );
+    OIIO_CHECK_EQUAL( data.data.at( "main" )[0].first, "channel1" );
+    OIIO_CHECK_EQUAL( data.data.at( "main" )[1].first, "channel2" );
 
     check_Spectrum( data["channel1"] );
     check_Spectrum( data["channel2"] );
 }
 
-BOOST_AUTO_TEST_CASE( TestSpectralData_Properties )
+void testSpectralData_Properties()
 {
     rta::core::SpectralData data1;
     init_SpectralData( data1 );
@@ -125,7 +123,7 @@ BOOST_AUTO_TEST_CASE( TestSpectralData_Properties )
     check_SpectralData( data3 );
 }
 
-BOOST_AUTO_TEST_CASE( TestSpectralData_LoadSpst )
+void testSpectralData_LoadSpst()
 {
     std::filesystem::path absolutePath =
         std::filesystem::absolute( DATA_PATH "camera/arri_d21_380_780_5.json" );
@@ -133,16 +131,16 @@ BOOST_AUTO_TEST_CASE( TestSpectralData_LoadSpst )
     rta::core::SpectralData camera;
     bool                    result;
 
-    BOOST_CHECK_NO_THROW( result = camera.load( absolutePath.string() ) );
-    BOOST_CHECK( result );
-    BOOST_CHECK_EQUAL( camera.manufacturer, "arri" );
-    BOOST_CHECK_EQUAL( camera.model, "d21" );
-    BOOST_CHECK_EQUAL( camera.data.size(), 1 );
-    BOOST_CHECK_EQUAL( camera.data.count( "main" ), 1 );
-    BOOST_CHECK_EQUAL( camera.data.at( "main" ).size(), 3 );
-    BOOST_CHECK_EQUAL( camera.data.at( "main" )[0].first, "R" );
-    BOOST_CHECK_EQUAL( camera.data.at( "main" )[1].first, "G" );
-    BOOST_CHECK_EQUAL( camera.data.at( "main" )[2].first, "B" );
+    result = camera.load( absolutePath.string() );
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_EQUAL( camera.manufacturer, "arri" );
+    OIIO_CHECK_EQUAL( camera.model, "d21" );
+    OIIO_CHECK_EQUAL( camera.data.size(), 1 );
+    OIIO_CHECK_EQUAL( camera.data.count( "main" ), 1 );
+    OIIO_CHECK_EQUAL( camera.data.at( "main" ).size(), 3 );
+    OIIO_CHECK_EQUAL( camera.data.at( "main" )[0].first, "R" );
+    OIIO_CHECK_EQUAL( camera.data.at( "main" )[1].first, "G" );
+    OIIO_CHECK_EQUAL( camera.data.at( "main" )[2].first, "B" );
 
     double rgb[81][3] = { { 0.000188205, 8.59E-05, 9.58E-05 },
                           { 0.000440222, 0.000166118, 0.000258734 },
@@ -231,14 +229,23 @@ BOOST_AUTO_TEST_CASE( TestSpectralData_LoadSpst )
     for ( size_t i = 0; i < 3; i++ )
     {
         const rta::core::Spectrum &spectrum = camera[channels[i]];
-        BOOST_CHECK_EQUAL( spectrum.shape.first, 380 );
-        BOOST_CHECK_EQUAL( spectrum.shape.last, 780 );
-        BOOST_CHECK_EQUAL( spectrum.shape.step, 5 );
-        BOOST_CHECK_EQUAL( spectrum.values.size(), 81 );
+        OIIO_CHECK_EQUAL( spectrum.shape.first, 380 );
+        OIIO_CHECK_EQUAL( spectrum.shape.last, 780 );
+        OIIO_CHECK_EQUAL( spectrum.shape.step, 5 );
+        OIIO_CHECK_EQUAL( spectrum.values.size(), 81 );
 
         for ( size_t j = 0; j < 3; j++ )
         {
-            BOOST_CHECK_CLOSE( spectrum.values[j], rgb[j][i], 1e-5 );
+            OIIO_CHECK_EQUAL_THRESH( spectrum.values[j], rgb[j][i], 1e-5 );
         }
     }
 };
+
+int main( int, char ** )
+{
+    testSpectralData_Spectrum();
+    testSpectralData_Properties();
+    testSpectralData_LoadSpst();
+
+    return unit_test_failures;
+}

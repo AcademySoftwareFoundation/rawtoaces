@@ -10,7 +10,6 @@ include(CMakeFindDependencyMacro)
 
 find_dependency ( Eigen3 )
 find_dependency ( Ceres )
-find_dependency ( Boost COMPONENTS system )
 find_dependency ( OpenImageIO )
 
 

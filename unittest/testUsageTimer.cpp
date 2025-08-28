@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
-#define BOOST_TEST_MODULE UsageTimerTest
-#include <boost/test/unit_test.hpp>
+#include <OpenImageIO/unittest.h>
+
 #include <rawtoaces/usage_timer.h>
 
 #include <chrono>
@@ -39,69 +39,68 @@ float extractTimeFromOutput( const std::string &output )
                 }
                 catch ( const std::exception &e )
                 {
-                    BOOST_FAIL(
-                        "Failed to parse time value: " << timeStr << " - "
-                                                       << e.what() );
+                    // always fails
+                    OIIO_CHECK_EQUAL(
+                        "Failed to parse time value: " + timeStr, e.what() );
                 }
             }
         }
     }
-    BOOST_FAIL( "Could not extract time from output: " << output );
+    // always fails
+    OIIO_CHECK_EQUAL( "Could not extract time from output: ", output );
     return -1.0f;
 }
 
-BOOST_AUTO_TEST_SUITE( UsageTimerTestSuite )
-
-BOOST_AUTO_TEST_CASE( TestDefaultConstruction )
+void testDefaultConstruction()
 {
     UsageTimer timer;
-    BOOST_CHECK_EQUAL( timer.enabled, false );
+    OIIO_CHECK_EQUAL( timer.enabled, false );
 }
 
-BOOST_AUTO_TEST_CASE( TestEnabledConstruction )
+void testEnabledConstruction()
 {
     UsageTimer timer;
     timer.enabled = true;
-    BOOST_CHECK_EQUAL( timer.enabled, true );
+    OIIO_CHECK_EQUAL( timer.enabled, true );
 }
 
-BOOST_AUTO_TEST_CASE( TestResetWhenDisabled )
+void testResetWhenDisabled()
 {
     UsageTimer timer;
     timer.enabled = false;
 
     // Should not crash when disabled
-    BOOST_CHECK_NO_THROW( timer.reset() );
+    timer.reset();
 }
 
-BOOST_AUTO_TEST_CASE( TestPrintWhenDisabled )
+void testPrintWhenDisabled()
 {
     UsageTimer timer;
     timer.enabled = false;
 
     // Should not crash when disabled
-    BOOST_CHECK_NO_THROW( timer.print( "test_path", "test_message" ) );
+    timer.print( "test_path", "test_message" );
 }
 
-BOOST_AUTO_TEST_CASE( TestResetWhenEnabled )
+void testResetWhenEnabled()
 {
     UsageTimer timer;
     timer.enabled = true;
 
     // Should not crash when enabled
-    BOOST_CHECK_NO_THROW( timer.reset() );
+    timer.reset();
 }
 
-BOOST_AUTO_TEST_CASE( TestPrintWhenEnabled )
+void testPrintWhenEnabled()
 {
     UsageTimer timer;
     timer.enabled = true;
 
     // Should not crash when enabled
-    BOOST_CHECK_NO_THROW( timer.print( "test_path", "test_message" ) );
+    timer.print( "test_path", "test_message" );
 }
 
-BOOST_AUTO_TEST_CASE( TestTimingOutput )
+void testTimingOutput()
 {
     UsageTimer timer;
     timer.enabled = true;
@@ -121,13 +120,13 @@ BOOST_AUTO_TEST_CASE( TestTimingOutput )
     std::string output = buffer.str();
 
     // Should contain timing information
-    BOOST_CHECK( output.find( "Timing:" ) != std::string::npos );
-    BOOST_CHECK( output.find( "test_path" ) != std::string::npos );
-    BOOST_CHECK( output.find( "test_message" ) != std::string::npos );
-    BOOST_CHECK( output.find( "msec" ) != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find( "Timing:" ) != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find( "test_path" ) != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find( "test_message" ) != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find( "msec" ) != std::string::npos );
 }
 
-BOOST_AUTO_TEST_CASE( TestConsecutiveCalls )
+void testConsecutiveCalls()
 {
     UsageTimer timer;
     timer.enabled = true;
@@ -135,13 +134,13 @@ BOOST_AUTO_TEST_CASE( TestConsecutiveCalls )
     // Multiple reset/print cycles should work
     for ( int i = 0; i < 5; ++i )
     {
-        BOOST_CHECK_NO_THROW( timer.reset() );
+        timer.reset();
         std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
-        BOOST_CHECK_NO_THROW( timer.print( "path", "message" ) );
+        timer.print( "path", "message" );
     }
 }
 
-BOOST_AUTO_TEST_CASE( TestEmptyStrings )
+void testEmptyStrings()
 {
     UsageTimer timer;
     timer.enabled = true;
@@ -150,12 +149,12 @@ BOOST_AUTO_TEST_CASE( TestEmptyStrings )
     std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
 
     // Should handle empty strings gracefully
-    BOOST_CHECK_NO_THROW( timer.print( "", "" ) );
-    BOOST_CHECK_NO_THROW( timer.print( "path", "" ) );
-    BOOST_CHECK_NO_THROW( timer.print( "", "message" ) );
+    timer.print( "", "" );
+    timer.print( "path", "" );
+    timer.print( "", "message" );
 }
 
-BOOST_AUTO_TEST_CASE( TestMultipleIndependentInstances )
+void testMultipleIndependentInstances()
 {
     // This test verifies that multiple instances work independently
     UsageTimer timer1;
@@ -186,23 +185,23 @@ BOOST_AUTO_TEST_CASE( TestMultipleIndependentInstances )
     std::string output2 = buffer2.str();
 
     // Both should contain timing information
-    BOOST_CHECK( output1.find( "Timing:" ) != std::string::npos );
-    BOOST_CHECK( output2.find( "Timing:" ) != std::string::npos );
+    OIIO_CHECK_ASSERT( output1.find( "Timing:" ) != std::string::npos );
+    OIIO_CHECK_ASSERT( output2.find( "Timing:" ) != std::string::npos );
 
     // Extract timing values
     float time1 = extractTimeFromOutput( output1 );
     float time2 = extractTimeFromOutput( output2 );
 
     // Timer1 should show longer time (started earlier)
-    BOOST_CHECK_GT( time1, time2 );
+    OIIO_CHECK_GT( time1, time2 );
     // Timer1 should be around 15ms, Timer2 around 5ms
-    BOOST_CHECK_GT( time1, 10.0f );
+    OIIO_CHECK_GT( time1, 10.0f );
 
     // disable for now as this fails on the CI runners
-    // BOOST_CHECK_LT( time2, 25.0f );
+    // OIIO_CHECK_LT( time2, 25.0f );
 }
 
-BOOST_AUTO_TEST_CASE( TestTimingAccuracy )
+void testTimingAccuracy()
 {
     UsageTimer timer;
     timer.enabled = true;
@@ -222,18 +221,18 @@ BOOST_AUTO_TEST_CASE( TestTimingAccuracy )
     std::string output = buffer.str();
 
     // Should contain timing information
-    BOOST_CHECK( output.find( "Timing:" ) != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find( "Timing:" ) != std::string::npos );
 
     float timeValue = extractTimeFromOutput( output );
 
     // Should be approximately 100ms (with some tolerance)
-    BOOST_CHECK_GT( timeValue, 95.0f ); // Allow for some overhead
+    OIIO_CHECK_GT( timeValue, 95.0f ); // Allow for some overhead
 
     // disable for now as this fails on the CI runners
-    // BOOST_CHECK_LT( timeValue, 250.0f ); // Allow for some overhead
+    // OIIO_CHECK_LT( timeValue, 250.0f ); // Allow for some overhead
 }
 
-BOOST_AUTO_TEST_CASE( TestUninitializedTimer )
+void testUninitializedTimer()
 {
     // Test that calling print() without reset() doesn't crash
     // (though it may show unexpected timing values)
@@ -241,7 +240,23 @@ BOOST_AUTO_TEST_CASE( TestUninitializedTimer )
     timer.enabled = true;
 
     // Don't call reset() - use uninitialized timer
-    BOOST_CHECK_NO_THROW( timer.print( "uninitialized", "test" ) );
+    timer.print( "uninitialized", "test" );
 }
 
-BOOST_AUTO_TEST_SUITE_END()
+int main( int, char ** )
+{
+    testDefaultConstruction();
+    testEnabledConstruction();
+    testResetWhenDisabled();
+    testPrintWhenDisabled();
+    testResetWhenEnabled();
+    testPrintWhenEnabled();
+    testTimingOutput();
+    testConsecutiveCalls();
+    testEmptyStrings();
+    testMultipleIndependentInstances();
+    testTimingAccuracy();
+    testUninitializedTimer();
+
+    return unit_test_failures;
+}

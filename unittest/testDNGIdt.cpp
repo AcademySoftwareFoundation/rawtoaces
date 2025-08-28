@@ -1,37 +1,35 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
 #include <filesystem>
-#include <boost/test/tools/floating_point_comparison.hpp>
+#include <OpenImageIO/unittest.h>
 
 #include <rawtoaces/rawtoaces_core.h>
 #include <rawtoaces/define.h>
 #include "../src/rawtoaces_core/rawtoaces_core_priv.h"
 
-BOOST_AUTO_TEST_CASE( TestIDT_CcttoMired )
+void testIDT_CcttoMired()
 {
     double cct   = 6500.0;
     double mired = rta::core::ccttoMired( cct );
-    BOOST_CHECK_CLOSE( mired, 153.8461538462, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( mired, 153.8461538462, 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_RobertsonLength )
+void testIDT_RobertsonLength()
 {
     double              uv[]  = { 0.2042589852, 0.3196233991 };
     double              uvt[] = { 0.1800600000, 0.2635200000, -0.2434100000 };
     std::vector<double> uvVector( uv, uv + 2 );
     std::vector<double> uvtVector( uvt, uvt + 3 );
     double rLength = rta::core::robertsonLength( uvVector, uvtVector );
-    BOOST_CHECK_CLOSE( rLength, 0.060234937, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( rLength, 0.060234937, 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_LightSourceToColorTemp )
+void testIDT_LightSourceToColorTemp()
 {
     unsigned short tag = 17;
     double         ct  = rta::core::lightSourceToColorTemp( tag );
-    BOOST_CHECK_CLOSE( ct, 2856.0, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( ct, 2856.0, 1e-5 );
 };
 
 void init_metadata( rta::core::Metadata &metadata )
@@ -56,15 +54,16 @@ void init_metadata( rta::core::Metadata &metadata )
     };
 }
 
-BOOST_AUTO_TEST_CASE( TestIDT_XYZToColorTemperature )
+void testIDT_XYZToColorTemperature()
 {
     double              XYZ[3] = { 0.9731171910, 1.0174927152, 0.9498565880 };
     std::vector<double> XYZVector( XYZ, XYZ + 3 );
     double              cct = rta::core::XYZToColorTemperature( XYZVector );
-    BOOST_CHECK_CLOSE( cct, 5564.6648479019, 1e-5 );
+
+    OIIO_CHECK_EQUAL_THRESH( cct, 5564.6648479019, 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_XYZtoCameraWeightedMatrix )
+void testIDT_XYZtoCameraWeightedMatrix()
 {
     rta::core::Metadata metadata;
     init_metadata( metadata );
@@ -84,10 +83,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_XYZtoCameraWeightedMatrix )
     delete di;
 
     FORI( countSize( matrix ) )
-    BOOST_CHECK_CLOSE( result[i], matrix[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i], matrix[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_FindXYZtoCameraMtx )
+void testIDT_FindXYZtoCameraMtx()
 {
     rta::core::Metadata metadata;
     init_metadata( metadata );
@@ -103,20 +102,20 @@ BOOST_AUTO_TEST_CASE( TestIDT_FindXYZtoCameraMtx )
     delete di;
 
     FORI( countSize( matrix ) )
-    BOOST_CHECK_CLOSE( result[i], matrix[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i], matrix[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_ColorTemperatureToXYZ )
+void testIDT_ColorTemperatureToXYZ()
 {
     double              cct    = 6500.0;
     double              XYZ[3] = { 0.3135279229, 0.3235340821, 0.3629379950 };
     std::vector<double> result = rta::core::colorTemperatureToXYZ( cct );
 
     FORI( countSize( XYZ ) )
-    BOOST_CHECK_CLOSE( result[i], XYZ[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i], XYZ[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_MatrixRGBtoXYZ )
+void testIDT_MatrixRGBtoXYZ()
 {
     double XYZ[9] = { 0.952552395938, 0.000000000000, 0.000093678632,
                       0.343966449765, 0.728166096613, -0.072132546379,
@@ -125,10 +124,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_MatrixRGBtoXYZ )
         rta::core::matrixRGBtoXYZ( rta::core::chromaticitiesACES );
 
     FORI( countSize( XYZ ) )
-    BOOST_CHECK_CLOSE( result[i], XYZ[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i], XYZ[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_GetDNGCATMatrix )
+void testIDT_GetDNGCATMatrix()
 {
     rta::core::Metadata metadata;
     init_metadata( metadata );
@@ -141,10 +140,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_GetDNGCATMatrix )
     delete di;
 
     FORIJ( 3, 3 )
-    BOOST_CHECK_CLOSE( result[i][j], matrix[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i][j], matrix[i][j], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_GetDNGIDTMatrix )
+void testIDT_GetDNGIDTMatrix()
 {
     rta::core::Metadata metadata;
     init_metadata( metadata );
@@ -157,5 +156,21 @@ BOOST_AUTO_TEST_CASE( TestIDT_GetDNGIDTMatrix )
     delete di;
 
     FORIJ( 3, 3 )
-    BOOST_CHECK_CLOSE( result[i][j], matrix[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( result[i][j], matrix[i][j], 1e-5 );
 };
+
+int main( int, char ** )
+{
+    testIDT_CcttoMired();
+    testIDT_RobertsonLength();
+    testIDT_LightSourceToColorTemp();
+    testIDT_XYZToColorTemperature();
+    testIDT_XYZtoCameraWeightedMatrix();
+    testIDT_FindXYZtoCameraMtx();
+    testIDT_ColorTemperatureToXYZ();
+    testIDT_MatrixRGBtoXYZ();
+    testIDT_GetDNGCATMatrix();
+    testIDT_GetDNGIDTMatrix();
+
+    return unit_test_failures;
+}

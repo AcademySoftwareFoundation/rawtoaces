@@ -7,50 +7,48 @@
 #    undef RGB
 #endif
 
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
-#include <boost/test/tools/floating_point_comparison.hpp>
+#include <OpenImageIO/unittest.h>
 
 #include <rawtoaces/mathOps.h>
 
 using namespace rta::core;
 
-BOOST_AUTO_TEST_CASE( Test_InvertD )
+void test_InvertD()
 {
     double a = 1.0;
-    BOOST_CHECK_CLOSE( invertD( a ), 1.0, 1e-9 );
+    OIIO_CHECK_EQUAL_THRESH( invertD( a ), 1.0, 1e-9 );
 
     double b = 1000.0;
-    BOOST_CHECK_CLOSE( invertD( b ), 0.001, 1e-9 );
+    OIIO_CHECK_EQUAL_THRESH( invertD( b ), 0.001, 1e-9 );
 
     double c = 1000000.0;
-    BOOST_CHECK_CLOSE( invertD( c ), 0.000001, 1e-9 );
+    OIIO_CHECK_EQUAL_THRESH( invertD( c ), 0.000001, 1e-9 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_Clip )
+void test_Clip()
 {
     double a = 254.9;
-    BOOST_CHECK_CLOSE( clip( a, 255.0 ), a, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( clip( a, 255.0 ), a, 1e-5 );
 
     double b = 255.1;
-    BOOST_CHECK_CLOSE( clip( b, 255.0 ), 255.0, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( clip( b, 255.0 ), 255.0, 1e-5 );
 
     double c = 63355.0;
-    BOOST_CHECK_CLOSE( clip( c, 63355.0 ), c, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( clip( c, 63355.0 ), c, 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_IsSquare )
+void test_IsSquare()
 {
     vector<vector<double>> a;
     a.resize( 2 );
     FORI( 2 ) a[i].resize( 2 );
-    BOOST_CHECK_EQUAL( isSquare( a ), 1 );
+    OIIO_CHECK_EQUAL( isSquare( a ), 1 );
 
     FORI( 2 ) a[i].resize( 1 );
-    BOOST_CHECK_EQUAL( isSquare( a ), 0 );
+    OIIO_CHECK_EQUAL( isSquare( a ), 0 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_AddVectors )
+void test_AddVectors()
 {
 
     double a[5] = { 1.0, 2.0, 3.0, 4.0, 5.0 };
@@ -62,10 +60,10 @@ BOOST_AUTO_TEST_CASE( Test_AddVectors )
     vector<double> cv = addVectors( av, bv );
 
     FORI( 5 )
-    BOOST_CHECK_CLOSE( cv[i], c[i], 1e-9 );
+    OIIO_CHECK_EQUAL_THRESH( cv[i], c[i], 1e-9 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_SubVectors )
+void test_SubVectors()
 {
 
     double a[5] = { 5.0, 4.0, 3.0, 2.0, 1.0 };
@@ -77,10 +75,10 @@ BOOST_AUTO_TEST_CASE( Test_SubVectors )
     vector<double> cv = subVectors( av, bv );
 
     FORI( 5 )
-    BOOST_CHECK_CLOSE( cv[i], c[i], 1e-9 );
+    OIIO_CHECK_EQUAL_THRESH( cv[i], c[i], 1e-9 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_Cross2 )
+void test_Cross2()
 {
     double a[2] = { 1.0, 3.0 };
     double b[2] = { 1.0, 6.5 };
@@ -89,10 +87,10 @@ BOOST_AUTO_TEST_CASE( Test_Cross2 )
     vector<double> bv( b, b + 2 );
 
     double cross2_test = cross2( av, bv );
-    BOOST_CHECK_CLOSE( cross2_test, 3.50, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( cross2_test, 3.50, 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_InvertVM )
+void test_InvertVM()
 {
     double M[3][3]         = { { 0.0188205, 8.59E-03, 9.58E-03 },
                                { 0.0440222, 0.0166118, 0.0258734 },
@@ -108,13 +106,13 @@ BOOST_AUTO_TEST_CASE( Test_InvertVM )
 
     FORI( 3 )
     {
-        BOOST_CHECK_CLOSE( MV_Inverse[i][0], M_Inverse[i][0], 1e-5 );
-        BOOST_CHECK_CLOSE( MV_Inverse[i][1], M_Inverse[i][1], 1e-5 );
-        BOOST_CHECK_CLOSE( MV_Inverse[i][2], M_Inverse[i][2], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( MV_Inverse[i][0], M_Inverse[i][0], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( MV_Inverse[i][1], M_Inverse[i][1], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( MV_Inverse[i][2], M_Inverse[i][2], 1e-5 );
     }
 };
 
-BOOST_AUTO_TEST_CASE( Test_InvertV )
+void test_InvertV()
 {
     double V[9] = { 0.0188205, 8.59E-03,  9.58E-03, 0.0440222, 0.0166118,
                     0.0258734, 0.1561591, 0.046321, 0.1181466 };
@@ -125,10 +123,10 @@ BOOST_AUTO_TEST_CASE( Test_InvertV )
     vector<double> MV( V, V + 9 );
     vector<double> MV_Inverse = invertV( MV );
 
-    FORI( 9 ) BOOST_CHECK_CLOSE( V_Inverse[i], MV_Inverse[i], 1e-5 );
+    FORI( 9 ) OIIO_CHECK_EQUAL_THRESH( V_Inverse[i], MV_Inverse[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_DiagVM )
+void test_DiagVM()
 {
     double M[3][3] = { { 1.0, 0.0, 0.0 },
                        { 0.0, 2.0, 0.0 },
@@ -140,13 +138,13 @@ BOOST_AUTO_TEST_CASE( Test_DiagVM )
 
     FORI( 3 )
     {
-        BOOST_CHECK_CLOSE( MVD[i][0], M[i][0], 1e-5 );
-        BOOST_CHECK_CLOSE( MVD[i][1], M[i][1], 1e-5 );
-        BOOST_CHECK_CLOSE( MVD[i][2], M[i][2], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( MVD[i][0], M[i][0], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( MVD[i][1], M[i][1], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( MVD[i][2], M[i][2], 1e-5 );
     }
 };
 
-BOOST_AUTO_TEST_CASE( Test_DiagV )
+void test_DiagV()
 {
     double         v[3]  = { 1.0, 2.0, 3.0 };
     double         vd[9] = { 1.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 3.0 };
@@ -155,11 +153,11 @@ BOOST_AUTO_TEST_CASE( Test_DiagV )
 
     FORI( 9 )
     {
-        BOOST_CHECK_CLOSE( DV[i], vd[i], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( DV[i], vd[i], 1e-5 );
     }
 };
 
-BOOST_AUTO_TEST_CASE( Test_TransposeVec )
+void test_TransposeVec()
 {
     double M[6][3] = {
         { 1.0, 0.0, 0.0 }, { 0.0, 2.0, 0.0 }, { 0.0, 0.0, 3.0 },
@@ -190,19 +188,19 @@ BOOST_AUTO_TEST_CASE( Test_TransposeVec )
     vector<vector<double>> MVT = transposeVec( MV );
 
     FORIJ( 3, 6 )
-    BOOST_CHECK_CLOSE( MVT[i][j], MT[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( MVT[i][j], MT[i][j], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_SumVector )
+void test_SumVector()
 {
     double M[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
     vector<double> MV( M, M + 10 );
 
     double sum = sumVector( MV );
-    BOOST_CHECK_CLOSE( sum, 55.0000, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( sum, 55.0000, 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_ScaleVectorMax )
+void test_ScaleVectorMax()
 {
     double M[10]        = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
     double M_Scaled[10] = { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 };
@@ -210,20 +208,20 @@ BOOST_AUTO_TEST_CASE( Test_ScaleVectorMax )
 
     scaleVectorMax( MV );
     FORI( MV.size() )
-    BOOST_CHECK_CLOSE( M_Scaled[i], MV[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( M_Scaled[i], MV[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_ScaleVectorMin )
+void test_ScaleVectorMin()
 {
     double M[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
     vector<double> MV( M, M + 10 );
 
     scaleVectorMin( MV );
     FORI( MV.size() )
-    BOOST_CHECK_CLOSE( M[i], MV[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( M[i], MV[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_scaleVectorD )
+void test_scaleVectorD()
 {
     double M[10]        = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
     double M_Scaled[10] = { 10.0000000000, 5.0000000000, 3.3333333333,
@@ -234,10 +232,10 @@ BOOST_AUTO_TEST_CASE( Test_scaleVectorD )
 
     scaleVectorD( MV );
     FORI( MV.size() )
-    BOOST_CHECK_CLOSE( MV[i], M_Scaled[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( MV[i], M_Scaled[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_MulVectorElement )
+void test_MulVectorElement()
 {
     double M1[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
     double M2[10] = { 10.0000000000, 5.0000000000, 3.3333333333, 2.5000000000,
@@ -248,10 +246,10 @@ BOOST_AUTO_TEST_CASE( Test_MulVectorElement )
 
     vector<double> MV3 = mulVectorElement( MV1, MV2 );
     FORI( MV3.size() )
-    BOOST_CHECK_CLOSE( MV3[i], 10.0000000000, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( MV3[i], 10.0000000000, 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_DivVectorElement )
+void test_DivVectorElement()
 {
     double M1[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
     double M2[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
@@ -261,10 +259,10 @@ BOOST_AUTO_TEST_CASE( Test_DivVectorElement )
 
     vector<double> MV3 = divVectorElement( MV1, MV2 );
     FORI( MV3.size() )
-    BOOST_CHECK_CLOSE( MV3[i], 1.0000000000, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( MV3[i], 1.0000000000, 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_MulVector1 )
+void test_MulVector1()
 {
     double M1[3][3] = { { 1.0, 0.0, 0.0 },
                         { 0.0, 2.0, 0.0 },
@@ -290,10 +288,10 @@ BOOST_AUTO_TEST_CASE( Test_MulVector1 )
 
     vector<vector<double>> MV3 = mulVector( MV1, MV2 );
     FORIJ( 3, 3 )
-    BOOST_CHECK_CLOSE( MV3[i][j], M3[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( MV3[i][j], M3[i][j], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_MulVector2 )
+void test_MulVector2()
 {
     double M1[3][3] = { { 1.0000000000, 0.0000000000, 0.0000000000 },
                         { 0.0000000000, 0.5000000000, 0.0000000000 },
@@ -311,10 +309,10 @@ BOOST_AUTO_TEST_CASE( Test_MulVector2 )
 
     vector<double> MV3 = mulVector( MV1, MV2 );
     FORI( 3 )
-    BOOST_CHECK_CLOSE( MV3[i], M2[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( MV3[i], M2[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_MulVectorArray )
+void test_MulVectorArray()
 {
     double data[9] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 };
     double M[3][3] = { { 1.0000000000, 0.1000000000, 0.0100000000 },
@@ -333,10 +331,10 @@ BOOST_AUTO_TEST_CASE( Test_MulVectorArray )
 
     mulVectorArray( data, 9, 3, MV );
     FORI( 9 )
-    BOOST_CHECK_CLOSE( data[i], data_test[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( data[i], data_test[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_SolveVM )
+void test_SolveVM()
 {
     double M1[3][3] = { { 1.0000000000, 0.0000000000, 0.0000000000 },
                         { 0.0000000000, 2.0000000000, 0.0000000000 },
@@ -366,10 +364,10 @@ BOOST_AUTO_TEST_CASE( Test_SolveVM )
 
     vector<vector<double>> MV3 = solveVM( MV1, MV2 );
     FORIJ( 3, 3 )
-    BOOST_CHECK_CLOSE( MV3[i][j], M3_test[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( MV3[i][j], M3_test[i][j], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_FindIndexInterp1 )
+void test_FindIndexInterp1()
 {
     int M[100];
     FORI( sizeof( M ) / sizeof( int ) )
@@ -378,10 +376,10 @@ BOOST_AUTO_TEST_CASE( Test_FindIndexInterp1 )
     vector<int> MV( M, M + 100 );
 
     int index = findIndexInterp1( 100, MV, (int)MV.size() );
-    BOOST_CHECK_EQUAL( index, 50 );
+    OIIO_CHECK_EQUAL( index, 50 );
 };
 
-BOOST_AUTO_TEST_CASE( Test_Interp1DLinear )
+void test_Interp1DLinear()
 {
     int    X0[100], X1[100];
     double Y0[100];
@@ -428,10 +426,10 @@ BOOST_AUTO_TEST_CASE( Test_Interp1DLinear )
     vector<double> YV1 = interp1DLinear( XV0, XV1, YV0 );
 
     FORI( YV1.size() )
-    BOOST_CHECK_CLOSE( YV1[i], Y1[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( YV1[i], Y1[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_XytoXYZ )
+void testIDT_XytoXYZ()
 {
     double         xy[3]  = { 0.7347, 0.2653 };
     double         XYZ[3] = { 0.7347, 0.2653, 0.0 };
@@ -439,11 +437,11 @@ BOOST_AUTO_TEST_CASE( TestIDT_XytoXYZ )
 
     FORI( 3 )
     {
-        BOOST_CHECK_CLOSE( XYZV[i], XYZV[i], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( XYZV[i], XYZV[i], 1e-5 );
     }
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_Uvtoxy )
+void testIDT_Uvtoxy()
 {
     double         uv[2] = { 0.7347, 0.2653 };
     double         xy[2] = { 0.658530026, 0.158530026 };
@@ -451,11 +449,11 @@ BOOST_AUTO_TEST_CASE( TestIDT_Uvtoxy )
 
     FORI( 2 )
     {
-        BOOST_CHECK_CLOSE( xy[i], xyV[i], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( xy[i], xyV[i], 1e-5 );
     }
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_UvtoXYZ )
+void testIDT_UvtoXYZ()
 {
     double         uv[2]  = { 0.7347, 0.2653 };
     double         XYZ[3] = { 0.658530026, 0.158530026, 0.18293995 };
@@ -463,11 +461,11 @@ BOOST_AUTO_TEST_CASE( TestIDT_UvtoXYZ )
 
     FORI( 3 )
     {
-        BOOST_CHECK_CLOSE( XYZ[i], XYZV[i], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( XYZ[i], XYZV[i], 1e-5 );
     }
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_XYZTouv )
+void testIDT_XYZTouv()
 {
     double         XYZ[3] = { 0.658530026, 0.158530026, 0.18293995 };
     double         uv[2]  = { 0.7347, 0.2653 };
@@ -475,11 +473,11 @@ BOOST_AUTO_TEST_CASE( TestIDT_XYZTouv )
 
     FORI( 2 )
     {
-        BOOST_CHECK_CLOSE( uv[i], uvV[i], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( uv[i], uvV[i], 1e-5 );
     }
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_GetCAT )
+void testIDT_GetCAT()
 {
     vector<double> dIV( d50, d50 + 3 );
     vector<double> dOV( d60, d60 + 3 );
@@ -492,13 +490,13 @@ BOOST_AUTO_TEST_CASE( TestIDT_GetCAT )
 
     FORI( 3 )
     {
-        BOOST_CHECK_CLOSE( CAT[i][0], CAT_test[i][0], 1e-5 );
-        BOOST_CHECK_CLOSE( CAT[i][1], CAT_test[i][1], 1e-5 );
-        BOOST_CHECK_CLOSE( CAT[i][2], CAT_test[i][2], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( CAT[i][0], CAT_test[i][0], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( CAT[i][1], CAT_test[i][1], 1e-5 );
+        OIIO_CHECK_EQUAL_THRESH( CAT[i][2], CAT_test[i][2], 1e-5 );
     }
 };
 
-BOOST_AUTO_TEST_CASE( Test_XYZtoLAB )
+void test_XYZtoLAB()
 {
     vector<vector<double>> XYZ( 190, ( vector<double>( 3 ) ) );
     FORIJ( 190, 3 )
@@ -699,13 +697,13 @@ BOOST_AUTO_TEST_CASE( Test_XYZtoLAB )
     FORIJ( 190, 3 )
     {
         if ( LAB[i][j] == 0 )
-            BOOST_CHECK_SMALL( LAB_test[i][j], 1e-7 );
+            OIIO_CHECK_LE( std::abs( LAB_test[i][j] ), 1e-7 );
         else
-            BOOST_CHECK_CLOSE( LAB_test[i][j], LAB[i][j], 1e-5 );
+            OIIO_CHECK_EQUAL_THRESH( LAB_test[i][j], LAB[i][j], 1e-5 );
     }
 };
 
-BOOST_AUTO_TEST_CASE( Test_GetCalcXYZt )
+void test_GetCalcXYZt()
 {
     vector<vector<double>> RGB( 190, ( vector<double>( 3 ) ) );
     const double           BStart[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
@@ -906,5 +904,41 @@ BOOST_AUTO_TEST_CASE( Test_GetCalcXYZt )
                            { 9.5255239594, 3.4396644977, 0.0000000000 } };
 
     FORIJ( 190, 3 )
-    BOOST_CHECK_CLOSE( XYZ_test[i][j], XYZ[i][j], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( XYZ_test[i][j], XYZ[i][j], 1e-5 );
 };
+
+int main( int, char ** )
+{
+    test_InvertD();
+    test_Clip();
+    test_IsSquare();
+    test_AddVectors();
+    test_SubVectors();
+    test_Cross2();
+    test_InvertVM();
+    test_InvertV();
+    test_DiagVM();
+    test_DiagV();
+    test_TransposeVec();
+    test_SumVector();
+    test_ScaleVectorMax();
+    test_ScaleVectorMin();
+    test_scaleVectorD();
+    test_MulVectorElement();
+    test_DivVectorElement();
+    test_MulVector1();
+    test_MulVector2();
+    test_MulVectorArray();
+    test_SolveVM();
+    test_FindIndexInterp1();
+    test_Interp1DLinear();
+    testIDT_XytoXYZ();
+    testIDT_Uvtoxy();
+    testIDT_UvtoXYZ();
+    testIDT_XYZTouv();
+    testIDT_GetCAT();
+    test_XYZtoLAB();
+    test_GetCalcXYZt();
+
+    return unit_test_failures;
+}

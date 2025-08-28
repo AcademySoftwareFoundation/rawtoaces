@@ -22,16 +22,10 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_compile_definitions( NOMINMAX )
 endif()
 
-find_package ( Boost REQUIRED
-    COMPONENTS
-        system
-        unit_test_framework
-)
-
 # the Ceres::ceres alias in not getting defined on the config side
-find_package ( Ceres CONFIG REQUIRED )
-
-find_package(RAWTOACES CONFIG REQUIRED)
+find_package ( Ceres       CONFIG REQUIRED )
+find_package ( OpenImageIO CONFIG REQUIRED )
+find_package ( RAWTOACES   CONFIG REQUIRED )
 
 enable_testing()
 add_subdirectory(core)

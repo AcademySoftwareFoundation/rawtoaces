@@ -20,10 +20,6 @@ add_library( ${RAWTOACES_CORE_LIB} ${DO_SHARED}
 target_link_libraries(
     ${RAWTOACES_CORE_LIB}
     PUBLIC
-        Boost::boost
-        Boost::system
-        Imath::Imath
-        Imath::ImathConfig
         Eigen3::Eigen
 )
 

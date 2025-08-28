@@ -7,22 +7,22 @@
 #    include <windows.h>
 #endif
 
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
-#include <boost/test/tools/floating_point_comparison.hpp>
+#include <OpenImageIO/unittest.h>
 
 #include <rawtoaces/define.h>
 #include <rawtoaces/mathOps.h>
 #include <rawtoaces/rawtoaces_core.h>
 
-BOOST_AUTO_TEST_CASE( Test_InvertD )
+int main( int, char ** )
 {
     double a = 1.0;
-    BOOST_CHECK_CLOSE( rta::core::invertD( a ), 1.0, 1e-9 );
+    OIIO_CHECK_EQUAL_THRESH( rta::core::invertD( a ), 1.0, 1e-9 );
 
     double b = 1000.0;
-    BOOST_CHECK_CLOSE( rta::core::invertD( b ), 0.001, 1e-9 );
+    OIIO_CHECK_EQUAL_THRESH( rta::core::invertD( b ), 0.001, 1e-9 );
 
     double c = 1000000.0;
-    BOOST_CHECK_CLOSE( rta::core::invertD( c ), 0.000001, 1e-9 );
+    OIIO_CHECK_EQUAL_THRESH( rta::core::invertD( c ), 0.000001, 1e-9 );
+
+    return unit_test_failures;
 };

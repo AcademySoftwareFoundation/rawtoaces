@@ -6,10 +6,8 @@
 #    include <windows.h>
 #endif
 
-#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
 #include <filesystem>
-#include <boost/test/tools/floating_point_comparison.hpp>
+#include <OpenImageIO/unittest.h>
 
 #include <rawtoaces/mathOps.h>
 #include <rawtoaces/rawtoaces_core.h>
@@ -17,15 +15,15 @@
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 
-BOOST_AUTO_TEST_CASE( TestIllum_cctToxy )
+void testIllum_cctToxy()
 {
     vector<double> xy = rta::core::cctToxy( 5000 * 1.4387752 / 1.438 );
 
-    BOOST_CHECK_CLOSE( xy[0], 0.3456619734948, 1e-9 );
-    BOOST_CHECK_CLOSE( xy[1], 0.3586032641691, 1e-9 );
+    OIIO_CHECK_EQUAL_THRESH( xy[0], 0.3456619734948, 1e-9 );
+    OIIO_CHECK_EQUAL_THRESH( xy[1], 0.3586032641691, 1e-9 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIllum_readSPD )
+void testIllum_readSPD()
 {
     rta::core::SpectralData illuminant;
 
@@ -57,15 +55,15 @@ BOOST_AUTO_TEST_CASE( TestIllum_readSPD )
         1.0000000000000
     };
 
-    BOOST_CHECK_EQUAL( illuminant.illuminant, "iso7589" );
-    BOOST_CHECK_EQUAL( illuminant["power"].shape.step, 5 );
+    OIIO_CHECK_EQUAL( illuminant.illuminant, "iso7589" );
+    OIIO_CHECK_EQUAL( illuminant["power"].shape.step, 5 );
 
     vector<double> &illumTestData = illuminant["power"].values;
-    BOOST_CHECK_EQUAL( illumTestData.size(), 81 );
-    FORI( 81 ) BOOST_CHECK_CLOSE( illumTestData[i], iso7589[i], 1e-5 );
+    OIIO_CHECK_EQUAL( illumTestData.size(), 81 );
+    FORI( 81 ) OIIO_CHECK_EQUAL_THRESH( illumTestData[i], iso7589[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIllum_calDayLightSPD )
+void testIllum_calDayLightSPD()
 {
     rta::core::Spectrum illuminant;
     calculate_daylight_SPD( 50, illuminant );
@@ -102,10 +100,10 @@ BOOST_AUTO_TEST_CASE( TestIllum_calDayLightSPD )
 
     vector<double> &data = illuminant.values;
     FORI( data.size() )
-    BOOST_CHECK_CLOSE( data[i], spd[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( data[i], spd[i], 1e-5 );
 };
 
-BOOST_AUTO_TEST_CASE( TestIllum_calBlackBodySPD )
+void testIllum_calBlackBodySPD()
 {
     rta::core::Spectrum illuminant;
     calculate_blackbody_SPD( 3200, illuminant );
@@ -132,5 +130,15 @@ BOOST_AUTO_TEST_CASE( TestIllum_calBlackBodySPD )
 
     vector<double> &data = illuminant.values;
     FORI( data.size() )
-    BOOST_CHECK_CLOSE( data[i] * 1e-12, spd[i], 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( data[i] * 1e-12, spd[i], 1e-5 );
 };
+
+int main( int, char ** )
+{
+    testIllum_cctToxy();
+    testIllum_readSPD();
+    testIllum_calDayLightSPD();
+    testIllum_calBlackBodySPD();
+
+    return unit_test_failures;
+}

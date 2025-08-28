@@ -13,6 +13,7 @@
 
 #include <rawtoaces/mathOps.h>
 #include <rawtoaces/rawtoaces_core.h>
+#include "../src/rawtoaces_core/rawtoaces_core_priv.h"
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 
@@ -696,33 +697,23 @@ BOOST_AUTO_TEST_CASE( TestIDT_LoadCMF )
     }
 };
 
-BOOST_AUTO_TEST_CASE( TestIDT_Verbose )
-{
-    rta::core::Idt idtTest;
-
-    idtTest.setVerbosity( 1 );
-    BOOST_CHECK_EQUAL( idtTest.getVerbosity(), 1 );
-
-    idtTest.setVerbosity( 3 );
-    BOOST_CHECK_EQUAL( idtTest.getVerbosity(), 3 );
-};
-
 void load_camera_helper(
-    rta::core::Idt    &idt,
-    const std::string &camera_path,
-    const std::string &camera_make,
-    const std::string &camera_model,
-    const std::string &illuminant_name = "",
-    bool               load_training   = false,
-    bool               load_observer   = false )
+    rta::core::SpectralSolver &idt,
+    const std::string         &camera_path,
+    const std::string         &camera_make,
+    const std::string         &camera_model,
+    const std::string         &illuminant_name = "",
+    bool                       load_training   = false,
+    bool                       load_observer   = false )
 {
-    std::filesystem::path absoluteCameraPath =
-        std::filesystem::absolute( DATA_PATH + camera_path );
-    int load_camera_result = idt.loadCameraSpst(
-        absoluteCameraPath.string(), camera_make, camera_model );
-    BOOST_CHECK_EQUAL( load_camera_result, 1 );
 
-    const auto &camera = idt.getCameraSpst();
+    {
+        std::filesystem::path absoluteCameraPath =
+            std::filesystem::absolute( DATA_PATH + camera_path );
+        bool result = idt.load_camera(
+            absoluteCameraPath.string(), camera_make, camera_model );
+        BOOST_CHECK_EQUAL( result, true );
+    }
 
     if ( !illuminant_name.empty() )
     {
@@ -732,12 +723,19 @@ void load_camera_helper(
         vector<string> illumPaths;
         illumPaths.push_back( absoluteIlluminantPath.string() );
 
-        std::filesystem::path absoluteCameraPath = std::filesystem::absolute(
-            DATA_PATH "camera/nikon_d200_380_780_5.json" );
+        bool result = idt.load_illuminant( illumPaths, illuminant_name );
+        BOOST_CHECK_EQUAL( result, true );
+    }
+    else
+    {
+        std::filesystem::path absoluteIlluminantPath =
+            std::filesystem::absolute(
+                DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
+        vector<string> illumPaths;
+        illumPaths.push_back( absoluteIlluminantPath.string() );
 
-        int load_illuminant_result =
-            idt.loadIlluminant( illumPaths, illuminant_name );
-        BOOST_CHECK_EQUAL( load_illuminant_result, 1 );
+        bool result = idt.load_illuminant( illumPaths, "" );
+        BOOST_CHECK_EQUAL( result, true );
     }
 
     if ( load_training )
@@ -745,32 +743,38 @@ void load_camera_helper(
         std::filesystem::path absoluteTrainingPath = std::filesystem::absolute(
             DATA_PATH "training/training_spectral.json" );
 
-        idt.loadTrainingData( absoluteTrainingPath.string() );
+        bool result = idt.load_training_data( absoluteTrainingPath.string() );
+        BOOST_CHECK_EQUAL( result, true );
     }
 
     if ( load_observer )
     {
         std::filesystem::path observerPath =
             std::filesystem::absolute( DATA_PATH "cmf/cmf_1931.json" );
-        idt.loadCMF( observerPath.string() );
+        bool result = idt.load_observer( observerPath.string() );
+        BOOST_CHECK_EQUAL( result, true );
     }
+}
+
+void load_file( const std::string &path, rta::core::SpectralData &data )
+{
+    bool result;
+
+    std::filesystem::path full_path =
+        std::filesystem::absolute( DATA_PATH + path );
+    BOOST_CHECK_NO_THROW( result = data.load( full_path.string() ) );
+    BOOST_CHECK( result );
 }
 
 BOOST_AUTO_TEST_CASE( TestIDT_scaleLSC )
 {
-    bool result;
-
-    std::filesystem::path absoluteIlluminantPath = std::filesystem::absolute(
-        DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
     rta::core::SpectralData illuminant;
-    BOOST_CHECK_NO_THROW(
-        result = illuminant.load( absoluteIlluminantPath.string() ) );
-    BOOST_CHECK( result );
+    load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
 
-    rta::core::Idt idt;
-    load_camera_helper(
-        idt, "camera/nikon_d200_380_780_5.json", "nikon", "d200" );
-    idt.scaleLSC( illuminant );
+    rta::core::SpectralData camera;
+    load_file( "camera/nikon_d200_380_780_5.json", camera );
+
+    scaleLSC( camera, illuminant );
 
     double scaledIllum[81] = {
         0.00546219526, 0.00682774407, 0.00819329289, 0.00955884170,
@@ -806,12 +810,13 @@ BOOST_AUTO_TEST_CASE( TestIDT_scaleLSC )
 
 BOOST_AUTO_TEST_CASE( TestIDT_CalCM )
 {
-    rta::core::Idt idt;
-    load_camera_helper(
-        idt, "camera/arri_d21_380_780_5.json", "arri", "d21", "iso7589" );
-    idt.chooseIllumType( "iso7589", 0 );
+    rta::core::SpectralData illuminant;
+    load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
 
-    vector<double> CM_test = idt.calCM();
+    rta::core::SpectralData camera;
+    load_file( "camera/arri_d21_380_780_5.json", camera );
+
+    vector<double> CM_test = calCM( camera, illuminant );
 
     float CM[81] = { 1.0000000000, 1.4418439699, 1.8703081160 };
 
@@ -820,13 +825,13 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalCM )
 
 BOOST_AUTO_TEST_CASE( TestIDT_CalWB )
 {
-    rta::core::Idt idt;
-    load_camera_helper(
-        idt, "camera/nikon_d200_380_780_5.json", "nikon", "d200", "iso7589" );
-    idt.chooseIllumType( "iso7589", 0 );
+    rta::core::SpectralData illuminant;
+    load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
 
-    rta::core::SpectralData best_illuminant = idt.getBestIllum();
-    vector<double>          WB_test         = idt.calWB( best_illuminant, 0 );
+    rta::core::SpectralData camera;
+    load_file( "camera/nikon_d200_380_780_5.json", camera );
+
+    vector<double> WB_test = calWB( camera, illuminant, 0 );
 
     double WB[3] = { 1.1397265, 1.0000000, 2.3240151 };
     FORI( WB_test.size() )
@@ -837,15 +842,15 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalWB )
 
 BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumSrc )
 {
-    rta::core::Idt idt;
+    rta::core::SpectralSolver idt;
     load_camera_helper(
-        idt, "camera/nikon_d200_380_780_5.json", "nikon", "d200", "na", true );
+        idt, "camera/nikon_d200_380_780_5.json", "nikon", "d200", "", true );
 
     float          wb[3] = { 1.0, 1.0, 1.0 };
     vector<double> wbv( wb, wb + 3 );
-    idt.chooseIllumSrc( wbv, 1 );
+    idt.find_best_illuminant( wbv, 1 );
 
-    const auto    &best_illuminant = idt.getBestIllum();
+    const auto    &best_illuminant = idt.get_best_illuminant();
     string         illumType_Test  = best_illuminant.illuminant;
     vector<double> illumData_Test  = best_illuminant["power"].values;
 
@@ -876,7 +881,7 @@ BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumSrc )
 
 BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumType )
 {
-    rta::core::Idt idt;
+    rta::core::SpectralSolver idt;
     load_camera_helper(
         idt,
         "camera/nikon_d200_380_780_5.json",
@@ -887,9 +892,9 @@ BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumType )
 
     float          wb[3] = { 1.0, 1.0, 1.0 };
     vector<double> wbv( wb, wb + 3 );
-    idt.chooseIllumType( "iso7589", 1 );
+    idt.select_illuminant( "iso7589", 1 );
 
-    const auto    &best_illuminant = idt.getBestIllum();
+    const auto    &best_illuminant = idt.get_best_illuminant();
     string         illumType_Test  = best_illuminant.illuminant;
     vector<double> illumData_Test  = best_illuminant["power"].values;
 
@@ -920,18 +925,17 @@ BOOST_AUTO_TEST_CASE( TestIDT_ChooseIllumType )
 
 BOOST_AUTO_TEST_CASE( TestIDT_CalTI )
 {
-    rta::core::Idt idt;
-    load_camera_helper(
-        idt,
-        "camera/nikon_d200_380_780_5.json",
-        "nikon",
-        "d200",
-        "iso7589",
-        true );
+    rta::core::SpectralData camera;
+    load_file( "camera/nikon_d200_380_780_5.json", camera );
 
-    // need to choose the best illuminant
-    idt.chooseIllumType( "iso7589", 0 );
-    auto TI_test = idt.calTI();
+    rta::core::SpectralData illuminant;
+    load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
+
+    rta::core::SpectralData training_data;
+    load_file( "training/training_spectral.json", training_data );
+
+    scaleLSC( camera, illuminant );
+    auto TI_test = calTI( illuminant, training_data );
 
     double TI[81]
              [190] = { { 0.0003277317, 0.0003544965, 0.0007455897, 0.0010897080,
@@ -4835,23 +4839,22 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalTI )
 
 BOOST_AUTO_TEST_CASE( TestIDT_CalXYZ )
 {
-    rta::core::Idt idt;
-    load_camera_helper(
-        idt,
-        "camera/nikon_d200_380_780_5.json",
-        "nikon",
-        "d200",
-        "iso7589",
-        true,
-        true );
+    rta::core::SpectralData camera;
+    load_file( "camera/nikon_d200_380_780_5.json", camera );
 
-    // need to choose the best illuminant
-    idt.chooseIllumType( "iso7589", 0 );
-    auto TI_test = idt.calTI();
+    rta::core::SpectralData illuminant;
+    load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
 
-    idt.chooseIllumType( "iso7589", 0 );
-    vector<rta::core::Spectrum> TI       = idt.calTI();
-    vector<vector<double>>      XYZ_test = idt.calXYZ( TI );
+    rta::core::SpectralData training_data;
+    load_file( "training/training_spectral.json", training_data );
+
+    rta::core::SpectralData observer;
+    load_file( "cmf/cmf_1931.json", observer );
+
+    scaleLSC( camera, illuminant );
+
+    auto TI       = calTI( illuminant, training_data );
+    auto XYZ_test = calXYZ( observer, illuminant, TI );
 
     double XYZ[190][3] = { { 0.0179976319, 0.0180404631, 0.0195495429 },
                            { 0.0855118682, 0.0896534488, 0.0901537219 },
@@ -5050,19 +5053,22 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalXYZ )
 
 BOOST_AUTO_TEST_CASE( TestIDT_CalRGB )
 {
-    rta::core::Idt idt;
-    load_camera_helper(
-        idt,
-        "camera/nikon_d200_380_780_5.json",
-        "nikon",
-        "d200",
-        "iso7589",
-        true,
-        true );
+    rta::core::SpectralData camera;
+    load_file( "camera/nikon_d200_380_780_5.json", camera );
 
-    idt.chooseIllumType( "iso7589", 0 );
-    vector<rta::core::Spectrum> TI       = idt.calTI();
-    vector<vector<double>>      RGB_test = idt.calRGB( TI );
+    rta::core::SpectralData illuminant;
+    load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
+
+    rta::core::SpectralData training_data;
+    load_file( "training/training_spectral.json", training_data );
+
+    rta::core::SpectralData observer;
+    load_file( "cmf/cmf_1931.json", observer );
+
+    scaleLSC( camera, illuminant );
+    auto WB       = calWB( camera, illuminant, 0.0 );
+    auto TI       = calTI( illuminant, training_data );
+    auto RGB_test = calRGB( camera, illuminant, WB, TI );
 
     double RGB[190][3] = { { 0.0202216733, 0.0193805976, 0.0242277400 },
                            { 0.0895652372, 0.0893690961, 0.0891448525 },
@@ -5261,24 +5267,29 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalRGB )
 
 BOOST_AUTO_TEST_CASE( TestIDT_CurveFit )
 {
-    rta::core::Idt idt;
-    load_camera_helper(
-        idt,
-        "camera/nikon_d200_380_780_5.json",
-        "nikon",
-        "d200",
-        "iso7589",
-        true,
-        true );
+    rta::core::SpectralData camera;
+    load_file( "camera/nikon_d200_380_780_5.json", camera );
 
-    idt.chooseIllumType( "iso7589", 0 );
-    vector<rta::core::Spectrum> TI        = idt.calTI();
-    vector<vector<double>>      XYZ_test  = idt.calXYZ( TI );
-    vector<vector<double>>      RGB_test  = idt.calRGB( TI );
-    double                      BStart[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
+    rta::core::SpectralData illuminant;
+    load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
 
-    BOOST_CHECK( idt.curveFit( RGB_test, XYZ_test, BStart ) );
-    vector<vector<double>> IDT_test = idt.getIDT();
+    rta::core::SpectralData training_data;
+    load_file( "training/training_spectral.json", training_data );
+
+    rta::core::SpectralData observer;
+    load_file( "cmf/cmf_1931.json", observer );
+
+    scaleLSC( camera, illuminant );
+    auto WB  = calWB( camera, illuminant, 0.0 );
+    auto TI  = calTI( illuminant, training_data );
+    auto XYZ = calXYZ( observer, illuminant, TI );
+    auto RGB = calRGB( camera, illuminant, WB, TI );
+
+    double BStart[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
+
+    std::vector<std::vector<double>> IDT_test( 3, std::vector<double>( 3 ) );
+
+    BOOST_CHECK( rta::core::curveFit( RGB, XYZ, BStart, 0, IDT_test ) );
 
     float IDT[3][3] = { { 0.7447691479, 0.1434200377, 0.1118108144 },
                         { 0.0451759890, 1.0082622042, -0.0534381932 },
@@ -5290,7 +5301,7 @@ BOOST_AUTO_TEST_CASE( TestIDT_CurveFit )
 
 BOOST_AUTO_TEST_CASE( TestIDT_CalIDT )
 {
-    rta::core::Idt idt;
+    rta::core::SpectralSolver idt;
     load_camera_helper(
         idt,
         "camera/arri_d21_380_780_5.json",
@@ -5299,10 +5310,10 @@ BOOST_AUTO_TEST_CASE( TestIDT_CalIDT )
         "iso7589",
         true,
         true );
-    idt.chooseIllumType( "iso7589", 0 );
+    idt.select_illuminant( "iso7589", 0 );
 
-    BOOST_CHECK( idt.calIDT() );
-    vector<vector<double>> IDT_test = idt.getIDT();
+    BOOST_CHECK( idt.calculate_IDT_matrix() );
+    vector<vector<double>> IDT_test = idt.get_IDT_matrix();
 
     float IDT[3][3] = { { 1.0915120600, -0.2516916464, 0.1601795864 },
                         { -0.0089998772, 1.2147199060, -0.2057200288 },

@@ -297,7 +297,7 @@ std::vector<std::string> find_files(
 }
 
 bool configure_solver(
-    core::Idt                      &solver,
+    core::SpectralSolver           &solver,
     const std::vector<std::string> &directories,
     const std::string              &camera_make,
     const std::string              &camera_model,
@@ -308,7 +308,7 @@ bool configure_solver(
     auto camera_files = collect_data_files( directories, "camera" );
     for ( auto &camera_file: camera_files )
     {
-        success = solver.loadCameraSpst(
+        success = solver.load_camera(
             camera_file, camera_make.c_str(), camera_model.c_str() );
         if ( success )
             break;
@@ -326,24 +326,24 @@ bool configure_solver(
     if ( found_training_data.size() )
     {
         // loading training data (190 patches)
-        solver.loadTrainingData( found_training_data[0] );
+        solver.load_training_data( found_training_data[0] );
     }
 
     std::vector<std::string> found_cmf_files =
         find_files( "cmf/cmf_1931.json", directories );
     if ( found_cmf_files.size() )
     {
-        solver.loadCMF( found_cmf_files[0] );
+        solver.load_observer( found_cmf_files[0] );
     }
 
     auto illuminant_files = collect_data_files( directories, "illuminant" );
     if ( illuminant.empty() )
     {
-        solver.loadIlluminant( illuminant_files );
+        solver.load_illuminant( illuminant_files );
     }
     else
     {
-        solver.loadIlluminant( illuminant_files, illuminant );
+        solver.load_illuminant( illuminant_files, illuminant );
     }
 
     return true;
@@ -358,16 +358,16 @@ bool solve_illuminant_from_WB(
     bool                            verbosity,
     std::string                    &out_illuminant )
 {
-    core::Idt solver;
-    solver.setVerbosity( verbosity );
+    core::SpectralSolver solver;
+    solver.verbosity = verbosity;
     if ( !configure_solver(
              solver, directories, camera_make, camera_model, "" ) )
     {
         return false;
     }
 
-    solver.chooseIllumSrc( wb_mults, highlight );
-    out_illuminant = solver.getBestIllum().illuminant;
+    solver.find_best_illuminant( wb_mults, highlight );
+    out_illuminant = solver.get_best_illuminant().illuminant;
     return true;
 }
 
@@ -380,16 +380,16 @@ bool solve_WB_from_illuminant(
     bool                            verbosity,
     std::vector<double>            &out_WB )
 {
-    core::Idt solver;
-    solver.setVerbosity( verbosity );
+    core::SpectralSolver solver;
+    solver.verbosity = verbosity;
     if ( !configure_solver(
              solver, directories, camera_make, camera_model, illuminant ) )
     {
         return false;
     }
 
-    solver.chooseIllumType( illuminant, highlight );
-    out_WB = solver.getWB();
+    solver.select_illuminant( illuminant, highlight );
+    out_WB = solver.get_WB_multipliers();
     return true;
 }
 
@@ -402,21 +402,21 @@ bool solve_matrix_from_illuminant(
     bool                              verbosity,
     std::vector<std::vector<double>> &out_matrix )
 {
-    core::Idt solver;
-    solver.setVerbosity( verbosity );
+    core::SpectralSolver solver;
+    solver.verbosity = verbosity;
     if ( !configure_solver(
              solver, directories, camera_make, camera_model, illuminant ) )
     {
         return false;
     }
 
-    solver.chooseIllumType( illuminant, highlight );
-    if ( !solver.calIDT() )
+    solver.select_illuminant( illuminant, highlight );
+    if ( !solver.calculate_IDT_matrix() )
     {
         return false;
     }
 
-    out_matrix = solver.getIDT();
+    out_matrix = solver.get_IDT_matrix();
     return true;
 }
 
@@ -588,24 +588,24 @@ bool prepare_transform_DNG(
 
     core::Metadata metadata;
 
-    metadata.baselineExposure =
+    metadata.baseline_exposure =
         imageSpec.get_float_attribute( "raw:dng:baseline_exposure" );
 
-    metadata.neutralRGB.resize( 3 );
+    metadata.neutral_RGB.resize( 3 );
 
     auto attr = find_and_check_attribute(
         imageSpec, "raw:cam_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
     if ( attr )
     {
         for ( int i = 0; i < 3; i++ )
-            metadata.neutralRGB[i] = 1.0 / attr->get_float_indexed( i );
+            metadata.neutral_RGB[i] = 1.0 / attr->get_float_indexed( i );
     }
 
     for ( size_t k = 0; k < 2; k++ )
     {
         auto &calibration = metadata.calibration[k];
-        calibration.xyz2rgbMatrix.resize( 9 );
-        calibration.cameraCalibrationMatrix.resize( 9 );
+        calibration.XYZ_to_RGB_matrix.resize( 9 );
+        calibration.camera_calibration_matrix.resize( 9 );
 
         auto index_string = std::to_string( k + 1 );
 
@@ -621,7 +621,7 @@ bool prepare_transform_DNG(
             {
                 for ( int j = 0; j < 3; j++ )
                 {
-                    calibration.xyz2rgbMatrix[i * 3 + j] =
+                    calibration.XYZ_to_RGB_matrix[i * 3 + j] =
                         matrix1_attr->get_float_indexed( i * 3 + j );
                 }
             }
@@ -636,15 +636,15 @@ bool prepare_transform_DNG(
             {
                 for ( int j = 0; j < 3; j++ )
                 {
-                    calibration.cameraCalibrationMatrix[i * 3 + j] =
+                    calibration.camera_calibration_matrix[i * 3 + j] =
                         matrix2_attr->get_float_indexed( i * 4 + j );
                 }
             }
         }
     }
 
-    core::DNGIdt solver( metadata );
-    IDT_matrix = solver.getDNGIDTMatrix();
+    core::MetadataSolver solver( metadata );
+    IDT_matrix = solver.calculate_IDT_matrix();
 
     if ( settings.verbosity > 0 )
     {
@@ -973,8 +973,8 @@ int ImageConverter::configure_settings( int argc, char const *const argv[] )
     {
         auto paths =
             collect_data_files( settings.database_directories, "illuminant" );
-        core::Idt solver;
-        if ( !solver.loadIlluminant( paths, settings.illuminant ) )
+        core::SpectralSolver solver;
+        if ( !solver.load_illuminant( paths, settings.illuminant ) )
         {
             std::cerr << std::endl
                       << "Error: No matching light source. "

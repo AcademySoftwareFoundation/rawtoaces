@@ -2,6 +2,7 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include <rawtoaces/rawtoaces_core.h>
+#include "rawtoaces_core_priv.h"
 #include <rawtoaces/mathOps.h>
 #include <rawtoaces/define.h> // for cmp_str
 
@@ -52,7 +53,7 @@ vector<double> cctToxy( const double &cctd )
 //      Spectrum &: spectrum / reference to Spectrum object to fill in
 //
 
-void calDayLightSPD( const int &cct, Spectrum &spectrum )
+void calculate_daylight_SPD( const int &cct, Spectrum &spectrum )
 {
     int inc = spectrum.shape.step;
     assert( ( s_series[53].wl - s_series[0].wl ) % inc == 0 );
@@ -123,7 +124,7 @@ void calDayLightSPD( const int &cct, Spectrum &spectrum )
 //      const int: temp / temperature
 //      Spectrum &: spectrum / reference to Spectrum object to fill in
 //
-void calBlackBodySPD( const int &cct, Spectrum &spectrum )
+void calculate_blackbody_SPD( const int &cct, Spectrum &spectrum )
 {
     if ( cct < 1500 || cct >= 4000 )
     {
@@ -161,27 +162,27 @@ void generate_illuminant(
     if ( is_daylight )
     {
         illuminant.illuminant = type;
-        calDayLightSPD( cct, illuminant.data["main"].back().second );
+        calculate_daylight_SPD( cct, illuminant.data["main"].back().second );
     }
     else
     {
         illuminant.illuminant = type;
-        calBlackBodySPD( cct, illuminant.data["main"].back().second );
+        calculate_blackbody_SPD( cct, illuminant.data["main"].back().second );
     }
 }
 
 // ------------------------------------------------------//
 
-Idt::Idt()
+SpectralSolver::SpectralSolver()
 {
-    _verbosity = 0;
-    _idt.resize( 3 );
-    _wb.resize( 3 );
+    verbosity = 0;
+    _IDT_matrix.resize( 3 );
+    _WB_multipliers.resize( 3 );
     FORI( 3 )
     {
-        _idt[i].resize( 3 );
-        _wb[i]               = 1.0;
-        FORJ( 3 ) _idt[i][j] = neutral3[i][j];
+        _IDT_matrix[i].resize( 3 );
+        _WB_multipliers[i]          = 1.0;
+        FORJ( 3 ) _IDT_matrix[i][j] = neutral3[i][j];
     }
 }
 
@@ -194,11 +195,11 @@ Idt::Idt()
 //	outputs:
 //		scaled Illuminant data set
 
-void Idt::scaleLSC( SpectralData &illuminant )
+void scaleLSC( const SpectralData &camera, SpectralData &illuminant )
 {
-    double max_R = _camera["R"].max();
-    double max_G = _camera["G"].max();
-    double max_B = _camera["B"].max();
+    double max_R = camera["R"].max();
+    double max_G = camera["G"].max();
+    double max_B = camera["B"].max();
 
     std::string max_channel;
 
@@ -209,7 +210,7 @@ void Idt::scaleLSC( SpectralData &illuminant )
     else
         max_channel = "B";
 
-    const Spectrum &camera_spectrum     = _camera[max_channel];
+    const Spectrum &camera_spectrum     = camera[max_channel];
     Spectrum       &illuminant_spectrum = illuminant["power"];
 
     double scale = 1.0 / ( camera_spectrum * illuminant_spectrum ).integrate();
@@ -228,7 +229,7 @@ void Idt::scaleLSC( SpectralData &illuminant )
 //		int: If successfully parsed, _cameraSpst will be filled and return 1;
 //               Otherwise, return 0
 
-int Idt::loadCameraSpst(
+bool SpectralSolver::load_camera(
     const std::string &path, const std::string &make, const std::string &model )
 {
     assert( !path.empty() );
@@ -236,13 +237,13 @@ int Idt::loadCameraSpst(
     assert( !model.empty() );
 
     if ( !_camera.load( path ) )
-        return 0;
+        return false;
     if ( cmp_str( _camera.manufacturer.c_str(), make.c_str() ) != 0 )
-        return 0;
+        return false;
     if ( cmp_str( _camera.model.c_str(), model.c_str() ) != 0 )
-        return 0;
+        return false;
 
-    return 1;
+    return true;
 }
 
 //	=====================================================================
@@ -256,14 +257,15 @@ int Idt::loadCameraSpst(
 //		int: If successfully parsed, _bestIllum will be filled and return 1;
 //               Otherwise, return 0
 
-int Idt::loadIlluminant( const vector<string> &paths, string type )
+bool SpectralSolver::load_illuminant(
+    const std::vector<std::string> &paths, const std::string &type )
 {
     //        assert ( paths.size() > 0 && !type.empty() );
 
-    if ( _Illuminants.size() > 0 )
-        _Illuminants.clear();
+    if ( _illuminants.size() > 0 )
+        _illuminants.clear();
 
-    if ( type.compare( "na" ) != 0 )
+    if ( !type.empty() )
     {
 
         // Daylight
@@ -271,32 +273,32 @@ int Idt::loadIlluminant( const vector<string> &paths, string type )
         {
             int               cct        = atoi( type.substr( 1 ).c_str() );
             const std::string type       = "d" + std::to_string( cct );
-            SpectralData     &illuminant = _Illuminants.emplace_back();
+            SpectralData     &illuminant = _illuminants.emplace_back();
             generate_illuminant( cct, type, true, illuminant );
-            return 1;
+            return true;
         }
         // Blackbody
         else if ( type[type.length() - 1] == 'k' )
         {
             int cct = atoi( type.substr( 0, type.length() - 1 ).c_str() );
             const std::string type       = std::to_string( cct ) + "k";
-            SpectralData     &illuminant = _Illuminants.emplace_back();
+            SpectralData     &illuminant = _illuminants.emplace_back();
             generate_illuminant( cct, type, false, illuminant );
-            return 1;
+            return true;
         }
         else
         {
             FORI( paths.size() )
             {
-                SpectralData &illuminant = _Illuminants.emplace_back();
+                SpectralData &illuminant = _illuminants.emplace_back();
                 if ( !illuminant.load( paths[i] ) ||
                      illuminant.illuminant != type )
                 {
-                    _Illuminants.pop_back();
+                    _illuminants.pop_back();
                 }
                 else
                 {
-                    return 1;
+                    return true;
                 }
             }
         }
@@ -306,7 +308,7 @@ int Idt::loadIlluminant( const vector<string> &paths, string type )
         // Daylight - pre-calculate
         for ( int i = 4000; i <= 25000; i += 500 )
         {
-            SpectralData     &illuminant = _Illuminants.emplace_back();
+            SpectralData     &illuminant = _illuminants.emplace_back();
             const std::string type       = "d" + std::to_string( i / 100 );
             generate_illuminant( i, type, true, illuminant );
         }
@@ -314,22 +316,22 @@ int Idt::loadIlluminant( const vector<string> &paths, string type )
         // Blackbody - pre-calculate
         for ( int i = 1500; i < 4000; i += 500 )
         {
-            SpectralData     &illuminant = _Illuminants.emplace_back();
+            SpectralData     &illuminant = _illuminants.emplace_back();
             const std::string type       = std::to_string( i ) + "k";
             generate_illuminant( i, type, false, illuminant );
         }
 
         FORI( paths.size() )
         {
-            SpectralData &illuminant = _Illuminants.emplace_back();
+            SpectralData &illuminant = _illuminants.emplace_back();
             if ( !illuminant.load( paths[i] ) || illuminant.illuminant != type )
             {
-                _Illuminants.pop_back();
+                _illuminants.pop_back();
             }
         }
     }
 
-    return ( _Illuminants.size() > 0 );
+    return ( _illuminants.size() > 0 );
 }
 
 //	=====================================================================
@@ -341,12 +343,12 @@ int Idt::loadIlluminant( const vector<string> &paths, string type )
 //	outputs:
 //		_trainingSpec: If successfully parsed, _trainingSpec will be filled
 
-void Idt::loadTrainingData( const string &path )
+bool SpectralSolver::load_training_data( const string &path )
 {
     struct stat st;
     assert( !stat( path.c_str(), &st ) );
 
-    _training_data.load( path );
+    return _training_data.load( path );
 }
 
 //	=====================================================================
@@ -358,40 +360,12 @@ void Idt::loadTrainingData( const string &path )
 //	outputs:
 //		_cmf: If successfully parsed, _cmf will be filled
 
-void Idt::loadCMF( const string &path )
+bool SpectralSolver::load_observer( const string &path )
 {
     struct stat st;
     assert( !stat( path.c_str(), &st ) );
 
-    _observer.load( path );
-}
-
-//	=====================================================================
-//	Push new Illuminant to further process Spectral Power Data
-//
-//	inputs:
-//      Illum: Illuminant
-//
-//	outputs:
-//		N/A:   _Illuminants should have one more element
-
-void Idt::setIlluminants( const SpectralData &Illuminant )
-{
-    _Illuminants.push_back( Illuminant );
-}
-
-//	=====================================================================
-//	Set Verbosity value for the length of IDT generation status message
-//
-//	inputs:
-//      int: verbosity
-//
-//	outputs:
-//		int: _verbosity
-
-void Idt::setVerbosity( const int verbosity )
-{
-    _verbosity = verbosity;
+    return _observer.load( path );
 }
 
 //	=====================================================================
@@ -406,32 +380,33 @@ void Idt::setVerbosity( const int verbosity )
 //	outputs:
 //		Illum: the best _Illuminant
 
-void Idt::chooseIllumSrc( const vector<double> &src, int highlight )
+void SpectralSolver::find_best_illuminant(
+    const vector<double> &src, int highlight )
 {
     double sse = dmax;
 
-    FORI( _Illuminants.size() )
+    FORI( _illuminants.size() )
     {
-        vector<double> wb_tmp  = calWB( _Illuminants[i], highlight );
+        vector<double> wb_tmp  = calWB( _camera, _illuminants[i], highlight );
         double         sse_tmp = calSSE( wb_tmp, src );
 
         if ( sse_tmp < sse )
         {
             sse              = sse_tmp;
-            _best_illuminant = _Illuminants[i];
-            _wb              = wb_tmp;
+            _best_illuminant = _illuminants[i];
+            _WB_multipliers  = wb_tmp;
         }
     }
 
-    if ( _verbosity > 1 )
+    if ( verbosity > 1 )
         printf(
             "The illuminant calculated to be the best match to the camera metadata is %s\n",
             _best_illuminant.illuminant.c_str() );
 
     // scale back the WB factor
-    double factor = _wb[1];
+    double factor = _WB_multipliers[1];
     assert( factor != 0.0 );
-    FORI( _wb.size() ) _wb[i] /= factor;
+    FORI( _WB_multipliers.size() ) _WB_multipliers[i] /= factor;
 
     return;
 }
@@ -448,21 +423,21 @@ void Idt::chooseIllumSrc( const vector<double> &src, int highlight )
 //	outputs:
 //		Illum: the best _Illuminant
 
-void Idt::chooseIllumType( const std::string &type, int highlight )
+void SpectralSolver::select_illuminant( const std::string &type, int highlight )
 {
-    assert( type == _Illuminants[0].illuminant );
+    assert( type == _illuminants[0].illuminant );
 
-    _best_illuminant = _Illuminants[0];
-    _wb              = calWB( _best_illuminant, highlight );
+    _best_illuminant = _illuminants[0];
+    _WB_multipliers  = calWB( _camera, _best_illuminant, highlight );
 
     //		if (_verbosity > 1)
     //            printf ( "The specified light source is: %s\n",
     //                     _bestIllum._type.c_str() );
 
     // scale back the WB factor
-    double factor = _wb[1];
+    double factor = _WB_multipliers[1];
     assert( factor != 0.0 );
-    FORI( _wb.size() ) _wb[i] /= factor;
+    FORI( _WB_multipliers.size() ) _WB_multipliers[i] /= factor;
 
     return;
 }
@@ -477,16 +452,17 @@ void Idt::chooseIllumType( const std::string &type, int highlight )
 //	outputs:
 //		vector < double >: scaled vector by its maximum value
 
-vector<double> Idt::calCM()
+std::vector<double>
+calCM( const SpectralData &camera, const SpectralData &illuminant )
 {
-    Spectrum &camera_r   = _camera["R"];
-    Spectrum &camera_g   = _camera["G"];
-    Spectrum &camera_b   = _camera["B"];
-    Spectrum &illuminant = _best_illuminant["power"];
+    const Spectrum &camera_r = camera["R"];
+    const Spectrum &camera_g = camera["G"];
+    const Spectrum &camera_b = camera["B"];
+    const Spectrum &illum    = illuminant["power"];
 
-    double r = ( camera_r * illuminant ).integrate();
-    double g = ( camera_g * illuminant ).integrate();
-    double b = ( camera_b * illuminant ).integrate();
+    double r = ( camera_r * illum ).integrate();
+    double g = ( camera_g * illum ).integrate();
+    double b = ( camera_b * illum ).integrate();
 
     double max = std::max( r, std::max( g, b ) );
 
@@ -507,12 +483,13 @@ vector<double> Idt::calCM()
 //	outputs:
 //		vector < vector<double> >: 2D vector (81 x 190)
 
-vector<Spectrum> Idt::calTI() const
+std::vector<Spectrum>
+calTI( const SpectralData &illuminant, const SpectralData &training_data )
 {
     std::vector<Spectrum> result;
 
-    const Spectrum &illuminant_spectrum = _best_illuminant["power"];
-    for ( auto &[name, training_spectrum]: _training_data.data.at( "main" ) )
+    const Spectrum &illuminant_spectrum = illuminant["power"];
+    for ( auto &[name, training_spectrum]: training_data.data.at( "main" ) )
     {
         result.push_back( training_spectrum * illuminant_spectrum );
     }
@@ -531,13 +508,14 @@ vector<Spectrum> Idt::calTI() const
 //	outputs:
 //		vector: wb(R, G, B)
 
-vector<double> Idt::calWB( SpectralData &illuminant, int highlight )
+std::vector<double>
+calWB( const SpectralData &camera, SpectralData &illuminant, int highlight )
 {
-    scaleLSC( illuminant );
+    scaleLSC( camera, illuminant );
 
-    const Spectrum &camera_r = _camera["R"];
-    const Spectrum &camera_g = _camera["G"];
-    const Spectrum &camera_b = _camera["B"];
+    const Spectrum &camera_r = camera["R"];
+    const Spectrum &camera_g = camera["G"];
+    const Spectrum &camera_b = camera["B"];
     const Spectrum &illum    = illuminant["power"];
 
     double r = ( camera_r * illum ).integrate();
@@ -565,7 +543,10 @@ vector<double> Idt::calWB( SpectralData &illuminant, int highlight )
 //	outputs:
 //		vector < vector<double> >: 2D vector (190 x 3)
 
-vector<vector<double>> Idt::calXYZ( const vector<Spectrum> &TI ) const
+std::vector<std::vector<double>> calXYZ(
+    const SpectralData          &observer,
+    const SpectralData          &illuminant,
+    const std::vector<Spectrum> &TI )
 {
     assert( TI.size() > 0 );
     assert( TI[0].values.size() == 81 );
@@ -575,10 +556,10 @@ vector<vector<double>> Idt::calXYZ( const vector<Spectrum> &TI ) const
     std::vector<double>              w( XYZ_w, XYZ_w + 3 );
     std::vector<std::vector<double>> XYZ;
 
-    const Spectrum &cmf_x = _observer["X"];
-    const Spectrum &cmf_y = _observer["Y"];
-    const Spectrum &cmf_z = _observer["Z"];
-    const Spectrum &illum = _best_illuminant["power"];
+    const Spectrum &cmf_x = observer["X"];
+    const Spectrum &cmf_y = observer["Y"];
+    const Spectrum &cmf_z = observer["Z"];
+    const Spectrum &illum = illuminant["power"];
 
     double scale = 1.0 / ( cmf_y * illum ).integrate();
 
@@ -612,30 +593,48 @@ vector<vector<double>> Idt::calXYZ( const vector<Spectrum> &TI ) const
 //	outputs:
 //		vector < vector<double> >: 2D vector (190 x 3)
 
-vector<vector<double>> Idt::calRGB( const vector<Spectrum> &TI ) const
+std::vector<std::vector<double>> calRGB(
+    const SpectralData          &camera,
+    const SpectralData          &illuminant,
+    const std::vector<double>   &WB_multipliers,
+    const std::vector<Spectrum> &TI )
 {
     assert( TI.size() > 0 );
     assert( TI[0].values.size() == 81 );
 
-    const Spectrum &cam_r = _camera["R"];
-    const Spectrum &cam_g = _camera["G"];
-    const Spectrum &cam_b = _camera["B"];
-    const Spectrum &illum = _best_illuminant["power"];
+    const Spectrum &cam_r = camera["R"];
+    const Spectrum &cam_g = camera["G"];
+    const Spectrum &cam_b = camera["B"];
+    const Spectrum &illum = illuminant["power"];
 
     std::vector<std::vector<double>> RGB;
     for ( auto &ti: TI )
     {
         auto &rgb = RGB.emplace_back( 3 );
-        rgb[0]    = ( ti * cam_r ).integrate() * _wb[0];
-        rgb[1]    = ( ti * cam_g ).integrate() * _wb[1];
-        rgb[2]    = ( ti * cam_b ).integrate() * _wb[2];
+        rgb[0]    = ( ti * cam_r ).integrate() * WB_multipliers[0];
+        rgb[1]    = ( ti * cam_g ).integrate() * WB_multipliers[1];
+        rgb[2]    = ( ti * cam_b ).integrate() * WB_multipliers[2];
     }
 
     return RGB;
 }
 
+struct Objfun
+{
+    Objfun(
+        const std::vector<std::vector<double>> &RGB,
+        const std::vector<std::vector<double>> &outLAB )
+        : _RGB( RGB ), _outLAB( outLAB )
+    {}
+
+    template <typename T> bool operator()( const T *B, T *residuals ) const;
+
+    const std::vector<std::vector<double>> _RGB;
+    const std::vector<std::vector<double>> _outLAB;
+};
+
 //	=====================================================================
-//	Process cureve fit between XYZ and RGB data with initial set of B
+//	Process curve fit between XYZ and RGB data with initial set of B
 //  values.
 //
 //	inputs:
@@ -648,10 +647,12 @@ vector<vector<double>> Idt::calRGB( const vector<Spectrum> &TI ) const
 //               that minimize the distance between RGB and XYZ
 //               through updated B.
 
-int Idt::curveFit(
-    const vector<vector<double>> &RGB,
-    const vector<vector<double>> &XYZ,
-    double                       *B )
+bool curveFit(
+    const std::vector<std::vector<double>> &RGB,
+    const std::vector<std::vector<double>> &XYZ,
+    double                                 *B,
+    int                                     verbosity,
+    std::vector<std::vector<double>>       &out_IDT_matrix )
 {
     Problem                problem;
     vector<vector<double>> outLAB = XYZtoLAB( XYZ );
@@ -670,42 +671,46 @@ int Idt::curveFit(
     options.min_line_search_step_size = 1e-17;
     options.max_num_iterations        = 300;
 
-    if ( _verbosity > 2 )
+    if ( verbosity > 2 )
         options.minimizer_progress_to_stdout = true;
 
     ceres::Solver::Summary summary;
     ceres::Solve( options, &problem, &summary );
 
-    if ( _verbosity > 1 )
+    if ( verbosity > 1 )
         std::cout << summary.BriefReport() << std::endl;
-    else if ( _verbosity >= 2 )
+    else if ( verbosity >= 2 )
         std::cout << summary.FullReport() << std::endl;
 
     if ( summary.num_successful_steps )
     {
-        _idt[0][0] = B[0];
-        _idt[0][1] = B[1];
-        _idt[0][2] = 1.0 - B[0] - B[1];
-        _idt[1][0] = B[2];
-        _idt[1][1] = B[3];
-        _idt[1][2] = 1.0 - B[2] - B[3];
-        _idt[2][0] = B[4];
-        _idt[2][1] = B[5];
-        _idt[2][2] = 1.0 - B[4] - B[5];
+        out_IDT_matrix[0][0] = B[0];
+        out_IDT_matrix[0][1] = B[1];
+        out_IDT_matrix[0][2] = 1.0 - B[0] - B[1];
+        out_IDT_matrix[1][0] = B[2];
+        out_IDT_matrix[1][1] = B[3];
+        out_IDT_matrix[1][2] = 1.0 - B[2] - B[3];
+        out_IDT_matrix[2][0] = B[4];
+        out_IDT_matrix[2][1] = B[5];
+        out_IDT_matrix[2][2] = 1.0 - B[4] - B[5];
 
-        if ( _verbosity > 1 )
+        if ( verbosity > 1 )
         {
             printf( "The IDT matrix is ...\n" );
             FORI( 3 )
-            printf( "   %f %f %f\n", _idt[i][0], _idt[i][1], _idt[i][2] );
+            printf(
+                "   %f %f %f\n",
+                out_IDT_matrix[i][0],
+                out_IDT_matrix[i][1],
+                out_IDT_matrix[i][2] );
         }
 
-        return 1;
+        return true;
     }
 
     delete cost_function;
 
-    return 0;
+    return false;
 }
 
 //	=====================================================================
@@ -719,42 +724,15 @@ int Idt::curveFit(
 //               that minimize the distance between RGB and XYZ
 //               through updated B.
 
-int Idt::calIDT()
+bool SpectralSolver::calculate_IDT_matrix()
 {
+    double BStart[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
 
-    double           BStart[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
-    vector<Spectrum> TI        = calTI();
+    auto TI  = calTI( _best_illuminant, _training_data );
+    auto RGB = calRGB( _camera, _best_illuminant, _WB_multipliers, TI );
+    auto XYZ = calXYZ( _observer, _best_illuminant, TI );
 
-    return curveFit( calRGB( TI ), calXYZ( TI ), BStart );
-}
-
-//	=====================================================================
-//  Get camera sensitivity data that was loaded from the file
-//
-//	inputs:
-//         N/A
-//
-//	outputs:
-//      const SpectralData: camera sensitivity data that was loaded from the file
-
-const SpectralData &Idt::getCameraSpst() const
-{
-    return _camera;
-}
-
-//	=====================================================================
-//  Get Illuminant data / light source that was loaded from the file
-//
-//	inputs:
-//         N/A
-//
-//	outputs:
-//      const vector < SpectralData >: Illuminant data that was loaded from
-//      the file
-
-const vector<SpectralData> &Idt::getIlluminants() const
-{
-    return _Illuminants;
+    return curveFit( RGB, XYZ, BStart, verbosity, _IDT_matrix );
 }
 
 //	=====================================================================
@@ -767,57 +745,13 @@ const vector<SpectralData> &Idt::getIlluminants() const
 //	outputs:
 //      const SpectralData: Illuminant data that has the closest match
 
-const SpectralData &Idt::getBestIllum() const
+const SpectralData &SpectralSolver::get_best_illuminant() const
 {
     assert( _best_illuminant.data.count( "main" ) == 1 );
     assert( _best_illuminant.data.at( "main" ).size() == 1 );
     assert( _best_illuminant["power"].values.size() > 0 );
 
     return _best_illuminant;
-}
-
-//	=====================================================================
-//	Get Verbosity value for the length of IDT generation status message
-//
-//	inputs:
-//      N/A
-//
-//	outputs:
-//		int: _verbosity (const)
-
-const int Idt::getVerbosity() const
-{
-    return _verbosity;
-}
-
-//	=====================================================================
-//  Get Spectral Training Data that was loaded from the file
-//
-//	inputs:
-//         N/A
-//
-//	outputs:
-//      const SpectralData: Spectral Training data that was loaded
-//      from the file
-
-const SpectralData &Idt::getTrainingSpec() const
-{
-    return _training_data;
-}
-
-//	=====================================================================
-//  Get Color Matching Function Data that was loaded from the file
-//
-//	inputs:
-//         N/A
-//
-//	outputs:
-//      const SpectralData: Color Matching Function data that was loaded from
-//      the file
-
-const SpectralData &Idt::getCMF() const
-{
-    return _observer;
 }
 
 //	=====================================================================
@@ -829,9 +763,9 @@ const SpectralData &Idt::getCMF() const
 //	outputs:
 //      const vector< vector < double > >: _idt matrix (3 x 3)
 
-const vector<vector<double>> Idt::getIDT() const
+const vector<vector<double>> &SpectralSolver::get_IDT_matrix() const
 {
-    return _idt;
+    return _IDT_matrix;
 }
 
 //	=====================================================================
@@ -843,23 +777,23 @@ const vector<vector<double>> Idt::getIDT() const
 //	outputs:
 //      const vector< double >: _wb vector (1 x 3)
 
-const vector<double> Idt::getWB() const
+const vector<double> &SpectralSolver::get_WB_multipliers() const
 {
-    return _wb;
+    return _WB_multipliers;
 }
 
 // ------------------------------------------------------//
 
-DNGIdt::DNGIdt( const core::Metadata &metadata ) : _metadata( metadata )
+MetadataSolver::MetadataSolver( const core::Metadata &metadata )
+    : _metadata( metadata )
 {}
 
-double DNGIdt::ccttoMired( const double cct ) const
+double ccttoMired( const double cct )
 {
     return 1.0E06 / cct;
 }
 
-double DNGIdt::robertsonLength(
-    const vector<double> &uv, const vector<double> &uvt ) const
+double robertsonLength( const vector<double> &uv, const vector<double> &uvt )
 {
 
     double         t    = uvt[2];
@@ -872,7 +806,7 @@ double DNGIdt::robertsonLength(
     return cross2( slope, subVectors( uv, uvr ) );
 }
 
-double DNGIdt::lightSourceToColorTemp( const unsigned short tag ) const
+double lightSourceToColorTemp( const unsigned short tag )
 {
 
     if ( tag >= 32768 )
@@ -895,9 +829,8 @@ double DNGIdt::lightSourceToColorTemp( const unsigned short tag ) const
     return 5500.0;
 }
 
-double DNGIdt::XYZToColorTemperature( const vector<double> &XYZ ) const
+double XYZToColorTemperature( const vector<double> &XYZ )
 {
-
     vector<double> uv      = XYZTouv( XYZ );
     int            Nrobert = countSize( Robertson_uvtTable );
     int            i;
@@ -929,45 +862,52 @@ double DNGIdt::XYZToColorTemperature( const vector<double> &XYZ ) const
     return cct;
 }
 
-vector<double> DNGIdt::XYZtoCameraWeightedMatrix(
-    const double &mir0, const double &mir1, const double &mir2 ) const
+vector<double> XYZtoCameraWeightedMatrix(
+    const double              &mired0,
+    const double              &mired1,
+    const double              &mired2,
+    const std::vector<double> &matrix1,
+    const std::vector<double> &matrix2 )
 {
 
-    double weight =
-        std::max( 0.0, std::min( 1.0, ( mir1 - mir0 ) / ( mir1 - mir2 ) ) );
-    vector<double> result = subVectors(
-        _metadata.calibration[1].xyz2rgbMatrix,
-        _metadata.calibration[0].xyz2rgbMatrix );
+    double weight = std::max(
+        0.0, std::min( 1.0, ( mired1 - mired0 ) / ( mired1 - mired2 ) ) );
+    vector<double> result = subVectors( matrix2, matrix1 );
     scaleVector( result, weight );
-    result = addVectors( result, _metadata.calibration[0].xyz2rgbMatrix );
+    result = addVectors( result, matrix1 );
 
     return result;
 }
 
 vector<double>
-DNGIdt::findXYZtoCameraMtx( const vector<double> &neutralRGB ) const
+findXYZtoCameraMtx( const Metadata &metadata, const vector<double> &neutralRGB )
 {
 
-    if ( _metadata.calibration[0].illuminant == 0 )
+    if ( metadata.calibration[0].illuminant == 0 )
     {
         fprintf( stderr, " No calibration illuminants were found. \n " );
-        return _metadata.calibration[0].xyz2rgbMatrix;
+        return metadata.calibration[0].XYZ_to_RGB_matrix;
     }
 
     if ( neutralRGB.size() == 0 )
     {
         fprintf( stderr, " no neutral RGB values were found. \n " );
-        return _metadata.calibration[0].xyz2rgbMatrix;
+        return metadata.calibration[0].XYZ_to_RGB_matrix;
     }
 
-    double cct1 = lightSourceToColorTemp( _metadata.calibration[0].illuminant );
-    double cct2 = lightSourceToColorTemp( _metadata.calibration[1].illuminant );
+    double cct1 = lightSourceToColorTemp( metadata.calibration[0].illuminant );
+    double cct2 = lightSourceToColorTemp( metadata.calibration[1].illuminant );
 
     double mir1 = ccttoMired( cct1 );
     double mir2 = ccttoMired( cct2 );
 
     double maxMir = ccttoMired( 2000.0 );
     double minMir = ccttoMired( 50000.0 );
+
+    const std::vector<double> &matrix1 =
+        metadata.calibration[0].XYZ_to_RGB_matrix;
+    const std::vector<double> &matrix2 =
+        metadata.calibration[1].XYZ_to_RGB_matrix;
 
     double lomir =
         std::max( minMir, std::min( maxMir, std::min( mir1, mir2 ) ) );
@@ -980,10 +920,10 @@ DNGIdt::findXYZtoCameraMtx( const vector<double> &neutralRGB ) const
 
     for ( mir = lomir; mir < himir; mir += mirStep )
     {
-        lerror =
-            mir - ccttoMired( XYZToColorTemperature( mulVector(
-                      invertV( XYZtoCameraWeightedMatrix( mir, mir1, mir2 ) ),
-                      neutralRGB ) ) );
+        lerror = mir - ccttoMired( XYZToColorTemperature( mulVector(
+                           invertV( XYZtoCameraWeightedMatrix(
+                               mir, mir1, mir2, matrix1, matrix2 ) ),
+                           neutralRGB ) ) );
 
         if ( std::fabs( lerror - 0.0 ) <= 1e-09 )
         {
@@ -1008,10 +948,11 @@ DNGIdt::findXYZtoCameraMtx( const vector<double> &neutralRGB ) const
         lastMired = mir;
     }
 
-    return XYZtoCameraWeightedMatrix( estimatedMired, mir1, mir2 );
+    return XYZtoCameraWeightedMatrix(
+        estimatedMired, mir1, mir2, matrix1, matrix2 );
 }
 
-vector<double> DNGIdt::colorTemperatureToXYZ( const double &cct ) const
+vector<double> colorTemperatureToXYZ( const double &cct )
 {
 
     double         mired = 1.0e06 / cct;
@@ -1054,7 +995,7 @@ vector<double> DNGIdt::colorTemperatureToXYZ( const double &cct ) const
     return uvToXYZ( uv );
 }
 
-vector<double> DNGIdt::matrixRGBtoXYZ( const double chromaticities[][2] ) const
+vector<double> matrixRGBtoXYZ( const double chromaticities[][2] )
 {
     vector<double> rXYZ =
         xyToXYZ( vector<double>( chromaticities[0], chromaticities[0] + 2 ) );
@@ -1081,46 +1022,55 @@ vector<double> DNGIdt::matrixRGBtoXYZ( const double chromaticities[][2] ) const
     return colorMatrix;
 }
 
-void DNGIdt::getCameraXYZMtxAndWhitePoint()
+void getCameraXYZMtxAndWhitePoint(
+    const Metadata      &metadata,
+    std::vector<double> &out_camera_to_XYZ_matrix,
+    std::vector<double> &out_camera_XYZ_white_point )
 {
-    _cameraToXYZMtx = invertV( findXYZtoCameraMtx( _metadata.neutralRGB ) );
-    assert( std::fabs( sumVector( _cameraToXYZMtx ) - 0.0 ) > 1e-09 );
+    out_camera_to_XYZ_matrix =
+        invertV( findXYZtoCameraMtx( metadata, metadata.neutral_RGB ) );
+    assert( std::fabs( sumVector( out_camera_to_XYZ_matrix ) - 0.0 ) > 1e-09 );
 
-    scaleVector( _cameraToXYZMtx, std::pow( 2.0, _metadata.baselineExposure ) );
+    scaleVector(
+        out_camera_to_XYZ_matrix, std::pow( 2.0, metadata.baseline_exposure ) );
 
-    if ( _metadata.neutralRGB.size() > 0 )
+    if ( metadata.neutral_RGB.size() > 0 )
     {
-        _cameraXYZWhitePoint =
-            mulVector( _cameraToXYZMtx, _metadata.neutralRGB );
+        out_camera_XYZ_white_point =
+            mulVector( out_camera_to_XYZ_matrix, metadata.neutral_RGB );
     }
     else
     {
-        _cameraXYZWhitePoint = colorTemperatureToXYZ(
-            lightSourceToColorTemp( _metadata.calibration[0].illuminant ) );
+        out_camera_XYZ_white_point = colorTemperatureToXYZ(
+            lightSourceToColorTemp( metadata.calibration[0].illuminant ) );
     }
 
-    scaleVector( _cameraXYZWhitePoint, 1.0 / _cameraXYZWhitePoint[1] );
-    assert( sumVector( _cameraXYZWhitePoint ) != 0 );
+    scaleVector(
+        out_camera_XYZ_white_point, 1.0 / out_camera_XYZ_white_point[1] );
+    assert( sumVector( out_camera_XYZ_white_point ) != 0 );
 
     return;
 }
 
-vector<vector<double>> DNGIdt::getDNGCATMatrix()
+vector<vector<double>> MetadataSolver::calculate_CAT_matrix()
 {
-    vector<double> deviceWhiteV( 3, 1.0 );
-    getCameraXYZMtxAndWhitePoint();
+    vector<double>      deviceWhiteV( 3, 1.0 );
+    std::vector<double> camera_to_XYZ_matrix;
+    std::vector<double> camera_XYZ_white_point;
+    getCameraXYZMtxAndWhitePoint(
+        _metadata, camera_to_XYZ_matrix, camera_XYZ_white_point );
     vector<double> outputRGBtoXYZMtx = matrixRGBtoXYZ( chromaticitiesACES );
     vector<double> outputXYZWhitePoint =
         mulVector( outputRGBtoXYZMtx, deviceWhiteV );
     vector<vector<double>> chadMtx =
-        getCAT( _cameraXYZWhitePoint, outputXYZWhitePoint );
+        getCAT( camera_XYZ_white_point, outputXYZWhitePoint );
 
     return chadMtx;
 }
 
-vector<vector<double>> DNGIdt::getDNGIDTMatrix()
+vector<vector<double>> MetadataSolver::calculate_IDT_matrix()
 {
-    vector<vector<double>> chadMtx = getDNGCATMatrix();
+    vector<vector<double>> chadMtx = calculate_CAT_matrix();
     vector<double>         XYZ_D65_acesrgb( 9 ), CAT( 9 );
     FORIJ( 3, 3 )
     {

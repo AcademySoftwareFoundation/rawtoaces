@@ -13,6 +13,7 @@
 
 #include <rawtoaces/mathOps.h>
 #include <rawtoaces/rawtoaces_core.h>
+#include "../src/rawtoaces_core/rawtoaces_core_priv.h"
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 
@@ -67,7 +68,7 @@ BOOST_AUTO_TEST_CASE( TestIllum_readSPD )
 BOOST_AUTO_TEST_CASE( TestIllum_calDayLightSPD )
 {
     rta::core::Spectrum illuminant;
-    calDayLightSPD( 50, illuminant );
+    calculate_daylight_SPD( 50, illuminant );
 
     const double spd[81] = {
         24.4978949755877,  27.1891380970612,  29.8803812185346,
@@ -107,7 +108,7 @@ BOOST_AUTO_TEST_CASE( TestIllum_calDayLightSPD )
 BOOST_AUTO_TEST_CASE( TestIllum_calBlackBodySPD )
 {
     rta::core::Spectrum illuminant;
-    calBlackBodySPD( 3200, illuminant );
+    calculate_blackbody_SPD( 3200, illuminant );
 
     const double spd[81] = {
         0.3431975190, 0.3748818425, 0.4082252416, 0.4432167268, 0.4798395347,

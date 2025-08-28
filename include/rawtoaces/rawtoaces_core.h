@@ -10,159 +10,136 @@ namespace rta
 namespace core
 {
 
-std::vector<double> cctToxy( const double &cctd );
+/// Calculate spectral power distribution of a daylight illuminant of given CCT
+/// - parameter cct: correlated colour temperature of the requested illuminant.
+/// - parameter spectrum: a reference to a `Spectrum` object to full with the
+/// calculated values.
+void calculate_daylight_SPD( const int &cct, Spectrum &spectrum );
 
-void calDayLightSPD( const int &cct, Spectrum &spectrum );
-void calBlackBodySPD( const int &cct, Spectrum &spectrum );
+/// Calculate spectral power distribution of a blackbody illuminant of given CCT
+/// - parameter cct: correlated colour temperature of the requested illuminant.
+/// - parameter spectrum: a reference to a `Spectrum` object to full with the
+/// calculated values.
+void calculate_blackbody_SPD( const int &cct, Spectrum &spectrum );
 
-class Idt
+/// Solve an input transform using spectral sensitivity curves of a camera.
+class SpectralSolver
 {
 public:
-    Idt();
+    SpectralSolver();
 
-    int loadCameraSpst(
+    /// Load spectral sensitivity data for a camera.
+    /// - parameter path: a path to the data file
+    /// - parameter make: the camera make to verify the loaded data against.
+    /// - parameter model: the camera model to verify the loaded data against.
+    /// - returns `true` if loaded successfully.
+    bool load_camera(
         const std::string &path,
         const std::string &make,
         const std::string &model );
-    int loadIlluminant(
-        const std::vector<std::string> &paths, std::string type = "na" );
 
-    void loadTrainingData( const std::string &path );
-    void loadCMF( const std::string &path );
-    void chooseIllumSrc( const std::vector<double> &src, int highlight );
-    void chooseIllumType( const std::string &type, int highlight );
-    void setIlluminants( const SpectralData &illuminant );
-    void setVerbosity( const int verbosity );
-    void scaleLSC( SpectralData &illuminant );
+    /// Load spectral power distribution data for an illuminant.
+    /// If an illuminant type specified, try to find the matching data,
+    /// otherwise load all known illuminants.
+    /// - parameter paths: a set of data file paths to the data file
+    /// - parameter type: illuminant type to load.
+    /// - returns `true` if loaded successfully.
+    bool load_illuminant(
+        const std::vector<std::string> &paths, const std::string &type = "" );
 
-    std::vector<double>   calCM();
-    std::vector<double>   calWB( SpectralData &illuminant, int highlight );
-    std::vector<Spectrum> calTI() const;
-    std::vector<std::vector<double>>
-    calXYZ( const std::vector<Spectrum> &TI ) const;
-    std::vector<std::vector<double>>
-    calRGB( const std::vector<Spectrum> &TI ) const;
+    /// Load spectral reflectivity data for a training set (a colour chart).
+    /// - parameter path: a path to the data file
+    /// - returns `true` if loaded successfully.
+    bool load_training_data( const std::string &path );
 
-    int curveFit(
-        const std::vector<std::vector<double>> &RGB,
-        const std::vector<std::vector<double>> &XYZ,
-        double                                 *B );
-    int calIDT();
+    /// Load spectral sensitivity data for an observer
+    /// (colour matching functions).
+    /// - parameter path: a path to the data file
+    /// - returns `true` if loaded successfully.
+    bool load_observer( const std::string &path );
 
-    const SpectralData                    &getCameraSpst() const;
-    const SpectralData                    &getBestIllum() const;
-    const SpectralData                    &getTrainingSpec() const;
-    const std::vector<SpectralData>       &getIlluminants() const;
-    const SpectralData                    &getCMF() const;
-    const std::vector<std::vector<double>> getIDT() const;
-    const std::vector<double>              getWB() const;
-    const int                              getVerbosity() const;
+    /// Find the illuminant best matching the given white-balancing multipliers.
+    /// See `get_best_illuminant()` to access the result.
+    /// - parameter wb_multipliers: white-balancing multipliers to match.
+    /// - parameter highlight: the highlight recovery mode, used for
+    /// normalisation.
+    void find_best_illuminant(
+        const std::vector<double> &wb_multipliers, int highlight );
+
+    /// Select an illuminant of a given type.
+    /// See `get_best_illuminant()` to access the result.
+    /// - parameter type: illuminant type to select.
+    /// - parameter highlight: the highlight recovery mode, used for
+    /// normalisation.
+    void select_illuminant( const std::string &type, int highlight );
+
+    /// Calculate an input transform matrix.
+    /// See `get_IDT_matrix()` to access the result.
+    /// - returns `true` if calculated successfully.
+    bool calculate_IDT_matrix();
+
+    /// Get the illuminant configured using `find_best_illuminant()` or
+    /// `select_illuminant()`.
+    /// - returns a reference to the illuminant.
+    const SpectralData &get_best_illuminant() const;
+
+    /// Get the matrix calculated using `calculate_IDT_matrix()`.
+    /// - returns a reference to the matrix.
+    const std::vector<std::vector<double>> &get_IDT_matrix() const;
+
+    /// Get the white-balance multipliers calculated using
+    /// `find_best_illuminant()` or `select_illuminant()`.
+    /// - returns a reference to the multipliers.
+    const std::vector<double> &get_WB_multipliers() const;
+
+    int verbosity = 0;
 
 private:
     SpectralData              _camera;
     SpectralData              _best_illuminant;
     SpectralData              _observer;
     SpectralData              _training_data;
-    std::vector<SpectralData> _Illuminants;
+    std::vector<SpectralData> _illuminants;
 
-    int _verbosity;
-
-    std::vector<double>              _wb;
-    std::vector<std::vector<double>> _idt;
+    std::vector<double>              _WB_multipliers;
+    std::vector<std::vector<double>> _IDT_matrix;
 };
 
+/// DNG metadata required to calculate an input transform.
 struct Metadata
 {
+    /// A calibration data set. Currently two sets are supported.
     struct Calibration
     {
         unsigned short      illuminant = 0;
-        std::vector<double> cameraCalibrationMatrix;
-        std::vector<double> xyz2rgbMatrix;
-
-        friend bool operator==( const Calibration &c1, const Calibration &c2 )
-        {
-            if ( c1.illuminant != c2.illuminant )
-                return false;
-            if ( c1.cameraCalibrationMatrix != c2.cameraCalibrationMatrix )
-                return false;
-            if ( c1.xyz2rgbMatrix != c2.xyz2rgbMatrix )
-                return false;
-
-            return true;
-        }
-
-        friend bool operator!=( const Calibration &c1, const Calibration &c2 )
-        {
-            return !( c1 == c2 );
-        }
+        std::vector<double> camera_calibration_matrix;
+        std::vector<double> XYZ_to_RGB_matrix;
     } calibration[2];
 
-    std::vector<double> neutralRGB;
-    double              baselineExposure = 0.0;
-
-    friend bool operator==( const Metadata &m1, const Metadata &m2 )
-    {
-        if ( m1.calibration[0] != m2.calibration[0] )
-            return false;
-        if ( m1.calibration[1] != m2.calibration[1] )
-            return false;
-        if ( m1.baselineExposure != m2.baselineExposure )
-            return false;
-        if ( m1.neutralRGB != m2.neutralRGB )
-            return false;
-
-        return true;
-    }
-
-    friend bool operator!=( const Metadata &m1, const Metadata &m2 )
-    {
-        return !( m1 == m2 );
-    }
+    std::vector<double> neutral_RGB;
+    double              baseline_exposure = 0.0;
 };
 
-class DNGIdt
+/// Solve an input transform using the metadata stored in DNG files.
+class MetadataSolver
 {
-    core::Metadata _metadata;
-
 public:
-    DNGIdt( const core::Metadata &metadata );
+    /// Initialise the solver using DNG metadata.
+    /// - parameter metadata: DNG metadata
+    MetadataSolver( const core::Metadata &metadata );
 
-    double ccttoMired( const double cct ) const;
-    double robertsonLength(
-        const std::vector<double> &uv, const std::vector<double> &uvt ) const;
-    double lightSourceToColorTemp( const unsigned short tag ) const;
-    double XYZToColorTemperature( const std::vector<double> &XYZ ) const;
+    /// Calculate an input transform matrix.
+    /// - returns: calculated matrix
+    std::vector<std::vector<double>> calculate_IDT_matrix();
 
-    std::vector<double> XYZtoCameraWeightedMatrix(
-        const double &mir, const double &mir1, const double &mir2 ) const;
-
-    std::vector<double>
-    findXYZtoCameraMtx( const std::vector<double> &neutralRGB ) const;
-    std::vector<double> colorTemperatureToXYZ( const double &cct ) const;
-    std::vector<double>
-    matrixRGBtoXYZ( const double chromaticities[][2] ) const;
-
-    std::vector<std::vector<double>> getDNGCATMatrix();
-    std::vector<std::vector<double>> getDNGIDTMatrix();
-    void                             getCameraXYZMtxAndWhitePoint();
+    /// Calculate a chromatic adaptation transform matrix. Strictly speaking,
+    /// this matrix is not required for image processing, as it is embedded in
+    /// the IDT, see `calculate_IDT_matrix`.
+    /// - returns: calculated matrix
+    std::vector<std::vector<double>> calculate_CAT_matrix();
 
 private:
-    std::vector<double> _cameraToXYZMtx;
-    std::vector<double> _cameraXYZWhitePoint;
-};
-
-struct Objfun
-{
-    Objfun(
-        const std::vector<std::vector<double>> &RGB,
-        const std::vector<std::vector<double>> &outLAB )
-        : _RGB( RGB ), _outLAB( outLAB )
-    {}
-
-    template <typename T> bool operator()( const T *B, T *residuals ) const;
-
-    const std::vector<std::vector<double>> _RGB;
-    const std::vector<std::vector<double>> _outLAB;
+    core::Metadata _metadata;
 };
 
 } // namespace core

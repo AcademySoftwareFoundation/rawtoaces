@@ -14,6 +14,7 @@ add_library( ${RAWTOACES_CORE_LIB} ${DO_SHARED}
 
     # Make the headers visible in IDEs. This should not affect the builds.
     ${CORE_PUBLIC_HEADER}
+    rawtoaces_core_priv.h
 )
 
 target_link_libraries(

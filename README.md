@@ -39,10 +39,8 @@ To build `rawtoaces` you would need to satisfy these dependencies:
 | -------          | -----------| -------- | -------------------------------- |
 | `cmake`          | `3.12`     | | [CMake download](https://cmake.org/download/)|
 | `ceres`          | `1.12.0`   | Ceres Solver is an open source library for solving Non-linear Least Squares problems with bounds constraints and unconstrained optimization problems. It processes non-linear regression for rawtoaces.  | [Ceres Solver installation](http://ceres-solver.org/installation.html)|
-| `imath`          | `3.1.8`    | Provides the half data type used for representing 16-bit floating-point values. It's used by rawtoaces for storing high dynamic range (HDR) data in a compact format. | [Imath installation](https://imath.readthedocs.io/en/latest/install.html#install)|
-| `libraw`         | `0.19.4`   | LibRaw is a library that processes RAW files from digital cameras. It handles image pre-processing for rawtoaces. | [LibRaw download](http://www.libraw.org/download) |
-| `boost`          | `1.76.0`   | Boost has multiple C++ libraries that support tasks related to linear algebra, multithreading, image processing, unit testing, etc. It handles data loading and unit testing for rawtoaces. | [Boost download](http://www.boost.org/) |
-| `aces_container` | `latest`   | ACES Container is the reference implementation for a file writer intended to be used with the Academy Color Encoding System (ACES). `rawtoaces` relies on it to produce images that comply with the ACES container specification (SMPTE S2065-4). | [ACES Container installation](https://github.com/ampas/aces_container?tab=readme-ov-file#installation) |
+| `boost`          | `1.76.0`   | Boost has multiple C++ libraries that support tasks related to linear algebra, multithreading, image processing, unit testing, etc. It unit testing for rawtoaces. | [Boost download](http://www.boost.org/) |
+| `OpenImageIO`    | `3.0`      | OpenImageIO is an open source library providing vast functionality for image processing. rawtoaces relies on OpenImageIO for reading raw files, saving AcesContainer files, and also all pixel operations.  | [OpenImageIO installation](https://github.com/AcademySoftwareFoundation/OpenImageIO/blob/main/INSTALL.md) |
 
 
 ### MacOS
@@ -54,28 +52,25 @@ $ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/inst
 ```
 
 ```sh
-$ brew install cmake ceres-solver imath libraw boost aces_container  
+$ brew install cmake ceres-solver imath boost  
 ```
 
 ### Linux
 
 ```sh
 $ sudo apt-get -f cmake
-$ build_scripts/install_aces_container.bash
 $ sudo apt-get -f install \
-    libimath-dev \
     libboost-dev \
     libboost-system-dev \
     libboost-test-dev \
-    libraw-dev libceres-dev
+    libceres-dev
 ```
 
 ### RedHat
 
 ```sh
 $ sudo yum install cmake
-$ build_scripts/install_aces_container.bash
-$ sudo yum install eigen3-devel ceres-solver-devel LibRaw-devel boost-devel imath
+$ sudo yum install eigen3-devel ceres-solver-devel boost-devel
 ```
 
 ### Windows
@@ -89,13 +84,10 @@ $ choco install cmake
 ```sh
 $ build_scripts/install_aces_container.bash
 $ vcpkg install \
-    libraw:x64-windows \
     ceres:x64-windows \
-    imath:x64-windows \
     boost-system:x64-windows \
     boost-foreach:x64-windows \
-    boost-test:x64-windows \
-    boost-property-tree:x64-windows
+    boost-test:x64-windows
 ```
 
 ## Build and Install
@@ -153,54 +145,113 @@ While preferred, camera spectral sensitivity data is not commonly known to gener
 
 A help message with a description of all command line options can be obtained by typing the following command:
 	
-	$ rawtoaces --help
-	rawtoaces - convert RAW digital camera files to ACES
+    Rawtoaces converts raw image files from a digital camera to the Academy Colour Encoding System (ACES) compliant images.
+    The process consists of two parts:
+    - the colour values get converted from the camera native colour space to the ACES AP0 (see "SMPTE ST 2065-1"), and 
+    - the image file gets converted from the camera native raw file format to the ACES Image Container file format (see "SMPTE ST 2065-4").
 
-	Usage:
-  	  rawtoaces file ...
-  	  rawtoaces [options] file
-  	  rawtoaces --help
-  	  rawtoaces --version
+    Rawtoaces supports the following white-balancing modes:
+    - "metadata" uses the white-balancing coefficients from the raw image file, provided by the camera.
+    - "illuminant" performs white balancing to the illuminant, provided in the "--illuminant" parameter. The list of the supported illuminants can be seen using the "--list-illuminants" parameter. This mode requires spectral sensitivity data for the camera model the image comes from. The list of cameras such data is available for, can be seen using the "--list-cameras" parameter. In addition to the named illuminants, which are stored under ${RAWTOACES_DATA_PATH}/illuminant, blackbody illuminants of a given colour temperature can me used (use 'K' suffix, i.e. '3200K'), as well as daylight illuminants (use the 'D' prefix, i.e. 'D65').
+    - "box" performs white-balancing to make the given region of the image appear neutral gray. The box position (origin and size) can be specified using the "--wb-box" parameter. In case no such parameter provided, the whole image is used for white-balancing.
+    - "custom" uses the custom white balancing coefficients provided using the -"custom-wb" parameter.
 
-	IDT options:
-  	  --help                  Show this screen
-  	  --version               Show version
-  	  --wb-method [0-4]       White balance factor calculation method
-	                            0=white balance using file metadata 
-	                            1=white balance using user specified illuminant [str] 
-	                            2=Average the whole image for white balance
-	                            3=Average a grey box for white balance <x y w h>
-	                            4=Use custom white balance  <r g b g>
-	                            (default = 0)
-  	  --mat-method [0-2]      IDT matrix calculation method
-	                            0=Calculate matrix from camera spec sens
-	                            1=Use file metadata color matrix
-	                            2=Use adobe coeffs included in libraw
-	                            (default = 0)
-	    --headroom float        Set highlight headroom factor (default = 6.0)
-	    --cameras               Show a list of supported cameras/models by LibRaw
-	    --valid-illums          Show a list of illuminants
-	    --valid-cameras         Show a list of cameras/models with available 
-  	                          spectral sensitivity datasets
+    Rawtoaces supports the following methods of color matrix computation:
+    - "spectral" uses the camera sensor's spectral sensitivity data to compute the optimal matrix. This mode requires spectral sensitivity data for the camera model the image comes from. The list of cameras such data is available for, can be seen using the "--list-cameras" parameter.
+    - "metadata" uses the matrix (matrices) contained in the raw image file metadata. This mode works best with the images using the DNG format, as the DNG standard mandates the presense of such matrices.
+    - "Adobe" uses the Adobe coefficients provided by LibRaw. 
+    - "custom" uses a user-provided color conversion matrix. A matrix can be specified using the "--custom-mat" parameter.
 
-	Raw conversion options:
-  	  -c float                Set adjust maximum threshold (default = 0.75)
-  	  -C <r b>                Correct chromatic aberration
-  	  -k <num>                Set the darkness level
-  	  -S <num>                Set the saturation level
-  	  -n <num>                Set threshold for wavelet denoising
-  	  -H [0-9]                Highlight mode (0=clip, 1=unclip, 2=blend, 3+=rebuild) (default = 0)
-  	  -t [0-7]                Flip image (0=none, 3=180, 5=90CCW, 6=90CW)
-  	  -W                      Don't automatically brighten the image
-  	  -b <num>                Adjust brightness (default = 1.0)
-  	  -q [0-3]                Set the interpolation quality
-  	  -h                      Half-size color image (twice as fast as "-q 0")
-  	  -B <x y w h>            Use cropbox
-	
-	Benchmarking options:
-  	  -v                      Verbose: print progress messages (repeated -v will add verbosity)
-  	  -d                      Detailed timing report
+    The paths rawtoaces uses to search for the spectral sensitivity data can be specified in the RAWTOACES_DATA_PATH environment variable.
+
+    Usage: 
+        rawtoaces --wb-method METHOD --mat-method METHOD [PARAMS] path/to/dir/or/file ...
+    Examples: 
+        rawtoaces --wb-method metadata --mat-method metadata raw_file.dng
+        rawtoaces --wb-method illuminant --illuminant 3200K --mat-method spectral raw_file.cr3
+
+        --help                          Print help message
+        --version                       Print version and exit
+        --wb-method STR                 White balance method. Supported options: metadata, illuminant, box, custom. (default: metadata)
+        --mat-method STR                IDT matrix calculation method. Supported options: spectral, metadata, Adobe, custom. (default: spectral)
+        --illuminant STR                Illuminant for white balancing. (default = D55)
+        --wb-box X Y W H                Box to use for white balancing. (default = (0,0,0,0) - full image)
+        --custom-wb R G B G             Custom white balance multipliers.
+        --custom-mat Rr Rg Rb Gr Gg Gb Br Bg Bb
+                                        Custom camera RGB to XYZ matrix.
+        --custom-camera-make STR        Camera manufacturer name to be used for spectral sensitivity curves lookup. If present, overrides the value stored in the file metadata.
+        --custom-camera-model STR       Camera model name to be used for spectral sensitivity curves lookup. If present, overrides the value stored in the file metadata.
+        --headroom VAL                  Highlight headroom factor. (default: 6)
+        --scale VAL                     Additional scaling factor to apply to the pixel values. (default: 1)
+    General options:
+        --overwrite                     Allows overwriting existing files. If not set, trying to write to an existing file will generate an error.
+        --output-dir STR                The directory to write the output files to. This gets applied to every input directory, so it is better to be used with a single input directory.
+        --create-dirs                   Create output directories if they don't exist.
+        --disable-cache                 Disable the colour space transform cache.
+    Raw conversion options:
+        --auto-bright                   Enable automatic exposure adjustment.
+        --adjust-maximum-threshold VAL  Automatically lower the linearity threshold provided in the metadata by this scaling factor. (default: 0.75)
+        --black-level VAL               If >= 0, override the black level. (default: -1)
+        --saturation-level VAL          If not 0, override the level which appears to be saturated after normalisation. (default: 0)
+        --chromatic-aberration R B      Red and blue scale factors for chromatic aberration correction. The value of 1 means no correction. (default: 1)
+        --half-size                     If present, decode image at half size resolution.
+        --highlight-mode VAL            0 = clip, 1 = unclip, 2 = blend, 3..9 = rebuild. (default: 0)
+        --crop-box X Y W H              Apply custom crop. If not present, the default crop is applied, which should match the crop of the in-camera JPEG.
+        --crop-mode STR                 Cropping mode. Supported options: 'none' (write out the full sensor area), 'soft' (write out full image, mark the crop as the display window), 'hard' (write out only the crop area). (default: soft)
+        --flip VAL                      If not 0, override the orientation specified in the metadata. 1..8 correspond to EXIF orientation codes (3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.) (default: 0)
+        --denoise-threshold VAL         Wavelet denoising threshold (default: 0)
+        --demosaic STR                  Demosaicing algorithm. Supported options: 'linear', 'VNG', 'PPG', 'AHD', 'DCB', 'AHD-Mod', 'AFD', 'VCD', 'Mixed', 'LMMSE', 'AMaZE', 'DHT', 'AAHD', 'AHD'. (default: AHD)
+    Benchmarking and debugging:
+        --list-cameras                  Shows the list of cameras supported in spectral mode.
+        --list-illuminants              Shows the list of illuminants supported in spectral mode.
+        --use-timing                    Log the execution time of each step of image processing.
+        --verbose                       (-v) Print progress messages. Repeated -v will increase verbosity.
 		
+### Command line parameters changes since version v1.x:
+
+The command line parser has been rewritten since v1.x, so there are some changes to the command line parameters. See below for some examples of how to use different white balance and matrix methods:
+
+#### White balance methods:
+| old | new |
+|-----|-----|
+| rawtoaces --wb-method 0            | rawtoaces --wb-method metadata                      |
+| rawtoaces --wb-method 1 d65        | rawtoaces --wb-method illuminant --illuminant d65   |
+| rawtoaces --wb-method 2            | rawtoaces --wb-method box                           |
+| rawtoaces --wb-method 3 \<x y w h> | rawtoaces --wb-method box --wb-box \<x y w h>       |
+| rawtoaces --wb-method 4 \<r g b g> | rawtoaces --wb-method custom --custom-wb \<r g b g> |
+
+#### Matrix methods:
+| old | new |
+|-----|-----|
+| rawtoaces --mat-method 0                                            | rawtoaces --mat-method spectral                                                   |
+| rawtoaces --mat-method 1                                            | rawtoaces --mat-method metadata                                                   |
+| rawtoaces --mat-method 2                                            | rawtoaces --mat-method Adobe                                                      |
+| rawtoaces --mat-method 3 \<m1r m1g m1b m2r m2g m2b m3r m3g m3b>     | rawtoaces --mat-method custom --custom-mat \<m1r m1g m1b m2r m2g m2b m3r m3g m3b> |
+
+#### Other command line parameters:
+| old | new |
+|-----|-----|
+| -c 0.8          | --adjust-maximum-threshold 0.8 |
+| -C 1.2 1.1      | --chromatic-aberration 1.2 1.1 |
+| -k 512          | --black-level 512              |
+| -S 15000        | --saturation-level 15000       |
+| -n 1.5          | --threshold 1.5                |
+| -H 1            | --highlight-mode 1             |
+| -W              | --auto-bright                  |
+| -b 1.1          | --scale 1.1                    |
+| -q 3            | --demosaic AHD                 |
+| -f 0            | --flip 0                       |
+| -h              | --half-size                    |
+| -B \<x y w h>   | --crop-box \<x y w h>          |
+| -d              | --use-timing                   |
+| --valid-illums  | --list-illuminants             |
+| --valid-cameras | --list-cameras                 |
+
+#### Other changes
+- rawtoaces will not overwrite output files unless executed with "--overwrite"
+- custom output directory can be specified with "--output-dir", the output directory can be either absolute, or considered relative to each input directory
+- missing output directories provided in "--output-dir" will be created automatically if executed with "--create-dirs"
+        
 ### RAW conversion options
 	
 In most cases the default values for all "RAW conversion options" should be sufficient.  Please see the help menu for details of the RAW conversion options.
@@ -213,7 +264,7 @@ If spectral sensitivity data for your camera is included with `rawtoaces` then t
 	
 This command is equivalent to :
 	
-	$ rawtoaces --wb-method 0 --mat-method 0 input.raw
+	$ rawtoaces --wb-method metadata --mat-method spectral input.raw
 	
 To process mutiple raw files, you can try:
 	
@@ -231,7 +282,7 @@ This is the preferred method as camera white balance gain factors and the RGB to
 
 By default, `rawtoaces` will determine the adopted white by finding the set of white balance gain factors calculated from spectral sensitivities closest to the "As Shot" (aka Camera Multiplier) white balance gain factors included in the RAW file metadata. This default behavior can be overridden by including the desired adopted white name after the white balance method. The following example will use the white balance gain factors calculated from spectral sensitivities for D60.
 
-	$ rawtoaces --wb-method 1 D60 --mat-method 0 input.raw
+	$ rawtoaces --wb-method illuminant --illuminant D60 --mat-method spectral input.raw
 	
 You can use the environment variable of `RAWTOACES_DATA_PATH` to specify the repository for your own datasets. If you have spectral sensitivity data for your camera but it is not included with `rawtoaces` you may place that data in `/usr/local/include/rawtoaces/data/camera` or place the data in the folder pointed by `RAWTOACES_DATA_PATH`. The rawtoaces versions prior to v1.1 used the environment variable `AMPAS_DATA_PATH`, the old name is still supported for backward compatibility. If both variables are present, `RAWTOACES_DATA_PATH` takes priority.
 
@@ -247,15 +298,15 @@ In lieu of spectral sensitivity data, camera metadata can be used to convert RAW
 
 The following commands will convert RAW to ACES using the camera file metadata for both white balance and the RGB to XYZ matrix.
 
-	$ rawtoaces --wb-method 0 --mat-method 1 input.raw
+	$ rawtoaces --wb-method metadata --mat-method metadata input.raw
 	
 ### Conversion using camera data included in LibRaw
 
 `libraw` includes matrices for a wide range of cameras which may provide a reasonable basis for conversion from RGB to ACES. These matrices were calculated by Adobe and are often referred to as the Adobe coefficients. To use these built-in matrices the following command may be used.
 	
-	$ rawtoaces --mat-method 2
+	$ rawtoaces --mat-method Adobe
 	
-`libraw` also provides a few other methods for calculating white balance, including averaging the entire image, averaging a specified box within the image, or explicitly specifying the white balance gain factors to be used. These options can be utilized by using `--wb-method [2-4]` as desired.
+`libraw` also provides a few other methods for calculating white balance, including averaging the entire image, averaging a specified box within the image, or explicitly specifying the white balance gain factors to be used. These options can be utilized by using a `--wb-method` value of 'box', or 'custom' as desired, see examples above.
 
 ## Known Issues
 

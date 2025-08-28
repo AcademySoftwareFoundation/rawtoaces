@@ -319,8 +319,11 @@ inline bool isValidCT( std::string str )
     if ( length == 0 )
         return false;
 
+    bool first_is_D = std::tolower( str.front() ) == 'd';
+    bool last_is_K  = std::tolower( str.back() ) == 'k';
+
     // other light sources
-    if ( str[0] != 'd' && str[length - 1] != 'k' )
+    if ( !first_is_D && !last_is_K )
     {
         while ( str[i] )
         {
@@ -330,7 +333,7 @@ inline bool isValidCT( std::string str )
         }
     }
     // daylight ("D" + Numeric values)
-    else if ( str[0] == 'd' && str[length - 1] != 'k' )
+    else if ( first_is_D && !last_is_K )
     {
         i = 1;
         while ( str[i] )
@@ -341,9 +344,9 @@ inline bool isValidCT( std::string str )
         }
     }
     // daylight (Numeric values + "K")
-    else if ( str[0] != 'd' && str[length - 1] == 'k' )
+    else if ( !first_is_D && last_is_K )
     {
-        while ( str[i] && i < str.length() - 1 )
+        while ( str[i] && i < length - 1 )
         {
             if ( !isdigit( str[i] ) )
                 return false;
@@ -353,7 +356,7 @@ inline bool isValidCT( std::string str )
     // It is rarely for "D" and "K" appear
     // together as the first letter and
     // the last letter of the string
-    else if ( str[0] == 'd' && str[length - 1] == 'k' )
+    else if ( first_is_D && last_is_K )
         return false;
 
     return true;

@@ -14,17 +14,17 @@
 
 void test_AcesRender()
 {
-    char const *const argv[] = {
+    const char *argv[] = {
         "dummy_binary_path",
     // getting "Subprocess aborted" in unit tests
     // when this is enabled on Mac, the tests fail on linux if
     // skipped completely.
 #if __linux__
         "--wb-method",
-        "0",
+        "metadata",
 #endif
         "--mat-method",
-        "1",
+        "metadata",
         "dummy_image_path"
     };
 
@@ -36,8 +36,16 @@ void test_AcesRender()
 
     rta::util::ImageConverter converter;
 
-    int arg = converter.configure_settings( argc, argv );
-    OIIO_CHECK_EQUAL( arg, argc - 1 );
+    OIIO::ArgParse arg_parser;
+    arg_parser.arg( "filename" ).action( OIIO::ArgParse::append() ).hidden();
+    converter.init_parser( arg_parser );
+
+    OIIO_CHECK_ASSERT( arg_parser.parse_args( argc, argv ) >= 0 );
+    OIIO_CHECK_ASSERT( converter.parse_parameters( arg_parser ) );
+
+    auto files = arg_parser["filename"].as_vec<std::string>();
+    OIIO_CHECK_EQUAL( files.size(), 1 );
+
     OIIO_CHECK_ASSERT(
         converter.settings.wbMethod ==
         rta::util::ImageConverter::Settings::WBMethod::Metadata );

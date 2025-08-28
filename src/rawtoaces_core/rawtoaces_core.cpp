@@ -260,16 +260,13 @@ bool SpectralSolver::load_camera(
 bool SpectralSolver::load_illuminant(
     const std::vector<std::string> &paths, const std::string &type )
 {
-    //        assert ( paths.size() > 0 && !type.empty() );
-
     if ( _illuminants.size() > 0 )
         _illuminants.clear();
 
     if ( !type.empty() )
     {
-
         // Daylight
-        if ( type[0] == 'd' )
+        if ( std::tolower( type.front() ) == 'd' )
         {
             int               cct        = atoi( type.substr( 1 ).c_str() );
             const std::string type       = "d" + std::to_string( cct );
@@ -278,7 +275,7 @@ bool SpectralSolver::load_illuminant(
             return true;
         }
         // Blackbody
-        else if ( type[type.length() - 1] == 'k' )
+        else if ( std::tolower( type.back() ) == 'k' )
         {
             int cct = atoi( type.substr( 0, type.length() - 1 ).c_str() );
             const std::string type       = std::to_string( cct ) + "k";
@@ -292,7 +289,8 @@ bool SpectralSolver::load_illuminant(
             {
                 SpectralData &illuminant = _illuminants.emplace_back();
                 if ( !illuminant.load( paths[i] ) ||
-                     illuminant.illuminant != type )
+                     cmp_str( illuminant.illuminant.c_str(), type.c_str() ) !=
+                         0 )
                 {
                     _illuminants.pop_back();
                 }

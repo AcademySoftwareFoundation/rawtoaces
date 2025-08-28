@@ -4,6 +4,7 @@
 #pragma once
 
 #include <OpenImageIO/imagebuf.h>
+#include <OpenImageIO/argparse.h>
 
 namespace rta
 {
@@ -82,6 +83,17 @@ public:
             Custom
         } matrixMethod = MatrixMethod::Spectral;
 
+        /// Cropping mode.
+        enum class CropMode
+        {
+            /// Write out full sensor area.
+            Off,
+            /// Write out full sensor area, mark the crop area as the display window.
+            Soft,
+            /// Write out only the crop area.
+            Hard
+        } crop_mode = CropMode::Soft;
+
         /// An illuminant to use for white balancing and/or colour matrix
         /// calculation. Only used when `wbMethod` ==
         /// `WBMethod::Illuminant` and `matrixMethod` == `MatrixMethod::Spectral`.
@@ -95,6 +107,9 @@ public:
         int   wbBox[4]           = { 0 };
         float customWB[4]        = { 1.0, 1.0, 1.0, 1.0 };
         float customMatrix[3][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
+
+        std::string custom_camera_make;
+        std::string custom_camera_model;
 
         // Libraw-specific options:
         bool        auto_bright              = false;
@@ -112,6 +127,9 @@ public:
 
         // Global config:
         std::vector<std::string> database_directories;
+        bool                     overwrite   = false;
+        bool                     create_dirs = false;
+        std::string              output_dir;
 
         // Diagnostic:
         bool use_timing = false;
@@ -121,10 +139,26 @@ public:
 
     static void usage( const char *prog );
 
-    /// Configure the converter using the command line parameters and
-    /// environment variables. This is optional, the `settings` struct can also
-    /// be modified manually.
-    int configure_settings( int argc, char const *const argv[] );
+    /// Initialise the parser object with all the command line parameters
+    /// used by this tool. The method also sets the help and usage strings.
+    /// The parser object can be amended by the calling code afterwards if
+    /// needed. This method is optional, all of the settings above can be
+    /// modified directly.
+    /// - parameter arg_parser:
+    ///    The command line parser object to be updated.
+    void init_parser( OIIO::ArgParse &arg_parser );
+
+    /// Initialise the converter settings from the command line parser object.
+    /// Prior to calling this, first initialise the object via
+    /// `ImageConverted::init_parser()`, and call
+    /// `OIIO::ArgParse::parse_args()`.
+    /// This method is optional, all of the settings above can be modified
+    /// directly.
+    /// - parameter arg_parser:
+    ///    the command line parser object
+    /// - returns
+    ///    `true` if parsed successfully
+    bool parse_parameters( const OIIO::ArgParse &arg_parser );
 
     /// Collects all illuminants supported by this version.
     std::vector<std::string> supported_illuminants();

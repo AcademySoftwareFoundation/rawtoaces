@@ -24,6 +24,8 @@ target_link_libraries ( ${RAWTOACES_UTIL_LIB}
 #        Imath::ImathConfig
 )
 
+target_compile_definitions( rawtoaces_util PRIVATE RAWTOACES_VERSION="${RAWTOACES_VERSION}" )
+
 target_include_directories( ${RAWTOACES_UTIL_LIB} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>
     $<INSTALL_INTERFACE:./include>

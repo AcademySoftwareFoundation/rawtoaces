@@ -17,109 +17,6 @@ namespace rta
 namespace util
 {
 
-//  =====================================================================
-//  Prepare the matching between string flags and single character flag
-//
-//  inputs:
-//      N/A
-//
-//  outputs:
-//      N/A : keys should be prepared and loaded
-
-void create_key( unordered_map<string, char> &keys )
-{
-    keys["--help"]          = 'I';
-    keys["--version"]       = 'V';
-    keys["--cameras"]       = 'T';
-    keys["--wb-method"]     = 'R';
-    keys["--mat-method"]    = 'p';
-    keys["--headroom"]      = 'M';
-    keys["--valid-illums"]  = 'z';
-    keys["--valid-cameras"] = 'Q';
-    keys["-c"]              = 'c';
-    keys["-C"]              = 'C';
-    keys["-k"]              = 'k';
-    keys["-S"]              = 'S';
-    keys["-n"]              = 'n';
-    keys["-H"]              = 'H';
-    keys["-t"]              = 't';
-    keys["-W"]              = 'W';
-    keys["-b"]              = 'b';
-    keys["-q"]              = 'q';
-    keys["-h"]              = 'h';
-    keys["-s"]              = 's';
-    keys["-B"]              = 'B';
-    keys["-v"]              = 'v';
-    keys["-F"]              = 'F';
-    keys["-d"]              = 'd';
-    keys["-I"]              = 'I';
-    keys["-V"]              = 'V';
-};
-
-//  =====================================================================
-//  Print usage / help message
-//
-//  inputs:
-//      const char * : name of the program (i.e., rawtoaces)
-//
-//  outputs:
-//      N/A
-
-void ImageConverter::usage( const char *prog )
-{
-    printf( "%s - convert RAW digital camera files to ACES\n", prog );
-    printf( "\n" );
-    printf( "Usage:\n" );
-    printf( "  %s file ...\n", prog );
-    printf( "  %s [options] file\n", prog );
-    printf( "  %s --help\n", prog );
-    printf( "  %s --version\n", prog );
-    printf( "\n" );
-    printf(
-        "IDT options:\n"
-        "  --help                  Show this screen\n"
-        "  --version               Show version\n"
-        "  --wb-method [0-4]       White balance factor calculation method\n"
-        "                            0=white balance using file metadata \n"
-        "                            1=white balance using user specified illuminant [str] \n"
-        "                            2=Average the whole image for white balance\n"
-        "                            3=Average a grey box for white balance <x y w h>\n"
-        "                            4=Use custom white balance  <r g b g>\n"
-        "                            (default = 0)\n"
-        "  --mat-method [0-3]      IDT matrix calculation method\n"
-        "                            0=Calculate matrix from camera spec sens\n"
-        "                            1=Use file metadata color matrix\n"
-        "                            2=Use adobe coeffs included in libraw\n"
-        "                            3=Use custom matrix <m1r m1g m1b m2r m2g m2b m3r m3g m3b>\n"
-        "                            (default = 0)\n"
-        "                            (default = /usr/local/include/rawtoaces/data/camera)\n"
-        "  --headroom float        Set highlight headroom factor (default = 6.0)\n"
-        "  --valid-illums          Show a list of illuminants\n"
-        "  --valid-cameras         Show a list of cameras/models with available\n"
-        "                          spectral sensitivity datasets\n"
-        "\n"
-        "Raw conversion options:\n"
-        "  -c float                Set adjust maximum threshold (default = 0.75)\n"
-        "  -C <r b>                Correct chromatic aberration\n"
-        "  -k <num>                Set the darkness level\n"
-        "  -S <num>                Set the saturation level\n"
-        "  -n <num>                Set threshold for wavelet denoising\n"
-        "  -H [0-9]                Highlight mode (0=clip, 1=unclip, 2=blend, 3+=rebuild) (default = 0)\n"
-        "  -t [0-7]                Flip image (0=none, 3=180, 5=90CCW, 6=90CW)\n"
-        "  -W                      Don't automatically brighten the image\n"
-        "  -b <num>                Adjust brightness (default = 1.0)\n"
-        "  -q [0-12]                Demosaicing algorithm (0=linear, 1=VNG, 2=PPG, 3=AHD, 4=DCB, 5=AHD-Mod, 6=AFD, 7=VCD, 8=Mixed, 9=LMMSE, 10=AMaZE, 11=DHT, 12=AAHD)\n"
-        "  -h                      Half-size color image (twice as fast as \"-q 0\")\n"
-        "  -B <x y w h>            Use cropbox\n"
-        "\n"
-        "Benchmarking options:\n"
-        "  -v                      Verbose: print progress messages (repeated -v will add verbosity)\n"
-        "  -d                      Detailed timing report\n" );
-    exit( -1 );
-};
-
-//  =====================================================================
-
 std::vector<std::string> collect_data_files(
     const std::vector<std::string> &directories, const std::string &type )
 {
@@ -265,20 +162,28 @@ bool fetch_camera_make_and_model(
     std::string           &camera_make,
     std::string           &camera_model )
 {
-    camera_make = spec["cameraMake"];
     if ( camera_make.empty() )
     {
-        std::cerr << "Missing the camera manufacturer name in the file "
-                  << "metadata." << std::endl;
-        return false;
+        camera_make = spec["cameraMake"];
+        if ( camera_make.empty() )
+        {
+            std::cerr << "Missing the camera manufacturer name in the file "
+                      << "metadata. You can provide a camera make using the "
+                      << "--custom-camera-make parameter" << std::endl;
+            return false;
+        }
     }
 
-    camera_model = spec["cameraModel"];
     if ( camera_model.empty() )
     {
-        std::cerr << "Missing the camera model name in the file metadata. "
-                  << std::endl;
-        return false;
+        camera_model = spec["cameraModel"];
+        if ( camera_model.empty() )
+        {
+            std::cerr << "Missing the camera model name in the file metadata. "
+                      << "You can provide a camera make using the "
+                      << "--custom-camera-make parameter" << std::endl;
+            return false;
+        }
     }
 
     return true;
@@ -307,7 +212,7 @@ bool configure_solver(
     const std::string              &camera_model,
     const std::string              &illuminant = "" )
 {
-    bool success = true;
+    bool success = false;
 
     auto camera_files = collect_data_files( directories, "camera" );
     for ( auto &camera_file: camera_files )
@@ -452,7 +357,8 @@ bool prepare_transform_spectral(
 {
     std::string lower_illuminant = OIIO::Strutil::lower( settings.illuminant );
 
-    std::string camera_make, camera_model;
+    std::string camera_make  = settings.custom_camera_make;
+    std::string camera_model = settings.custom_camera_model;
     if ( !fetch_camera_make_and_model( imageSpec, camera_make, camera_model ) )
         return false;
 
@@ -586,7 +492,8 @@ bool prepare_transform_DNG(
     std::vector<std::vector<double>> &IDT_matrix,
     std::vector<std::vector<double>> &CAT_matrix )
 {
-    std::string camera_make, camera_model;
+    std::string camera_make  = settings.custom_camera_make;
+    std::string camera_model = settings.custom_camera_model;
     if ( !fetch_camera_make_and_model( imageSpec, camera_make, camera_model ) )
         return false;
 
@@ -683,296 +590,584 @@ bool prepare_transform_nonDNG(
     return true;
 }
 
-int ImageConverter::configure_settings( int argc, char const *const argv[] )
+const char *HelpString =
+    "Rawtoaces converts raw image files from a digital camera to "
+    "the Academy Colour Encoding System (ACES) compliant images.\n"
+    "The process consists of two parts:\n"
+    "- the colour values get converted from the camera native colour "
+    "space to the ACES AP0 (see \"SMPTE ST 2065-1\"), and \n"
+    "- the image file gets converted from the camera native raw "
+    "file format to the ACES Image Container file format "
+    "(see \"SMPTE ST 2065-4\").\n"
+    "\n"
+    "Rawtoaces supports the following white-balancing modes:\n"
+    "- \"metadata\" uses the white-balancing coefficients from the raw "
+    "image file, provided by the camera.\n"
+    "- \"illuminant\" performs white balancing to the illuminant, "
+    "provided in the \"--illuminant\" parameter. The list of the "
+    "supported illuminants can be seen using the "
+    "\"--list-illuminants\" parameter. This mode requires spectral "
+    "sensitivity data for the camera model the image comes from. "
+    "The list of cameras such data is available for, can be "
+    "seen using the \"--list-cameras\" parameter. In addition to the named "
+    "illuminants, which are stored under ${RAWTOACES_DATA_PATH}/illuminant, "
+    "blackbody illuminants of a given colour temperature can me used (use 'K' "
+    "suffix, i.e. '3200K'), as well as daylight illuminants (use the 'D' "
+    "prefix, i.e. 'D65').\n"
+    "- \"box\" performs white-balancing to make the given region of "
+    "the image appear neutral gray. The box position (origin and size) "
+    "can be specified using the \"--wb-box\" parameter. In case no such "
+    "parameter provided, the whole image is used for white-balancing.\n"
+    "- \"custom\" uses the custom white balancing coefficients "
+    "provided using the -\"custom-wb\" parameter.\n"
+    "\n"
+    "Rawtoaces supports the following methods of color matrix "
+    "computation:\n"
+    "- \"spectral\" uses the camera sensor's spectral sensitivity data "
+    "to compute the optimal matrix. This mode requires spectral "
+    "sensitivity data for the camera model the image comes from. "
+    "The list of cameras such data is available for, can be "
+    "seen using the \"--list-cameras\" parameter.\n"
+    "- \"metadata\" uses the matrix (matrices) contained in the raw "
+    "image file metadata. This mode works best with the images using "
+    "the DNG format, as the DNG standard mandates the presense of "
+    "such matrices.\n"
+    "- \"Adobe\" uses the Adobe coefficients provided by LibRaw. \n"
+    "- \"custom\" uses a user-provided color conversion matrix. "
+    "A matrix can be specified using the \"--custom-mat\" parameter.\n"
+    "\n"
+    "The paths rawtoaces uses to search for the spectral sensitivity "
+    "data can be specified in the RAWTOACES_DATA_PATH environment "
+    "variable.\n";
+
+const char *UsageString =
+    "\n"
+    "    rawtoaces --wb-method METHOD --mat-method METHOD [PARAMS] "
+    "path/to/dir/or/file ...\n"
+    "Examples: \n"
+    "    rawtoaces --wb-method metadata --mat-method metadata raw_file.dng\n"
+    "    rawtoaces --wb-method illuminant --illuminant 3200K --mat-method "
+    "spectral raw_file.cr3\n";
+
+template <typename T, typename F1, typename F2>
+bool check_param(
+    const std::string    &mode_name,
+    const std::string    &mode_value,
+    const std::string    &param_name,
+    const std::vector<T> &param_value,
+    size_t                correct_size,
+    const std::string    &default_value_message,
+    bool                  is_correct_mode,
+    F1                    on_success,
+    F2                    on_failure )
+{
+    if ( is_correct_mode )
+    {
+        if ( param_value.size() == correct_size )
+        {
+            on_success();
+            return true;
+        }
+        else
+        {
+            if ( ( param_value.size() == 0 ) ||
+                 ( ( param_value.size() == 1 ) && ( param_value[0] == 0 ) ) )
+            {
+                std::cerr << "Warning: " << mode_name << " was set to \""
+                          << mode_value << "\", but no \"--" << param_name
+                          << "\" parameter provided. " << default_value_message
+                          << std::endl;
+
+                on_failure();
+                return false;
+            }
+
+            std::cerr << "Warning: The parameter \"" << param_name
+                      << "\" must have " << correct_size << " values. "
+                      << default_value_message << std::endl;
+
+            on_failure();
+            return false;
+        }
+    }
+    else
+    {
+        if ( ( param_value.size() > 1 ) ||
+             ( ( param_value.size() == 1 ) && ( param_value[0] != 0 ) ) )
+        {
+            std::cerr << "Warning: the \"--" << param_name
+                      << "\" parameter provided, but the " << mode_name
+                      << " is different from \"" << mode_value << "\". "
+                      << default_value_message << std::endl;
+
+            on_failure();
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+}
+
+void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
+{
+    arg_parser.intro( HelpString );
+    arg_parser.usage( UsageString );
+    arg_parser.print_defaults( true );
+    arg_parser.add_help( true );
+
+#if OIIO_VERSION >= OIIO_MAKE_VERSION( 2, 4, 0 )
+    arg_parser.add_version( RAWTOACES_VERSION );
+#endif
+
+    arg_parser.arg( "--wb-method" )
+        .help(
+            "White balance method. Supported options: metadata, illuminant, "
+            "box, custom." )
+        .metavar( "STR" )
+        .defaultval( "metadata" )
+        .action( OIIO::ArgParse::store() );
+
+    arg_parser.arg( "--mat-method" )
+        .help(
+            "IDT matrix calculation method. Supported options: spectral, "
+            "metadata, Adobe, custom." )
+        .metavar( "STR" )
+        .defaultval( "spectral" )
+        .action( OIIO::ArgParse::store() );
+
+    arg_parser.arg( "--illuminant" )
+        .help( "Illuminant for white balancing. (default = D55)" )
+        .metavar( "STR" )
+        .action( OIIO::ArgParse::store() );
+
+    arg_parser.arg( "--wb-box" )
+        .help(
+            "Box to use for white balancing. (default = (0,0,0,0) - full "
+            "image)" )
+        .nargs( 4 )
+        .metavar( "X Y W H" )
+        .action( OIIO::ArgParse::store<int>() );
+
+    arg_parser.arg( "--custom-wb" )
+        .help( "Custom white balance multipliers." )
+        .nargs( 4 )
+        .metavar( "R G B G" )
+        .action( OIIO::ArgParse::store<float>() );
+
+    arg_parser.arg( "--custom-mat" )
+        .help( "Custom camera RGB to XYZ matrix." )
+        .nargs( 9 )
+        .metavar( "Rr Rg Rb Gr Gg Gb Br Bg Bb" )
+        .action( OIIO::ArgParse::store<float>() );
+
+    arg_parser.arg( "--custom-camera-make" )
+        .help(
+            "Camera manufacturer name to be used for spectral sensitivity "
+            "curves lookup. "
+            "If present, overrides the value stored in the file metadata." )
+        .metavar( "STR" )
+        .action( OIIO::ArgParse::store() );
+
+    arg_parser.arg( "--custom-camera-model" )
+        .help(
+            "Camera model name to be used for spectral sensitivity "
+            "curves lookup. "
+            "If present, overrides the value stored in the file metadata." )
+        .metavar( "STR" )
+        .action( OIIO::ArgParse::store() );
+
+    arg_parser.arg( "--headroom" )
+        .help( "Highlight headroom factor." )
+        .metavar( "VAL" )
+        .defaultval( 6.0f )
+        .action( OIIO::ArgParse::store<float>() );
+
+    arg_parser.arg( "--scale" )
+        .help( "Additional scaling factor to apply to the pixel values." )
+        .metavar( "VAL" )
+        .defaultval( 1.0f )
+        .action( OIIO::ArgParse::store<float>() );
+
+    arg_parser.separator( "General options:" );
+
+    arg_parser.arg( "--overwrite" )
+        .help(
+            "Allows overwriting existing files. If not set, trying to write "
+            "to an existing file will generate an error." )
+        .action( OIIO::ArgParse::store_true() );
+
+    arg_parser.arg( "--output-dir" )
+        .help(
+            "The directory to write the output files to. "
+            "This gets applied to every input directory, so it is better to "
+            "be used with a single input directory." )
+        .metavar( "STR" )
+        .action( OIIO::ArgParse::store() );
+
+    arg_parser.arg( "--create-dirs" )
+        .help( "Create output directories if they don't exist." )
+        .action( OIIO::ArgParse::store_true() );
+
+    arg_parser.separator( "Raw conversion options:" );
+
+    arg_parser.arg( "--auto-bright" )
+        .help( "Enable automatic exposure adjustment." )
+        .action( OIIO::ArgParse::store_true() );
+
+    arg_parser.arg( "--adjust-maximum-threshold" )
+        .help(
+            "Automatically lower the linearity threshold provided in the "
+            "metadata by this scaling factor." )
+        .metavar( "VAL" )
+        .defaultval( 0.75f )
+        .action( OIIO::ArgParse::store<float>() );
+
+    arg_parser.arg( "--black-level" )
+        .help( "If >= 0, override the black level." )
+        .metavar( "VAL" )
+        .defaultval( -1 )
+        .action( OIIO::ArgParse::store<int>() );
+
+    arg_parser.arg( "--saturation-level" )
+        .help(
+            "If not 0, override the level which appears to be saturated "
+            "after normalisation." )
+        .metavar( "VAL" )
+        .defaultval( 0 )
+        .action( OIIO::ArgParse::store<int>() );
+
+    arg_parser.arg( "--chromatic-aberration" )
+        .help(
+            "Red and blue scale factors for chromatic aberration correction. "
+            "The value of 1 means no correction." )
+        .metavar( "R B" )
+        .nargs( 2 )
+        .defaultval( 1.0f )
+        .action( OIIO::ArgParse::store<float>() );
+
+    arg_parser.arg( "--half-size" )
+        .help( "If present, decode image at half size resolution." )
+        .action( OIIO::ArgParse::store_true() );
+
+    arg_parser.arg( "--highlight-mode" )
+        .help( "0 = clip, 1 = unclip, 2 = blend, 3..9 = rebuild." )
+        .metavar( "VAL" )
+        .defaultval( 0 )
+        .action( OIIO::ArgParse::store<int>() );
+
+    arg_parser.arg( "--crop-box" )
+        .help(
+            "Apply custom crop. If not present, the default crop is applied, "
+            "which should match the crop of the in-camera JPEG." )
+        .nargs( 4 )
+        .metavar( "X Y W H" )
+        .action( OIIO::ArgParse::store<int>() );
+
+    arg_parser.arg( "--crop-mode" )
+        .help(
+            "Cropping mode. Supported options: 'none' (write out the full "
+            "sensor area), 'soft' (write out full image, mark the crop as the "
+            "display window), 'hard' (write out only the crop area)." )
+        .metavar( "STR" )
+        .defaultval( "soft" )
+        .action( OIIO::ArgParse::store() );
+
+    arg_parser.arg( "--flip" )
+        .help(
+            "If not 0, override the orientation specified in the metadata. "
+            "1..8 correspond to EXIF orientation codes "
+            "(3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.)" )
+        .metavar( "VAL" )
+        .defaultval( 0 )
+        .action( OIIO::ArgParse::store<int>() );
+
+    arg_parser.arg( "--denoise-threshold" )
+        .help( "Wavelet denoising threshold" )
+        .metavar( "VAL" )
+        .defaultval( 0 )
+        .action( OIIO::ArgParse::store<int>() );
+
+    arg_parser.arg( "--demosaic" )
+        .help(
+            "Demosaicing algorithm. Supported options: 'linear', 'VNG', 'PPG', "
+            "'AHD', 'DCB', 'AHD-Mod', 'AFD', 'VCD', 'Mixed', 'LMMSE', 'AMaZE', "
+            "'DHT', 'AAHD', 'AHD'." )
+        .metavar( "STR" )
+        .defaultval( "AHD" )
+        .action( OIIO::ArgParse::store() );
+
+    arg_parser.separator( "Benchmarking and debugging:" );
+
+    arg_parser.arg( "--list-cameras" )
+        .help( "Shows the list of cameras supported in spectral mode." )
+        .action( OIIO::ArgParse::store_true() );
+
+    arg_parser.arg( "--list-illuminants" )
+        .help( "Shows the list of illuminants supported in spectral mode." )
+        .action( OIIO::ArgParse::store_true() );
+
+    arg_parser.arg( "--use-timing" )
+        .help( "Log the execution time of each step of image processing." )
+        .action( OIIO::ArgParse::store_true() );
+
+    arg_parser.arg( "--verbose" )
+        .help(
+            "(-v) Print progress messages. "
+            "Repeated -v will increase verbosity." )
+        .action(
+            [&]( OIIO::cspan<const char *> argv ) { settings.verbosity++; } );
+
+    arg_parser.arg( "-v" ).hidden().action(
+        [&]( OIIO::cspan<const char *> argv ) { settings.verbosity++; } );
+}
+
+bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
 {
     settings.database_directories = database_paths();
 
-    char *cp, *sp;
-    int   arg;
-
-    static unordered_map<string, char> keys;
-    create_key( keys );
-
-    for ( arg = 1; arg < argc; )
+    if ( arg_parser["list-cameras"].get<int>() )
     {
-        string key( argv[arg] );
-
-        if ( key[0] != '-' )
+        auto cameras = supported_cameras();
+        std::cout << std::endl
+                  << "Spectral sensitivity data are available for the "
+                  << "following cameras:" << std::endl;
+        for ( const auto &camera: cameras )
         {
-            break;
+            std::cerr << std::endl << camera;
         }
+        std::cerr << std::endl;
+    }
 
-        arg++;
-
-        char opt = keys[key];
-
-        if ( !opt )
+    if ( arg_parser["list-illuminants"].get<int>() )
+    {
+        // gather a list of illuminants supported
+        auto illuminants = supported_illuminants();
+        std::cerr << std::endl
+                  << "The following illuminants are supported:" << std::endl;
+        for ( const auto &illuminant: illuminants )
         {
-            fprintf(
-                stderr, "\nNon-recognizable flag - \"%s\"\n", key.c_str() );
-            exit( -1 );
+            std::cerr << std::endl << illuminant;
         }
+        std::cerr << std::endl;
+    }
 
-        if ( ( cp = strchr( sp = (char *)"HcnbksStqmBC", opt ) ) != 0 )
+    std::string wb_method = arg_parser["wb-method"].get();
+
+    if ( wb_method == "metadata" )
+    {
+        settings.wbMethod = Settings::WBMethod::Metadata;
+    }
+    else if ( wb_method == "illuminant" )
+    {
+        settings.wbMethod = Settings::WBMethod::Illuminant;
+    }
+    else if ( wb_method == "box" )
+    {
+        settings.wbMethod = Settings::WBMethod::Box;
+    }
+    else if ( wb_method == "custom" )
+    {
+        settings.wbMethod = Settings::WBMethod::Custom;
+    }
+    else
+    {
+        std::cerr << std::endl
+                  << "Unsupported white balancing method: \"" << wb_method
+                  << "\"." << std::endl;
+
+        return false;
+    }
+
+    std::string mat_method = arg_parser["mat-method"].get();
+
+    if ( mat_method == "spectral" )
+    {
+        settings.matrixMethod = Settings::MatrixMethod::Spectral;
+    }
+    else if ( mat_method == "metadata" )
+    {
+        settings.matrixMethod = Settings::MatrixMethod::Metadata;
+    }
+    else if ( mat_method == "Adobe" )
+    {
+        settings.matrixMethod = Settings::MatrixMethod::Adobe;
+    }
+    else if ( mat_method == "custom" )
+    {
+        settings.matrixMethod = Settings::MatrixMethod::Custom;
+    }
+    else
+    {
+        std::cerr << std::endl
+                  << "Unsupported matrix method: \"" << mat_method << "\"."
+                  << std::endl;
+
+        return false;
+    }
+
+    settings.illuminant = arg_parser["illuminant"].get();
+
+    if ( settings.wbMethod == Settings::WBMethod::Illuminant )
+    {
+        if ( settings.illuminant.empty() )
         {
-            for ( int i = 0; i < "111111111142"[cp - sp] - '0'; i++ )
-            {
-                if ( !isdigit( argv[arg + i][0] ) )
-                {
-                    fprintf(
-                        stderr,
-                        "\nError: Non-numeric argument to "
-                        "\"%s\"\n",
-                        key.c_str() );
-                    exit( -1 );
-                }
-            }
+            std::cerr << "Warning: the white balancing method was set to "
+                      << "\"illuminant\", but no \"--illuminant\" parameter "
+                      << "provided. " << settings.illuminant << " will be used."
+                      << std::endl;
         }
-
-        switch ( opt )
+    }
+    else
+    {
+        if ( !settings.illuminant.empty() )
         {
-            case 'I': usage( argv[0] ); break;
-            case 'V': printf( "%s\n", VERSION ); break;
-            case 'v': settings.verbosity++; break;
-            case 'c':
-                settings.adjust_maximum_threshold = (float)atof( argv[arg++] );
-                break;
-            case 'n':
-                settings.denoise_threshold = (float)atof( argv[arg++] );
-                break;
-            case 'b':
-                settings.scale = (float)atof( argv[arg++] );
-                break;
-                //            case 'P': OUT.bad_pixels = argv[arg++]; break;
-                //            case 'K': OUT.dark_frame = argv[arg++]; break;
-            case 'C': {
-                settings.aberration[0] = 1.0 / atof( argv[arg++] );
-                settings.aberration[1] = 1.0 / atof( argv[arg++] );
-                break;
-            }
-            case 'k': settings.black_level = atoi( argv[arg++] ); break;
-            case 'S': settings.saturation_level = atoi( argv[arg++] ); break;
-            case 't': settings.flip = atoi( argv[arg++] ); break;
-            case 'q':
-                switch ( atoi( argv[arg++] ) )
-                {
-                    case 0: settings.demosaic_algorithm = "linear"; break;
-                    case 1: settings.demosaic_algorithm = "VNG"; break;
-                    case 2: settings.demosaic_algorithm = "PPG"; break;
-                    case 3: settings.demosaic_algorithm = "AHD"; break;
-                    case 4: settings.demosaic_algorithm = "DCB"; break;
-                    case 5: settings.demosaic_algorithm = "AHD-Mod"; break;
-                    case 6: settings.demosaic_algorithm = "AFD"; break;
-                    case 7: settings.demosaic_algorithm = "VCD"; break;
-                    case 8: settings.demosaic_algorithm = "Mixed"; break;
-                    case 9: settings.demosaic_algorithm = "LMMSE"; break;
-                    case 10: settings.demosaic_algorithm = "AMaZE"; break;
-                    case 11: settings.demosaic_algorithm = "DHT"; break;
-                    case 12: settings.demosaic_algorithm = "AAHD"; break;
-                    default: settings.demosaic_algorithm = "AHD"; break;
-                }
-                break;
-                //            case 'm': OUT.med_passes = atoi( argv[arg++] ); break;
-            case 'h':
-                settings.half_size = true;
-                //                // no break:  "-h" implies "-f"
-                //            case 'f': OUT.four_color_rgb = 1;
-                break;
-            case 'B':
-                FORI( 4 ) settings.cropbox[i] = atoi( argv[arg++] );
-                break;
-                //            case 'j': OUT.use_fuji_rotate = 0; break;
-            case 'W':
-                settings.auto_bright = false;
-                break;
-                //            case 'F': _opts.use_bigfile = 1; break;
-            case 'd': settings.use_timing = 1; break;
-            case 'Q': {
-                // gather a list of cameras supported
-                auto cameras = supported_cameras();
-                std::cerr << std::endl
-                          << "The following cameras' "
-                          << "sensitivity data is available:" << std::endl;
-                for ( const auto &camera: cameras )
-                {
-                    std::cerr << std::endl << camera;
-                }
-                std::cerr << std::endl;
-                break;
-            }
-            case 'z': {
-                // gather a list of illuminants supported
-                auto illuminants = supported_illuminants();
-                std::cerr << std::endl
-                          << "The following illuminants "
-                          << "are available:" << std::endl;
-                for ( const auto &illuminant: illuminants )
-                {
-                    std::cerr << std::endl << illuminant;
-                }
-                std::cerr << std::endl;
-                break;
-            }
-            case 'M': settings.headroom = atof( argv[arg++] ); break;
-            case 'H': {
-                settings.highlight_mode = atoi( argv[arg++] );
-                break;
-            }
-            case 'p': {
-                int mat_method = atoi( argv[arg++] );
-                if ( mat_method > 3 || mat_method < 0 )
-                {
-                    fprintf(
-                        stderr,
-                        "\nError: Invalid argument to "
-                        "\"%s\" \n",
-                        key.c_str() );
-                    exit( -1 );
-                }
-
-                settings.matrixMethod = Settings::MatrixMethod( mat_method );
-                if ( settings.matrixMethod == Settings::MatrixMethod::Custom )
-                {
-                    float custom_buffer[9] = { 0.0 };
-                    bool  flag             = false;
-                    FORI( 9 )
-                    {
-                        if ( isalpha( argv[arg][0] ) )
-                        {
-                            fprintf(
-                                stderr,
-                                "\nError: Non-numeric argument to "
-                                "\"%s %i\" \n",
-                                key.c_str(),
-                                settings.matrixMethod );
-                            exit( -1 );
-                        }
-                        custom_buffer[i] =
-                            static_cast<float>( atof( argv[arg++] ) );
-                        if ( i == 8 )
-                        {
-                            flag = true;
-                        }
-                    }
-
-                    if ( flag )
-                    {
-                        FORI( 3 )
-                        {
-                            FORJ( 3 )
-                            {
-                                settings.customMatrix[i][j] =
-                                    custom_buffer[i * 3 + j];
-                            }
-                        }
-                    }
-                }
-                break;
-            }
-            case 'R': {
-                std::string flag = std::string( argv[arg] );
-                FORI( flag.size() )
-                {
-                    if ( !isdigit( flag[i] ) )
-                    {
-                        fprintf(
-                            stderr,
-                            "\nNon-recognizable argument to "
-                            "\"--wb-method\".\n" );
-                        exit( -1 );
-                    }
-                }
-
-                int wb_method = atoi( argv[arg++] );
-
-                if ( wb_method > 4 || wb_method < 0 )
-                {
-                    fprintf(
-                        stderr,
-                        "\nError: Invalid argument to "
-                        "\"%s\" \n",
-                        key.c_str() );
-                    exit( -1 );
-                }
-
-                settings.wbMethod = Settings::WBMethod( wb_method );
-
-                switch ( wb_method )
-                {
-                    case 0:
-                        settings.wbMethod = Settings::WBMethod::Metadata;
-                        break;
-                    case 1:
-                        settings.wbMethod = Settings::WBMethod::Illuminant;
-                        settings.illuminant =
-                            OIIO::Strutil::lower( argv[arg++] );
-
-                        if ( !rta::core::isValidCT( settings.illuminant ) )
-                        {
-                            fprintf(
-                                stderr,
-                                "\nError: white balance method 1 requires a valid "
-                                "illuminant (e.g., D60, 3200K) to be specified\n" );
-                            exit( -1 );
-                        }
-                        break;
-                    case 2: settings.wbMethod = Settings::WBMethod::Box; break;
-                    case 3:
-                        settings.wbMethod = Settings::WBMethod::Box;
-
-                        FORI( 4 )
-                        {
-                            if ( !isdigit( argv[arg][0] ) )
-                            {
-                                fprintf(
-                                    stderr,
-                                    "\nError: Non-numeric argument to "
-                                    "\"%s %i\" \n",
-                                    key.c_str(),
-                                    settings.wbMethod );
-                                exit( -1 );
-                            }
-                            settings.wbBox[i] =
-                                static_cast<float>( atof( argv[arg++] ) );
-                        }
-                        break;
-                    case 4:
-                        settings.wbMethod = Settings::WBMethod::Custom;
-
-                        FORI( 4 )
-                        {
-                            if ( !isdigit( argv[arg][0] ) )
-                            {
-                                fprintf(
-                                    stderr,
-                                    "\nError: Non-numeric argument to "
-                                    "\"%s %i\" \n",
-                                    key.c_str(),
-                                    settings.wbMethod );
-                                exit( -1 );
-                            }
-                            settings.customWB[i] =
-                                static_cast<float>( atof( argv[arg++] ) );
-                        }
-                        break;
-                    default:
-                        fprintf(
-                            stderr,
-                            "\nError: Invalid argument to "
-                            "\"%s\" \n",
-                            key.c_str() );
-                        exit( -1 );
-                }
-
-                break;
-            }
-            default:
-                fprintf(
-                    stderr, "\nError: Unknown option \"%s\".\n", key.c_str() );
-                exit( -1 );
+            std::cerr << "Warning: the \"--illuminant\" parameter provided "
+                      << "but the white balancing mode different from "
+                      << "\"illuminant\" "
+                      << "requested. The custom illuminant will be ignored."
+                      << std::endl;
         }
     }
 
+    auto box = arg_parser["wb-box"].as_vec<int>();
+    check_param(
+        "white balancing mode",
+        "box",
+        "wb-box",
+        box,
+        4,
+        "The box will be ignored.",
+        settings.wbMethod == Settings::WBMethod::Box,
+        [&]() {
+            for ( int i = 0; i < 4; i++ )
+                settings.wbBox[i] = box[i];
+        },
+        [&]() {
+            for ( int i = 0; i < 4; i++ )
+                settings.wbBox[i] = 0;
+        } );
+
+    auto custom_wb = arg_parser["custom-wb"].as_vec<float>();
+    check_param(
+        "white balancing mode",
+        "custom",
+        "custom-wb",
+        custom_wb,
+        4,
+        "The scalers will be ignored. The default values of (1, 1, 1, 1) will be used",
+        settings.wbMethod == Settings::WBMethod::Custom,
+        [&]() {
+            for ( int i = 0; i < 4; i++ )
+                settings.customWB[i] = custom_wb[i];
+        },
+        [&]() {
+            for ( int i = 0; i < 4; i++ )
+                settings.customWB[i] = 1.0;
+        } );
+
+    auto custom_mat = arg_parser["custom-mat"].as_vec<float>();
+    check_param(
+        "matrix mode",
+        "custom",
+        "custom-mat",
+        custom_mat,
+        9,
+        "Identity matrix will be used",
+        settings.matrixMethod == Settings::MatrixMethod::Custom,
+        [&]() {
+            for ( int i = 0; i < 3; i++ )
+                for ( int j = 0; j < 3; j++ )
+                    settings.customMatrix[i][j] = custom_mat[i * 3 + j];
+        },
+        [&]() {
+            for ( int i = 0; i < 3; i++ )
+                for ( int j = 0; j < 3; j++ )
+                    settings.customMatrix[i][j] = i == j ? 1.0 : 0.0;
+        } );
+
+    auto crop = arg_parser["crop-box"].as_vec<int>();
+    if ( crop.size() == 4 )
+    {
+        for ( size_t i = 0; i < 4; i++ )
+            settings.cropbox[i] = crop[i];
+    }
+
+    std::string cropping_mode = arg_parser["crop-mode"].get();
+
+    if ( cropping_mode == "off" )
+    {
+        settings.crop_mode = Settings::CropMode::Off;
+    }
+    else if ( cropping_mode == "soft" )
+    {
+        settings.crop_mode = Settings::CropMode::Soft;
+    }
+    else if ( cropping_mode == "hard" )
+    {
+        settings.crop_mode = Settings::CropMode::Hard;
+    }
+    else
+    {
+        std::cerr << std::endl
+                  << "Unsupported cropping mode: \"" << cropping_mode << "\"."
+                  << std::endl;
+
+        return false;
+    }
+
+    auto aberration = arg_parser["chromatic-aberration"].as_vec<int>();
+    if ( crop.size() == 2 )
+    {
+        for ( size_t i = 0; i < 2; i++ )
+            settings.aberration[i] = aberration[i];
+    }
+
+    auto                         demosaic       = arg_parser["demosaic"].get();
+    static std::set<std::string> demosaic_algos = {
+        "linear", "VNG",   "PPG",   "AHD",   "DCB", "AHD-Mod", "AFD",
+        "VCD",    "Mixed", "LMMSE", "AMaZE", "DHT", "AAHD",    "AHD"
+    };
+
+    if ( demosaic_algos.count( demosaic ) != 1 )
+    {
+        std::cerr << std::endl
+                  << "ERROR: unsupported demosaicing algorithm '" << demosaic
+                  << ". The following methods are supported: "
+                  << "'linear', 'VNG', 'PPG', 'AHD', 'DCB', 'AHD-Mod', 'AFD', "
+                  << "'VCD', 'Mixed', 'LMMSE', 'AMaZE', 'DHT', 'AAHD', 'AHD'."
+                  << std::endl;
+        return false;
+    }
+    else
+    {
+        settings.demosaic_algorithm = demosaic;
+    }
+
+    settings.custom_camera_make  = arg_parser["custom-camera-make"].get();
+    settings.custom_camera_model = arg_parser["custom-camera-model"].get();
+
+    settings.headroom    = arg_parser["headroom"].get<float>();
+    settings.auto_bright = arg_parser["auto-bright"].get<int>();
+    settings.adjust_maximum_threshold =
+        arg_parser["adjust-maximum-threshold"].get<int>();
+    settings.black_level      = arg_parser["black-level"].get<int>();
+    settings.saturation_level = arg_parser["saturation-level"].get<int>();
+    settings.half_size        = arg_parser["half-size"].get<int>();
+    settings.highlight_mode   = arg_parser["highlight-mode"].get<int>();
+    settings.flip             = arg_parser["flip"].get<int>();
+
+    settings.scale             = arg_parser["scale"].get<float>();
+    settings.denoise_threshold = arg_parser["denoise-threshold"].get<float>();
+
+    settings.overwrite   = arg_parser["overwrite"].get<int>();
+    settings.create_dirs = arg_parser["create-dirs"].get<int>();
+    settings.output_dir  = arg_parser["output-dir"].get();
+    settings.use_timing  = arg_parser["use-timing"].get<int>();
+
+    // If an illuminant was requested, confirm that we have it in the database
+    // an error out early, before we start loading any images.
     if ( settings.wbMethod == Settings::WBMethod::Illuminant )
     {
         auto paths =
@@ -988,7 +1183,7 @@ int ImageConverter::configure_settings( int argc, char const *const argv[] )
         }
     }
 
-    return arg;
+    return true;
 }
 
 std::vector<std::string> ImageConverter::supported_illuminants()
@@ -1106,6 +1301,14 @@ bool ImageConverter::configure(
             "raw:cropbox",
             OIIO::TypeDesc( OIIO::TypeDesc::INT, 4 ),
             settings.cropbox );
+    }
+
+    if ( settings.aberration[0] != 1.0 && settings.aberration[1] != 1.0 )
+    {
+        options.attribute(
+            "raw:aber",
+            OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 2 ),
+            settings.aberration );
     }
 
     bool is_DNG =
@@ -1401,6 +1604,46 @@ bool ImageConverter::make_output_path(
 
     temp_path.replace_extension();
     temp_path += suffix + ".exr";
+
+    if ( !settings.output_dir.empty() )
+    {
+        auto new_directory = std::filesystem::path( settings.output_dir );
+
+        auto filename      = temp_path.filename();
+        auto old_directory = temp_path.remove_filename();
+
+        new_directory = old_directory / new_directory;
+
+        if ( !std::filesystem::exists( new_directory ) )
+        {
+            if ( settings.create_dirs )
+            {
+                if ( !std::filesystem::create_directory( new_directory ) )
+                {
+                    std::cerr << "ERROR: Failed to create directory "
+                              << new_directory << "." << std::endl;
+                    return false;
+                }
+            }
+            else
+            {
+                std::cerr << "ERROR: The output directory " << new_directory
+                          << " does not exist." << std::endl;
+                return false;
+            }
+        }
+
+        temp_path = std::filesystem::absolute( new_directory / filename );
+    }
+
+    if ( !settings.overwrite && std::filesystem::exists( temp_path ) )
+    {
+        std::cerr
+            << "ERROR: file " << temp_path << " already exists. Use "
+            << "--overwrite to allow overwriting existing files. Skipping "
+            << "this file." << std::endl;
+        return false;
+    }
 
     path = temp_path.string();
     return true;

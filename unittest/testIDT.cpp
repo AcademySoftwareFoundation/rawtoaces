@@ -717,7 +717,6 @@ void load_camera_helper(
         OIIO_CHECK_ASSERT( result );
     }
 
-    if ( !illuminant_name.empty() )
     {
         std::filesystem::path absoluteIlluminantPath =
             std::filesystem::absolute(
@@ -725,18 +724,7 @@ void load_camera_helper(
         vector<string> illumPaths;
         illumPaths.push_back( absoluteIlluminantPath.string() );
 
-        bool result = idt.load_illuminant( illumPaths, illuminant_name );
-        OIIO_CHECK_ASSERT( result );
-    }
-    else
-    {
-        std::filesystem::path absoluteIlluminantPath =
-            std::filesystem::absolute(
-                DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
-        vector<string> illumPaths;
-        illumPaths.push_back( absoluteIlluminantPath.string() );
-
-        bool result = idt.load_illuminant( illumPaths, "" );
+        int result = idt.load_illuminant( illumPaths, illuminant_name );
         OIIO_CHECK_ASSERT( result );
     }
 

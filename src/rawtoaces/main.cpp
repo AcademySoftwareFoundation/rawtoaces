@@ -5,7 +5,7 @@
 
 #include <set>
 
-int main( int argc, char *argv[] )
+int main( int argc, const char *argv[] )
 {
 #ifndef WIN32
     putenv( (char *)"TZ=UTC" );
@@ -13,22 +13,36 @@ int main( int argc, char *argv[] )
     _putenv( (char *)"TZ=UTC" );
 #endif
 
-    if ( argc == 1 )
-        rta::util::ImageConverter::usage( argv[0] );
-
     rta::util::ImageConverter converter;
 
-    int arg = converter.configure_settings( argc, argv );
+    OIIO::ArgParse arg_parser;
+    arg_parser.arg( "filename" ).action( OIIO::ArgParse::append() ).hidden();
+    converter.init_parser( arg_parser );
+
+    if ( arg_parser.parse_args( argc, argv ) < 0 )
+    {
+        return 1;
+    }
+
+    if ( !converter.parse_parameters( arg_parser ) )
+    {
+        return 1;
+    }
+
+    auto files = arg_parser["filename"].as_vec<std::string>();
+    if ( files.empty() || ( files.size() == 1 && files[0] == "" ) )
+    {
+        arg_parser.print_help();
+        return 1;
+    }
 
     // Create a separate batch for each input directory.
     // Reserve the first batch for the individual input files.
     std::vector<std::vector<std::string>> batches( 1 );
 
     // Gather all the raw images from arg list
-    for ( ; arg < argc; arg++ )
+    for ( const auto &path: files )
     {
-        std::string path = argv[arg];
-
         if ( !rta::util::collect_image_files( path, batches ) )
         {
             std::cerr << "File or directory not found: " << path << std::endl;
@@ -36,7 +50,7 @@ int main( int argc, char *argv[] )
         }
     }
 
-    // Process RAW files ...
+    // Process raw files ...
     bool empty  = true;
     bool result = true;
     for ( auto const &batch: batches )
@@ -53,7 +67,7 @@ int main( int argc, char *argv[] )
     }
 
     if ( empty )
-        rta::util::ImageConverter::usage( argv[0] );
+        arg_parser.print_help();
 
     return result ? 0 : 1;
 }

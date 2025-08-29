@@ -117,13 +117,13 @@ if ( APPLE OR UNIX )
     install (
         DIRECTORY
             ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/data
-        DESTINATION include/rawtoaces
+        DESTINATION share/rawtoaces
     )
     
     install (
         FILES
             ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/LICENSE
-        DESTINATION include/rawtoaces/data
+        DESTINATION share/rawtoaces/data
     )
 endif()
 

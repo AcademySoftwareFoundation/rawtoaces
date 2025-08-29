@@ -108,8 +108,10 @@ std::vector<std::string> database_paths()
     const std::string separator    = ";";
     const std::string default_path = ".";
 #else
-    char              separator    = ':';
-    const std::string default_path = "/usr/local/share/rawtoaces/data";
+    char              separator = ':';
+    const std::string default_path =
+        "/usr/local/share/rawtoaces/data"
+        ":/usr/local/include/rawtoaces/data"; // Old path for back compatibility
 #endif
 
     std::string path;

@@ -309,7 +309,6 @@ bool configure_solver(
 {
     bool success = true;
 
-    
     auto camera_files = collect_data_files( directories, "camera" );
     for ( auto &camera_file: camera_files )
     {

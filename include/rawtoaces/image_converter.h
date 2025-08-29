@@ -78,7 +78,7 @@ public:
             Soft,
             /// Write out only the crop area.
             Hard
-        } crop_mode = CropMode::Soft;
+        } crop_mode = CropMode::Hard;
 
         /// An illuminant to use for white balancing and/or colour matrix
         /// calculation. Only used when `wbMethod` ==

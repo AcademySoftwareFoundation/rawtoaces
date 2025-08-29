@@ -11,8 +11,6 @@ namespace rta
 namespace util
 {
 
-void create_key( std::unordered_map<std::string, char> &keys );
-
 /// Collect all files from a given`path` into batchs. If the `path` is a
 /// directory, create an entry in `batches` and fill it with the file names
 /// from that directory. If the `path` is a file, add its name to the first

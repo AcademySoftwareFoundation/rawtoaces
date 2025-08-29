@@ -25,18 +25,6 @@ bool collect_image_files(
 class ImageConverter
 {
 public:
-    // TODO:
-    // Removed options comparing to v1.1:
-    // -P - bad pixels
-    // -K - dark frame
-    // -j - fuji-rotate
-    // -m - median filter
-    // -f - four-colour RGB
-    // -T - print Libraw-supported cameras
-    // -F - use big file
-    // -E - mmap-ed IO
-    // -s - image index in the file
-    // -G - green_matching() filter
     struct Settings
     {
         /// The  white balancing method to use for conversion can be specified
@@ -134,8 +122,6 @@ public:
         int  verbosity  = 0;
 
     } settings;
-
-    static void usage( const char *prog );
 
     /// Initialise the parser object with all the command line parameters
     /// used by this tool. The method also sets the help and usage strings.

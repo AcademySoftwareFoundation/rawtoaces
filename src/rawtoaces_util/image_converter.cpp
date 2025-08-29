@@ -1280,6 +1280,19 @@ bool ImageConverter::configure(
     return configure( imageSpec, options );
 }
 
+// TODO:
+// Removed options comparing to v1.1:
+// -P - bad pixels
+// -K - dark frame
+// -j - fuji-rotate
+// -m - median filter
+// -f - four-colour RGB
+// -T - print Libraw-supported cameras
+// -F - use big file
+// -E - mmap-ed IO
+// -s - image index in the file
+// -G - green_matching() filter
+
 bool ImageConverter::configure(
     const OIIO::ImageSpec &imageSpec, OIIO::ParamValueList &options )
 {
@@ -1586,14 +1599,45 @@ bool ImageConverter::apply_scale(
 bool ImageConverter::apply_crop(
     OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi )
 {
-    if ( !OIIO::ImageBufAlgo::copy( dst, src ) )
+    if ( settings.crop_mode == Settings::CropMode::Off )
     {
-        return false;
+        if ( !OIIO::ImageBufAlgo::copy( dst, src ) )
+        {
+            return false;
+        }
+        dst.specmod().full_x      = dst.specmod().x;
+        dst.specmod().full_y      = dst.specmod().y;
+        dst.specmod().full_width  = dst.specmod().width;
+        dst.specmod().full_height = dst.specmod().height;
     }
-    dst.specmod().full_x      = dst.specmod().x;
-    dst.specmod().full_y      = dst.specmod().y;
-    dst.specmod().full_width  = dst.specmod().width;
-    dst.specmod().full_height = dst.specmod().height;
+    else if ( settings.crop_mode == Settings::CropMode::Hard )
+    {
+        // OIIO can not currently crop in place.
+        if ( &dst == &src )
+        {
+            OIIO::ImageBuf temp;
+            if ( !OIIO::ImageBufAlgo::copy( temp, src ) )
+            {
+                return false;
+            }
+
+            if ( !OIIO::ImageBufAlgo::crop( dst, temp, temp.roi_full() ) )
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if ( !OIIO::ImageBufAlgo::crop( dst, src, src.roi_full() ) )
+            {
+                return false;
+            }
+        }
+        dst.specmod().x      = 0;
+        dst.specmod().y      = 0;
+        dst.specmod().full_x = 0;
+        dst.specmod().full_y = 0;
+    }
 
     return true;
 }

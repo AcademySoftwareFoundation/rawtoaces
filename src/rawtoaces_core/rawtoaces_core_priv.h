@@ -11,25 +11,25 @@ namespace rta
 namespace core
 {
 
-std::vector<double> cctToxy( const double &cctd );
+std::vector<double> cct_to_XY( const double &cctd );
 
-void scaleLSC( const SpectralData &camera, SpectralData &illuminant );
+void scale_LSC( const SpectralData &camera, SpectralData &illuminant );
 
 std::vector<double>
-calCM( const SpectralData &camera, const SpectralData &illuminant );
+calculate_CM( const SpectralData &camera, const SpectralData &illuminant );
 
 std::vector<Spectrum>
-calTI( const SpectralData &illuminant, const SpectralData &training_data );
+calculate_TI( const SpectralData &illuminant, const SpectralData &training_data );
 
 std::vector<double>
-calWB( const SpectralData &camera, SpectralData &illuminant, int highlight );
+calculate_WB( const SpectralData &camera, SpectralData &illuminant, int highlight );
 
-std::vector<std::vector<double>> calXYZ(
+std::vector<std::vector<double>> calculate_XYZ(
     const SpectralData          &observer,
     const SpectralData          &illuminant,
     const std::vector<Spectrum> &TI );
 
-std::vector<std::vector<double>> calRGB(
+std::vector<std::vector<double>> calculate_RGB(
     const SpectralData          &camera,
     const SpectralData          &illuminant,
     const std::vector<double>   &WB_multipliers,

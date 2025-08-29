@@ -56,21 +56,21 @@ const double e = 0.008856451679;
 const double k = 7.787037037037;
 
 // Planck's constant ([J*s] Joule-seconds)
-const double bh = 6.626176 * 1e-34;
+const double plancks_constant = 6.626176 * 1e-34;
 // Boltzmann constant ([J/K] Joules per Kelvin)
-const double bk = 1.380662 * 1e-23;
+const double boltzmann_constant = 1.380662 * 1e-23;
 // Speed of light ([m/s] meters per second)
-const double bc = 2.99792458 * 1e8;
+const double light_speed = 2.99792458 * 1e8;
 
-const double dmin = std::numeric_limits<double>::min();
-const double dmax = std::numeric_limits<double>::max();
+const double min_double_value = std::numeric_limits<double>::min();
+const double max_double_value = std::numeric_limits<double>::max();
 
 // clang-format off
 
-static const double XYZ_w[3] = {0.952646074569846, 1.0,    1.00882518435159};
-static const double d50  [3] = {0.9642,            1.0000, 0.8250};
-static const double d60  [3] = {0.952646074569846, 1.0000, 1.00882518435159};
-static const double d65  [3] = {0.9547,            1.0000, 1.0883};
+static const double XYZ_white_point[3] = {0.952646074569846, 1.0,    1.00882518435159};
+static const double d50_white_point[3] = {0.9642,            1.0000, 0.8250};
+static const double d60_white_point[3] = {0.952646074569846, 1.0000, 1.00882518435159};
+static const double d65_white_point[3] = {0.9547,            1.0000, 1.0883};
 
 static const double neutral3[3][3] = {
     {1.0, 0.0, 0.0},
@@ -267,9 +267,9 @@ inline std::vector<std::string> openDir( std::string path = "." )
 };
 
 // Function to clear the memories occupied by vectors
-template <typename T> inline void clearVM( std::vector<T> vct )
+template <typename T> inline void clear_vector_memory( std::vector<T> &vector )
 {
-    std::vector<T>().swap( vct );
+    std::vector<T>().swap( vector );
 };
 
 // Function to covert upper-case to lower-case

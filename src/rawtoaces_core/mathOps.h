@@ -196,28 +196,40 @@ template <typename T> void scaleVector( vector<T> &vct, const T scale )
     return;
 };
 
-template <typename T> void scaleVectorMax( vector<T> &vct )
+template <typename T> void scale_vector_max( vector<T> &vector )
 {
-    Eigen::Matrix<T, Eigen::Dynamic, 1> v;
-    v.resize( vct.size(), 1 );
+    Eigen::Matrix<T, Eigen::Dynamic, 1> column_vector;
+    column_vector.resize( vector.size(), 1 );
 
-    FORI( vct.size() ) v( i, 0 ) = vct[i];
-    v *= ( 1.0 / v.maxCoeff() );
+    FORI( vector.size() )
+    {
+        column_vector( i, 0 ) = vector[i];
+    }
+    column_vector *= ( 1.0 / column_vector.maxCoeff() );
 
-    FORI( vct.size() ) vct[i] = v( i, 0 );
+    FORI( vector.size() )
+    {
+        vector[i] = column_vector( i, 0 );
+    }
 
     return;
 };
 
-template <typename T> void scaleVectorMin( vector<T> &vct )
+template <typename T> void scale_vector_min( vector<T> &vector )
 {
-    Eigen::Matrix<T, Eigen::Dynamic, 1> v;
-    v.resize( vct.size(), 1 );
+    Eigen::Matrix<T, Eigen::Dynamic, 1> column_vector;
+    column_vector.resize( vector.size(), 1 );
 
-    FORI( vct.size() ) v( i, 0 ) = vct[i];
-    v *= ( 1.0 / v.minCoeff() );
+    FORI( vector.size() )
+    {
+        column_vector( i, 0 ) = vector[i];
+    }
+    column_vector *= ( 1.0 / column_vector.minCoeff() );
 
-    FORI( vct.size() ) vct[i] = v( i, 0 );
+    FORI( vector.size() )
+    {
+        vector[i] = column_vector( i, 0 );
+    }
 
     return;
 };
@@ -414,7 +426,15 @@ solveVM( const vector<vector<T>> &vct1, const vector<vector<T>> &vct2 )
     return vct3;
 };
 
-template <typename T> T calSSE( const vector<T> &tcp, const vector<T> &src )
+/// Calculate the Sum of Squared Errors (SSE) between two vectors.
+/// The SSE measures how well the calculated values (tcp) match the reference values (src).
+/// Formula: Σ((tcp[i] / src[i] - 1)²)
+/// 
+/// @param tcp The calculated/target values to compare
+/// @param src The reference/source values to compare against
+/// @return The sum of squared relative errors
+/// @pre tcp.size() == src.size()
+template <typename T> T calculate_SSE( const vector<T> &tcp, const vector<T> &src )
 {
     assert( tcp.size() == src.size() );
     vector<T> tmp( src.size() );
@@ -471,8 +491,8 @@ vector<T> interp1DLinear(
             Y1.push_back( slope[0] * X1[i] + intercept[0] );
     }
 
-    clearVM( slope );
-    clearVM( intercept );
+    clear_vector_memory( slope );
+    clear_vector_memory( intercept );
 
     return Y1;
 };
@@ -546,7 +566,7 @@ template <typename T> vector<vector<T>> XYZtoLAB( const vector<vector<T>> &XYZ )
     vector<vector<T>> tmpXYZ( XYZ.size(), vector<T>( 3, T( 1.0 ) ) );
     FORIJ( XYZ.size(), 3 )
     {
-        tmpXYZ[i][j] = XYZ[i][j] / XYZ_w[j];
+        tmpXYZ[i][j] = XYZ[i][j] / XYZ_white_point[j];
         if ( tmpXYZ[i][j] > T( e ) )
             tmpXYZ[i][j] = ceres::pow( tmpXYZ[i][j], T( 1.0 / 3.0 ) );
         else
@@ -562,7 +582,7 @@ template <typename T> vector<vector<T>> XYZtoLAB( const vector<vector<T>> &XYZ )
     }
 
     // not necessary, just want to show we clean stuff
-    clearVM( tmpXYZ );
+    clear_vector_memory( tmpXYZ );
 
     return outCalcLab;
 };
@@ -590,7 +610,7 @@ vector<vector<T>> getCalcXYZt( const vector<vector<T>> &RGB, const T B[6] )
     vector<vector<T>> outCalcXYZt = mulVector( mulVector( RGB, BV ), M );
 
     // not necessary, just want to show we clean stuff
-    clearVM( BV );
+    clear_vector_memory( BV );
 
     return outCalcXYZt;
 };

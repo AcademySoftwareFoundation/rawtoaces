@@ -206,7 +206,7 @@ void test_ScaleVectorMax()
     double M_Scaled[10] = { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 };
     vector<double> MV( M, M + 10 );
 
-    scaleVectorMax( MV );
+    scale_vector_max( MV );
     FORI( MV.size() )
     OIIO_CHECK_EQUAL_THRESH( M_Scaled[i], MV[i], 1e-5 );
 };
@@ -216,7 +216,7 @@ void test_ScaleVectorMin()
     double M[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
     vector<double> MV( M, M + 10 );
 
-    scaleVectorMin( MV );
+    scale_vector_min( MV );
     FORI( MV.size() )
     OIIO_CHECK_EQUAL_THRESH( M[i], MV[i], 1e-5 );
 };
@@ -479,8 +479,8 @@ void testIDT_XYZTouv()
 
 void testIDT_GetCAT()
 {
-    vector<double> dIV( d50, d50 + 3 );
-    vector<double> dOV( d60, d60 + 3 );
+    vector<double> dIV( d50_white_point, d50_white_point + 3 );
+    vector<double> dOV( d60_white_point, d60_white_point + 3 );
 
     vector<vector<double>> CAT_test = calculate_CAT( dIV, dOV );
 

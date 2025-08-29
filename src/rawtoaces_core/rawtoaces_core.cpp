@@ -3,8 +3,8 @@
 
 #include <rawtoaces/rawtoaces_core.h>
 #include "rawtoaces_core_priv.h"
-#include <rawtoaces/mathOps.h>
-#include <rawtoaces/define.h> // for cmp_str
+#include "mathOps.h"
+#include "define.h"
 
 using namespace ceres;
 
@@ -575,7 +575,7 @@ std::vector<std::vector<double>> calXYZ(
     ww[1]                 = 1.0;
     ww[2]                 = ( cmf_z * illum ).integrate() / y;
 
-    XYZ = mulVector( XYZ, getCAT( ww, w ) );
+    XYZ = mulVector( XYZ, calculate_CAT( ww, w ) );
 
     return XYZ;
 }
@@ -1061,7 +1061,7 @@ vector<vector<double>> MetadataSolver::calculate_CAT_matrix()
     vector<double> outputXYZWhitePoint =
         mulVector( outputRGBtoXYZMtx, deviceWhiteV );
     vector<vector<double>> chadMtx =
-        getCAT( camera_XYZ_white_point, outputXYZWhitePoint );
+        calculate_CAT( camera_XYZ_white_point, outputXYZWhitePoint );
 
     return chadMtx;
 }

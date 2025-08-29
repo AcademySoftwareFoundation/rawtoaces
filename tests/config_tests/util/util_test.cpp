@@ -10,7 +10,7 @@
 #include <filesystem>
 #include <OpenImageIO/unittest.h>
 
-#include <rawtoaces/acesrender.h>
+#include <rawtoaces/image_converter.h>
 
 void test_AcesRender()
 {
@@ -31,7 +31,7 @@ void test_AcesRender()
     const int argc = sizeof( argv ) / sizeof( argv[0] );
 
     std::filesystem::path pathToRaw = std::filesystem::absolute(
-        "../../unittest/materials/blackmagic_cinema_camera_cinemadng.dng" );
+        "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng" );
     OIIO_CHECK_ASSERT( std::filesystem::exists( pathToRaw ) );
 
     rta::util::ImageConverter converter;

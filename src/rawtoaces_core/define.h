@@ -72,14 +72,6 @@ static const double d50  [3] = {0.9642,            1.0000, 0.8250};
 static const double d60  [3] = {0.952646074569846, 1.0000, 1.00882518435159};
 static const double d65  [3] = {0.9547,            1.0000, 1.0883};
 
-static const std::vector<double> ACES_white_XYZ = {
-    0.952646074569846, 1.0,    1.00882518435159
-};
-
-static const std::vector<double> D65_white_XYZ = {
-    0.9547, 1.0000, 1.0883
-};
-
 static const double neutral3[3][3] = {
     {1.0, 0.0, 0.0},
     {0.0, 1.0, 0.0},
@@ -166,13 +158,6 @@ static const double XYZ_acesrgb_3[3][3] = {
     {  0.0000000000, 0.0000000000,  0.9912520182 }
 };
 
-
-static const std::vector<std::vector<double>> XYZ_to_ACES = {
-    {  1.0498110175, 0.0000000000, -0.0000974845 },
-    { -0.4959030231, 1.3733130458,  0.0982400361 },
-    {  0.0000000000, 0.0000000000,  0.9912520182 }
-};
-
 static const double XYZ_acesrgb_4[4][4] = {
     {  1.0498110175, 0.0000000000, -0.0000974845, 0.0 },
     { -0.4959030231, 1.3733130458,  0.0982400361, 0.0 },
@@ -243,11 +228,17 @@ static const double bradford[3][3] = {
     { 0.0389, -0.0685,  1.0296}
 };
 
-//  Color Adaptation Matrices - Cat02 (default)
-static const double cat02[3][3] = {
+//  Color Adaptation Matrices - CAT02 (default)
+static const std::vector<std::vector<double>> CAT02 = {
     {  0.7328, 0.4296, -0.1624 },
     { -0.7036, 1.6975,  0.0061 },
     {  0.0030, 0.0136,  0.9834 }
+};
+
+static const std::vector<std::vector<double>> CAT02_inv = {
+    {  1.0961238208355142,    -0.27886900021828726,   0.18274517938277304 },
+    {  0.45436904197535921,    0.47353315430741177,   0.072097803717229125 },
+    { -0.0096276087384293551, -0.0056980312161134198, 1.0153256399545427 }
 };
 
 // clang-format on

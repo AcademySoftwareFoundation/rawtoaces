@@ -82,7 +82,7 @@ add_subdirectory("src/${RAWTOACES_UTIL_LIB}")
 add_subdirectory("src/rawtoaces")
 
 enable_testing()
-add_subdirectory(unittest)
+add_subdirectory(tests)
 
 #################################################
 ##

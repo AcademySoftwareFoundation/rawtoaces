@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.12)
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
 set( CORE_PUBLIC_HEADER
-    ../../include/rawtoaces/define.h
-    ../../include/rawtoaces/mathOps.h
     ../../include/rawtoaces/rawtoaces_core.h
     ../../include/rawtoaces/spectral_data.h
 )
@@ -15,6 +13,8 @@ add_library( ${RAWTOACES_CORE_LIB} ${DO_SHARED}
     # Make the headers visible in IDEs. This should not affect the builds.
     ${CORE_PUBLIC_HEADER}
     rawtoaces_core_priv.h
+    define.h
+    mathOps.h
 )
 
 target_link_libraries(

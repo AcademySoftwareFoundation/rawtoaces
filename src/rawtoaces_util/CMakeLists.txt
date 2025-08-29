@@ -2,12 +2,12 @@ cmake_minimum_required(VERSION 3.12)
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
 set( UTIL_PUBLIC_HEADER
-    ../../include/rawtoaces/acesrender.h
+    ../../include/rawtoaces/image_converter.h
     ../../include/rawtoaces/usage_timer.h
 )
 
 add_library ( ${RAWTOACES_UTIL_LIB} ${DO_SHARED}
-    acesrender.cpp
+    image_converter.cpp
     usage_timer.cpp
 
     # Make the headers visible in IDEs. This should not affect the builds.
@@ -18,10 +18,6 @@ target_link_libraries ( ${RAWTOACES_UTIL_LIB}
     PUBLIC
         ${RAWTOACES_CORE_LIB}
         OpenImageIO::OpenImageIO
-#    INTERFACE
-#        Eigen3::Eigen
-#        Imath::Imath
-#        Imath::ImathConfig
 )
 
 target_compile_definitions( rawtoaces_util PRIVATE RAWTOACES_VERSION="${RAWTOACES_VERSION}" )

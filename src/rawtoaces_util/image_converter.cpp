@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
-#include <rawtoaces/acesrender.h>
+#include <rawtoaces/image_converter.h>
 #include <rawtoaces/rawtoaces_core.h>
-#include <rawtoaces/mathOps.h>
 #include <rawtoaces/usage_timer.h>
 
+#include <set>
 #include <filesystem>
 
 #include <OpenImageIO/imageio.h>
@@ -586,8 +586,7 @@ bool prepare_transform_nonDNG(
     // Do not apply IDT for non-DNG
     IDT_matrix.resize( 0 );
 
-    CAT_matrix = rta::core::getCAT(
-        rta::core::D65_white_XYZ, rta::core::ACES_white_XYZ );
+    CAT_matrix = rta::core::CAT_D65_to_ACES;
 
     return true;
 }

@@ -5,7 +5,7 @@
 #include <OpenImageIO/unittest.h>
 
 #include <rawtoaces/rawtoaces_core.h>
-#include <rawtoaces/define.h>
+#include "../src/rawtoaces_core/define.h"
 #include "../src/rawtoaces_core/rawtoaces_core_priv.h"
 
 void testIDT_CcttoMired()

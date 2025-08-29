@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
-#include <rawtoaces/acesrender.h>
+#include <rawtoaces/image_converter.h>
 
 #include <set>
 

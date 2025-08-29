@@ -4,7 +4,7 @@
 #include <OpenImageIO/unittest.h>
 #include <filesystem>
 
-#include <rawtoaces/define.h>
+#include "../src/rawtoaces_core/define.h"
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 

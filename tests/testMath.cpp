@@ -9,7 +9,7 @@
 
 #include <OpenImageIO/unittest.h>
 
-#include <rawtoaces/mathOps.h>
+#include "../src/rawtoaces_core/mathOps.h"
 
 using namespace rta::core;
 
@@ -482,7 +482,7 @@ void testIDT_GetCAT()
     vector<double> dIV( d50, d50 + 3 );
     vector<double> dOV( d60, d60 + 3 );
 
-    vector<vector<double>> CAT_test = getCAT( dIV, dOV );
+    vector<vector<double>> CAT_test = calculate_CAT( dIV, dOV );
 
     float CAT[3][3] = { { 0.9711790957, -0.0217386019, 0.0460288393 },
                         { -0.0156935400, 1.0000112293, 0.0183278569 },

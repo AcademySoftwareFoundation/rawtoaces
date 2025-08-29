@@ -9,7 +9,7 @@
 #include <filesystem>
 #include <OpenImageIO/unittest.h>
 
-#include <rawtoaces/mathOps.h>
+#include "../src/rawtoaces_core/mathOps.h"
 #include <rawtoaces/rawtoaces_core.h>
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"

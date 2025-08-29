@@ -172,7 +172,7 @@ jobs:
         run: >
           cmake
           -B build_config_test
-          -S ./unittest/config_tests
+          -S ./tests/config_tests
           -D RAWTOACES_DIR=${{ github.workspace }}/install/lib/cmake/RAWTOACES
           -D CMAKE_CXX_STANDARD=${{matrix.cxx_std}}
 
@@ -262,7 +262,7 @@ jobs:
         run: >
           cmake
           -B build_config_test
-          -S ${{ github.workspace }}/unittest/config_tests
+          -S ${{ github.workspace }}/tests/config_tests
           -D RAWTOACES_DIR=${{ github.workspace }}/install/lib/cmake/RAWTOACES
           -D CMAKE_TOOLCHAIN_FILE="${{ matrix.toolchain_file }}"
           -D CMAKE_CXX_STANDARD=17

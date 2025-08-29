@@ -4,7 +4,7 @@
 #ifndef _MATHOPS_h__
 #define _MATHOPS_h__
 
-#include <rawtoaces/define.h>
+#include "define.h"
 
 #include <cfloat>
 
@@ -520,24 +520,22 @@ template <typename T> vector<T> XYZTouv( const vector<T> &XYZ )
 };
 
 template <typename T>
-vector<vector<T>> getCAT( const vector<T> &src, const vector<T> &des )
+std::vector<std::vector<T>> calculate_CAT(
+    const std::vector<T> &src_white_XYZ, const std::vector<T> &dst_white_XYZ )
 {
-    assert( src.size() == des.size() );
+    assert( src_white_XYZ.size() == 3 );
+    assert( dst_white_XYZ.size() == 3 );
 
-    vector<vector<T>> vcat( 3, vector<T>( 3 ) );
-    // cat02 or bradford
-    FORIJ( 3, 3 ) vcat[i][j] = cat02[i][j];
+    std::vector<double> src_white_LMS = mulVector( src_white_XYZ, CAT02 );
+    std::vector<double> dst_white_LMS = mulVector( dst_white_XYZ, CAT02 );
 
-    vector<T>         wSRC = mulVector( src, vcat );
-    vector<T>         wDES = mulVector( des, vcat );
-    vector<vector<T>> vkm =
-        solveVM( vcat, diagVM( divVectorElement( wDES, wSRC ) ) );
-    vkm = mulVector( vkm, transposeVec( vcat ) );
+    std::vector<std::vector<double>> mat( 3, std::vector<double>( 3, 0 ) );
+    for ( size_t i = 0; i < 3; i++ )
+        mat[i][i] = dst_white_LMS[i] / src_white_LMS[i];
 
-    clearVM( wSRC );
-    clearVM( wDES );
-
-    return vkm;
+    mat = mulVector( mat, transposeVec( CAT02 ) );
+    mat = mulVector( CAT02_inv, transposeVec( mat ) );
+    return mat;
 }
 
 template <typename T> vector<vector<T>> XYZtoLAB( const vector<vector<T>> &XYZ )

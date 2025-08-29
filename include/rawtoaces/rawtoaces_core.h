@@ -10,6 +10,23 @@ namespace rta
 namespace core
 {
 
+// clang-format off
+
+static const std::vector<std::vector<double>> XYZ_to_ACES = {
+    {  1.0498110175, 0.0000000000, -0.0000974845 },
+    { -0.4959030231, 1.3733130458,  0.0982400361 },
+    {  0.0000000000, 0.0000000000,  0.9912520182 }
+};
+
+/// Colour adaptation from D65 to the ACES white point
+static const std::vector<std::vector<double> > CAT_D65_to_ACES = {
+    {  1.0097583639200136,      0.0050178093846550455, -0.015058389092388141  },
+    {  0.0036602813378778347,   1.0030138169214682,    -0.0059802329456399824 },
+    { -0.00029980928869024906, -0.0010516909063249997,  0.92820279627476576   }
+};
+
+// clang-format on
+
 /// Calculate spectral power distribution of a daylight illuminant of given CCT
 /// - parameter cct: correlated colour temperature of the requested illuminant.
 /// - parameter spectrum: a reference to a `Spectrum` object to full with the

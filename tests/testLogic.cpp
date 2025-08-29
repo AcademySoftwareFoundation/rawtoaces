@@ -3,7 +3,7 @@
 
 #include <OpenImageIO/unittest.h>
 
-#include <rawtoaces/mathOps.h>
+#include "../src/rawtoaces_core/mathOps.h"
 
 using namespace rta::core;
 
@@ -25,7 +25,7 @@ void test_getCAT()
     // FORI(3) src[i]= D65[i];
     // FORI(3) des[i]= D60[i];
 
-    vector<vector<double>> final_Output_getCAT = getCAT( src, des );
+    vector<vector<double>> final_Output_getCAT = calculate_CAT( src, des );
 
     vector<double> destination( 3, 0 );
 

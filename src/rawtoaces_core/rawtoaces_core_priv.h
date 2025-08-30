@@ -42,30 +42,31 @@ bool curveFit(
     int                                     verbosity,
     std::vector<std::vector<double>>       &out_IDT_matrix );
 
-double ccttoMired( const double cct );
+double cct_to_mired( const double cct );
+double mired_to_cct( const double mired );
 
-double robertsonLength(
+double robertson_length(
     const std::vector<double> &uv, const std::vector<double> &uvt );
 
-double lightSourceToColorTemp( const unsigned short tag );
+double light_source_to_color_temp( const unsigned short tag );
 
-double XYZToColorTemperature( const std::vector<double> &XYZ );
+double XYZ_to_color_temperature( const std::vector<double> &XYZ );
 
-std::vector<double> XYZtoCameraWeightedMatrix(
+std::vector<double> XYZ_to_camera_weighted_matrix(
     const double              &mired0,
     const double              &mired1,
     const double              &mired2,
     const std::vector<double> &matrix1,
     const std::vector<double> &matrix2 );
 
-std::vector<double> colorTemperatureToXYZ( const double &cct );
+std::vector<double> color_temperature_to_XYZ( const double &cct );
 
-std::vector<double> matrixRGBtoXYZ( const double chromaticities[][2] );
+std::vector<double> matrix_RGB_to_XYZ( const double chromaticities[][2] );
 
-std::vector<double> findXYZtoCameraMtx(
+std::vector<double> find_XYZ_to_camera_matrix(
     const Metadata &metadata, const std::vector<double> &neutralRGB );
 
-void getCameraXYZMtxAndWhitePoint(
+void get_camera_XYZ_matrix_and_white_point(
     const Metadata      &metadata,
     std::vector<double> &out_camera_to_XYZ_matrix,
     std::vector<double> &out_camera_XYZ_white_point );

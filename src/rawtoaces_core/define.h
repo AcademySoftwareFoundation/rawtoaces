@@ -179,7 +179,7 @@ static const double chromaticitiesACES[4][2] = {
 };
 
 // Roberson UV Table
-static const double Robertson_uvtTable[][3] = {
+static const double robertson_uvt_table[][3] = {
     { 0.18006,  0.26352,   -0.24341 },
     { 0.18066,  0.26589,   -0.25479 },
     { 0.18133,  0.26846,   -0.26876 },
@@ -214,7 +214,7 @@ static const double Robertson_uvtTable[][3] = {
 };
 
 // Roberson Mired Matrix
-static const double RobertsonMired[] = {
+static const double robertson_mired_table[] = {
       1.0e-10, 10.0,  20.0,  30.0,  40.0,  50.0,  60.0,  70.0,
      80.0,     90.0, 100.0, 125.0, 150.0, 175.0, 200.0, 225.0,
     250.0,    275.0, 300.0, 325.0, 350.0, 375.0, 400.0, 425.0,

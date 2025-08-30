@@ -487,17 +487,15 @@ calculate_TI( const SpectralData &illuminant, const SpectralData &training_data 
     return result;
 }
 
-//	=====================================================================
-//	Calculate White Balance based on the Illuminant data and
-//  highlight mode used in pre-processing with "libraw"
-//
-//	inputs:
-//      Illum: Illuminant
-//      int: highlight
-//
-//	outputs:
-//		vector: wb(R, G, B)
-
+/// Calculate white balance multipliers based on camera sensitivity and illuminant data.
+/// This function computes RGB white balance multipliers by integrating camera spectral
+/// sensitivity with illuminant power spectrum. The multipliers normalize the camera
+/// response to achieve proper white balance under the specified illuminant conditions.
+/// 
+/// @param camera Camera sensitivity data containing RGB spectral information
+/// @param illuminant Illuminant data (modified in-place by scale_LSC)
+/// @param highlight Highlight recovery mode (0=scale by min, 1=scale by max)
+/// @return Vector of 3 white balance multipliers [R, G, B]
 std::vector<double>
 calculate_WB( const SpectralData &camera, SpectralData &illuminant, int highlight )
 {
@@ -609,54 +607,60 @@ std::vector<std::vector<double>> calculate_RGB(
     return RGB;
 }
 
-struct Objfun
+/// Cost function object for IDT matrix optimization using Ceres solver.
+/// This struct implements the objective function for curve fitting between camera RGB
+/// responses and target LAB values. It's used to find the optimal 6-parameter IDT
+/// matrix that minimizes the difference between predicted and actual color values
+/// across all training patches.
+struct IDTOptimizationCost
 {
-    Objfun(
+    IDTOptimizationCost(
         const std::vector<std::vector<double>> &RGB,
-        const std::vector<std::vector<double>> &outLAB )
-        : _RGB( RGB ), _outLAB( outLAB )
+        const std::vector<std::vector<double>> &out_LAB )
+        : _RGB( RGB ), _outLAB( out_LAB )
     {}
 
-    template <typename T> bool operator()( const T *B, T *residuals ) const;
+    template <typename T> bool operator()( const T *beta_params, T *residuals ) const;
 
     const std::vector<std::vector<double>> _RGB;
     const std::vector<std::vector<double>> _outLAB;
 };
 
-//	=====================================================================
-//	Process curve fit between XYZ and RGB data with initial set of B
-//  values.
-//
-//	inputs:
-//		vector< vector<double> >: RGB
-//      vector< vector<double> >: XYZ
-//      double * :                B (6 elements)
-//
-//	outputs:
-//      boolean: if succeed, _idt should be filled with values
-//               that minimize the distance between RGB and XYZ
-//               through updated B.
-
+/// Perform curve fitting optimization to find optimal IDT matrix parameters.
+/// This function uses the Ceres optimization library to find the best 6-parameter
+/// IDT matrix that minimizes the difference between camera RGB responses and
+/// target XYZ values across all training patches. The optimization process
+/// iteratively adjusts the beta_params parameters to achieve the best color transformation.
+/// 
+/// @param RGB Camera RGB responses for training patches (190 x 3)
+/// @param XYZ Target XYZ values for training patches (190 x 3)
+/// @param beta_params Initial 6-element parameter array for IDT matrix (modified in-place)
+/// @param verbosity Verbosity level for optimization output (0-3):
+/// - 0: Silent (no output)
+/// - 1: Brief optimization report and final IDT matrix
+/// - 2: Full optimization report and progress output
+/// - 3: Detailed progress with minimizer output to stdout
+/// @param out_IDT_matrix Output IDT matrix computed from optimized parameters
+/// @return true if optimization succeeded, false otherwise
 bool curveFit(
     const std::vector<std::vector<double>> &RGB,
     const std::vector<std::vector<double>> &XYZ,
-    double                                 *B,
+    double                                 *beta_params,
     int                                     verbosity,
     std::vector<std::vector<double>>       &out_IDT_matrix )
 {
     Problem                problem;
-    vector<vector<double>> outLAB = XYZtoLAB( XYZ );
+    vector<vector<double>> out_LAB = XYZ_to_LAB( XYZ );
 
     CostFunction *cost_function =
-        new AutoDiffCostFunction<Objfun, ceres::DYNAMIC, 6>(
-            new Objfun( RGB, outLAB ), int( RGB.size() * ( RGB[0].size() ) ) );
+        new AutoDiffCostFunction<IDTOptimizationCost, ceres::DYNAMIC, 6>(
+            new IDTOptimizationCost( RGB, out_LAB ), int( RGB.size() * ( RGB[0].size() ) ) );
 
-    problem.AddResidualBlock( cost_function, NULL, B );
+    problem.AddResidualBlock( cost_function, NULL, beta_params );
 
     ceres::Solver::Options options;
     options.linear_solver_type  = ceres::DENSE_QR;
     options.parameter_tolerance = 1e-17;
-    //        options.gradient_tolerance = 1e-17;
     options.function_tolerance        = 1e-17;
     options.min_line_search_step_size = 1e-17;
     options.max_num_iterations        = 300;
@@ -674,25 +678,27 @@ bool curveFit(
 
     if ( summary.num_successful_steps )
     {
-        out_IDT_matrix[0][0] = B[0];
-        out_IDT_matrix[0][1] = B[1];
-        out_IDT_matrix[0][2] = 1.0 - B[0] - B[1];
-        out_IDT_matrix[1][0] = B[2];
-        out_IDT_matrix[1][1] = B[3];
-        out_IDT_matrix[1][2] = 1.0 - B[2] - B[3];
-        out_IDT_matrix[2][0] = B[4];
-        out_IDT_matrix[2][1] = B[5];
-        out_IDT_matrix[2][2] = 1.0 - B[4] - B[5];
+        out_IDT_matrix[0][0] = beta_params[0];
+        out_IDT_matrix[0][1] = beta_params[1];
+        out_IDT_matrix[0][2] = 1.0 - beta_params[0] - beta_params[1];
+        out_IDT_matrix[1][0] = beta_params[2];
+        out_IDT_matrix[1][1] = beta_params[3];
+        out_IDT_matrix[1][2] = 1.0 - beta_params[2] - beta_params[3];
+        out_IDT_matrix[2][0] = beta_params[4];
+        out_IDT_matrix[2][1] = beta_params[5];
+        out_IDT_matrix[2][2] = 1.0 - beta_params[4] - beta_params[5];
 
         if ( verbosity > 1 )
         {
             printf( "The IDT matrix is ...\n" );
             FORI( 3 )
-            printf(
-                "   %f %f %f\n",
-                out_IDT_matrix[i][0],
-                out_IDT_matrix[i][1],
-                out_IDT_matrix[i][2] );
+            {
+                printf(
+                    "   %f %f %f\n",
+                    out_IDT_matrix[i][0],
+                    out_IDT_matrix[i][1],
+                    out_IDT_matrix[i][2] );
+            }
         }
 
         return true;
@@ -703,38 +709,31 @@ bool curveFit(
     return false;
 }
 
-//	=====================================================================
-//	Calculate IDT matrix by calling curveFit(...)
-//
-//	inputs:
-//         N/A
-//
-//	outputs: through curveFit(...)
-//      boolean: if succeed, _idt should be filled with values
-//               that minimize the distance between RGB and XYZ
-//               through updated B.
-
+/// Calculate the Input Device Transform (IDT) matrix using curve fitting optimization.
+/// This function computes the optimal IDT matrix by comparing camera RGB responses
+/// with target XYZ values across all training patches. It uses the Ceres optimization
+/// library to find the best 6-parameter transformation that minimizes color differences.
+/// The resulting IDT matrix transforms camera RGB values to standardized color space.
+/// 
+/// @return true if IDT matrix was successfully calculated, false otherwise
 bool SpectralSolver::calculate_IDT_matrix()
 {
-    double BStart[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
+    double beta_params_start[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
 
     auto TI  = calculate_TI( _best_illuminant, _training_data );
     auto RGB = calculate_RGB( _camera, _best_illuminant, _WB_multipliers, TI );
     auto XYZ = calculate_XYZ( _observer, _best_illuminant, TI );
 
-    return curveFit( RGB, XYZ, BStart, verbosity, _IDT_matrix );
+    return curveFit( RGB, XYZ, beta_params_start, verbosity, _IDT_matrix );
 }
 
-//	=====================================================================
-//  Get the Best Illuminant data / light source that was loaded from
-//  the file
-//
-//	inputs:
-//         N/A
-//
-//	outputs:
-//      const SpectralData: Illuminant data that has the closest match
-
+/// Get the best matching illuminant data that was determined during optimization.
+/// This function returns a reference to the illuminant that best matches the camera's
+/// white balance coefficients. The illuminant is selected based on spectral analysis
+/// and optimization results from the find_best_illuminant() or select_illuminant() calls.
+/// 
+/// @return Reference to the best matching illuminant spectral data
+/// @pre illuminant data must be properly loaded with main section and power spectrum
 const SpectralData &SpectralSolver::get_best_illuminant() const
 {
     assert( _best_illuminant.data.count( "main" ) == 1 );
@@ -744,29 +743,27 @@ const SpectralData &SpectralSolver::get_best_illuminant() const
     return _best_illuminant;
 }
 
-//	=====================================================================
-//  Get Idt matrix if CalIDT() succeeds
-//
-//	inputs:
-//         N/A
-//
-//	outputs:
-//      const vector< vector < double > >: _idt matrix (3 x 3)
-
+/// Get the computed Input Device Transform (IDT) matrix if calculation succeeded.
+/// This function returns a reference to the 3×3 IDT matrix that transforms camera
+/// RGB values to standardized color space. The matrix is computed by curve fitting
+/// optimization and represents the optimal color transformation for the camera under
+/// the specified illuminant conditions.
+/// 
+/// @return Reference to the 3×3 IDT transformation matrix
+/// @pre calculate_IDT_matrix() must have been called successfully
 const vector<vector<double>> &SpectralSolver::get_IDT_matrix() const
 {
     return _IDT_matrix;
 }
 
-//	=====================================================================
-//  Get white balanced if calWB(...) succeeds
-//
-//	inputs:
-//         N/A
-//
-//	outputs:
-//      const vector< double >: _wb vector (1 x 3)
-
+/// Get the white balance multipliers if white balance calculation succeeded.
+/// This function returns a reference to the 3-element vector containing RGB white
+/// balance multipliers. These multipliers normalize the camera response to achieve
+/// proper white balance under the specified illuminant conditions and are computed
+/// by the calculate_WB() function during illuminant selection or optimization.
+/// 
+/// @return Reference to the 3-element white balance multiplier vector [R, G, B]
+/// @pre white balance calculation must have been performed successfully
 const vector<double> &SpectralSolver::get_WB_multipliers() const
 {
     return _WB_multipliers;
@@ -778,90 +775,149 @@ MetadataSolver::MetadataSolver( const core::Metadata &metadata )
     : _metadata( metadata )
 {}
 
-double ccttoMired( const double cct )
+/// Convert Correlated Color Temperature (CCT) to Mired units.
+/// This function converts color temperature from Kelvin to Mired scale, which is
+/// commonly used in photography and lighting. Mired = 1,000,000 / CCT, providing
+/// a more linear scale for color temperature adjustments.
+/// 
+/// @param cct Correlated Color Temperature in Kelvin
+/// @return Color temperature in Mired units
+/// @pre cct must be positive and non-zero
+double cct_to_mired( const double cct )
 {
     return 1.0E06 / cct;
 }
 
-double robertsonLength( const vector<double> &uv, const vector<double> &uvt )
+/// Convert Mired units to Correlated Color Temperature (CCT).
+/// This function converts color temperature from Mired scale back to Kelvin.
+/// 
+/// @param mired Color temperature in Mired units
+/// @return Correlated color temperature in Kelvin
+/// @pre mired must be positive and non-zero
+double mired_to_cct( const double mired )
 {
+    return 1.0E06 / mired;
+}
 
-    double         t    = uvt[2];
+/// Calculate the Robertson length for color temperature interpolation.
+/// This function computes the distance between two points in CIE 1960 UCS color space
+/// using the Robertson method. It's used for interpolating color adaptation matrices
+/// between different color temperatures during color space transformations.
+/// 
+/// @param source_uv Source point coordinates in CIE 1960 UCS space [u, v]
+/// @param target_uvt Target point coordinates in CIE 1960 UCS space with temperature [u, v, t]
+/// @return Distance between the two points in UCS color space
+/// @pre source_uv.size() >= 2, target_uvt.size() >= 3
+double robertson_length( const vector<double> &source_uv, const vector<double> &target_uvt )
+{
+    double         t    = target_uvt[2];
     double         sign = t < 0 ? -1.0 : t > 0 ? 1.0 : 0.0;
     vector<double> slope( 2 );
     slope[0] = -sign / std::sqrt( 1 + t * t );
     slope[1] = t * slope[0];
 
-    vector<double> uvr( uvt.begin(), uvt.begin() + 2 );
-    return cross2( slope, subVectors( uv, uvr ) );
+    vector<double> target_uv( target_uvt.begin(), target_uvt.begin() + 2 );
+    return cross2d_scalar( slope, subVectors( source_uv, target_uv ) );
 }
 
-double lightSourceToColorTemp( const unsigned short tag )
+/// Convert EXIF light source tag to correlated color temperature.
+/// This function maps EXIF light source tags to their corresponding color temperatures
+/// in Kelvin. It handles both standard EXIF values (0-22) and extended values (≥32768).
+/// Extended values are converted by subtracting 32768 from the tag value.
+/// 
+/// @param tag EXIF light source tag value
+/// @return Correlated color temperature in Kelvin
+/// @pre tag is a valid EXIF light source identifier
+double light_source_to_color_temp( const unsigned short tag )
 {
 
     if ( tag >= 32768 )
         return ( static_cast<double>( tag ) ) - 32768.0;
 
-    uint16_t LightSourceEXIFTagValues[][2] = {
+    uint16_t exif_light_source_temperature_map[][2] = {
         { 0, 5500 },  { 1, 5500 },  { 2, 3500 },  { 3, 3400 },
         { 10, 5550 }, { 17, 2856 }, { 18, 4874 }, { 19, 6774 },
         { 20, 5500 }, { 21, 6500 }, { 22, 7500 }
     };
 
-    FORI( countSize( LightSourceEXIFTagValues ) )
+    FORI( countSize( exif_light_source_temperature_map ) )
     {
-        if ( LightSourceEXIFTagValues[i][0] == static_cast<uint16_t>( tag ) )
+        if ( exif_light_source_temperature_map[i][0] == static_cast<uint16_t>( tag ) )
         {
-            return ( static_cast<double>( LightSourceEXIFTagValues[i][1] ) );
+            return ( static_cast<double>( exif_light_source_temperature_map[i][1] ) );
         }
     }
 
     return 5500.0;
 }
 
-double XYZToColorTemperature( const vector<double> &XYZ )
+/// Convert XYZ values to correlated color temperature using Robertson method.
+/// This function estimates the color temperature from XYZ values by interpolating
+/// between known color temperature points in CIE 1960 UCS space. It uses the Robertson
+/// method to find the closest color temperature match based on the UV coordinates.
+/// 
+/// @param XYZ XYZ color values [X, Y, Z]
+/// @return Correlated color temperature in Kelvin
+double XYZ_to_color_temperature( const vector<double> &XYZ )
 {
-    vector<double> uv      = XYZTouv( XYZ );
-    int            Nrobert = countSize( Robertson_uvtTable );
+    vector<double> uv      = XYZ_to_uv( XYZ );
+    int            num_robertson_table = countSize( robertson_uvt_table );
     int            i;
 
     double mired;
-    double RDthis = 0.0, RDprevious = 0.0;
+    double distance_this = 0.0, distance_prev = 0.0;
 
-    for ( i = 0; i < Nrobert; i++ )
+    for ( i = 0; i < num_robertson_table; i++ )
     {
         vector<double> robertson(
-            Robertson_uvtTable[i],
-            Robertson_uvtTable[i] + countSize( Robertson_uvtTable[i] ) );
-        if ( ( RDthis = robertsonLength( uv, robertson ) ) <= 0.0 )
+            robertson_uvt_table[i],
+            robertson_uvt_table[i] + countSize( robertson_uvt_table[i] ) );
+        distance_this = robertson_length( uv, robertson );
+        if ( distance_this <= 0.0 )
+        {
             break;
-        RDprevious = RDthis;
+        }
+        distance_prev = distance_this;
     }
-    if ( i <= 0 )
-        mired = RobertsonMired[0];
-    else if ( i >= Nrobert )
-        mired = RobertsonMired[Nrobert - 1];
-    else
-        mired = RobertsonMired[i - 1] +
-                RDprevious * ( RobertsonMired[i] - RobertsonMired[i - 1] ) /
-                    ( RDprevious - RDthis );
 
-    double cct = 1.0e06 / mired;
+    if ( i <= 0 )
+        mired = robertson_mired_table[0];
+    else if ( i >= num_robertson_table )
+        mired = robertson_mired_table[num_robertson_table - 1];
+    else
+        mired = robertson_mired_table[i - 1] +
+                distance_prev * ( robertson_mired_table[i] - robertson_mired_table[i - 1] ) /
+                    ( distance_prev - distance_this );
+
+    double cct = mired_to_cct( mired );
     cct        = std::max( 2000.0, std::min( 50000.0, cct ) );
 
     return cct;
 }
 
-vector<double> XYZtoCameraWeightedMatrix(
-    const double              &mired0,
-    const double              &mired1,
-    const double              &mired2,
+/// Calculate weighted interpolation between two camera matrices based on Mired values.
+/// This function performs linear interpolation between two camera transformation matrices
+/// based on the position of a target Mired value between two reference Mired values.
+/// The interpolation weight is calculated as (mired_start - mired_target) / (mired_start - mired_end),
+/// ensuring smooth transitions between different color temperature calibration points.
+/// 
+/// @param mired_target Target Mired value for interpolation
+/// @param mired_start First reference Mired value (start of interpolation range)
+/// @param mired_end Second reference Mired value (end of interpolation range)
+/// @param matrix1 First camera transformation matrix
+/// @param matrix2 Second camera transformation matrix
+/// @return Interpolated camera transformation matrix
+/// @pre mired_start != mired_end to avoid division by zero
+vector<double> XYZ_to_camera_weighted_matrix(
+    const double              &mired_target,
+    const double              &mired_start,
+    const double              &mired_end,
     const std::vector<double> &matrix1,
     const std::vector<double> &matrix2 )
 {
 
     double weight = std::max(
-        0.0, std::min( 1.0, ( mired1 - mired0 ) / ( mired1 - mired2 ) ) );
+        0.0, std::min( 1.0, ( mired_start - mired_target ) / ( mired_start - mired_end ) ) );
     vector<double> result = subVectors( matrix2, matrix1 );
     scaleVector( result, weight );
     result = addVectors( result, matrix1 );
@@ -869,8 +925,22 @@ vector<double> XYZtoCameraWeightedMatrix(
     return result;
 }
 
+/// Find the optimal XYZ to camera transformation matrix using iterative optimization.
+/// This function determines the best camera transformation matrix by iteratively
+/// searching through Mired values to find the one that minimizes the error between
+/// predicted and actual neutral RGB values. It uses a binary search approach with
+/// error minimization to find the optimal color temperature calibration point.
+/// 
+/// The function interpolates between two calibration matrices based on the estimated
+/// optimal Mired value, ensuring accurate color transformations for the given
+/// neutral RGB reference values.
+/// 
+/// @param metadata Camera metadata containing calibration information and matrices
+/// @param neutral_RGB Reference neutral RGB values for optimization
+/// @return Optimized XYZ to camera transformation matrix
+/// @pre metadata must contain valid calibration data with at least two illuminants
 vector<double>
-findXYZtoCameraMtx( const Metadata &metadata, const vector<double> &neutralRGB )
+find_XYZ_to_camera_matrix( const Metadata &metadata, const vector<double> &neutral_RGB )
 {
 
     if ( metadata.calibration[0].illuminant == 0 )
@@ -879,146 +949,182 @@ findXYZtoCameraMtx( const Metadata &metadata, const vector<double> &neutralRGB )
         return metadata.calibration[0].XYZ_to_RGB_matrix;
     }
 
-    if ( neutralRGB.size() == 0 )
+    if ( neutral_RGB.size() == 0 )
     {
         fprintf( stderr, " no neutral RGB values were found. \n " );
         return metadata.calibration[0].XYZ_to_RGB_matrix;
     }
 
-    double cct1 = lightSourceToColorTemp( metadata.calibration[0].illuminant );
-    double cct2 = lightSourceToColorTemp( metadata.calibration[1].illuminant );
+    double cct1 = light_source_to_color_temp( metadata.calibration[0].illuminant );
+    double cct2 = light_source_to_color_temp( metadata.calibration[1].illuminant );
 
-    double mir1 = ccttoMired( cct1 );
-    double mir2 = ccttoMired( cct2 );
+    double mir1 = cct_to_mired( cct1 );
+    double mir2 = cct_to_mired( cct2 );
 
-    double maxMir = ccttoMired( 2000.0 );
-    double minMir = ccttoMired( 50000.0 );
+    double max_mired = cct_to_mired( 2000.0 );
+    double min_mired = cct_to_mired( 50000.0 );
 
     const std::vector<double> &matrix1 =
         metadata.calibration[0].XYZ_to_RGB_matrix;
     const std::vector<double> &matrix2 =
         metadata.calibration[1].XYZ_to_RGB_matrix;
 
-    double lomir =
-        std::max( minMir, std::min( maxMir, std::min( mir1, mir2 ) ) );
-    double himir =
-        std::max( minMir, std::min( maxMir, std::max( mir1, mir2 ) ) );
-    double mirStep = std::max( 5.0, ( himir - lomir ) / 50.0 );
+    double low_mired =
+        std::max( min_mired, std::min( max_mired, std::min( mir1, mir2 ) ) );
+    double high_mired =
+        std::max( min_mired, std::min( max_mired, std::max( mir1, mir2 ) ) );
+    double mirStep = std::max( 5.0, ( high_mired - low_mired ) / 50.0 );
 
-    double mir = 0.0, lastMired = 0.0, estimatedMired = 0.0, lerror = 0.0,
-           lastError = 0.0, smallestError = 0.0;
+    double current_mired = 0.0, last_mired = 0.0, estimated_mired = 0.0, current_error = 0.0,
+           last_error = 0.0, smallest_error = 0.0;
 
-    for ( mir = lomir; mir < himir; mir += mirStep )
+    for ( current_mired = low_mired; current_mired < high_mired; current_mired += mirStep )
     {
-        lerror = mir - ccttoMired( XYZToColorTemperature( mulVector(
-                           invertV( XYZtoCameraWeightedMatrix(
-                               mir, mir1, mir2, matrix1, matrix2 ) ),
-                           neutralRGB ) ) );
+        current_error = current_mired - cct_to_mired( XYZ_to_color_temperature( mulVector(
+                           invertV( XYZ_to_camera_weighted_matrix(
+                               current_mired, mir1, mir2, matrix1, matrix2 ) ),
+                           neutral_RGB ) ) );
 
-        if ( std::fabs( lerror - 0.0 ) <= 1e-09 )
+        if ( std::fabs( current_error - 0.0 ) <= 1e-09 )
         {
-            estimatedMired = mir;
+            estimated_mired = current_mired;
             break;
         }
-        if ( std::fabs( mir - lomir - 0.0 ) > 1e-09 &&
-             lerror * lastError <= 0.0 )
+        if ( std::fabs( current_mired - low_mired - 0.0 ) > 1e-09 &&
+             current_error * last_error <= 0.0 )
         {
-            estimatedMired =
-                mir + ( lerror / ( lerror - lastError ) * ( mir - lastMired ) );
+            estimated_mired =
+                current_mired + ( current_error / ( current_error - last_error ) * ( current_mired - last_mired ) );
             break;
         }
-        if ( std::fabs( mir - lomir ) <= 1e-09 ||
-             std::fabs( lerror ) < std::fabs( smallestError ) )
+        if ( std::fabs( current_mired - low_mired ) <= 1e-09 ||
+             std::fabs( current_error ) < std::fabs( smallest_error ) )
         {
-            estimatedMired = mir;
-            smallestError  = lerror;
+            estimated_mired = current_mired;
+            smallest_error  = current_error;
         }
 
-        lastError = lerror;
-        lastMired = mir;
+        last_error = current_error;
+        last_mired = current_mired;
     }
 
-    return XYZtoCameraWeightedMatrix(
-        estimatedMired, mir1, mir2, matrix1, matrix2 );
+    return XYZ_to_camera_weighted_matrix(
+        estimated_mired, mir1, mir2, matrix1, matrix2 );
 }
 
-vector<double> colorTemperatureToXYZ( const double &cct )
+/// Convert correlated color temperature to CIE XYZ color values.
+/// This function estimates the XYZ color coordinates corresponding to a given
+/// correlated color temperature by interpolating between known color temperature
+/// points in the Robertson table. It converts the temperature to Mired units
+/// and finds the closest match in the pre-computed color temperature data.
+/// 
+/// @param cct Correlated color temperature in Kelvin
+/// @return Vector of 3 XYZ color values [X, Y, Z]
+/// @pre cct should be in the valid range supported by the Robertson table
+vector<double> color_temperature_to_XYZ( const double &cct )
 {
 
-    double         mired = 1.0e06 / cct;
+    double         mired = cct_to_mired( cct );
     vector<double> uv( 2, 1.0 );
 
-    int Nrobert = countSize( Robertson_uvtTable );
+    int num_robertson_table = countSize( robertson_uvt_table );
     int i;
 
-    for ( i = 0; i < Nrobert; i++ )
+    for ( i = 0; i < num_robertson_table; i++ )
     {
-        if ( RobertsonMired[i] >= mired )
+        if ( robertson_mired_table[i] >= mired )
             break;
     }
 
     if ( i <= 0 )
     {
-        uv = vector<double>( Robertson_uvtTable[0], Robertson_uvtTable[0] + 2 );
+        uv = vector<double>( robertson_uvt_table[0], robertson_uvt_table[0] + 2 );
     }
-    else if ( i >= Nrobert )
+    else if ( i >= num_robertson_table )
     {
         uv = vector<double>(
-            Robertson_uvtTable[Nrobert - 1],
-            Robertson_uvtTable[Nrobert - 1] + 2 );
+            robertson_uvt_table[num_robertson_table - 1],
+            robertson_uvt_table[num_robertson_table - 1] + 2 );
     }
     else
     {
-        double weight = ( mired - RobertsonMired[i - 1] ) /
-                        ( RobertsonMired[i] - RobertsonMired[i - 1] );
+        double weight = ( mired - robertson_mired_table[i - 1] ) /
+                        ( robertson_mired_table[i] - robertson_mired_table[i - 1] );
 
-        vector<double> uv1( Robertson_uvtTable[i], Robertson_uvtTable[i] + 2 );
+        vector<double> uv1( robertson_uvt_table[i], robertson_uvt_table[i] + 2 );
         scaleVector( uv1, weight );
 
         vector<double> uv2(
-            Robertson_uvtTable[i - 1], Robertson_uvtTable[i - 1] + 2 );
+            robertson_uvt_table[i - 1], robertson_uvt_table[i - 1] + 2 );
         scaleVector( uv2, 1.0 - weight );
 
         uv = addVectors( uv1, uv2 );
     }
 
-    return uvToXYZ( uv );
+    return uv_to_XYZ( uv );
 }
 
-vector<double> matrixRGBtoXYZ( const double chromaticities[][2] )
+/// Calculate RGB to XYZ transformation matrix from chromaticity coordinates.
+/// This function constructs a 3×3 transformation matrix that converts RGB values
+/// to CIE XYZ color space. It takes the xy chromaticity coordinates for red,
+/// green, blue primaries and white point, converts them to XYZ, and then
+/// calculates the appropriate scaling factors to ensure proper color reproduction.
+/// 
+/// The resulting matrix is used in color space transformations and color
+/// adaptation calculations, particularly for converting between different
+/// RGB color spaces and the standardized CIE XYZ color space.
+/// 
+/// @param chromaticities Array of 4 xy chromaticity coordinates [R, G, B, W]
+/// @return 3×3 RGB to XYZ transformation matrix as a flattened vector
+/// @pre chromaticities must contain exactly 4 xy coordinate pairs
+vector<double> matrix_RGB_to_XYZ( const double chromaticities[][2] )
 {
-    vector<double> rXYZ =
-        xyToXYZ( vector<double>( chromaticities[0], chromaticities[0] + 2 ) );
-    vector<double> gXYZ =
-        xyToXYZ( vector<double>( chromaticities[1], chromaticities[1] + 2 ) );
-    vector<double> bXYZ =
-        xyToXYZ( vector<double>( chromaticities[2], chromaticities[2] + 2 ) );
-    vector<double> wXYZ =
-        xyToXYZ( vector<double>( chromaticities[3], chromaticities[3] + 2 ) );
+    vector<double> red_XYZ =
+        xy_to_XYZ( vector<double>( chromaticities[0], chromaticities[0] + 2 ) );
+    vector<double> green_XYZ =
+        xy_to_XYZ( vector<double>( chromaticities[1], chromaticities[1] + 2 ) );
+    vector<double> blue_XYZ =
+        xy_to_XYZ( vector<double>( chromaticities[2], chromaticities[2] + 2 ) );
+    vector<double> white_XYZ =
+        xy_to_XYZ( vector<double>( chromaticities[3], chromaticities[3] + 2 ) );
 
-    vector<double> rgbMtx( 9 );
+    vector<double> rgb_matrix( 9 );
     FORI( 3 )
     {
-        rgbMtx[0 + i * 3] = rXYZ[i];
-        rgbMtx[1 + i * 3] = gXYZ[i];
-        rgbMtx[2 + i * 3] = bXYZ[i];
+        rgb_matrix[0 + i * 3] = red_XYZ[i];
+        rgb_matrix[1 + i * 3] = green_XYZ[i];
+        rgb_matrix[2 + i * 3] = blue_XYZ[i];
     }
 
-    scaleVector( wXYZ, 1.0 / wXYZ[1] );
+    scaleVector( white_XYZ, 1.0 / white_XYZ[1] );
 
-    vector<double> channelgains = mulVector( invertV( rgbMtx ), wXYZ, 3 );
-    vector<double> colorMatrix  = mulVector( rgbMtx, diagV( channelgains ), 3 );
+    vector<double> channel_gains = mulVector( invertV( rgb_matrix ), white_XYZ, 3 );
+    vector<double> color_matrix  = mulVector( rgb_matrix, diagV( channel_gains ), 3 );
 
-    return colorMatrix;
+    return color_matrix;
 }
 
-void getCameraXYZMtxAndWhitePoint(
+/// Calculate camera XYZ transformation matrix and white point from metadata.
+/// This function computes the camera-to-XYZ transformation matrix and the
+/// corresponding white point in XYZ color space. It uses the camera's neutral
+/// RGB values to find the optimal transformation matrix through iterative
+/// optimization, then calculates the white point either from the neutral RGB
+/// values or from the calibration illuminant's color temperature.
+/// 
+/// The function also applies baseline exposure compensation and normalizes
+/// the white point to ensure proper color scaling in the transformation pipeline.
+/// 
+/// @param metadata Camera metadata containing calibration and exposure information
+/// @param out_camera_to_XYZ_matrix Output camera to XYZ transformation matrix
+/// @param out_camera_XYZ_white_point Output camera white point in XYZ space
+/// @pre metadata must contain valid calibration data and neutral RGB values
+void get_camera_XYZ_matrix_and_white_point(
     const Metadata      &metadata,
     std::vector<double> &out_camera_to_XYZ_matrix,
     std::vector<double> &out_camera_XYZ_white_point )
 {
     out_camera_to_XYZ_matrix =
-        invertV( findXYZtoCameraMtx( metadata, metadata.neutral_RGB ) );
+        invertV( find_XYZ_to_camera_matrix( metadata, metadata.neutral_RGB ) );
     assert( std::fabs( sumVector( out_camera_to_XYZ_matrix ) - 0.0 ) > 1e-09 );
 
     scaleVector(
@@ -1031,8 +1137,8 @@ void getCameraXYZMtxAndWhitePoint(
     }
     else
     {
-        out_camera_XYZ_white_point = colorTemperatureToXYZ(
-            lightSourceToColorTemp( metadata.calibration[0].illuminant ) );
+        out_camera_XYZ_white_point = color_temperature_to_XYZ(
+            light_source_to_color_temp( metadata.calibration[0].illuminant ) );
     }
 
     scaleVector(
@@ -1042,62 +1148,93 @@ void getCameraXYZMtxAndWhitePoint(
     return;
 }
 
+/// Calculate the Color Adaptation Transform (CAT) matrix for color space conversion.
+/// This function computes the CAT matrix needed to transform colors from the camera's
+/// white point to the target ACES RGB white point. It first obtains the camera's
+/// XYZ transformation matrix and white point, then creates the target ACES RGB to XYZ
+/// matrix, and finally calculates the color adaptation transform between the two
+/// white points using the Bradford or CAT02 method.
+/// 
+/// The CAT matrix is essential for maintaining color appearance when converting
+/// between different illuminant conditions, ensuring that colors look consistent
+/// across different lighting environments.
+/// 
+/// @return 3×3 Color Adaptation Transform matrix
+/// @pre _metadata must contain valid camera calibration and neutral RGB data
 vector<vector<double>> MetadataSolver::calculate_CAT_matrix()
 {
     vector<double>      deviceWhiteV( 3, 1.0 );
     std::vector<double> camera_to_XYZ_matrix;
     std::vector<double> camera_XYZ_white_point;
-    getCameraXYZMtxAndWhitePoint(
+    get_camera_XYZ_matrix_and_white_point(
         _metadata, camera_to_XYZ_matrix, camera_XYZ_white_point );
-    vector<double> outputRGBtoXYZMtx = matrixRGBtoXYZ( chromaticitiesACES );
-    vector<double> outputXYZWhitePoint =
-        mulVector( outputRGBtoXYZMtx, deviceWhiteV );
-    vector<vector<double>> chadMtx =
-        calculate_CAT( camera_XYZ_white_point, outputXYZWhitePoint );
+    vector<double> output_RGB_to_XYZ_matrix = matrix_RGB_to_XYZ( chromaticitiesACES );
+    vector<double> output_XYZ_white_point =
+        mulVector( output_RGB_to_XYZ_matrix, deviceWhiteV );
+    vector<vector<double>> CAT_matrix =
+        calculate_CAT( camera_XYZ_white_point, output_XYZ_white_point );
 
-    return chadMtx;
+    return CAT_matrix;
 }
 
+/// Calculate the Input Device Transform (IDT) matrix for DNG color space conversion.
+/// This function computes the final IDT matrix that transforms camera RGB values
+/// to ACES RGB color space. It combines the Color Adaptation Transform (CAT) matrix
+/// with the D65 ACES RGB to XYZ transformation matrix to create a complete
+/// camera-to-ACES transformation pipeline.
+/// 
+/// @return 3×3 Input Device Transform matrix for DNG to ACES conversion
+/// @pre _metadata must contain valid camera calibration data
+/// @pre calculate_CAT_matrix() must return a valid CAT matrix
 vector<vector<double>> MetadataSolver::calculate_IDT_matrix()
 {
-    vector<vector<double>> chadMtx = calculate_CAT_matrix();
+    // 1. Obtains the CAT matrix for white point adaptation
+    vector<vector<double>> CAT_matrix = calculate_CAT_matrix();
+    
+    // 2. Converts the CAT matrix to a flattened format for matrix multiplication
     vector<double>         XYZ_D65_acesrgb( 9 ), CAT( 9 );
     FORIJ( 3, 3 )
     {
         XYZ_D65_acesrgb[i * 3 + j] = XYZ_D65_acesrgb_3[i][j];
-        CAT[i * 3 + j]             = chadMtx[i][j];
+        CAT[i * 3 + j]             = CAT_matrix[i][j];
     }
 
+    // 3. Multiplies the D65 ACES RGB to XYZ matrix with the CAT matrix
     vector<double>         matrix = mulVector( XYZ_D65_acesrgb, CAT, 3 );
-    vector<vector<double>> DNGIDTMatrix( 3, vector<double>( 3 ) );
-    FORIJ( 3, 3 ) DNGIDTMatrix[i][j] = matrix[i * 3 + j];
+    
+    // 4. Reshapes the result into a 3×3 transformation matrix
+    vector<vector<double>> DNG_IDT_matrix( 3, vector<double>( 3 ) );
+    FORIJ( 3, 3 ) DNG_IDT_matrix[i][j] = matrix[i * 3 + j];
 
-    //        vector < double > outRGBWhite = mulVector ( DNGIDTMatrix,
-    //                                                    mulVector ( invertV ( _cameraToXYZMtx ),
-    //                                                                _cameraXYZWhitePoint ) );
+    // 5. Validates the matrix properties (non-zero determinant)
+    assert( std::fabs( sumVectorM( DNG_IDT_matrix ) - 0.0 ) > 1e-09 );
 
-    //        double max_value = *std::max_element ( outRGBWhite.begin(), outRGBWhite.end() );
-    //        scaleVector ( outRGBWhite, 1.0 / max_value );
-    //        vector < double > absdif = subVectors ( outRGBWhite, deviceWhiteV );
-    //
-    //        FORI ( absdif.size() ) absdif[i] = std::fabs ( absdif[i] );
-    //        max_value = *std::max_element ( absdif.begin(), absdif.end() );
-    //
-    //        if ( max_value >= 0.0001 )
-    //            fprintf(stderr, "WARNING: The neutrals should come out white balanced.\n");
-
-    assert( std::fabs( sumVectorM( DNGIDTMatrix ) - 0.0 ) > 1e-09 );
-
-    return DNGIDTMatrix;
+    return DNG_IDT_matrix;
 }
 
-template <typename T> bool Objfun::operator()( const T *B, T *residuals ) const
+/// Cost function operator for Ceres optimization of IDT matrix parameters.
+/// This function computes the residual errors between target LAB values and
+/// calculated LAB values from camera RGB responses transformed by candidate
+/// IDT matrix parameters. It's used by the Ceres optimization library to
+/// iteratively find the optimal 6-parameter IDT matrix that minimizes
+/// color differences across all 190 training patches.
+/// 
+/// The function transforms camera RGB values using candidate IDT parameters beta_params,
+/// converts the result to XYZ using ACES RGB primaries, then to LAB color space,
+/// and computes the difference from target LAB values as residuals.
+/// 
+/// @param beta_params 6-element array of IDT matrix parameters [b00, b01, b02, b10, b11, b12]
+/// @param residuals Output array of LAB differences (190×3 = 570 elements)
+/// @return true (required by Ceres interface)
+/// @pre _RGB must contain 190×3 camera RGB responses
+/// @pre _outLAB must contain 190×3 target LAB values
+template <typename T> bool IDTOptimizationCost::operator()( const T *beta_params, T *residuals ) const
 {
-    vector<vector<T>> RGBJet( 190, vector<T>( 3 ) );
-    FORIJ( 190, 3 ) RGBJet[i][j] = T( _RGB[i][j] );
+    vector<vector<T>> RGB_copy( 190, vector<T>( 3 ) );
+    FORIJ( 190, 3 ) RGB_copy[i][j] = T( _RGB[i][j] );
 
-    vector<vector<T>> outCalcLAB         = XYZtoLAB( getCalcXYZt( RGBJet, B ) );
-    FORIJ( 190, 3 ) residuals[i * 3 + j] = _outLAB[i][j] - outCalcLAB[i][j];
+    vector<vector<T>> out_calc_LAB         = XYZ_to_LAB( getCalcXYZt( RGB_copy, beta_params ) );
+    FORIJ( 190, 3 ) residuals[i * 3 + j] = _outLAB[i][j] - out_calc_LAB[i][j];
 
     return true;
 }

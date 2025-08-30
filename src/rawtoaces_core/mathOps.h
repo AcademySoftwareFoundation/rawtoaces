@@ -73,9 +73,18 @@ vector<T> subVectors( const vector<T> &vectorA, const vector<T> &vectorB )
     return diff;
 };
 
-// This is not the typical "cross" product
+/// Calculate the 2D cross product (scalar) of two 2D vectors.
+/// This function computes the cross product of two 2D vectors, which results in a scalar
+/// value representing the signed area of the parallelogram formed by the vectors.
+/// The cross product is positive when vectorB is counterclockwise from vectorA,
+/// negative when clockwise, and zero when the vectors are collinear.
+/// 
+/// @param vectorA First 2D vector [x1, y1]
+/// @param vectorB Second 2D vector [x2, y2]
+/// @return Scalar cross product: x1*y2 - x2*y1
+/// @pre vectorA.size() == 2 && vectorB.size() == 2
 template <typename T>
-T cross2( const vector<T> &vectorA, const vector<T> &vectorB )
+T cross2d_scalar( const vector<T> &vectorA, const vector<T> &vectorB )
 {
     assert( vectorA.size() == 2 && vectorB.size() == 2 );
     return vectorA[0] * vectorB[1] - vectorA[1] * vectorB[0];
@@ -497,7 +506,7 @@ vector<T> interp1DLinear(
     return Y1;
 };
 
-template <typename T> vector<T> xyToXYZ( const vector<T> &xy )
+template <typename T> vector<T> xy_to_XYZ( const vector<T> &xy )
 {
     vector<T> XYZ( 3 );
     XYZ[0] = xy[0];
@@ -507,7 +516,7 @@ template <typename T> vector<T> xyToXYZ( const vector<T> &xy )
     return XYZ;
 };
 
-template <typename T> vector<T> uvToxy( const vector<T> &uv )
+template <typename T> vector<T> uv_to_xy( const vector<T> &uv )
 {
     T         xyS[] = { 3.0, 2.0 };
     vector<T> xyScale( xyS, xyS + sizeof( xyS ) / sizeof( T ) );
@@ -519,12 +528,12 @@ template <typename T> vector<T> uvToxy( const vector<T> &uv )
     return xyScale;
 };
 
-template <typename T> vector<T> uvToXYZ( const vector<T> &uv )
+template <typename T> vector<T> uv_to_XYZ( const vector<T> &uv )
 {
-    return xyToXYZ( uvToxy( uv ) );
+    return xy_to_XYZ( uv_to_xy( uv ) );
 };
 
-template <typename T> vector<T> XYZTouv( const vector<T> &XYZ )
+template <typename T> vector<T> XYZ_to_uv( const vector<T> &XYZ )
 {
     T         uvS[]   = { 4.0, 6.0 };
     T         slice[] = { XYZ[0], XYZ[1] };
@@ -558,7 +567,7 @@ std::vector<std::vector<T>> calculate_CAT(
     return mat;
 }
 
-template <typename T> vector<vector<T>> XYZtoLAB( const vector<vector<T>> &XYZ )
+template <typename T> vector<vector<T>> XYZ_to_LAB( const vector<vector<T>> &XYZ )
 {
     assert( XYZ.size() == 190 );
     T add = T( 16.0 / 116.0 );
@@ -588,7 +597,7 @@ template <typename T> vector<vector<T>> XYZtoLAB( const vector<vector<T>> &XYZ )
 };
 
 template <typename T>
-vector<vector<T>> getCalcXYZt( const vector<vector<T>> &RGB, const T B[6] )
+vector<vector<T>> getCalcXYZt( const vector<vector<T>> &RGB, const T beta_params[6] )
 {
     assert( RGB.size() == 190 );
 
@@ -597,15 +606,15 @@ vector<vector<T>> getCalcXYZt( const vector<vector<T>> &RGB, const T B[6] )
 
     FORIJ( 3, 3 ) M[i][j] = T( acesrgb_XYZ_3[i][j] );
 
-    BV[0][0] = B[0];
-    BV[0][1] = B[1];
-    BV[0][2] = 1.0 - B[0] - B[1];
-    BV[1][0] = B[2];
-    BV[1][1] = B[3];
-    BV[1][2] = 1.0 - B[2] - B[3];
-    BV[2][0] = B[4];
-    BV[2][1] = B[5];
-    BV[2][2] = 1.0 - B[4] - B[5];
+    BV[0][0] = beta_params[0];
+    BV[0][1] = beta_params[1];
+    BV[0][2] = 1.0 - beta_params[0] - beta_params[1];
+    BV[1][0] = beta_params[2];
+    BV[1][1] = beta_params[3];
+    BV[1][2] = 1.0 - beta_params[2] - beta_params[3];
+    BV[2][0] = beta_params[4];
+    BV[2][1] = beta_params[5];
+    BV[2][2] = 1.0 - beta_params[4] - beta_params[5];
 
     vector<vector<T>> outCalcXYZt = mulVector( mulVector( RGB, BV ), M );
 

@@ -3,6 +3,36 @@ cmake_minimum_required(VERSION 3.12)
 ################################################################################
 
 add_executable (
+	Test_core_usage
+	core_usage.cpp
+)
+
+target_link_libraries(
+    Test_core_usage
+    PUBLIC
+        ${RAWTOACES_CORE_LIB}
+        OpenImageIO::OpenImageIO
+)
+
+add_test ( NAME Test_core_usage COMMAND Test_core_usage )
+
+################################################################################
+add_executable (
+	Test_util_usage
+	util_usage.cpp
+)
+
+target_link_libraries(
+    Test_util_usage
+    PUBLIC
+        ${RAWTOACES_UTIL_LIB}
+        OpenImageIO::OpenImageIO
+)
+
+add_test ( NAME Test_util_usage COMMAND Test_util_usage )
+
+################################################################################
+add_executable (
 	Test_SpectralData
 	test_SpectralData.cpp
 )

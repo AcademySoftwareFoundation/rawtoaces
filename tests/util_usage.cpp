@@ -71,8 +71,8 @@ void test_ImageConverter_settings()
 
 int main( int, char ** )
 {
-    // Currently doesn't work on the Mac CI runner.
-#ifndef __APPLE__
+    // Only run on the linux CI runners.
+#ifdef __LINUX__
     test_ImageConverter_arguments();
     test_ImageConverter_settings();
 #endif

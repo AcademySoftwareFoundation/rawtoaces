@@ -500,9 +500,6 @@ vector<T> interp1DLinear(
             Y1.push_back( slope[0] * X1[i] + intercept[0] );
     }
 
-    clear_vector_memory( slope );
-    clear_vector_memory( intercept );
-
     return Y1;
 };
 
@@ -590,9 +587,6 @@ template <typename T> vector<vector<T>> XYZ_to_LAB( const vector<vector<T>> &XYZ
         outCalcLab[i][2] = T( 200.0 ) * ( tmpXYZ[i][1] - tmpXYZ[i][2] );
     }
 
-    // not necessary, just want to show we clean stuff
-    clear_vector_memory( tmpXYZ );
-
     return outCalcLab;
 };
 
@@ -617,9 +611,6 @@ vector<vector<T>> getCalcXYZt( const vector<vector<T>> &RGB, const T beta_params
     BV[2][2] = 1.0 - beta_params[4] - beta_params[5];
 
     vector<vector<T>> outCalcXYZt = mulVector( mulVector( RGB, BV ), M );
-
-    // not necessary, just want to show we clean stuff
-    clear_vector_memory( BV );
 
     return outCalcXYZt;
 };

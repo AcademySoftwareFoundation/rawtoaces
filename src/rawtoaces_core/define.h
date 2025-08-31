@@ -266,12 +266,6 @@ inline std::vector<std::string> openDir( std::string path = "." )
     return paths;
 };
 
-// Function to clear the memories occupied by vectors
-template <typename T> inline void clear_vector_memory( std::vector<T> &vector )
-{
-    std::vector<T>().swap( vector );
-};
-
 // Function to covert upper-case to lower-case
 inline void lowerCase( char *tex )
 {

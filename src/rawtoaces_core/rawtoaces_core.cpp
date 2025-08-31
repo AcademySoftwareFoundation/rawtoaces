@@ -96,14 +96,8 @@ void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
     }
 
     s01 = interp1DLinear( wavelengths, wavelengths_interpolated, s00 );
-    clear_vector_memory( s00 );
     s11 = interp1DLinear( wavelengths, wavelengths_interpolated, s10 );
-    clear_vector_memory( s10 );
     s21 = interp1DLinear( wavelengths, wavelengths_interpolated, s20 );
-    clear_vector_memory( s20 );
-
-    clear_vector_memory( wavelengths );
-    clear_vector_memory( wavelengths_interpolated );
 
     FORI( num_wavelengths )
     {
@@ -113,10 +107,6 @@ void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
             spectrum.values.push_back( s01[i] + m1 * s11[i] + m2 * s21[i] );
         }
     }
-
-    clear_vector_memory( s01 );
-    clear_vector_memory( s11 );
-    clear_vector_memory( s21 );
 }
 
 /// Calculate spectral power distribution (SPD) of blackbody radiation at given temperature.

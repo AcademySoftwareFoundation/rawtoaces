@@ -30,7 +30,7 @@ static const std::vector<std::vector<double> > CAT_D65_to_ACES = {
 /// Calculate spectral power distribution (SPD) of CIE standard daylight illuminant.
 /// The function generates the spectral power distribution for a daylight illuminant
 /// based on the requested correlated color temperature using CIE standard formulas.
-/// 
+///
 /// @param cct Correlated colour temperature of the requested illuminant (40-250 or 4000-25000 Kelvin)
 /// @param spectrum Reference to a `Spectrum` object to fill with the calculated values
 /// @pre cct is in valid range for daylight calculations
@@ -39,7 +39,7 @@ void calculate_daylight_SPD( const int &cct, Spectrum &spectrum );
 /// Calculate spectral power distribution (SPD) of blackbody radiation at given temperature.
 /// Generates a blackbody curve using Planck's law for the specified correlated color temperature.
 /// The function calculates spectral power distribution across visible wavelengths (380-780nm).
-/// 
+///
 /// @param cct Correlated colour temperature of the requested illuminant (1500-3999 Kelvin)
 /// @param spectrum Reference to a `Spectrum` object to fill with the calculated values
 /// @pre cct is in valid range for blackbody calculations (1500-3999)
@@ -58,7 +58,7 @@ public:
     /// Loads camera spectral sensitivity data from the specified file path and verifies
     /// that the loaded data matches the expected camera manufacturer and model from libraw.
     /// The function validates the data integrity before storing it in the internal camera data.
-    /// 
+    ///
     /// @param path Path to the camera sensitivity file
     /// @param make Camera manufacturer name (from libraw metadata)
     /// @param model Camera model name (from libraw metadata)
@@ -74,7 +74,7 @@ public:
     /// standard daylight and blackbody illuminants if no specific type is provided. When a
     /// type is specified, it can handle daylight (e.g., "D50", "D65") or blackbody (e.g., "3200K")
     /// illuminants by parsing the type string and generating appropriate spectral data.
-    /// 
+    ///
     /// @param paths Vector of file paths to illuminant data files
     /// @param type Type of light source (e.g., "D50", "D65", "3200K") or empty for auto-generation
     /// @return true if illuminants were successfully loaded or generated, false otherwise
@@ -86,7 +86,7 @@ public:
     /// This function loads training data from a file containing spectral information
     /// for 190 color patches. The training data is used for calibrating and
     /// optimizing spectral calculations in the color pipeline.
-    /// 
+    ///
     /// @param path Path to the 190-patch training data file
     /// @return true if training data was successfully loaded, false otherwise
     /// @pre path points to a valid training data file
@@ -96,7 +96,7 @@ public:
     /// This function loads the CIE 1931 2° standard observer color matching functions
     /// from a file. These functions define how the human eye perceives color across
     /// the visible spectrum and are essential for color space transformations.
-    /// 
+    ///
     /// @param path Path to the CIE 1931 Color Matching Functions data file
     /// @return true if observer data was successfully loaded, false otherwise
     /// @pre path points to a valid CIE 1931 CMF data file
@@ -106,7 +106,7 @@ public:
     /// This function analyzes all available illuminants and selects the one that best matches
     /// the white balance coefficients read from the camera. It uses Sum of Squared Errors (SSE)
     /// to find the optimal match and automatically scales the white balance multipliers.
-    /// 
+    ///
     /// @param wb_multipliers White balance coefficients from camera metadata
     /// @param highlight Highlight recovery mode for normalization
     void find_best_illuminant(
@@ -116,7 +116,7 @@ public:
     /// This function sets the best illuminant to a user-specified type and calculates
     /// the corresponding white balance multipliers for the camera-illuminant combination.
     /// The function automatically scales the white balance factors for normalization.
-    /// 
+    ///
     /// @param type The illuminant type to select (must match first illuminant in list)
     /// @param highlight Highlight recovery mode for normalization
     void select_illuminant( const std::string &type, int highlight );
@@ -126,7 +126,7 @@ public:
     /// with target XYZ values across all training patches. It uses the Ceres optimization
     /// library to find the best 6-parameter transformation that minimizes color differences.
     /// The resulting IDT matrix transforms camera RGB values to standardized color space.
-    /// 
+    ///
     /// @return true if IDT matrix was successfully calculated, false otherwise
     bool calculate_IDT_matrix();
 
@@ -134,7 +134,7 @@ public:
     /// This function returns a reference to the illuminant that best matches the camera's
     /// white balance coefficients. The illuminant is selected based on spectral analysis
     /// and optimization results from the find_best_illuminant() or select_illuminant() calls.
-    /// 
+    ///
     /// @return Reference to the best matching illuminant spectral data
     /// @pre illuminant data must be properly loaded with main section and power spectrum
     const SpectralData &get_best_illuminant() const;
@@ -144,7 +144,7 @@ public:
     /// RGB values to standardized color space. The matrix is computed by curve fitting
     /// optimization and represents the optimal color transformation for the camera under
     /// the specified illuminant conditions.
-    /// 
+    ///
     /// @return Reference to the 3×3 IDT transformation matrix
     /// @pre calculate_IDT_matrix() must have been called successfully
     const std::vector<std::vector<double>> &get_IDT_matrix() const;
@@ -154,7 +154,7 @@ public:
     /// balance multipliers. These multipliers normalize the camera response to achieve
     /// proper white balance under the specified illuminant conditions and are computed
     /// by the calculate_WB() function during illuminant selection or optimization.
-    /// 
+    ///
     /// @return Reference to the 3-element white balance multiplier vector [R, G, B]
     /// @pre white balance calculation must have been performed successfully
     const std::vector<double> &get_WB_multipliers() const;
@@ -194,7 +194,7 @@ public:
     /// Initialize the solver using DNG metadata.
     /// Creates a MetadataSolver instance with the provided camera metadata
     /// for calculating IDT and CAT matrices.
-    /// 
+    ///
     /// @param metadata DNG metadata containing camera calibration and exposure information
     MetadataSolver( const core::Metadata &metadata );
 
@@ -203,7 +203,7 @@ public:
     /// to ACES RGB color space. It combines the Color Adaptation Transform (CAT) matrix
     /// with the D65 ACES RGB to XYZ transformation matrix to create a complete
     /// camera-to-ACES transformation pipeline.
-    /// 
+    ///
     /// @return 3×3 Input Device Transform matrix for DNG to ACES conversion
     /// @pre _metadata must contain valid camera calibration data
     /// @pre calculate_CAT_matrix() must return a valid CAT matrix
@@ -215,11 +215,11 @@ public:
     /// XYZ transformation matrix and white point, then creates the target ACES RGB to XYZ
     /// matrix, and finally calculates the color adaptation transform between the two
     /// white points using the Bradford or CAT02 method.
-    /// 
+    ///
     /// The CAT matrix is essential for maintaining color appearance when converting
     /// between different illuminant conditions, ensuring that colors look consistent
     /// across different lighting environments.
-    /// 
+    ///
     /// @return 3×3 Color Adaptation Transform matrix
     /// @pre _metadata must contain valid camera calibration and neutral RGB data
     std::vector<std::vector<double>> calculate_CAT_matrix();

@@ -13,11 +13,10 @@ namespace rta
 namespace core
 {
 
-
 /// Calculate the chromaticity values (x, y) based on correlated color temperature (CCT).
 /// The function converts a correlated color temperature to CIE 1931 chromaticity coordinates
 /// using empirical formulas for different temperature ranges.
-/// 
+///
 /// @param cct The correlated color temperature in Kelvin
 /// @return A vector containing [x, y] chromaticity coordinates
 vector<double> cct_to_XY( const double &cct )
@@ -43,10 +42,9 @@ vector<double> cct_to_XY( const double &cct )
     return { x, y };
 }
 
-
 void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
 {
-    int step = spectrum.shape.step;
+    int step             = spectrum.shape.step;
     int wavelength_range = s_series[53].wl - s_series[0].wl;
     assert( wavelength_range % step == 0 );
 
@@ -119,7 +117,8 @@ void calculate_blackbody_SPD( const int &cct, Spectrum &spectrum )
     {
         double lambda = wavelength / 1e9;
         double c1     = 2 * plancks_constant * ( std::pow( light_speed, 2 ) );
-        double c2     = ( plancks_constant * light_speed ) / ( boltzmann_constant * lambda * cct );
+        double c2     = ( plancks_constant * light_speed ) /
+                    ( boltzmann_constant * lambda * cct );
         spectrum.values.push_back(
             c1 * pi / ( std::pow( lambda, 5 ) * ( std::exp( c2 ) - 1 ) ) );
     }
@@ -129,7 +128,7 @@ void calculate_blackbody_SPD( const int &cct, Spectrum &spectrum )
 /// Creates spectral power distribution data for either daylight or blackbody illuminants
 /// depending on the specified type and correlated color temperature. The function
 /// automatically selects the appropriate calculation method (daylight vs blackbody).
-/// 
+///
 /// @param cct The correlated color temperature in Kelvin
 /// @param type Type of light source (e.g. "d50", "d65", "d75", "A", "B", "C", "D50", "D65", "D75")
 /// @param is_daylight True if the light source is a daylight source, false if it is a blackbody source
@@ -143,12 +142,15 @@ void generate_illuminant(
 {
     illuminant.data.clear();
 
-    auto main_iter = illuminant.data.emplace( "main", SpectralData::SpectralSet() ).first;
-    auto& main_spectral_set = main_iter->second;
+    auto main_iter =
+        illuminant.data.emplace( "main", SpectralData::SpectralSet() ).first;
+    auto &main_spectral_set = main_iter->second;
 
     // Add the power channel and get a reference to it
-    auto& power_spectrum = main_spectral_set.emplace_back(
-        SpectralData::SpectralChannel( "power", Spectrum( 0 ) ) ).second;
+    auto &power_spectrum = main_spectral_set
+                               .emplace_back( SpectralData::SpectralChannel(
+                                   "power", Spectrum( 0 ) ) )
+                               .second;
 
     illuminant.illuminant = type;
     if ( is_daylight )
@@ -169,7 +171,7 @@ SpectralSolver::SpectralSolver()
     FORI( 3 )
     {
         _IDT_matrix[i].resize( 3 );
-        _WB_multipliers[i]          = 1.0;
+        _WB_multipliers[i] = 1.0;
         FORJ( 3 )
         {
             _IDT_matrix[i][j] = neutral3[i][j];
@@ -181,7 +183,7 @@ SpectralSolver::SpectralSolver()
 /// This function normalizes the illuminant spectral data by scaling it based on the camera's
 /// most sensitive RGB channel. The scaling ensures proper integration between camera sensitivity
 /// and illuminant data for accurate color calculations.
-/// 
+///
 /// @param camera Camera sensitivity data containing RGB channel information
 /// @param illuminant Light source data to be scaled (modified in-place)
 /// @pre camera contains valid RGB channel data and illuminant contains power spectrum data
@@ -211,7 +213,8 @@ void scale_LSC( const SpectralData &camera, SpectralData &illuminant )
 /// @param str1 First string to compare
 /// @param str2 Second string to compare
 /// @return true if strings are different (case-insensitive), false if they match
-bool is_not_equal_insensitive( const std::string &str1, const std::string &str2 )
+bool is_not_equal_insensitive(
+    const std::string &str1, const std::string &str2 )
 {
     return cmp_str( str1.c_str(), str2.c_str() ) != 0;
 }
@@ -241,7 +244,7 @@ bool SpectralSolver::load_illuminant(
 
     if ( !type.empty() )
     {
-        bool is_daylight = std::tolower( type.front() ) == 'd';
+        bool is_daylight  = std::tolower( type.front() ) == 'd';
         bool is_blackbody = std::tolower( type.back() ) == 'k';
         if ( is_daylight )
         {
@@ -264,7 +267,9 @@ bool SpectralSolver::load_illuminant(
             FORI( paths.size() )
             {
                 SpectralData &illuminant = _illuminants.emplace_back();
-                bool is_invalid_illum = !illuminant.load( paths[i] ) || is_not_equal_insensitive( illuminant.illuminant, type );
+                bool          is_invalid_illum =
+                    !illuminant.load( paths[i] ) ||
+                    is_not_equal_insensitive( illuminant.illuminant, type );
                 if ( is_invalid_illum )
                 {
                     _illuminants.pop_back();
@@ -297,7 +302,9 @@ bool SpectralSolver::load_illuminant(
         FORI( paths.size() )
         {
             SpectralData &illuminant = _illuminants.emplace_back();
-            bool is_invalid_illum = !illuminant.load( paths[i] ) || is_not_equal_insensitive( illuminant.illuminant, type );
+            bool          is_invalid_illum =
+                !illuminant.load( paths[i] ) ||
+                is_not_equal_insensitive( illuminant.illuminant, type );
             if ( is_invalid_illum )
             {
                 _illuminants.pop_back();
@@ -326,8 +333,9 @@ void SpectralSolver::find_best_illuminant(
 
     FORI( _illuminants.size() )
     {
-        vector<double> wb_tmp  = calculate_WB( _camera, _illuminants[i], highlight );
-        double         sse_tmp = calculate_SSE( wb_tmp, wb_multipliers );
+        vector<double> wb_tmp =
+            calculate_WB( _camera, _illuminants[i], highlight );
+        double sse_tmp = calculate_SSE( wb_tmp, wb_multipliers );
 
         if ( sse_tmp < sse )
         {
@@ -369,16 +377,16 @@ void SpectralSolver::select_illuminant( const std::string &type, int highlight )
 /// This function computes the spectral integration of camera RGB channels with
 /// the illuminant power spectrum, then scales the result by the maximum value
 /// to normalize the output vector.
-/// 
+///
 /// @param camera Camera sensitivity data containing RGB spectral information
 /// @param illuminant Illuminant data containing power spectrum information
 /// @return Vector of scaled RGB values normalized by the maximum component
 std::vector<double>
 calculate_CM( const SpectralData &camera, const SpectralData &illuminant )
 {
-    const Spectrum &camera_r = camera["R"];
-    const Spectrum &camera_g = camera["G"];
-    const Spectrum &camera_b = camera["B"];
+    const Spectrum &camera_r            = camera["R"];
+    const Spectrum &camera_g            = camera["G"];
+    const Spectrum &camera_b            = camera["B"];
     const Spectrum &illuminant_spectrum = illuminant["power"];
 
     double r = ( camera_r * illuminant_spectrum ).integrate();
@@ -398,12 +406,12 @@ calculate_CM( const SpectralData &camera, const SpectralData &illuminant )
 /// This function computes spectral transformations using the 190-patch training data
 /// and illuminant information. The result is a 2D vector representing spectral
 /// transformations across the training patches under the specified illuminant.
-/// 
+///
 /// @param illuminant Illuminant data containing power spectrum information
 /// @param training_data 190-patch training data for spectral calculations
 /// @return Vector of 190 spectra, each containing 81 wavelength samples
-std::vector<Spectrum>
-calculate_TI( const SpectralData &illuminant, const SpectralData &training_data )
+std::vector<Spectrum> calculate_TI(
+    const SpectralData &illuminant, const SpectralData &training_data )
 {
     std::vector<Spectrum> result;
 
@@ -420,20 +428,20 @@ calculate_TI( const SpectralData &illuminant, const SpectralData &training_data 
 /// This function computes RGB white balance multipliers by integrating camera spectral
 /// sensitivity with illuminant power spectrum. The multipliers normalize the camera
 /// response to achieve proper white balance under the specified illuminant conditions.
-/// 
+///
 /// @param camera Camera sensitivity data containing RGB spectral information
 /// @param illuminant Illuminant data (modified in-place by scale_LSC)
 /// @param highlight Highlight recovery mode (0=scale by min, 1=scale by max)
 /// @return Vector of 3 white balance multipliers [R, G, B]
-std::vector<double>
-calculate_WB( const SpectralData &camera, SpectralData &illuminant, int highlight )
+std::vector<double> calculate_WB(
+    const SpectralData &camera, SpectralData &illuminant, int highlight )
 {
     scale_LSC( camera, illuminant );
 
-    const Spectrum &camera_r = camera["R"];
-    const Spectrum &camera_g = camera["G"];
-    const Spectrum &camera_b = camera["B"];
-    const Spectrum &illuminant_spectrum    = illuminant["power"];
+    const Spectrum &camera_r            = camera["R"];
+    const Spectrum &camera_g            = camera["G"];
+    const Spectrum &camera_b            = camera["B"];
+    const Spectrum &illuminant_spectrum = illuminant["power"];
 
     double r = ( camera_r * illuminant_spectrum ).integrate();
     double g = ( camera_g * illuminant_spectrum ).integrate();
@@ -458,7 +466,7 @@ calculate_WB( const SpectralData &camera, SpectralData &illuminant, int highligh
 /// the training illuminant data (TI) and applies color adaptation transformation.
 /// The result represents how the training patches appear in CIE XYZ color space
 /// under the specified illuminant conditions.
-/// 
+///
 /// @param observer CIE 1931 color matching functions (X, Y, Z)
 /// @param illuminant Illuminant data containing power spectrum information
 /// @param training_illuminants Training patches transformed by illuminant (from calculate_TI)
@@ -471,12 +479,13 @@ std::vector<std::vector<double>> calculate_XYZ(
     assert( training_illuminants.size() > 0 );
     assert( training_illuminants[0].values.size() == 81 );
 
-    std::vector<double>              reference_white_point( XYZ_white_point, XYZ_white_point + 3 );
+    std::vector<double> reference_white_point(
+        XYZ_white_point, XYZ_white_point + 3 );
     std::vector<std::vector<double>> XYZ;
 
-    const Spectrum &cmf_x = observer["X"];
-    const Spectrum &cmf_y = observer["Y"];
-    const Spectrum &cmf_z = observer["Z"];
+    const Spectrum &cmf_x               = observer["X"];
+    const Spectrum &cmf_y               = observer["Y"];
+    const Spectrum &cmf_z               = observer["Z"];
     const Spectrum &illuminant_spectrum = illuminant["power"];
 
     double scale = 1.0 / ( cmf_y * illuminant_spectrum ).integrate();
@@ -495,7 +504,8 @@ std::vector<std::vector<double>> calculate_XYZ(
     source_white_point[1] = 1.0;
     source_white_point[2] = ( cmf_z * illuminant_spectrum ).integrate() / y;
 
-    XYZ = mulVector( XYZ, calculate_CAT( source_white_point, reference_white_point ) );
+    XYZ = mulVector(
+        XYZ, calculate_CAT( source_white_point, reference_white_point ) );
 
     return XYZ;
 }
@@ -504,7 +514,7 @@ std::vector<std::vector<double>> calculate_XYZ(
 /// This function computes RGB camera responses for each training patch under the specified
 /// illuminant, applying white balance multipliers to normalize the responses. The result
 /// represents how the camera would record each training patch in RGB color space.
-/// 
+///
 /// @param camera Camera sensitivity data containing RGB spectral information
 /// @param illuminant Illuminant data containing power spectrum information
 /// @param WB_multipliers White balance multipliers from calculate_WB function
@@ -519,18 +529,21 @@ std::vector<std::vector<double>> calculate_RGB(
     assert( training_illuminants.size() > 0 );
     assert( training_illuminants[0].values.size() == 81 );
 
-    const Spectrum &camera_r = camera["R"];
-    const Spectrum &camera_g = camera["G"];
-    const Spectrum &camera_b = camera["B"];
+    const Spectrum &camera_r            = camera["R"];
+    const Spectrum &camera_g            = camera["G"];
+    const Spectrum &camera_b            = camera["B"];
     const Spectrum &illuminant_spectrum = illuminant["power"];
 
     std::vector<std::vector<double>> RGB;
     for ( auto &training_illuminant: training_illuminants )
     {
         auto &rgb = RGB.emplace_back( 3 );
-        rgb[0]    = ( training_illuminant * camera_r ).integrate() * WB_multipliers[0];
-        rgb[1]    = ( training_illuminant * camera_g ).integrate() * WB_multipliers[1];
-        rgb[2]    = ( training_illuminant * camera_b ).integrate() * WB_multipliers[2];
+        rgb[0] =
+            ( training_illuminant * camera_r ).integrate() * WB_multipliers[0];
+        rgb[1] =
+            ( training_illuminant * camera_g ).integrate() * WB_multipliers[1];
+        rgb[2] =
+            ( training_illuminant * camera_b ).integrate() * WB_multipliers[2];
     }
 
     return RGB;
@@ -549,7 +562,8 @@ struct IDTOptimizationCost
         : _RGB( RGB ), _outLAB( out_LAB )
     {}
 
-    template <typename T> bool operator()( const T *beta_params, T *residuals ) const;
+    template <typename T>
+    bool operator()( const T *beta_params, T *residuals ) const;
 
     const std::vector<std::vector<double>> _RGB;
     const std::vector<std::vector<double>> _outLAB;
@@ -560,7 +574,7 @@ struct IDTOptimizationCost
 /// IDT matrix that minimizes the difference between camera RGB responses and
 /// target XYZ values across all training patches. The optimization process
 /// iteratively adjusts the beta_params parameters to achieve the best color transformation.
-/// 
+///
 /// @param RGB Camera RGB responses for training patches (190 x 3)
 /// @param XYZ Target XYZ values for training patches (190 x 3)
 /// @param beta_params Initial 6-element parameter array for IDT matrix (modified in-place)
@@ -583,13 +597,14 @@ bool curveFit(
 
     CostFunction *cost_function =
         new AutoDiffCostFunction<IDTOptimizationCost, ceres::DYNAMIC, 6>(
-            new IDTOptimizationCost( RGB, out_LAB ), int( RGB.size() * ( RGB[0].size() ) ) );
+            new IDTOptimizationCost( RGB, out_LAB ),
+            int( RGB.size() * ( RGB[0].size() ) ) );
 
     problem.AddResidualBlock( cost_function, NULL, beta_params );
 
     ceres::Solver::Options options;
-    options.linear_solver_type  = ceres::DENSE_QR;
-    options.parameter_tolerance = 1e-17;
+    options.linear_solver_type        = ceres::DENSE_QR;
+    options.parameter_tolerance       = 1e-17;
     options.function_tolerance        = 1e-17;
     options.min_line_search_step_size = 1e-17;
     options.max_num_iterations        = 300;
@@ -676,7 +691,7 @@ MetadataSolver::MetadataSolver( const core::Metadata &metadata )
 /// This function converts color temperature from Kelvin to Mired scale, which is
 /// commonly used in photography and lighting. Mired = 1,000,000 / CCT, providing
 /// a more linear scale for color temperature adjustments.
-/// 
+///
 /// @param cct Correlated Color Temperature in Kelvin
 /// @return Color temperature in Mired units
 /// @pre cct must be positive and non-zero
@@ -687,7 +702,7 @@ double cct_to_mired( const double cct )
 
 /// Convert Mired units to Correlated Color Temperature (CCT).
 /// This function converts color temperature from Mired scale back to Kelvin.
-/// 
+///
 /// @param mired Color temperature in Mired units
 /// @return Correlated color temperature in Kelvin
 /// @pre mired must be positive and non-zero
@@ -700,12 +715,13 @@ double mired_to_cct( const double mired )
 /// This function computes the distance between two points in CIE 1960 UCS color space
 /// using the Robertson method. It's used for interpolating color adaptation matrices
 /// between different color temperatures during color space transformations.
-/// 
+///
 /// @param source_uv Source point coordinates in CIE 1960 UCS space [u, v]
 /// @param target_uvt Target point coordinates in CIE 1960 UCS space with temperature [u, v, t]
 /// @return Distance between the two points in UCS color space
 /// @pre source_uv.size() >= 2, target_uvt.size() >= 3
-double robertson_length( const vector<double> &source_uv, const vector<double> &target_uvt )
+double robertson_length(
+    const vector<double> &source_uv, const vector<double> &target_uvt )
 {
     double         t    = target_uvt[2];
     double         sign = t < 0 ? -1.0 : t > 0 ? 1.0 : 0.0;
@@ -721,7 +737,7 @@ double robertson_length( const vector<double> &source_uv, const vector<double> &
 /// This function maps EXIF light source tags to their corresponding color temperatures
 /// in Kelvin. It handles both standard EXIF values (0-22) and extended values (≥32768).
 /// Extended values are converted by subtracting 32768 from the tag value.
-/// 
+///
 /// @param tag EXIF light source tag value
 /// @return Correlated color temperature in Kelvin
 /// @pre tag is a valid EXIF light source identifier
@@ -739,9 +755,11 @@ double light_source_to_color_temp( const unsigned short tag )
 
     FORI( countSize( exif_light_source_temperature_map ) )
     {
-        if ( exif_light_source_temperature_map[i][0] == static_cast<uint16_t>( tag ) )
+        if ( exif_light_source_temperature_map[i][0] ==
+             static_cast<uint16_t>( tag ) )
         {
-            return ( static_cast<double>( exif_light_source_temperature_map[i][1] ) );
+            return ( static_cast<double>(
+                exif_light_source_temperature_map[i][1] ) );
         }
     }
 
@@ -752,12 +770,12 @@ double light_source_to_color_temp( const unsigned short tag )
 /// This function estimates the color temperature from XYZ values by interpolating
 /// between known color temperature points in CIE 1960 UCS space. It uses the Robertson
 /// method to find the closest color temperature match based on the UV coordinates.
-/// 
+///
 /// @param XYZ XYZ color values [X, Y, Z]
 /// @return Correlated color temperature in Kelvin
 double XYZ_to_color_temperature( const vector<double> &XYZ )
 {
-    vector<double> uv      = XYZ_to_uv( XYZ );
+    vector<double> uv                  = XYZ_to_uv( XYZ );
     int            num_robertson_table = countSize( robertson_uvt_table );
     int            i;
 
@@ -782,9 +800,11 @@ double XYZ_to_color_temperature( const vector<double> &XYZ )
     else if ( i >= num_robertson_table )
         mired = robertson_mired_table[num_robertson_table - 1];
     else
-        mired = robertson_mired_table[i - 1] +
-                distance_prev * ( robertson_mired_table[i] - robertson_mired_table[i - 1] ) /
-                    ( distance_prev - distance_this );
+        mired =
+            robertson_mired_table[i - 1] +
+            distance_prev *
+                ( robertson_mired_table[i] - robertson_mired_table[i - 1] ) /
+                ( distance_prev - distance_this );
 
     double cct = mired_to_cct( mired );
     cct        = std::max( 2000.0, std::min( 50000.0, cct ) );
@@ -797,7 +817,7 @@ double XYZ_to_color_temperature( const vector<double> &XYZ )
 /// based on the position of a target Mired value between two reference Mired values.
 /// The interpolation weight is calculated as (mired_start - mired_target) / (mired_start - mired_end),
 /// ensuring smooth transitions between different color temperature calibration points.
-/// 
+///
 /// @param mired_target Target Mired value for interpolation
 /// @param mired_start First reference Mired value (start of interpolation range)
 /// @param mired_end Second reference Mired value (end of interpolation range)
@@ -814,7 +834,10 @@ vector<double> XYZ_to_camera_weighted_matrix(
 {
 
     double weight = std::max(
-        0.0, std::min( 1.0, ( mired_start - mired_target ) / ( mired_start - mired_end ) ) );
+        0.0,
+        std::min(
+            1.0,
+            ( mired_start - mired_target ) / ( mired_start - mired_end ) ) );
     vector<double> result = subVectors( matrix2, matrix1 );
     scaleVector( result, weight );
     result = addVectors( result, matrix1 );
@@ -827,17 +850,17 @@ vector<double> XYZ_to_camera_weighted_matrix(
 /// searching through Mired values to find the one that minimizes the error between
 /// predicted and actual neutral RGB values. It uses a binary search approach with
 /// error minimization to find the optimal color temperature calibration point.
-/// 
+///
 /// The function interpolates between two calibration matrices based on the estimated
 /// optimal Mired value, ensuring accurate color transformations for the given
 /// neutral RGB reference values.
-/// 
+///
 /// @param metadata Camera metadata containing calibration information and matrices
 /// @param neutral_RGB Reference neutral RGB values for optimization
 /// @return Optimized XYZ to camera transformation matrix
 /// @pre metadata must contain valid calibration data with at least two illuminants
-vector<double>
-find_XYZ_to_camera_matrix( const Metadata &metadata, const vector<double> &neutral_RGB )
+vector<double> find_XYZ_to_camera_matrix(
+    const Metadata &metadata, const vector<double> &neutral_RGB )
 {
 
     if ( metadata.calibration[0].illuminant == 0 )
@@ -852,8 +875,10 @@ find_XYZ_to_camera_matrix( const Metadata &metadata, const vector<double> &neutr
         return metadata.calibration[0].XYZ_to_RGB_matrix;
     }
 
-    double cct1 = light_source_to_color_temp( metadata.calibration[0].illuminant );
-    double cct2 = light_source_to_color_temp( metadata.calibration[1].illuminant );
+    double cct1 =
+        light_source_to_color_temp( metadata.calibration[0].illuminant );
+    double cct2 =
+        light_source_to_color_temp( metadata.calibration[1].illuminant );
 
     double mir1 = cct_to_mired( cct1 );
     double mir2 = cct_to_mired( cct2 );
@@ -872,15 +897,17 @@ find_XYZ_to_camera_matrix( const Metadata &metadata, const vector<double> &neutr
         std::max( min_mired, std::min( max_mired, std::max( mir1, mir2 ) ) );
     double mirStep = std::max( 5.0, ( high_mired - low_mired ) / 50.0 );
 
-    double current_mired = 0.0, last_mired = 0.0, estimated_mired = 0.0, current_error = 0.0,
-           last_error = 0.0, smallest_error = 0.0;
+    double current_mired = 0.0, last_mired = 0.0, estimated_mired = 0.0,
+           current_error = 0.0, last_error = 0.0, smallest_error = 0.0;
 
-    for ( current_mired = low_mired; current_mired < high_mired; current_mired += mirStep )
+    for ( current_mired = low_mired; current_mired < high_mired;
+          current_mired += mirStep )
     {
-        current_error = current_mired - cct_to_mired( XYZ_to_color_temperature( mulVector(
-                           invertV( XYZ_to_camera_weighted_matrix(
-                               current_mired, mir1, mir2, matrix1, matrix2 ) ),
-                           neutral_RGB ) ) );
+        current_error = current_mired -
+                        cct_to_mired( XYZ_to_color_temperature( mulVector(
+                            invertV( XYZ_to_camera_weighted_matrix(
+                                current_mired, mir1, mir2, matrix1, matrix2 ) ),
+                            neutral_RGB ) ) );
 
         if ( std::fabs( current_error - 0.0 ) <= 1e-09 )
         {
@@ -890,8 +917,9 @@ find_XYZ_to_camera_matrix( const Metadata &metadata, const vector<double> &neutr
         if ( std::fabs( current_mired - low_mired - 0.0 ) > 1e-09 &&
              current_error * last_error <= 0.0 )
         {
-            estimated_mired =
-                current_mired + ( current_error / ( current_error - last_error ) * ( current_mired - last_mired ) );
+            estimated_mired = current_mired +
+                              ( current_error / ( current_error - last_error ) *
+                                ( current_mired - last_mired ) );
             break;
         }
         if ( std::fabs( current_mired - low_mired ) <= 1e-09 ||
@@ -914,7 +942,7 @@ find_XYZ_to_camera_matrix( const Metadata &metadata, const vector<double> &neutr
 /// correlated color temperature by interpolating between known color temperature
 /// points in the Robertson table. It converts the temperature to Mired units
 /// and finds the closest match in the pre-computed color temperature data.
-/// 
+///
 /// @param cct Correlated color temperature in Kelvin
 /// @return Vector of 3 XYZ color values [X, Y, Z]
 /// @pre cct should be in the valid range supported by the Robertson table
@@ -935,7 +963,8 @@ vector<double> color_temperature_to_XYZ( const double &cct )
 
     if ( i <= 0 )
     {
-        uv = vector<double>( robertson_uvt_table[0], robertson_uvt_table[0] + 2 );
+        uv = vector<double>(
+            robertson_uvt_table[0], robertson_uvt_table[0] + 2 );
     }
     else if ( i >= num_robertson_table )
     {
@@ -945,10 +974,12 @@ vector<double> color_temperature_to_XYZ( const double &cct )
     }
     else
     {
-        double weight = ( mired - robertson_mired_table[i - 1] ) /
-                        ( robertson_mired_table[i] - robertson_mired_table[i - 1] );
+        double weight =
+            ( mired - robertson_mired_table[i - 1] ) /
+            ( robertson_mired_table[i] - robertson_mired_table[i - 1] );
 
-        vector<double> uv1( robertson_uvt_table[i], robertson_uvt_table[i] + 2 );
+        vector<double> uv1(
+            robertson_uvt_table[i], robertson_uvt_table[i] + 2 );
         scaleVector( uv1, weight );
 
         vector<double> uv2(
@@ -966,11 +997,11 @@ vector<double> color_temperature_to_XYZ( const double &cct )
 /// to CIE XYZ color space. It takes the xy chromaticity coordinates for red,
 /// green, blue primaries and white point, converts them to XYZ, and then
 /// calculates the appropriate scaling factors to ensure proper color reproduction.
-/// 
+///
 /// The resulting matrix is used in color space transformations and color
 /// adaptation calculations, particularly for converting between different
 /// RGB color spaces and the standardized CIE XYZ color space.
-/// 
+///
 /// @param chromaticities Array of 4 xy chromaticity coordinates [R, G, B, W]
 /// @return 3×3 RGB to XYZ transformation matrix as a flattened vector
 /// @pre chromaticities must contain exactly 4 xy coordinate pairs
@@ -995,8 +1026,10 @@ vector<double> matrix_RGB_to_XYZ( const double chromaticities[][2] )
 
     scaleVector( white_XYZ, 1.0 / white_XYZ[1] );
 
-    vector<double> channel_gains = mulVector( invertV( rgb_matrix ), white_XYZ, 3 );
-    vector<double> color_matrix  = mulVector( rgb_matrix, diagV( channel_gains ), 3 );
+    vector<double> channel_gains =
+        mulVector( invertV( rgb_matrix ), white_XYZ, 3 );
+    vector<double> color_matrix =
+        mulVector( rgb_matrix, diagV( channel_gains ), 3 );
 
     return color_matrix;
 }
@@ -1007,10 +1040,10 @@ vector<double> matrix_RGB_to_XYZ( const double chromaticities[][2] )
 /// RGB values to find the optimal transformation matrix through iterative
 /// optimization, then calculates the white point either from the neutral RGB
 /// values or from the calibration illuminant's color temperature.
-/// 
+///
 /// The function also applies baseline exposure compensation and normalizes
 /// the white point to ensure proper color scaling in the transformation pipeline.
-/// 
+///
 /// @param metadata Camera metadata containing calibration and exposure information
 /// @param out_camera_to_XYZ_matrix Output camera to XYZ transformation matrix
 /// @param out_camera_XYZ_white_point Output camera white point in XYZ space
@@ -1052,7 +1085,8 @@ vector<vector<double>> MetadataSolver::calculate_CAT_matrix()
     std::vector<double> camera_XYZ_white_point;
     get_camera_XYZ_matrix_and_white_point(
         _metadata, camera_to_XYZ_matrix, camera_XYZ_white_point );
-    vector<double> output_RGB_to_XYZ_matrix = matrix_RGB_to_XYZ( chromaticitiesACES );
+    vector<double> output_RGB_to_XYZ_matrix =
+        matrix_RGB_to_XYZ( chromaticitiesACES );
     vector<double> output_XYZ_white_point =
         mulVector( output_RGB_to_XYZ_matrix, deviceWhiteV );
     vector<vector<double>> CAT_matrix =
@@ -1065,9 +1099,9 @@ vector<vector<double>> MetadataSolver::calculate_IDT_matrix()
 {
     // 1. Obtains the CAT matrix for white point adaptation
     vector<vector<double>> CAT_matrix = calculate_CAT_matrix();
-    
+
     // 2. Converts the CAT matrix to a flattened format for matrix multiplication
-    vector<double>         XYZ_D65_acesrgb( 9 ), CAT( 9 );
+    vector<double> XYZ_D65_acesrgb( 9 ), CAT( 9 );
     FORIJ( 3, 3 )
     {
         XYZ_D65_acesrgb[i * 3 + j] = XYZ_D65_acesrgb_3[i][j];
@@ -1075,8 +1109,8 @@ vector<vector<double>> MetadataSolver::calculate_IDT_matrix()
     }
 
     // 3. Multiplies the D65 ACES RGB to XYZ matrix with the CAT matrix
-    vector<double>         matrix = mulVector( XYZ_D65_acesrgb, CAT, 3 );
-    
+    vector<double> matrix = mulVector( XYZ_D65_acesrgb, CAT, 3 );
+
     // 4. Reshapes the result into a 3×3 transformation matrix
     vector<vector<double>> DNG_IDT_matrix( 3, vector<double>( 3 ) );
     FORIJ( 3, 3 ) DNG_IDT_matrix[i][j] = matrix[i * 3 + j];
@@ -1093,22 +1127,24 @@ vector<vector<double>> MetadataSolver::calculate_IDT_matrix()
 /// IDT matrix parameters. It's used by the Ceres optimization library to
 /// iteratively find the optimal 6-parameter IDT matrix that minimizes
 /// color differences across all 190 training patches.
-/// 
+///
 /// The function transforms camera RGB values using candidate IDT parameters beta_params,
 /// converts the result to XYZ using ACES RGB primaries, then to LAB color space,
 /// and computes the difference from target LAB values as residuals.
-/// 
+///
 /// @param beta_params 6-element array of IDT matrix parameters [b00, b01, b02, b10, b11, b12]
 /// @param residuals Output array of LAB differences (190×3 = 570 elements)
 /// @return true (required by Ceres interface)
 /// @pre _RGB must contain 190×3 camera RGB responses
 /// @pre _outLAB must contain 190×3 target LAB values
-template <typename T> bool IDTOptimizationCost::operator()( const T *beta_params, T *residuals ) const
+template <typename T>
+bool IDTOptimizationCost::operator()( const T *beta_params, T *residuals ) const
 {
     vector<vector<T>> RGB_copy( 190, vector<T>( 3 ) );
     FORIJ( 190, 3 ) RGB_copy[i][j] = T( _RGB[i][j] );
 
-    vector<vector<T>> out_calc_LAB         = XYZ_to_LAB( getCalcXYZt( RGB_copy, beta_params ) );
+    vector<vector<T>> out_calc_LAB =
+        XYZ_to_LAB( getCalcXYZt( RGB_copy, beta_params ) );
     FORIJ( 190, 3 ) residuals[i * 3 + j] = _outLAB[i][j] - out_calc_LAB[i][j];
 
     return true;

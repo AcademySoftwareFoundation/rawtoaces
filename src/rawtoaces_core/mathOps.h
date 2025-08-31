@@ -78,7 +78,7 @@ vector<T> subVectors( const vector<T> &vectorA, const vector<T> &vectorB )
 /// value representing the signed area of the parallelogram formed by the vectors.
 /// The cross product is positive when vectorB is counterclockwise from vectorA,
 /// negative when clockwise, and zero when the vectors are collinear.
-/// 
+///
 /// @param vectorA First 2D vector [x1, y1]
 /// @param vectorB Second 2D vector [x2, y2]
 /// @return Scalar cross product: x1*y2 - x2*y1
@@ -438,12 +438,13 @@ solveVM( const vector<vector<T>> &vct1, const vector<vector<T>> &vct2 )
 /// Calculate the Sum of Squared Errors (SSE) between two vectors.
 /// The SSE measures how well the calculated values (tcp) match the reference values (src).
 /// Formula: Σ((tcp[i] / src[i] - 1)²)
-/// 
+///
 /// @param tcp The calculated/target values to compare
 /// @param src The reference/source values to compare against
 /// @return The sum of squared relative errors
 /// @pre tcp.size() == src.size()
-template <typename T> T calculate_SSE( const vector<T> &tcp, const vector<T> &src )
+template <typename T>
+T calculate_SSE( const vector<T> &tcp, const vector<T> &src )
 {
     assert( tcp.size() == src.size() );
     vector<T> tmp( src.size() );
@@ -564,7 +565,8 @@ std::vector<std::vector<T>> calculate_CAT(
     return mat;
 }
 
-template <typename T> vector<vector<T>> XYZ_to_LAB( const vector<vector<T>> &XYZ )
+template <typename T>
+vector<vector<T>> XYZ_to_LAB( const vector<vector<T>> &XYZ )
 {
     assert( XYZ.size() == 190 );
     T add = T( 16.0 / 116.0 );
@@ -591,7 +593,8 @@ template <typename T> vector<vector<T>> XYZ_to_LAB( const vector<vector<T>> &XYZ
 };
 
 template <typename T>
-vector<vector<T>> getCalcXYZt( const vector<vector<T>> &RGB, const T beta_params[6] )
+vector<vector<T>>
+getCalcXYZt( const vector<vector<T>> &RGB, const T beta_params[6] )
 {
     assert( RGB.size() == 190 );
 

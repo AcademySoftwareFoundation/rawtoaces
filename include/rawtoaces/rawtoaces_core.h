@@ -87,7 +87,7 @@ public:
     /// for color patches. The training data is used for calibrating and
     /// optimizing spectral calculations in the color pipeline.
     ///
-    /// @param path Path to the 190-patch training data file
+    /// @param path Path to the training data file
     /// @return true if training data was successfully loaded, false otherwise
     /// @pre path points to a valid training data file
     bool load_training_data( const std::string &path );

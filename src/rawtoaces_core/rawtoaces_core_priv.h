@@ -18,11 +18,11 @@ void scale_LSC( const SpectralData &camera, SpectralData &illuminant );
 std::vector<double>
 calculate_CM( const SpectralData &camera, const SpectralData &illuminant );
 
-std::vector<Spectrum>
-calculate_TI( const SpectralData &illuminant, const SpectralData &training_data );
+std::vector<Spectrum> calculate_TI(
+    const SpectralData &illuminant, const SpectralData &training_data );
 
-std::vector<double>
-calculate_WB( const SpectralData &camera, SpectralData &illuminant, int highlight );
+std::vector<double> calculate_WB(
+    const SpectralData &camera, SpectralData &illuminant, int highlight );
 
 std::vector<std::vector<double>> calculate_XYZ(
     const SpectralData          &observer,

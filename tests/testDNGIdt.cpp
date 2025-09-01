@@ -11,7 +11,7 @@
 void testIDT_CcttoMired()
 {
     double cct   = 6500.0;
-    double mired = rta::core::cct_to_mired( cct );
+    double mired = rta::core::CCT_to_mired( cct );
     OIIO_CHECK_EQUAL_THRESH( mired, 153.8461538462, 1e-5 );
 };
 

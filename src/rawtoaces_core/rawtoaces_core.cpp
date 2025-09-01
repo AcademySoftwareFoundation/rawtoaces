@@ -19,7 +19,7 @@ namespace core
 ///
 /// @param cct The correlated color temperature in Kelvin
 /// @return A vector containing [x, y] chromaticity coordinates
-vector<double> cct_to_XY( const double &cct )
+vector<double> CCT_to_xy( const double &cct )
 {
     double x;
     if ( cct >= 4002.15 && cct <= 7003.77 )
@@ -66,7 +66,7 @@ void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
 
     vector<int>    wavelengths, wavelengths_interpolated;
     vector<double> s00, s10, s20, s01, s11, s21;
-    vector<double> xy = cct_to_XY( cct );
+    vector<double> xy = CCT_to_xy( cct );
 
     double m0 = 0.0241 + 0.2562 * xy[0] - 0.7341 * xy[1];
     double m1 = ( -1.3515 - 1.7703 * xy[0] + 5.9114 * xy[1] ) / m0;
@@ -697,7 +697,7 @@ MetadataSolver::MetadataSolver( const core::Metadata &metadata )
 /// @param cct Correlated Color Temperature in Kelvin
 /// @return Color temperature in Mired units
 /// @pre cct must be positive and non-zero
-double cct_to_mired( const double cct )
+double CCT_to_mired( const double cct )
 {
     return 1.0E06 / cct;
 }
@@ -708,7 +708,7 @@ double cct_to_mired( const double cct )
 /// @param mired Color temperature in Mired units
 /// @return Correlated color temperature in Kelvin
 /// @pre mired must be positive and non-zero
-double mired_to_cct( const double mired )
+double mired_to_CCT( const double mired )
 {
     return 1.0E06 / mired;
 }
@@ -808,7 +808,7 @@ double XYZ_to_color_temperature( const vector<double> &XYZ )
                 ( robertson_mired_table[i] - robertson_mired_table[i - 1] ) /
                 ( distance_prev - distance_this );
 
-    double cct = mired_to_cct( mired );
+    double cct = mired_to_CCT( mired );
     cct        = std::max( 2000.0, std::min( 50000.0, cct ) );
 
     return cct;
@@ -882,11 +882,11 @@ vector<double> find_XYZ_to_camera_matrix(
     double cct2 =
         light_source_to_color_temp( metadata.calibration[1].illuminant );
 
-    double mir1 = cct_to_mired( cct1 );
-    double mir2 = cct_to_mired( cct2 );
+    double mir1 = CCT_to_mired( cct1 );
+    double mir2 = CCT_to_mired( cct2 );
 
-    double max_mired = cct_to_mired( 2000.0 );
-    double min_mired = cct_to_mired( 50000.0 );
+    double max_mired = CCT_to_mired( 2000.0 );
+    double min_mired = CCT_to_mired( 50000.0 );
 
     const std::vector<double> &matrix1 =
         metadata.calibration[0].XYZ_to_RGB_matrix;
@@ -906,7 +906,7 @@ vector<double> find_XYZ_to_camera_matrix(
           current_mired += mirStep )
     {
         current_error = current_mired -
-                        cct_to_mired( XYZ_to_color_temperature( mulVector(
+                        CCT_to_mired( XYZ_to_color_temperature( mulVector(
                             invertV( XYZ_to_camera_weighted_matrix(
                                 current_mired, mir1, mir2, matrix1, matrix2 ) ),
                             neutral_RGB ) ) );
@@ -951,7 +951,7 @@ vector<double> find_XYZ_to_camera_matrix(
 vector<double> color_temperature_to_XYZ( const double &cct )
 {
 
-    double         mired = cct_to_mired( cct );
+    double         mired = CCT_to_mired( cct );
     vector<double> uv( 2, 1.0 );
 
     int num_robertson_table = countSize( robertson_uvt_table );

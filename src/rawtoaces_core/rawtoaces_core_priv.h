@@ -11,7 +11,7 @@ namespace rta
 namespace core
 {
 
-std::vector<double> cct_to_XY( const double &cctd );
+std::vector<double> CCT_to_xy( const double &cctd );
 
 void scale_LSC( const SpectralData &camera, SpectralData &illuminant );
 
@@ -42,8 +42,8 @@ bool curveFit(
     int                                     verbosity,
     std::vector<std::vector<double>>       &out_IDT_matrix );
 
-double cct_to_mired( const double cct );
-double mired_to_cct( const double mired );
+double CCT_to_mired( const double cct );
+double mired_to_CCT( const double mired );
 
 double robertson_length(
     const std::vector<double> &uv, const std::vector<double> &uvt );

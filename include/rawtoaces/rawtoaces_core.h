@@ -82,9 +82,9 @@ public:
     bool load_illuminant(
         const std::vector<std::string> &paths, const std::string &type = "" );
 
-    /// Load the 190-patch training data for spectral calculations.
+    /// Load the training data for spectral calculations.
     /// This function loads training data from a file containing spectral information
-    /// for 190 color patches. The training data is used for calibrating and
+    /// for color patches. The training data is used for calibrating and
     /// optimizing spectral calculations in the color pipeline.
     ///
     /// @param path Path to the 190-patch training data file
@@ -92,14 +92,14 @@ public:
     /// @pre path points to a valid training data file
     bool load_training_data( const std::string &path );
 
-    /// Load the CIE 1931 Color Matching Functions data for standard observer.
-    /// This function loads the CIE 1931 2° standard observer color matching functions
+    /// Load the Color Matching Functions data for standard observer.
+    /// This function loads the standard observer color matching functions
     /// from a file. These functions define how the human eye perceives color across
     /// the visible spectrum and are essential for color space transformations.
     ///
-    /// @param path Path to the CIE 1931 Color Matching Functions data file
+    /// @param path Path to the Color Matching Functions data file
     /// @return true if observer data was successfully loaded, false otherwise
-    /// @pre path points to a valid CIE 1931 CMF data file
+    /// @pre path points to a valid CMF data file
     bool load_observer( const std::string &path );
 
     /// Choose the best illuminant based on white balance coefficients from camera metadata.

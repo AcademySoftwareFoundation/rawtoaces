@@ -483,26 +483,26 @@ std::vector<std::vector<double>> calculate_XYZ(
         XYZ_white_point, XYZ_white_point + 3 );
     std::vector<std::vector<double>> XYZ;
 
-    const Spectrum &cmf_x               = observer["X"];
-    const Spectrum &cmf_y               = observer["Y"];
-    const Spectrum &cmf_z               = observer["Z"];
+    const Spectrum &observer_x               = observer["X"];
+    const Spectrum &observer_y               = observer["Y"];
+    const Spectrum &observer_z               = observer["Z"];
     const Spectrum &illuminant_spectrum = illuminant["power"];
 
-    double scale = 1.0 / ( cmf_y * illuminant_spectrum ).integrate();
+    double scale = 1.0 / ( observer_y * illuminant_spectrum ).integrate();
 
     for ( auto &training_illuminant: training_illuminants )
     {
         auto &xyz = XYZ.emplace_back( 3 );
-        xyz[0]    = ( training_illuminant * cmf_x ).integrate() * scale;
-        xyz[1]    = ( training_illuminant * cmf_y ).integrate() * scale;
-        xyz[2]    = ( training_illuminant * cmf_z ).integrate() * scale;
+        xyz[0]    = ( training_illuminant * observer_x ).integrate() * scale;
+        xyz[1]    = ( training_illuminant * observer_y ).integrate() * scale;
+        xyz[2]    = ( training_illuminant * observer_z ).integrate() * scale;
     }
 
     std::vector<double> source_white_point( 3 );
-    double              y = ( cmf_y * illuminant_spectrum ).integrate();
-    source_white_point[0] = ( cmf_x * illuminant_spectrum ).integrate() / y;
+    double              y = ( observer_y * illuminant_spectrum ).integrate();
+    source_white_point[0] = ( observer_x * illuminant_spectrum ).integrate() / y;
     source_white_point[1] = 1.0;
-    source_white_point[2] = ( cmf_z * illuminant_spectrum ).integrate() / y;
+    source_white_point[2] = ( observer_z * illuminant_spectrum ).integrate() / y;
 
     XYZ = mulVector(
         XYZ, calculate_CAT( source_white_point, reference_white_point ) );

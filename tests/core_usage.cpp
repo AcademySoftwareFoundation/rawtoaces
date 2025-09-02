@@ -22,21 +22,12 @@ void configure_spectral_solver( rta::core::SpectralSolver &solver )
     const std::string camera_model = "d200";
 
     // Spectral curves to use.
-    const std::string camera_path   = "camera/nikon_d200_380_780_5.json";
     const std::string observer_path = "cmf/cmf_1931.json";
     const std::string training_path = "training/training_spectral.json";
 
-    std::string absolute_camera_path =
-        std::filesystem::absolute( DATA_PATH + camera_path ).string();
-    std::string absolute_observer_path =
-        std::filesystem::absolute( DATA_PATH + observer_path ).string();
-    std::string absolute_training_path =
-        std::filesystem::absolute( DATA_PATH + training_path ).string();
-
-    // Configure the solver.
-    solver.load_camera( absolute_camera_path, camera_make, camera_model );
-    solver.load_observer( absolute_observer_path );
-    solver.load_training_data( absolute_training_path );
+    solver.find_camera( camera_make, camera_model );
+    solver.load_spectral_data( observer_path, solver.observer );
+    solver.load_spectral_data( training_path, solver.training_data );
 }
 
 /// Test the spectral solver, using the white balance weights either from
@@ -46,22 +37,19 @@ void test_SpectralSolver_multipliers()
     // Input parameters.
     const std::vector<double> white_balance = { 1.79488, 1, 1.39779 };
 
-    // Configure the solver.
-    rta::core::SpectralSolver solver;
+    // Step 0:  Configure the solver.
+    const std::vector<std::string> database_path = { DATA_PATH };
+    rta::core::SpectralSolver      solver( database_path );
     configure_spectral_solver( solver );
 
-    // Pass an empty list of illuminant files. This means the solver will not
-    // use any custom illuminant files, and will try to find the best suitable
-    // illuminant as either a daylight or blackbody illuminant.
-    solver.load_illuminant( {} );
+    // Step 1: Find the best suitable illuminant for the given white-balancing
+    // weights.
+    solver.find_illuminant( white_balance );
 
-    // Find the best suitable illuminant.
-    solver.find_best_illuminant( white_balance, 0 );
-
-    // Solve the transform matrix.
+    // Step 2: Solve the transform matrix.
     solver.calculate_IDT_matrix();
 
-    // Get the solved matrix.
+    // Step 3: Get the solved matrix.
     const std::vector<std::vector<double>> &solved_IDT =
         solver.get_IDT_matrix();
 
@@ -84,24 +72,24 @@ void test_SpectralSolver_illuminant()
     // Input parameters.
     const std::string illuminant = "d55";
 
-    // Configure the solver.
-    rta::core::SpectralSolver solver;
+    // Step 0: Configure the solver.
+    const std::vector<std::string> database_path = { DATA_PATH };
+    rta::core::SpectralSolver      solver( database_path );
     configure_spectral_solver( solver );
 
-    // Pass an empty list of illuminant files. We don't need any custom
-    // illuminants. Also specify the illuminant we want to use.
-    solver.load_illuminant( {}, illuminant );
+    // Step 1: Select the provided illuminant.
+    solver.find_illuminant( illuminant );
 
-    // Select the provided illuminant.
-    solver.select_illuminant( illuminant, 0 );
+    // Step 2: Calculate the white-balancing weights.
+    solver.calculate_WB();
 
-    // Get the solved WB weights.
+    // Step 3: Get the solved WB weights.
     const std::vector<double> &solved_WB = solver.get_WB_multipliers();
 
-    // Solve the transform matrix.
+    // Step 4: Solve the transform matrix.
     solver.calculate_IDT_matrix();
 
-    // Get the solved matrix.
+    // Step 5: Get the solved matrix.
     const std::vector<std::vector<double>> &solved_IDT =
         solver.get_IDT_matrix();
 
@@ -148,14 +136,14 @@ void init_metadata( rta::core::Metadata &metadata )
 /// Test the metadata solver.
 void test_MetadataSolver()
 {
-    // Init the metadata.
+    // Step 0: Init the metadata.
     rta::core::Metadata metadata;
     init_metadata( metadata );
 
-    // Init the solver.
+    // Step 1: Init the solver.
     rta::core::MetadataSolver solver( metadata );
 
-    // Solve the transform matrix.
+    // Step 2: Solve the transform matrix.
     const std::vector<std::vector<double>> solved_IDT =
         solver.calculate_IDT_matrix();
 

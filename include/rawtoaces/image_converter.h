@@ -15,9 +15,9 @@ namespace util
 /// directory, create an entry in `batches` and fill it with the file names
 /// from that directory. If the `path` is a file, add its name to the first
 /// entry in `batches`.
-/// - parameter path: path to a file or directory to process.
-/// - parameter batches: the collection of batches to fill in.
-/// - returns `false` if the file or directory requested in `path` does not
+/// @param path path to a file or directory to process.
+/// @param batches the collection of batches to fill in.
+/// @result `false` if the file or directory requested in `path` does not
 /// exist.
 bool collect_image_files(
     const std::string &path, std::vector<std::vector<std::string>> &batches );
@@ -128,8 +128,7 @@ public:
     /// The parser object can be amended by the calling code afterwards if
     /// needed. This method is optional, all of the settings above can be
     /// modified directly.
-    /// - parameter arg_parser:
-    ///    The command line parser object to be updated.
+    /// @param arg_parser The command line parser object to be updated.
     void init_parser( OIIO::ArgParse &arg_parser );
 
     /// Initialise the converter settings from the command line parser object.
@@ -138,10 +137,8 @@ public:
     /// `OIIO::ArgParse::parse_args()`.
     /// This method is optional, all of the settings above can be modified
     /// directly.
-    /// - parameter arg_parser:
-    ///    the command line parser object
-    /// - returns
-    ///    `true` if parsed successfully
+    /// @param arg_parser the command line parser object
+    /// @result `true` if parsed successfully
     bool parse_parameters( const OIIO::ArgParse &arg_parser );
 
     /// Collects all illuminants supported by this version.
@@ -156,13 +153,13 @@ public:
     /// This method loads the metadata from the given image file and
     /// initialises the options to give the OIIO raw image reader to
     /// decode the pixels.
-    /// - parameter input_filename:
+    /// @param input_filename
     ///    A file name of the raw image file to read the metadata from.
-    /// - parameter options:
+    /// @param options
     ///    Conversion hints to be passed to OIIO when reading an image file.
     ///    The list can be pre- or post- updated with other hints, unrelated to
     ///    the rawtoaces conversion.
-    /// - returns
+    /// @result
     ///    `true` if configured successfully.
     bool configure(
         const std::string &input_filename, OIIO::ParamValueList &options );
@@ -171,13 +168,13 @@ public:
     /// matrix method, and the metadata of the given OIIO::ImageSpec object.
     /// Use this method if you already have an image read from file to save
     /// on disk operations.
-    /// - parameter imageSpec:
+    /// @param imageSpec
     ///    An image spec obtained from OIIO::ImageInput or OIIO::ImageBuf.
-    /// - parameter hints:
+    /// @param hints
     ///    Conversion hints to be passed to OIIO when reading an image file.
     ///    The list can be pre- or post- updated with other hints, unrelated to
     ///    the rawtoaces conversion.
-    /// - returns
+    /// @result
     ///    `true` if configured successfully.
     bool
     configure( const OIIO::ImageSpec &imageSpec, OIIO::ParamValueList &hints );
@@ -192,56 +189,56 @@ public:
 
     /// Apply the colour space conversion matrix (or matrices) to convert the
     /// image buffer from the raw camera colour space to ACES.
-    /// - parameter dst:
+    /// @param dst
     ///     Destination image buffer.
-    /// - parameter src:
+    /// @param src
     ///     Source image buffer, can be the same as `dst` for in-place
     ///     conversion.
-    /// - returns
+    /// @result
     ///    `true` if applied successfully.
     bool apply_matrix(
         OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
 
     /// Apply the headroom scale to image buffer.
-    /// - parameter dst:
+    /// @param dst
     ///     Destination image buffer.
-    /// - parameter src:
+    /// @param src
     ///     Source image buffer, can be the same as `dst` for in-place
     ///     conversion.
-    /// - returns
+    /// @result
     ///    `true` if applied successfully.
     bool apply_scale(
         OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
 
     /// Apply the cropping mode as specified in crop_mode.
-    /// - parameter dst:
+    /// @param dst
     ///     Destination image buffer.
-    /// - parameter src:
+    /// @param src
     ///     Source image buffer, can be the same as `dst` for in-place
     ///     conversion.
-    /// - returns
+    /// @result
     ///    `true` if applied successfully.
     bool apply_crop(
         OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
 
     /// Make output file path and check if it is writable.
-    /// - parameter path:
+    /// @param path
     ///     A reference to a variable containing the input file path. The output file path gets generated
     ///     in-place.
-    /// - parameter suffix:
+    /// @param suffix
     ///     A suffix to add to the file name.
-    /// - returns
+    /// @result
     ///    `true` if the file can be written, e.g. the output directory exists, or creating directories
     ///     is allowed; the file does not exist or overwriting is allowed.
     bool
     make_output_path( std::string &path, const std::string &suffix = "_aces" );
 
     /// Saves the image into ACES Container.
-    /// - parameter output_filename:
+    /// @param output_filename
     ///     Full path to the file to be saved.
-    /// - parameter buf:
+    /// @param buf
     ///     Image buffer to be saved.
-    /// - returns
+    /// @result
     ///    `true` if saved successfully.
     bool
     save_image( const std::string &output_filename, const OIIO::ImageBuf &buf );
@@ -249,28 +246,28 @@ public:
     /// A convenience single-call method to process an image. This is equivalent to calling the following
     /// methods sequentially: `make_output_path`->`configure`->`apply_matrix`->
     /// `apply_scale`->`apply_crop`->`save`.
-    /// - parameter input_filename:
+    /// @param input_filename
     ///     Full path to the file to be converted.
-    /// - returns
+    /// @result
     ///    `true` if processed successfully.
     bool process_image( const std::string &input_filename );
 
     /// Get the solved white balance multipliers of the currently processed
     /// image. The multipliers become available after calling either of the
     /// two `configure` methods.
-    /// - returns a reference to the multipliers vector.
+    /// @result a reference to the multipliers vector.
     const std::vector<double> &get_WB_multipliers();
 
     /// Get the solved input transform matrix of the currently processed image.
     /// The multipliers become available after calling either of the two
     /// `configure` methods.
-    /// - returns a reference to the matrix.
+    /// @result a reference to the matrix.
     const std::vector<std::vector<double>> &get_IDT_matrix();
 
     /// Get the solved chromatic adaptation transform matrix of the currently
     /// processed image. The multipliers become available after calling either
     /// of the two `configure` methods.
-    /// - returns a reference to the matrix.
+    /// @result a reference to the matrix.
     const std::vector<std::vector<double>> &get_CAT_matrix();
 
 private:

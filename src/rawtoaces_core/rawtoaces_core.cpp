@@ -390,7 +390,7 @@ bool SpectralSolver::find_illuminant( const vector<double> &wb )
 
     for ( auto &current_illuminant: _all_illuminants )
     {
-        vector<double> wb_tmp  = calculate_WB( camera, current_illuminant);
+        vector<double> wb_tmp  = _calculate_WB( camera, current_illuminant );
         double         sse_tmp = calculate_SSE( wb_tmp, wb );
 
         if ( sse_tmp < sse )
@@ -426,7 +426,7 @@ bool SpectralSolver::calculate_WB()
         return false;
     }
 
-    _WB_multipliers = calculate_WB( camera, illuminant );
+    _WB_multipliers = _calculate_WB( camera, illuminant );
     return true;
 }
 
@@ -491,8 +491,8 @@ std::vector<Spectrum> calculate_TI(
 /// @param illuminant Illuminant data (modified in-place by scale_LSC)
 
 /// @return Vector of 3 white balance multipliers [R, G, B] normalized to green channel
-std::vector<double> calculate_WB(
-    const SpectralData &camera, SpectralData &illuminant )
+std::vector<double>
+_calculate_WB( const SpectralData &camera, SpectralData &illuminant )
 {
     scale_LSC( camera, illuminant );
 

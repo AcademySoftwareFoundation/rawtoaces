@@ -807,7 +807,7 @@ void testIDT_CalWB()
     rta::core::SpectralData camera;
     load_file( "camera/nikon_d200_380_780_5.json", camera );
 
-    vector<double> WB_test = calculate_WB( camera, illuminant, 0 );
+    vector<double> WB_test = _calculate_WB( camera, illuminant );
 
     double WB[3] = { 1.1397265, 1.0000000, 2.3240151 };
     FORI( WB_test.size() )
@@ -5035,7 +5035,7 @@ void testIDT_CalRGB()
     load_file( "cmf/cmf_1931.json", observer );
 
     scale_LSC( camera, illuminant );
-    auto WB       = calculate_WB( camera, illuminant, 0.0 );
+    auto WB       = _calculate_WB( camera, illuminant );
     auto TI       = calculate_TI( illuminant, training_data );
     auto RGB_test = calculate_RGB( camera, illuminant, WB, TI );
 
@@ -5249,7 +5249,7 @@ void testIDT_CurveFit()
     load_file( "cmf/cmf_1931.json", observer );
 
     scale_LSC( camera, illuminant );
-    auto WB  = calculate_WB( camera, illuminant, 0.0 );
+    auto WB  = _calculate_WB( camera, illuminant );
     auto TI  = calculate_TI( illuminant, training_data );
     auto XYZ = calculate_XYZ( observer, illuminant, TI );
     auto RGB = calculate_RGB( camera, illuminant, WB, TI );

@@ -183,7 +183,7 @@ const OIIO::ParamValue *find_and_check_attribute(
     return nullptr;
 }
 
-void print_error( const std::string &data_type )
+void print_data_error( const std::string &data_type )
 {
     std::cerr << "Failed to find " << data_type << "." << std::endl
               << "Please check the database search path "
@@ -215,22 +215,25 @@ bool prepare_transform_spectral(
         const std::string data_type = "spectral data for camera make = '" +
                                       camera_make + "', model = '" +
                                       camera_model + "'";
-        print_error( data_type );
+        print_data_error( data_type );
         return false;
     }
 
-    success = solver.load_spectral_data(
-        "training/training_spectral.json", solver.training_data );
+    const std::string training_path = "training/training_spectral.json";
+    success = solver.load_spectral_data( training_path, solver.training_data );
     if ( !success )
     {
-        print_error( "training data" );
+        const std::string data_type = "training data '" + training_path + "'.";
+        print_data_error( data_type );
         return false;
     }
 
-    success = solver.load_spectral_data( "cmf/cmf_1931.json", solver.observer );
+    const std::string observer_path = "cmf/cmf_1931.json";
+    success = solver.load_spectral_data( observer_path, solver.observer );
     if ( !success )
     {
-        print_error( "observer" );
+        const std::string data_type = "observer '" + observer_path + "'";
+        print_data_error( data_type );
         return false;
     }
 
@@ -242,7 +245,7 @@ bool prepare_transform_spectral(
         {
             const std::string data_type =
                 "illuminant type = '" + lower_illuminant + "'";
-            print_error( data_type );
+            print_data_error( data_type );
             return false;
         }
     }

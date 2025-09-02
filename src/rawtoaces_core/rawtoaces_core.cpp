@@ -233,12 +233,12 @@ SpectralSolver::collect_data_files( const std::string &type ) const
             if ( std::filesystem::exists( type_path ) )
             {
                 auto it = std::filesystem::directory_iterator( type_path );
-                for ( auto filename2: it )
+                for ( auto filename: it )
                 {
-                    auto p = filename2.path();
-                    if ( filename2.path().extension() == ".json" )
+                    auto path = filename.path();
+                    if ( path.extension() == ".json" )
                     {
-                        result.push_back( filename2.path().string() );
+                        result.push_back( path.string() );
                     }
                 }
             }

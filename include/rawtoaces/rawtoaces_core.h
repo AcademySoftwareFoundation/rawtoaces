@@ -63,8 +63,8 @@ public:
 
     /// The constructor. Takes the database search path as an optional
     /// parameter.
-    /// @param search_path optional database search path.
-    SpectralSolver( const std::vector<std::string> &search_path = {} );
+    /// @param search_directories optional database search path.
+    SpectralSolver( const std::vector<std::string> &search_directories = {} );
 
     /// A helper method collecting of spectral data files of a given type from
     /// the database.
@@ -124,7 +124,7 @@ public:
     int verbosity = 0;
 
 private:
-    std::vector<std::string>  _search_path;
+    std::vector<std::string>  _search_directories;
     std::vector<SpectralData> _all_illuminants;
 
     std::vector<double>              _WB_multipliers;

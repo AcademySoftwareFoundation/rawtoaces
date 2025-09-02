@@ -173,8 +173,9 @@ void generate_illuminant(
 
 // ------------------------------------------------------//
 
-SpectralSolver::SpectralSolver( const std::vector<std::string> &search_path )
-    : _search_path( search_path )
+SpectralSolver::SpectralSolver(
+    const std::vector<std::string> &search_directories )
+    : _search_directories( search_directories )
 {
     verbosity = 0;
     _IDT_matrix.resize( 3 );
@@ -223,7 +224,7 @@ SpectralSolver::collect_data_files( const std::string &type ) const
 {
     std::vector<std::string> result;
 
-    for ( const auto &directory: _search_path )
+    for ( const auto &directory: _search_directories )
     {
         if ( std::filesystem::is_directory( directory ) )
         {
@@ -267,7 +268,7 @@ bool SpectralSolver::load_spectral_data(
     }
     else
     {
-        for ( const auto &directory: _search_path )
+        for ( const auto &directory: _search_directories )
         {
             std::filesystem::path path( directory );
             path.append( file_path );

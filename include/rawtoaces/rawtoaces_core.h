@@ -49,124 +49,126 @@ void calculate_blackbody_SPD( const int &cct, Spectrum &spectrum );
 class SpectralSolver
 {
 public:
-    /// Initialize SpectralSolver with default settings.
+    /// The camera spectral data. Can be either assigned directly, loaded
+    /// in-place place via `solver.camera.load()`, or found via
+    /// `solver.find_camera()`.
+    SpectralData camera;
+
+    /// The illuminant spectral data. Can be either assigned directly, loaded
+    /// in-place place via `solver.illuminant.load()`, or found via
+    /// `solver.find_illuminant()`.
+    SpectralData illuminant;
+
+    /// The observer spectral data. Can be either assigned directly, or loaded
+    /// in-place place via `solver.observer.load()`.
+    SpectralData observer;
+
+    /// The training set spectral data. Can be either assigned directly, or loaded
+    /// in-place place via `solver.training_data.load()`.
+    SpectralData training_data;
+
+    /// Initialize SpectralSolver with database search path.
     /// Sets up internal data structures including IDT matrix and white balance multipliers
     /// with neutral values. Initializes verbosity level to 0 for silent operation.
-    SpectralSolver();
-
-    /// Load camera sensitivity data from file and validate against manufacturer/model.
-    /// Loads camera spectral sensitivity data from the specified file path and verifies
-    /// that the loaded data matches the expected camera manufacturer and model from libraw.
-    /// The function validates the data integrity before storing it in the internal camera data.
+    /// Takes the database search path as an optional parameter for finding spectral data files.
     ///
-    /// @param path Path to the camera sensitivity file
-    /// @param make Camera manufacturer name (from libraw metadata)
-    /// @param model Camera model name (from libraw metadata)
-    /// @return true if successfully loaded and validated, false otherwise
-    /// @pre path, make, and model are non-empty strings
-    bool load_camera(
-        const std::string &path,
-        const std::string &make,
-        const std::string &model );
+    /// @param search_directories optional database search path for spectral data files
+    SpectralSolver( const std::vector<std::string> &search_directories = {} );
 
-    /// Load illuminant data from files or generate standard illuminants.
-    /// This function loads illuminant spectral data from specified file paths or generates
-    /// standard daylight and blackbody illuminants if no specific type is provided. When a
-    /// type is specified, it can handle daylight (e.g., "D50", "D65") or blackbody (e.g., "3200K")
-    /// illuminants by parsing the type string and generating appropriate spectral data.
+    /// A helper method collecting spectral data files of a given type from the database.
+    /// This function searches through the configured search directories to find all
+    /// spectral data files matching the specified type (e.g., "camera", "illuminant").
+    /// It recursively searches subdirectories and returns JSON files matching the type.
     ///
-    /// @param paths Vector of file paths to illuminant data files
-    /// @param type Type of light source (e.g., "D50", "D65", "3200K") or empty for auto-generation
-    /// @return true if illuminants were successfully loaded or generated, false otherwise
-    /// @pre paths vector contains valid file paths when type is empty
-    bool load_illuminant(
-        const std::vector<std::string> &paths, const std::string &type = "" );
+    /// @param type data type of the files to search for (e.g., "camera", "illuminant", "cmf")
+    /// @return a collection of file paths found in the database
+    std::vector<std::string>
+    collect_data_files( const std::string &type ) const;
 
-    /// Load the training data for spectral calculations.
-    /// This function loads training data from a file containing spectral information
-    /// for color patches. The training data is used for calibrating and
-    /// optimizing spectral calculations in the color pipeline.
+    /// A helper method loading the spectral data for a file at the given path.
+    /// This function loads spectral data from a file, handling both absolute and relative paths.
+    /// For relative paths, it searches through all configured search directories.
     ///
-    /// @param path Path to the training data file
-    /// @return true if training data was successfully loaded, false otherwise
-    /// @pre path points to a valid training data file
-    bool load_training_data( const std::string &path );
+    /// @param file_path the path to the file to load. If the path is relative,
+    /// all locations in the search path will be searched in.
+    /// @param out_data the `SpectralData` object to be filled with the loaded data.
+    /// @return `true` if loaded successfully, `false` otherwise
+    bool
+    load_spectral_data( const std::string &file_path, SpectralData &out_data );
 
-    /// Load the Color Matching Functions data for standard observer.
-    /// This function loads the standard observer color matching functions
-    /// from a file. These functions define how the human eye perceives color across
-    /// the visible spectrum and are essential for color space transformations.
+    /// Load spectral sensitivity data for a camera by searching the database.
+    /// This function searches through camera data files in the database to find
+    /// a match for the specified camera manufacturer and model. It loads the
+    /// spectral sensitivity data into the camera member variable.
     ///
-    /// @param path Path to the Color Matching Functions data file
-    /// @return true if observer data was successfully loaded, false otherwise
-    /// @pre path points to a valid CMF data file
-    bool load_observer( const std::string &path );
+    /// @param make the camera make to search for
+    /// @param model the camera model to search for
+    /// @return `true` if loaded successfully, `false` otherwise
+    bool find_camera( const std::string &make, const std::string &model );
 
-    /// Choose the best illuminant based on white balance coefficients from camera metadata.
+    /// Find spectral power distribution data of an illuminant of the given type.
+    /// This function can handle both built-in illuminant types (e.g., "d55", "3200k")
+    /// and custom illuminants stored in the database. For built-in types, it generates
+    /// the spectral data using standard formulas.
+    ///
+    /// @param type illuminant type. Can be one of the built-in types,
+    /// e.g. `d55`, `3200k`, or a custom illuminant stored in the database.
+    /// @return `true` if loaded successfully, `false` otherwise
+    bool find_illuminant( const std::string &type );
+
+    /// Find the illuminant best matching the given white-balancing multipliers.
     /// This function analyzes all available illuminants and selects the one that best matches
-    /// the white balance coefficients read from the camera. It uses Sum of Squared Errors (SSE)
-    /// to find the optimal match and automatically scales the white balance multipliers.
+    /// the white balance coefficients. It uses Sum of Squared Errors (SSE) to find the
+    /// optimal match and automatically scales the white balance multipliers.
     ///
-    /// @param wb_multipliers White balance coefficients from camera metadata
-    /// @param highlight Highlight recovery mode for normalization
-    void find_best_illuminant(
-        const std::vector<double> &wb_multipliers, int highlight );
+    /// @param wb_multipliers white-balancing multipliers to match
+    /// @return `true` if loaded successfully, `false` otherwise
+    bool find_illuminant( const std::vector<double> &wb_multipliers );
 
-    /// Select a specific illuminant by type and calculate white balance multipliers.
-    /// This function sets the best illuminant to a user-specified type and calculates
-    /// the corresponding white balance multipliers for the camera-illuminant combination.
-    /// The function automatically scales the white balance factors for normalization.
+    /// Calculate the white-balance multipliers for the given configuration.
+    /// This function computes RGB white balance multipliers by integrating camera spectral
+    /// sensitivity with illuminant power spectrum. The multipliers normalize the camera
+    /// response to achieve proper white balance under the specified illuminant conditions.
+    /// The `camera` and `illuminant` data have to be configured prior to this call.
     ///
-    /// @param type The illuminant type to select (must match first illuminant in list)
-    /// @param highlight Highlight recovery mode for normalization
-    void select_illuminant( const std::string &type, int highlight );
+    /// @return `true` if calculated successfully, `false` otherwise
+    /// @pre camera and illuminant data must be properly loaded
+    bool calculate_WB();
 
-    /// Calculate the Input Device Transform (IDT) matrix using curve fitting optimization.
+    /// Calculate an input transform matrix using curve fitting optimization.
     /// This function computes the optimal IDT matrix by comparing camera RGB responses
     /// with target XYZ values across all training patches. It uses the Ceres optimization
     /// library to find the best 6-parameter transformation that minimizes color differences.
-    /// The resulting IDT matrix transforms camera RGB values to standardized color space.
+    /// The `camera`, `illuminant`, `observer` and `training_data` have to be configured prior to this call.
     ///
-    /// @return true if IDT matrix was successfully calculated, false otherwise
+    /// @return `true` if calculated successfully, `false` otherwise
+    /// @pre camera, illuminant, observer, and training_data must be properly loaded
     bool calculate_IDT_matrix();
 
-    /// Get the best matching illuminant data that was determined during optimization.
-    /// This function returns a reference to the illuminant that best matches the camera's
-    /// white balance coefficients. The illuminant is selected based on spectral analysis
-    /// and optimization results from the find_best_illuminant() or select_illuminant() calls.
-    ///
-    /// @return Reference to the best matching illuminant spectral data
-    /// @pre illuminant data must be properly loaded with main section and power spectrum
-    const SpectralData &get_best_illuminant() const;
-
-    /// Get the computed Input Device Transform (IDT) matrix if calculation succeeded.
+    /// Get the matrix calculated using `calculate_IDT_matrix()`.
     /// This function returns a reference to the 3×3 IDT matrix that transforms camera
     /// RGB values to standardized color space. The matrix is computed by curve fitting
     /// optimization and represents the optimal color transformation for the camera under
     /// the specified illuminant conditions.
     ///
-    /// @return Reference to the 3×3 IDT transformation matrix
+    /// @return a reference to the 3×3 IDT transformation matrix
     /// @pre calculate_IDT_matrix() must have been called successfully
     const std::vector<std::vector<double>> &get_IDT_matrix() const;
 
-    /// Get the white balance multipliers if white balance calculation succeeded.
+    /// Get the white-balance multipliers calculated using `find_illuminant()` or `calculate_WB()`.
     /// This function returns a reference to the 3-element vector containing RGB white
     /// balance multipliers. These multipliers normalize the camera response to achieve
-    /// proper white balance under the specified illuminant conditions and are computed
-    /// by the calculate_WB() function during illuminant selection or optimization.
+    /// proper white balance under the specified illuminant conditions.
     ///
-    /// @return Reference to the 3-element white balance multiplier vector [R, G, B]
+    /// @return a reference to the 3-element white balance multiplier vector [R, G, B]
     /// @pre white balance calculation must have been performed successfully
     const std::vector<double> &get_WB_multipliers() const;
 
     int verbosity = 0;
 
 private:
-    SpectralData              _camera;
-    SpectralData              _best_illuminant;
-    SpectralData              _observer;
-    SpectralData              _training_data;
-    std::vector<SpectralData> _illuminants;
+    std::vector<std::string>  _search_directories;
+    std::vector<SpectralData> _all_illuminants;
 
     std::vector<double>              _WB_multipliers;
     std::vector<std::vector<double>> _IDT_matrix;
@@ -218,7 +220,8 @@ public:
     ///
     /// The CAT matrix is essential for maintaining color appearance when converting
     /// between different illuminant conditions, ensuring that colors look consistent
-    /// across different lighting environments.
+    /// across different lighting environments. Strictly speaking, this matrix is not
+    /// required for image processing, as it is embedded in the IDT, see `calculate_IDT_matrix`.
     ///
     /// @return 3×3 Color Adaptation Transform matrix
     /// @pre _metadata must contain valid camera calibration and neutral RGB data

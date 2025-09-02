@@ -31,8 +31,8 @@ struct Spectrum
 
         /// Comparison operator, mostly required for storing the `Spectrum`
         /// data in containers.
-        /// - parameter shape: another `Shape` object to compare `this` with.
-        /// - returns: `true` if the objects are equal.
+        /// @param shape another `Shape` object to compare `this` with.
+        /// @result `true` if the objects are equal.
         bool operator==( const Shape &shape ) const;
     } shape;
 
@@ -50,8 +50,8 @@ struct Spectrum
     /// The `Spectrum` object constructor. Allocates as many spectral samples
     /// as required for the `shape` parameter, and initialises them with
     /// `value`.
-    /// - parameter value: the value to initialise the spectral samples with.
-    /// - parameter shape: the shape of the spectral data to create. Pass a shape
+    /// @param value the value to initialise the spectral samples with.
+    /// @param shape the shape of the spectral data to create. Pass a shape
     /// with zero step, like `rta::core::Spectrum::EmptyShape` to avoid
     /// allocating any samples.
     Spectrum( double value = 0, const Shape &shape = ReferenceShape );
@@ -85,11 +85,11 @@ struct Spectrum
     void reshape();
 
     /// Integrate the spectral curve.
-    /// - returns: the sum of all elements in `values`.
+    /// @result the sum of all elements in `values`.
     double integrate();
 
     /// Find the maximum element in `values`
-    /// - returns: the maximum element in `values`.
+    /// @result the maximum element in `values`.
     double max() const;
 };
 
@@ -133,8 +133,8 @@ struct SpectralData
 
     /// A convenience operator returning the `Spectrum` of a given channel name
     /// in the "main" data set.
-    /// - parameter name: the channel name in the "main" data set to return.
-    /// - returns: the `Spectrum` object corresponding to the given channel
+    /// @param name the channel name in the "main" data set to return.
+    /// @result the `Spectrum` object corresponding to the given channel
     /// name.
     /// - throws: if the requested channel is not found.
     Spectrum       &operator[]( std::string name );
@@ -142,11 +142,11 @@ struct SpectralData
 
     /// A convenience method returning the `Spectrum` of a given channel name
     /// in the given data set.
-    /// - parameter set_name: the set name to search for.
-    /// - parameter channel_name: the channel name to search for.
-    /// - returns: the `Spectrum` object reference if found.
+    /// @param set_name the set name to search for.
+    /// @param channel_name the channel name to search for.
+    /// @result the `Spectrum` object reference if found.
     /// name.
-    /// - throws: if the requested channel is not found.
+    /// @throw if the requested channel is not found.
     Spectrum       &get( std::string set_name, std::string channel_name );
     const Spectrum &get( std::string set_name, std::string channel_name ) const;
 };

@@ -17,33 +17,6 @@ namespace rta
 namespace util
 {
 
-std::vector<std::string> collect_data_files(
-    const std::vector<std::string> &directories, const std::string &type )
-{
-    std::vector<std::string> result;
-
-    for ( const auto &path: directories )
-    {
-        if ( std::filesystem::is_directory( path ) )
-        {
-            auto type_path = path + "/" + type;
-            if ( std::filesystem::exists( type_path ) )
-            {
-                auto it = std::filesystem::directory_iterator( type_path );
-                for ( auto filename2: it )
-                {
-                    auto p = filename2.path();
-                    if ( filename2.path().extension() == ".json" )
-                    {
-                        result.push_back( filename2.path().string() );
-                    }
-                }
-            }
-        }
-    }
-    return result;
-}
-
 bool check_and_add_file(
     const std::filesystem::path &path, std::vector<std::string> &batch )
 {
@@ -191,146 +164,6 @@ bool fetch_camera_make_and_model(
     return true;
 }
 
-std::vector<std::string> find_files(
-    const std::string &file_path, const std::vector<std::string> &search_paths )
-{
-    std::vector<std::string> found_files;
-
-    for ( auto &search_path: search_paths )
-    {
-        std::string full_path = search_path + "/" + file_path;
-
-        if ( std::filesystem::exists( full_path ) )
-            found_files.push_back( full_path );
-    }
-
-    return found_files;
-}
-
-bool configure_solver(
-    core::SpectralSolver           &solver,
-    const std::vector<std::string> &directories,
-    const std::string              &camera_make,
-    const std::string              &camera_model,
-    const std::string              &illuminant = "" )
-{
-    bool success = false;
-
-    auto camera_files = collect_data_files( directories, "camera" );
-    for ( auto &camera_file: camera_files )
-    {
-        success = solver.load_camera(
-            camera_file, camera_make.c_str(), camera_model.c_str() );
-        if ( success )
-            break;
-    }
-
-    if ( !success )
-    {
-        std::cerr << "Failed to find spectral data for camera " << camera_make
-                  << " " << camera_model << std::endl;
-        return false;
-    }
-
-    std::vector<std::string> found_training_data =
-        find_files( "training/training_spectral.json", directories );
-    if ( found_training_data.size() )
-    {
-        // loading training data (190 patches)
-        solver.load_training_data( found_training_data[0] );
-    }
-
-    std::vector<std::string> found_cmf_files =
-        find_files( "cmf/cmf_1931.json", directories );
-    if ( found_cmf_files.size() )
-    {
-        solver.load_observer( found_cmf_files[0] );
-    }
-
-    auto illuminant_files = collect_data_files( directories, "illuminant" );
-    if ( illuminant.empty() )
-    {
-        solver.load_illuminant( illuminant_files );
-    }
-    else
-    {
-        solver.load_illuminant( illuminant_files, illuminant );
-    }
-
-    return true;
-}
-
-bool solve_illuminant_from_WB(
-    const std::vector<std::string> &directories,
-    const std::string              &camera_make,
-    const std::string              &camera_model,
-    const std::vector<double>      &wb_mults,
-    float                           highlight,
-    bool                            verbosity,
-    std::string                    &out_illuminant )
-{
-    core::SpectralSolver solver;
-    solver.verbosity = verbosity;
-    if ( !configure_solver(
-             solver, directories, camera_make, camera_model, "" ) )
-    {
-        return false;
-    }
-
-    solver.find_best_illuminant( wb_mults, highlight );
-    out_illuminant = solver.get_best_illuminant().illuminant;
-    return true;
-}
-
-bool solve_WB_from_illuminant(
-    const std::vector<std::string> &directories,
-    const std::string              &camera_make,
-    const std::string              &camera_model,
-    const std::string              &illuminant,
-    float                           highlight,
-    bool                            verbosity,
-    std::vector<double>            &out_WB )
-{
-    core::SpectralSolver solver;
-    solver.verbosity = verbosity;
-    if ( !configure_solver(
-             solver, directories, camera_make, camera_model, illuminant ) )
-    {
-        return false;
-    }
-
-    solver.select_illuminant( illuminant, highlight );
-    out_WB = solver.get_WB_multipliers();
-    return true;
-}
-
-bool solve_matrix_from_illuminant(
-    const std::vector<std::string>   &directories,
-    const std::string                &camera_make,
-    const std::string                &camera_model,
-    const std::string                &illuminant,
-    float                             highlight,
-    bool                              verbosity,
-    std::vector<std::vector<double>> &out_matrix )
-{
-    core::SpectralSolver solver;
-    solver.verbosity = verbosity;
-    if ( !configure_solver(
-             solver, directories, camera_make, camera_model, illuminant ) )
-    {
-        return false;
-    }
-
-    solver.select_illuminant( illuminant, highlight );
-    if ( !solver.calculate_IDT_matrix() )
-    {
-        return false;
-    }
-
-    out_matrix = solver.get_IDT_matrix();
-    return true;
-}
-
 /// Check if an attribute of a given name exists
 /// and has the type we are expecting.
 const OIIO::ParamValue *find_and_check_attribute(
@@ -350,6 +183,13 @@ const OIIO::ParamValue *find_and_check_attribute(
     return nullptr;
 }
 
+void print_data_error( const std::string &data_type )
+{
+    std::cerr << "Failed to find " << data_type << "." << std::endl
+              << "Please check the database search path "
+              << "in RAWTOACES_DATABASE_PATH" << std::endl;
+}
+
 bool prepare_transform_spectral(
     const OIIO::ImageSpec            &imageSpec,
     const ImageConverter::Settings   &settings,
@@ -364,8 +204,51 @@ bool prepare_transform_spectral(
     if ( !fetch_camera_make_and_model( imageSpec, camera_make, camera_model ) )
         return false;
 
-    bool        success = false;
-    std::string best_illuminant;
+    bool success = false;
+
+    core::SpectralSolver solver( settings.database_directories );
+    solver.verbosity = settings.verbosity;
+
+    success = solver.find_camera( camera_make.c_str(), camera_model.c_str() );
+    if ( !success )
+    {
+        const std::string data_type = "spectral data for camera make = '" +
+                                      camera_make + "', model = '" +
+                                      camera_model + "'";
+        print_data_error( data_type );
+        return false;
+    }
+
+    const std::string training_path = "training/training_spectral.json";
+    success = solver.load_spectral_data( training_path, solver.training_data );
+    if ( !success )
+    {
+        const std::string data_type = "training data '" + training_path + "'.";
+        print_data_error( data_type );
+        return false;
+    }
+
+    const std::string observer_path = "cmf/cmf_1931.json";
+    success = solver.load_spectral_data( observer_path, solver.observer );
+    if ( !success )
+    {
+        const std::string data_type = "observer '" + observer_path + "'";
+        print_data_error( data_type );
+        return false;
+    }
+
+    if ( !lower_illuminant.empty() )
+    {
+        success = solver.find_illuminant( lower_illuminant );
+
+        if ( !success )
+        {
+            const std::string data_type =
+                "illuminant type = '" + lower_illuminant + "'";
+            print_data_error( data_type );
+            return false;
+        }
+    }
 
     if ( lower_illuminant.empty() )
     {
@@ -393,23 +276,14 @@ bool prepare_transform_spectral(
             wb_multipliers[1] = ( wb_multipliers[1] + wb_multipliers[3] ) / 2.0;
         wb_multipliers.resize( 3 );
 
-        float min_val = std::numeric_limits<float>::max();
-        for ( int i = 0; i < 3; i++ )
-            if ( min_val > wb_multipliers[i] )
-                min_val = wb_multipliers[i];
+        double min_val =
+            *std::min_element( wb_multipliers.begin(), wb_multipliers.end() );
 
         if ( min_val > 0 && min_val != 1 )
             for ( int i = 0; i < 3; i++ )
                 wb_multipliers[i] /= min_val;
 
-        success = solve_illuminant_from_WB(
-            settings.database_directories,
-            camera_make,
-            camera_model,
-            wb_multipliers,
-            settings.highlight_mode,
-            settings.verbosity,
-            best_illuminant );
+        success = solver.find_illuminant( wb_multipliers );
 
         if ( !success )
         {
@@ -420,20 +294,13 @@ bool prepare_transform_spectral(
 
         if ( settings.verbosity > 0 )
         {
-            std::cerr << "Found illuminant: " << best_illuminant << std::endl;
+            std::cerr << "Found illuminant: '" << solver.illuminant.illuminant
+                      << "'." << std::endl;
         }
     }
     else
     {
-        best_illuminant = lower_illuminant;
-        success         = solve_WB_from_illuminant(
-            settings.database_directories,
-            camera_make,
-            camera_model,
-            lower_illuminant,
-            settings.highlight_mode,
-            settings.verbosity,
-            WB_multipliers );
+        success = solver.calculate_WB();
 
         if ( !success )
         {
@@ -441,6 +308,8 @@ bool prepare_transform_spectral(
                       << "weights." << std::endl;
             return false;
         }
+
+        WB_multipliers = solver.get_WB_multipliers();
 
         if ( settings.verbosity > 0 )
         {
@@ -453,21 +322,15 @@ bool prepare_transform_spectral(
         }
     }
 
-    success = solve_matrix_from_illuminant(
-        settings.database_directories,
-        camera_make,
-        camera_model,
-        best_illuminant,
-        settings.highlight_mode,
-        settings.verbosity,
-        IDT_matrix );
-
+    success = solver.calculate_IDT_matrix();
     if ( !success )
     {
         std::cerr << "Failed to calculate the input transform matrix."
                   << std::endl;
         return false;
     }
+
+    IDT_matrix = solver.get_IDT_matrix();
 
     if ( settings.verbosity > 0 )
     {
@@ -1171,10 +1034,8 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     // an error out early, before we start loading any images.
     if ( settings.wbMethod == Settings::WBMethod::Illuminant )
     {
-        auto paths =
-            collect_data_files( settings.database_directories, "illuminant" );
-        core::SpectralSolver solver;
-        if ( !solver.load_illuminant( paths, settings.illuminant ) )
+        core::SpectralSolver solver( settings.database_directories );
+        if ( !solver.find_illuminant( settings.illuminant ) )
         {
             std::cerr << std::endl
                       << "Error: No matching light source. "
@@ -1194,8 +1055,8 @@ std::vector<std::string> ImageConverter::supported_illuminants()
     result.push_back( "Day-light (e.g., D60, D6025)" );
     result.push_back( "Blackbody (e.g., 3200K)" );
 
-    auto files =
-        collect_data_files( settings.database_directories, "illuminant" );
+    rta::core::SpectralSolver solver( settings.database_directories );
+    auto                      files = solver.collect_data_files( "illuminant" );
     for ( auto &file: files )
     {
         core::SpectralData data;
@@ -1212,7 +1073,8 @@ std::vector<std::string> ImageConverter::supported_cameras()
 {
     std::vector<std::string> result;
 
-    auto files = collect_data_files( settings.database_directories, "camera" );
+    rta::core::SpectralSolver solver( settings.database_directories );
+    auto                      files = solver.collect_data_files( "camera" );
     for ( auto &file: files )
     {
         core::SpectralData data;

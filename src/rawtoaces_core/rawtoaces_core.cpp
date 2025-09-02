@@ -173,7 +173,9 @@ void generate_illuminant(
 
 // ------------------------------------------------------//
 
-SpectralSolver::SpectralSolver()
+SpectralSolver::SpectralSolver(
+    const std::vector<std::string> &search_directories )
+    : _search_directories( search_directories )
 {
     verbosity = 0;
     _IDT_matrix.resize( 3 );
@@ -217,96 +219,144 @@ void scaleLSC( const SpectralData &camera, SpectralData &illuminant )
     illuminant_spectrum *= scale;
 }
 
-//	=====================================================================
-//	Load the Camera Sensitivty data
-//
-//	inputs:
-//		const std::string &: path to the camera sensitivity file
-//      const std::string &: camera maker  (from libraw)
-//      const std::string &: camera model  (from libraw)
-//
-//	outputs:
-//		int: If successfully parsed, _cameraSpst will be filled and return 1;
-//               Otherwise, return 0
-
-bool SpectralSolver::load_camera(
-    const std::string &path, const std::string &make, const std::string &model )
+std::vector<std::string>
+SpectralSolver::collect_data_files( const std::string &type ) const
 {
-    assert( !path.empty() );
+    std::vector<std::string> result;
+
+    for ( const auto &directory: _search_directories )
+    {
+        if ( std::filesystem::is_directory( directory ) )
+        {
+            std::filesystem::path type_path( directory );
+            type_path.append( type );
+            if ( std::filesystem::exists( type_path ) )
+            {
+                auto it = std::filesystem::directory_iterator( type_path );
+                for ( auto filename: it )
+                {
+                    auto path = filename.path();
+                    if ( path.extension() == ".json" )
+                    {
+                        result.push_back( path.string() );
+                    }
+                }
+            }
+            else if ( verbosity > 0 )
+            {
+                std::cerr << "WARNING: Directory '" << type_path.string()
+                          << "' does not exist." << std::endl;
+            }
+        }
+        else if ( verbosity > 0 )
+        {
+            std::cerr << "WARNING: Database location '" << directory
+                      << "' is not a directory." << std::endl;
+        }
+    }
+    return result;
+}
+
+bool SpectralSolver::load_spectral_data(
+    const std::string &file_path, SpectralData &out_data )
+{
+    std::filesystem::path path( file_path );
+
+    if ( path.is_absolute() )
+    {
+        return out_data.load( file_path );
+    }
+    else
+    {
+        for ( const auto &directory: _search_directories )
+        {
+            std::filesystem::path path( directory );
+            path.append( file_path );
+
+            if ( std::filesystem::exists( path ) )
+            {
+                return out_data.load( path.string() );
+            }
+        }
+
+        return false;
+    }
+}
+
+bool SpectralSolver::find_camera(
+    const std::string &make, const std::string &model )
+{
     assert( !make.empty() );
     assert( !model.empty() );
 
-    if ( !_camera.load( path ) )
-        return false;
-    if ( cmp_str( _camera.manufacturer.c_str(), make.c_str() ) != 0 )
-        return false;
-    if ( cmp_str( _camera.model.c_str(), model.c_str() ) != 0 )
-        return false;
+    auto camera_files = collect_data_files( "camera" );
 
-    return true;
+    for ( const auto &camera_file: camera_files )
+    {
+        camera.load( camera_file );
+
+        if ( cmp_str( camera.manufacturer.c_str(), make.c_str() ) != 0 )
+            continue;
+        if ( cmp_str( camera.model.c_str(), model.c_str() ) != 0 )
+            continue;
+        return true;
+    }
+    return false;
 }
 
-//	=====================================================================
-//	Load the Illuminant data
-//
-//	inputs:
-//		string: paths to various Illuminant data files
-//      string: type of light source if user specifies
-//
-//	outputs:
-//		int: If successfully parsed, _bestIllum will be filled and return 1;
-//               Otherwise, return 0
-
-bool SpectralSolver::load_illuminant(
-    const std::vector<std::string> &paths, const std::string &type )
+bool SpectralSolver::find_illuminant( const std::string &type )
 {
-    if ( _illuminants.size() > 0 )
-        _illuminants.clear();
+    assert( !type.empty() );
 
-    if ( !type.empty() )
+    // Daylight
+    if ( std::tolower( type.front() ) == 'd' )
     {
-        // Daylight
-        if ( std::tolower( type.front() ) == 'd' )
-        {
-            int               cct        = atoi( type.substr( 1 ).c_str() );
-            const std::string type       = "d" + std::to_string( cct );
-            SpectralData     &illuminant = _illuminants.emplace_back();
-            generate_illuminant( cct, type, true, illuminant );
-            return true;
-        }
-        // Blackbody
-        else if ( std::tolower( type.back() ) == 'k' )
-        {
-            int cct = atoi( type.substr( 0, type.length() - 1 ).c_str() );
-            const std::string type       = std::to_string( cct ) + "k";
-            SpectralData     &illuminant = _illuminants.emplace_back();
-            generate_illuminant( cct, type, false, illuminant );
-            return true;
-        }
-        else
-        {
-            FORI( paths.size() )
-            {
-                SpectralData &illuminant = _illuminants.emplace_back();
-                if ( !illuminant.load( paths[i] ) ||
-                     cmp_str( illuminant.illuminant.c_str(), type.c_str() ) !=
-                         0 )
-                {
-                    _illuminants.pop_back();
-                }
-                else
-                {
-                    return true;
-                }
-            }
-        }
+        int               cct  = atoi( type.substr( 1 ).c_str() );
+        const std::string type = "d" + std::to_string( cct );
+        generate_illuminant( cct, type, true, illuminant );
+        return true;
+    }
+    // Blackbody
+    else if ( std::tolower( type.back() ) == 'k' )
+    {
+        int cct = atoi( type.substr( 0, type.length() - 1 ).c_str() );
+        const std::string type = std::to_string( cct ) + "k";
+        generate_illuminant( cct, type, false, illuminant );
+        return true;
     }
     else
+    {
+        auto illuminant_files = collect_data_files( "illuminant" );
+
+        for ( const auto &illuminant_file: illuminant_files )
+        {
+            if ( !illuminant.load( illuminant_file ) )
+                continue;
+            if ( cmp_str( illuminant.illuminant.c_str(), type.c_str() ) != 0 )
+                continue;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool SpectralSolver::find_illuminant( const vector<double> &wb )
+{
+    if ( camera.data.count( "main" ) == 0 ||
+         camera.data.at( "main" ).size() != 3 )
+    {
+        std::cerr << "ERROR: camera needs to be initialised prior to calling "
+                  << "SpectralSolver::find_illuminant()" << std::endl;
+        return false;
+    }
+
+    if ( _all_illuminants.empty() )
     {
         // Daylight - pre-calculate
         for ( int i = 4000; i <= 25000; i += 500 )
         {
-            SpectralData     &illuminant = _illuminants.emplace_back();
+            SpectralData     &illuminant = _all_illuminants.emplace_back();
             const std::string type       = "d" + std::to_string( i / 100 );
             generate_illuminant( i, type, true, illuminant );
         }
@@ -314,130 +364,66 @@ bool SpectralSolver::load_illuminant(
         // Blackbody - pre-calculate
         for ( int i = 1500; i < 4000; i += 500 )
         {
-            SpectralData     &illuminant = _illuminants.emplace_back();
+            SpectralData     &illuminant = _all_illuminants.emplace_back();
             const std::string type       = std::to_string( i ) + "k";
             generate_illuminant( i, type, false, illuminant );
         }
 
-        FORI( paths.size() )
+        auto illuminant_files = collect_data_files( "illuminant" );
+
+        for ( const auto &illuminant_file: illuminant_files )
         {
-            SpectralData &illuminant = _illuminants.emplace_back();
-            if ( !illuminant.load( paths[i] ) || illuminant.illuminant != type )
+            SpectralData &illuminant = _all_illuminants.emplace_back();
+            if ( !illuminant.load( illuminant_file ) )
             {
-                _illuminants.pop_back();
+                _all_illuminants.pop_back();
+                continue;
             }
         }
     }
 
-    return ( _illuminants.size() > 0 );
-}
-
-//	=====================================================================
-//	Load the 190-patch training data
-//
-//	inputs:
-//		string : path to the 190-patch training data
-//
-//	outputs:
-//		_trainingSpec: If successfully parsed, _trainingSpec will be filled
-
-bool SpectralSolver::load_training_data( const string &path )
-{
-    struct stat st;
-    assert( !stat( path.c_str(), &st ) );
-
-    return _training_data.load( path );
-}
-
-//	=====================================================================
-//	Load the CIE 1931 Color Matching Functions data
-//
-//	inputs:
-//		string : path to the CIE 1931 Color Matching Functions data
-//
-//	outputs:
-//		_cmf: If successfully parsed, _cmf will be filled
-
-bool SpectralSolver::load_observer( const string &path )
-{
-    struct stat st;
-    assert( !stat( path.c_str(), &st ) );
-
-    return _observer.load( path );
-}
-
-//	=====================================================================
-//	Choose the best Light Source based on White Balance Coefficients from
-//  the camera read by libraw according to a given set of coefficients
-//
-//	inputs:
-//		Map: Key: path to the Light Source data;
-//           Value: Light Source x Camera Sensitivity
-//      Vector: White Balance Coefficients
-//
-//	outputs:
-//		Illum: the best _Illuminant
-
-void SpectralSolver::find_best_illuminant(
-    const vector<double> &src, int highlight )
-{
     double sse = dmax;
 
-    FORI( _illuminants.size() )
+    for ( auto &current_illuminant: _all_illuminants )
     {
-        vector<double> wb_tmp  = calWB( _camera, _illuminants[i], highlight );
-        double         sse_tmp = calSSE( wb_tmp, src );
+        vector<double> wb_tmp  = calWB( camera, current_illuminant );
+        double         sse_tmp = calSSE( wb_tmp, wb );
 
         if ( sse_tmp < sse )
         {
-            sse              = sse_tmp;
-            _best_illuminant = _illuminants[i];
-            _WB_multipliers  = wb_tmp;
+            sse             = sse_tmp;
+            illuminant      = current_illuminant;
+            _WB_multipliers = wb_tmp;
         }
     }
 
     if ( verbosity > 1 )
-        printf(
-            "The illuminant calculated to be the best match to the camera metadata is %s\n",
-            _best_illuminant.illuminant.c_str() );
+        std::cerr << "The illuminant calculated to be the best match to the "
+                  << "camera metadata is '" << illuminant.illuminant << "'."
+                  << std::endl;
 
-    // scale back the WB factor
-    double factor = _WB_multipliers[1];
-    assert( factor != 0.0 );
-    FORI( _WB_multipliers.size() ) _WB_multipliers[i] /= factor;
-
-    return;
+    return true;
 }
 
-//	=====================================================================
-//	Choose the best Light Source based on White Balance Coefficients from
-//  the camera read by libraw according to user-specified illuminant
-//
-//	inputs:
-//		Map: Key: path to the Light Source data;
-//           Value: Light Source x Camera Sensitivity
-//      String: Light Source Name
-//
-//	outputs:
-//		Illum: the best _Illuminant
-
-void SpectralSolver::select_illuminant( const std::string &type, int highlight )
+bool SpectralSolver::calculate_WB()
 {
-    assert( type == _illuminants[0].illuminant );
+    if ( camera.data.count( "main" ) == 0 ||
+         camera.data.at( "main" ).size() != 3 )
+    {
+        std::cerr << "ERROR: camera needs to be initialised prior to calling "
+                  << "SpectralSolver::calculate_WB()" << std::endl;
+    }
 
-    _best_illuminant = _illuminants[0];
-    _WB_multipliers  = calWB( _camera, _best_illuminant, highlight );
+    if ( illuminant.data.count( "main" ) == 0 ||
+         illuminant.data.at( "main" ).size() != 1 )
+    {
+        std::cerr << "ERROR: illuminant needs to be initialised prior to "
+                  << "calling SpectralSolver::calculate_WB()" << std::endl;
+        return false;
+    }
 
-    //		if (_verbosity > 1)
-    //            printf ( "The specified light source is: %s\n",
-    //                     _bestIllum._type.c_str() );
-
-    // scale back the WB factor
-    double factor = _WB_multipliers[1];
-    assert( factor != 0.0 );
-    FORI( _WB_multipliers.size() ) _WB_multipliers[i] /= factor;
-
-    return;
+    _WB_multipliers = calWB( camera, illuminant );
+    return true;
 }
 
 //	=====================================================================
@@ -507,7 +493,7 @@ calTI( const SpectralData &illuminant, const SpectralData &training_data )
 //		vector: wb(R, G, B)
 
 std::vector<double>
-calWB( const SpectralData &camera, SpectralData &illuminant, int highlight )
+calWB( const SpectralData &camera, SpectralData &illuminant )
 {
     scaleLSC( camera, illuminant );
 
@@ -520,13 +506,8 @@ calWB( const SpectralData &camera, SpectralData &illuminant, int highlight )
     double g = ( camera_g * illum ).integrate();
     double b = ( camera_b * illum ).integrate();
 
-    std::vector<double> wb = { 1.0 / r, 1.0 / g, 1.0 / b };
-
-    if ( !highlight )
-        scaleVectorMin( wb );
-    else
-        scaleVectorMax( wb );
-
+    // Normalise to the green channel.
+    std::vector<double> wb = { g / r, 1.0, g / b };
     return wb;
 }
 
@@ -724,32 +705,47 @@ bool curveFit(
 
 bool SpectralSolver::calculate_IDT_matrix()
 {
+    if ( camera.data.count( "main" ) == 0 ||
+         camera.data.at( "main" ).size() != 3 )
+    {
+        std::cerr << "ERROR: camera needs to be initialised prior to calling "
+                  << "SpectralSolver::calculate_IDT_matrix()" << std::endl;
+        return false;
+    }
+
+    if ( illuminant.data.count( "main" ) == 0 ||
+         illuminant.data.at( "main" ).size() != 1 )
+    {
+        std::cerr << "ERROR: illuminant needs to be initialised prior to "
+                  << "calling SpectralSolver::calculate_IDT_matrix()"
+                  << std::endl;
+        return false;
+    }
+
+    if ( observer.data.count( "main" ) == 0 ||
+         observer.data.at( "main" ).size() != 3 )
+    {
+        std::cerr << "ERROR: observer needs to be initialised prior to calling "
+                  << "SpectralSolver::calculate_IDT_matrix()" << std::endl;
+        return false;
+    }
+
+    if ( training_data.data.count( "main" ) == 0 ||
+         training_data.data.at( "main" ).empty() )
+    {
+        std::cerr << "ERROR: training data needs to be initialised prior to "
+                  << "calling SpectralSolver::calculate_IDT_matrix()"
+                  << std::endl;
+        return false;
+    }
+
     double BStart[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
 
-    auto TI  = calTI( _best_illuminant, _training_data );
-    auto RGB = calRGB( _camera, _best_illuminant, _WB_multipliers, TI );
-    auto XYZ = calXYZ( _observer, _best_illuminant, TI );
+    auto TI  = calTI( illuminant, training_data );
+    auto RGB = calRGB( camera, illuminant, _WB_multipliers, TI );
+    auto XYZ = calXYZ( observer, illuminant, TI );
 
     return curveFit( RGB, XYZ, BStart, verbosity, _IDT_matrix );
-}
-
-//	=====================================================================
-//  Get the Best Illuminant data / light source that was loaded from
-//  the file
-//
-//	inputs:
-//         N/A
-//
-//	outputs:
-//      const SpectralData: Illuminant data that has the closest match
-
-const SpectralData &SpectralSolver::get_best_illuminant() const
-{
-    assert( _best_illuminant.data.count( "main" ) == 1 );
-    assert( _best_illuminant.data.at( "main" ).size() == 1 );
-    assert( _best_illuminant["power"].values.size() > 0 );
-
-    return _best_illuminant;
 }
 
 //	=====================================================================

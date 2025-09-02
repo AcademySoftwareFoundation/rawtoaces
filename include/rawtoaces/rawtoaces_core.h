@@ -28,14 +28,14 @@ static const std::vector<std::vector<double> > CAT_D65_to_ACES = {
 // clang-format on
 
 /// Calculate spectral power distribution of a daylight illuminant of given CCT
-/// - parameter cct: correlated colour temperature of the requested illuminant.
-/// - parameter spectrum: a reference to a `Spectrum` object to full with the
+/// @param cct correlated colour temperature of the requested illuminant.
+/// @param spectrum a reference to a `Spectrum` object to full with the
 /// calculated values.
 void calculate_daylight_SPD( const int &cct, Spectrum &spectrum );
 
 /// Calculate spectral power distribution of a blackbody illuminant of given CCT
-/// - parameter cct: correlated colour temperature of the requested illuminant.
-/// - parameter spectrum: a reference to a `Spectrum` object to full with the
+/// @param cct correlated colour temperature of the requested illuminant.
+/// @param spectrum a reference to a `Spectrum` object to full with the
 /// calculated values.
 void calculate_blackbody_SPD( const int &cct, Spectrum &spectrum );
 
@@ -43,80 +43,89 @@ void calculate_blackbody_SPD( const int &cct, Spectrum &spectrum );
 class SpectralSolver
 {
 public:
-    SpectralSolver();
+    /// The camera spectral data. Can be either assigned directly, loaded
+    /// in-place place via `solver.camera.load()`, or found via
+    /// `solver.find_camera()`.
+    SpectralData camera;
+
+    /// The illuminant spectral data. Can be either assigned directly, loaded
+    /// in-place place via `solver.illuminant.load()`, or found via
+    /// `solver.find_illuminant()`.
+    SpectralData illuminant;
+
+    /// The observer spectral data. Can be either assigned directly, or loaded
+    /// in-place place via `solver.observer.load()`.
+    SpectralData observer;
+
+    /// The training set spectral data. Can be either assigned directly, or loaded
+    /// in-place place via `solver.training_data.load()`.
+    SpectralData training_data;
+
+    /// The constructor. Takes the database search path as an optional
+    /// parameter.
+    /// @param search_directories optional database search path.
+    SpectralSolver( const std::vector<std::string> &search_directories = {} );
+
+    /// A helper method collecting of spectral data files of a given type from
+    /// the database.
+    /// @param type data type of the files to search for.
+    /// @result a collection of files found in the database.
+    std::vector<std::string>
+    collect_data_files( const std::string &type ) const;
+
+    /// A helper method loading the spectral data for a file at the given path.
+    /// @param file_path the path to the file to load. If the path is relative,
+    /// all locations in the search path will be searched in.
+    /// @param out_data the `SpectralData` object to be filled with the loaded
+    /// data.
+    /// @result `true` is loaded successfully.
+    bool
+    load_spectral_data( const std::string &file_path, SpectralData &out_data );
 
     /// Load spectral sensitivity data for a camera.
-    /// - parameter path: a path to the data file
-    /// - parameter make: the camera make to verify the loaded data against.
-    /// - parameter model: the camera model to verify the loaded data against.
-    /// - returns `true` if loaded successfully.
-    bool load_camera(
-        const std::string &path,
-        const std::string &make,
-        const std::string &model );
+    /// @param make the camera make to search for.
+    /// @param model the camera model to search for.
+    /// @result `true` if loaded successfully.
+    bool find_camera( const std::string &make, const std::string &model );
 
-    /// Load spectral power distribution data for an illuminant.
-    /// If an illuminant type specified, try to find the matching data,
-    /// otherwise load all known illuminants.
-    /// - parameter paths: a set of data file paths to the data file
-    /// - parameter type: illuminant type to load.
-    /// - returns `true` if loaded successfully.
-    bool load_illuminant(
-        const std::vector<std::string> &paths, const std::string &type = "" );
-
-    /// Load spectral reflectivity data for a training set (a colour chart).
-    /// - parameter path: a path to the data file
-    /// - returns `true` if loaded successfully.
-    bool load_training_data( const std::string &path );
-
-    /// Load spectral sensitivity data for an observer
-    /// (colour matching functions).
-    /// - parameter path: a path to the data file
-    /// - returns `true` if loaded successfully.
-    bool load_observer( const std::string &path );
+    /// Find spectral power distribution data of an illuminant of the given
+    /// type.
+    /// @param type illuminant type. Can be one of the built-in types,
+    /// e.g. `d55`, `3200k`, or a custom illuminant stored in the database.
+    /// @result `true` if loaded successfully.
+    bool find_illuminant( const std::string &type );
 
     /// Find the illuminant best matching the given white-balancing multipliers.
-    /// See `get_best_illuminant()` to access the result.
-    /// - parameter wb_multipliers: white-balancing multipliers to match.
-    /// - parameter highlight: the highlight recovery mode, used for
-    /// normalisation.
-    void find_best_illuminant(
-        const std::vector<double> &wb_multipliers, int highlight );
+    /// @param wb_multipliers white-balancing multipliers to match.
+    /// @result `true` if loaded successfully.
+    bool find_illuminant( const std::vector<double> &wb_multipliers );
 
-    /// Select an illuminant of a given type.
-    /// See `get_best_illuminant()` to access the result.
-    /// - parameter type: illuminant type to select.
-    /// - parameter highlight: the highlight recovery mode, used for
-    /// normalisation.
-    void select_illuminant( const std::string &type, int highlight );
+    /// Calculate the white-balance multipliers for the given configuration.
+    /// The `camera`, and `illuminant` data have to be configured prior to this
+    /// call. See `get_WB_multipliers()` to access the result.
+    /// @result `true` if calculated successfully.
+    bool calculate_WB();
 
-    /// Calculate an input transform matrix.
-    /// See `get_IDT_matrix()` to access the result.
-    /// - returns `true` if calculated successfully.
+    /// Calculate an input transform matrix. The `camera`,  `illuminant`,
+    /// `observer` and `training_data` have to be configured prior to this
+    /// call. See `get_IDT_matrix()` to access the result.
+    /// @result `true` if calculated successfully.
     bool calculate_IDT_matrix();
 
-    /// Get the illuminant configured using `find_best_illuminant()` or
-    /// `select_illuminant()`.
-    /// - returns a reference to the illuminant.
-    const SpectralData &get_best_illuminant() const;
-
     /// Get the matrix calculated using `calculate_IDT_matrix()`.
-    /// - returns a reference to the matrix.
+    /// @result a reference to the matrix.
     const std::vector<std::vector<double>> &get_IDT_matrix() const;
 
     /// Get the white-balance multipliers calculated using
     /// `find_best_illuminant()` or `select_illuminant()`.
-    /// - returns a reference to the multipliers.
+    /// @result a reference to the multipliers.
     const std::vector<double> &get_WB_multipliers() const;
 
     int verbosity = 0;
 
 private:
-    SpectralData              _camera;
-    SpectralData              _best_illuminant;
-    SpectralData              _observer;
-    SpectralData              _training_data;
-    std::vector<SpectralData> _illuminants;
+    std::vector<std::string>  _search_directories;
+    std::vector<SpectralData> _all_illuminants;
 
     std::vector<double>              _WB_multipliers;
     std::vector<std::vector<double>> _IDT_matrix;
@@ -142,17 +151,17 @@ class MetadataSolver
 {
 public:
     /// Initialise the solver using DNG metadata.
-    /// - parameter metadata: DNG metadata
+    /// @param metadata DNG metadata
     MetadataSolver( const core::Metadata &metadata );
 
     /// Calculate an input transform matrix.
-    /// - returns: calculated matrix
+    /// @result calculated matrix
     std::vector<std::vector<double>> calculate_IDT_matrix();
 
     /// Calculate a chromatic adaptation transform matrix. Strictly speaking,
     /// this matrix is not required for image processing, as it is embedded in
     /// the IDT, see `calculate_IDT_matrix`.
-    /// - returns: calculated matrix
+    /// @result calculated matrix
     std::vector<std::vector<double>> calculate_CAT_matrix();
 
 private:

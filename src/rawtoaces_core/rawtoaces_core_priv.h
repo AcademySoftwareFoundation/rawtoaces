@@ -22,7 +22,7 @@ std::vector<Spectrum>
 calTI( const SpectralData &illuminant, const SpectralData &training_data );
 
 std::vector<double>
-calWB( const SpectralData &camera, SpectralData &illuminant, int highlight );
+calWB( const SpectralData &camera, SpectralData &illuminant );
 
 std::vector<std::vector<double>> calXYZ(
     const SpectralData          &observer,

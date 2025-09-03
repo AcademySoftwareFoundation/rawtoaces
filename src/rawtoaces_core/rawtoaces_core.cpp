@@ -135,10 +135,10 @@ void calculate_blackbody_SPD( const int &cct, Spectrum &spectrum )
 /// @param illuminant Reference to SpectralData object to fill with generated illuminant data
 /// @pre cct is in valid range for the specified illuminant type
 void generate_illuminant(
-    int               cct,
-    const std::string type,
-    bool              is_daylight,
-    SpectralData     &illuminant )
+    int                cct,
+    const std::string &type,
+    bool               is_daylight,
+    SpectralData      &illuminant )
 {
     illuminant.data.clear();
 
@@ -189,7 +189,7 @@ SpectralSolver::SpectralSolver(
 /// @param camera Camera sensitivity data containing RGB channel information
 /// @param illuminant Light source data to be scaled (modified in-place)
 /// @pre camera contains valid RGB channel data and illuminant contains power spectrum data
-void scale_LSC( const SpectralData &camera, SpectralData &illuminant )
+void scale_illuminant( const SpectralData &camera, SpectralData &illuminant )
 {
     double max_R = camera["R"].max();
     double max_G = camera["G"].max();
@@ -310,8 +310,13 @@ bool SpectralSolver::find_illuminant( const std::string &type )
 {
     assert( !type.empty() );
 
-    bool is_daylight  = std::tolower( type.front() ) == 'd';
-    bool is_blackbody = std::tolower( type.back() ) == 'k';
+    bool starts_with_d = std::tolower( type.front() ) == 'd';
+    bool ends_with_k   = std::tolower( type.back() ) == 'k';
+
+    // daylight ("D" + Numeric values)
+    bool is_daylight = starts_with_d && !ends_with_k;
+    // blackbody (Numeric values + "K")
+    bool is_blackbody = !starts_with_d && ends_with_k;
 
     if ( is_daylight )
     {
@@ -437,7 +442,7 @@ bool SpectralSolver::calculate_WB()
 ///
 /// @param camera Camera sensitivity data containing RGB spectral information
 /// @param illuminant Illuminant data containing power spectrum information
-/// @return Vector of scaled RGB values normalized by the maximum component
+/// @return Vector of reciprocal RGB values scaled by the maximum component
 std::vector<double>
 calculate_CM( const SpectralData &camera, const SpectralData &illuminant )
 {
@@ -460,13 +465,13 @@ calculate_CM( const SpectralData &camera, const SpectralData &illuminant )
 }
 
 /// Calculate the middle product based on training data and illuminant data.
-/// This function computes spectral transformations using the 190-patch training data
+/// This function computes spectral transformations using the training data
 /// and illuminant information. The result is a 2D vector representing spectral
 /// transformations across the training patches under the specified illuminant.
 ///
 /// @param illuminant Illuminant data containing power spectrum information
-/// @param training_data 190-patch training data for spectral calculations
-/// @return Vector of 190 spectra, each containing 81 wavelength samples
+/// @param training_data Training data for spectral calculations
+/// @return Vector of spectra, each containing wavelength samples
 std::vector<Spectrum> calculate_TI(
     const SpectralData &illuminant, const SpectralData &training_data )
 {
@@ -488,13 +493,13 @@ std::vector<Spectrum> calculate_TI(
 /// The function scales the illuminant to camera sensitivity data and normalizes to the green channel.
 ///
 /// @param camera Camera sensitivity data containing RGB spectral information
-/// @param illuminant Illuminant data (modified in-place by scale_LSC)
+/// @param illuminant Illuminant data (modified in-place by scale_illuminant)
 
 /// @return Vector of 3 white balance multipliers [R, G, B] normalized to green channel
 std::vector<double>
 _calculate_WB( const SpectralData &camera, SpectralData &illuminant )
 {
-    scale_LSC( camera, illuminant );
+    scale_illuminant( camera, illuminant );
 
     const Spectrum &camera_r            = camera["R"];
     const Spectrum &camera_g            = camera["G"];
@@ -519,7 +524,7 @@ _calculate_WB( const SpectralData &camera, SpectralData &illuminant )
 /// @param observer CIE 1931 color matching functions (X, Y, Z)
 /// @param illuminant Illuminant data containing power spectrum information
 /// @param training_illuminants Training patches transformed by illuminant (from calculate_TI)
-/// @return 2D vector (190 x 3) containing XYZ values for each training patch
+/// @return 2D vector containing XYZ values for each training patch
 std::vector<std::vector<double>> calculate_XYZ(
     const SpectralData          &observer,
     const SpectralData          &illuminant,
@@ -529,7 +534,7 @@ std::vector<std::vector<double>> calculate_XYZ(
     assert( training_illuminants[0].values.size() == 81 );
 
     std::vector<double> reference_white_point(
-        XYZ_white_point, XYZ_white_point + 3 );
+        ACES_white_point_XYZ, ACES_white_point_XYZ + 3 );
     std::vector<std::vector<double>> XYZ;
 
     const Spectrum &observer_x          = observer["X"];
@@ -570,7 +575,7 @@ std::vector<std::vector<double>> calculate_XYZ(
 /// @param illuminant Illuminant data containing power spectrum information
 /// @param WB_multipliers White balance multipliers from calculate_WB function
 /// @param training_illuminants Training patches transformed by illuminant (from calculate_TI)
-/// @return 2D vector (190 x 3) containing RGB values for each training patch
+/// @return 2D vector containing RGB values for each training patch
 std::vector<std::vector<double>> calculate_RGB(
     const SpectralData          &camera,
     const SpectralData          &illuminant,
@@ -626,8 +631,8 @@ struct IDTOptimizationCost
 /// target XYZ values across all training patches. The optimization process
 /// iteratively adjusts the beta_params parameters to achieve the best color transformation.
 ///
-/// @param RGB Camera RGB responses for training patches (190 x 3)
-/// @param XYZ Target XYZ values for training patches (190 x 3)
+/// @param RGB Camera RGB responses for training patches
+/// @param XYZ Target XYZ values for training patches
 /// @param beta_params Initial 6-element parameter array for IDT matrix (modified in-place)
 /// @param verbosity Verbosity level for optimization output (0-3):
 /// - 0: Silent (no output)
@@ -775,7 +780,7 @@ MetadataSolver::MetadataSolver( const core::Metadata &metadata )
 /// Convert Correlated Color Temperature (CCT) to Mired units.
 /// This function converts color temperature from Kelvin to Mired scale, which is
 /// commonly used in photography and lighting. Mired = 1,000,000 / CCT, providing
-/// a more linear scale for color temperature adjustments.
+/// a more perceptually uniform scale for color temperature adjustments.
 ///
 /// @param cct Correlated Color Temperature in Kelvin
 /// @return Color temperature in Mired units
@@ -906,16 +911,16 @@ double XYZ_to_color_temperature( const vector<double> &XYZ )
 /// @param mired_target Target Mired value for interpolation
 /// @param mired_start First reference Mired value (start of interpolation range)
 /// @param mired_end Second reference Mired value (end of interpolation range)
-/// @param matrix1 First camera transformation matrix
-/// @param matrix2 Second camera transformation matrix
+/// @param matrix_start First camera transformation matrix
+/// @param matrix_end Second camera transformation matrix
 /// @return Interpolated camera transformation matrix
 /// @pre mired_start != mired_end to avoid division by zero
 vector<double> XYZ_to_camera_weighted_matrix(
     const double              &mired_target,
     const double              &mired_start,
     const double              &mired_end,
-    const std::vector<double> &matrix1,
-    const std::vector<double> &matrix2 )
+    const std::vector<double> &matrix_start,
+    const std::vector<double> &matrix_end )
 {
 
     double weight = std::max(
@@ -923,9 +928,9 @@ vector<double> XYZ_to_camera_weighted_matrix(
         std::min(
             1.0,
             ( mired_start - mired_target ) / ( mired_start - mired_end ) ) );
-    vector<double> result = subVectors( matrix2, matrix1 );
+    vector<double> result = subVectors( matrix_end, matrix_start );
     scaleVector( result, weight );
-    result = addVectors( result, matrix1 );
+    result = addVectors( result, matrix_start );
 
     return result;
 }
@@ -971,9 +976,9 @@ vector<double> find_XYZ_to_camera_matrix(
     double max_mired = CCT_to_mired( 2000.0 );
     double min_mired = CCT_to_mired( 50000.0 );
 
-    const std::vector<double> &matrix1 =
+    const std::vector<double> &matrix_start =
         metadata.calibration[0].XYZ_to_RGB_matrix;
-    const std::vector<double> &matrix2 =
+    const std::vector<double> &matrix_end =
         metadata.calibration[1].XYZ_to_RGB_matrix;
 
     double low_mired =
@@ -988,11 +993,12 @@ vector<double> find_XYZ_to_camera_matrix(
     for ( current_mired = low_mired; current_mired < high_mired;
           current_mired += mirStep )
     {
-        current_error = current_mired -
-                        CCT_to_mired( XYZ_to_color_temperature( mulVector(
-                            invertV( XYZ_to_camera_weighted_matrix(
-                                current_mired, mir1, mir2, matrix1, matrix2 ) ),
-                            neutral_RGB ) ) );
+        current_error =
+            current_mired -
+            CCT_to_mired( XYZ_to_color_temperature( mulVector(
+                invertV( XYZ_to_camera_weighted_matrix(
+                    current_mired, mir1, mir2, matrix_start, matrix_end ) ),
+                neutral_RGB ) ) );
 
         if ( std::fabs( current_error - 0.0 ) <= 1e-09 )
         {
@@ -1019,7 +1025,7 @@ vector<double> find_XYZ_to_camera_matrix(
     }
 
     return XYZ_to_camera_weighted_matrix(
-        estimated_mired, mir1, mir2, matrix1, matrix2 );
+        estimated_mired, mir1, mir2, matrix_start, matrix_end );
 }
 
 /// Convert correlated color temperature to CIE XYZ color values.
@@ -1211,17 +1217,17 @@ vector<vector<double>> MetadataSolver::calculate_IDT_matrix()
 /// calculated LAB values from camera RGB responses transformed by candidate
 /// IDT matrix parameters. It's used by the Ceres optimization library to
 /// iteratively find the optimal 6-parameter IDT matrix that minimizes
-/// color differences across all 190 training patches.
+/// color differences across all training patches.
 ///
 /// The function transforms camera RGB values using candidate IDT parameters beta_params,
 /// converts the result to XYZ using ACES RGB primaries, then to LAB color space,
 /// and computes the difference from target LAB values as residuals.
 ///
 /// @param beta_params 6-element array of IDT matrix parameters [b00, b01, b02, b10, b11, b12]
-/// @param residuals Output array of LAB differences (190×3 = 570 elements)
+/// @param residuals Output array of LAB differences
 /// @return true (required by Ceres interface)
-/// @pre _RGB must contain 190×3 camera RGB responses
-/// @pre _outLAB must contain 190×3 target LAB values
+/// @pre _RGB must contain camera RGB responses
+/// @pre _outLAB must contain target LAB values
 template <typename T>
 bool IDTOptimizationCost::operator()( const T *beta_params, T *residuals ) const
 {

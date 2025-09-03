@@ -62,15 +62,12 @@ const double boltzmann_constant = 1.380662 * 1e-23;
 // Speed of light ([m/s] meters per second)
 const double light_speed = 2.99792458 * 1e8;
 
-const double min_double_value = std::numeric_limits<double>::min();
-const double max_double_value = std::numeric_limits<double>::max();
-
 // clang-format off
 
-static const double XYZ_white_point[3] = {0.952646074569846, 1.0,    1.00882518435159};
-static const double d50_white_point[3] = {0.9642,            1.0000, 0.8250};
-static const double d60_white_point[3] = {0.952646074569846, 1.0000, 1.00882518435159};
-static const double d65_white_point[3] = {0.9547,            1.0000, 1.0883};
+static const double ACES_white_point_XYZ[3] = {0.952646074569846, 1.0,    1.00882518435159};
+static const double d50_white_point_XYZ[3] = {0.9642,            1.0000, 0.8250};
+static const double d60_white_point_XYZ[3] = {0.952646074569846, 1.0000, 1.00882518435159};
+static const double d65_white_point_XYZ[3] = {0.9547,            1.0000, 1.0883};
 
 static const double neutral3[3][3] = {
     {1.0, 0.0, 0.0},

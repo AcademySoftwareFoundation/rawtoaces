@@ -749,7 +749,7 @@ void testIDT_scaleLSC()
     rta::core::SpectralData camera;
     load_file( "camera/nikon_d200_380_780_5.json", camera );
 
-    scale_LSC( camera, illuminant );
+    scale_illuminant( camera, illuminant );
 
     double scaledIllum[81] = {
         0.00546219526, 0.00682774407, 0.00819329289, 0.00955884170,
@@ -903,7 +903,7 @@ void testIDT_CalTI()
     rta::core::SpectralData training_data;
     load_file( "training/training_spectral.json", training_data );
 
-    scale_LSC( camera, illuminant );
+    scale_illuminant( camera, illuminant );
     auto TI_test = calculate_TI( illuminant, training_data );
 
     double TI[81]
@@ -4820,7 +4820,7 @@ void testIDT_CalXYZ()
     rta::core::SpectralData observer;
     load_file( "cmf/cmf_1931.json", observer );
 
-    scale_LSC( camera, illuminant );
+    scale_illuminant( camera, illuminant );
 
     auto TI       = calculate_TI( illuminant, training_data );
     auto XYZ_test = calculate_XYZ( observer, illuminant, TI );
@@ -5034,7 +5034,7 @@ void testIDT_CalRGB()
     rta::core::SpectralData observer;
     load_file( "cmf/cmf_1931.json", observer );
 
-    scale_LSC( camera, illuminant );
+    scale_illuminant( camera, illuminant );
     auto WB       = _calculate_WB( camera, illuminant );
     auto TI       = calculate_TI( illuminant, training_data );
     auto RGB_test = calculate_RGB( camera, illuminant, WB, TI );
@@ -5248,7 +5248,7 @@ void testIDT_CurveFit()
     rta::core::SpectralData observer;
     load_file( "cmf/cmf_1931.json", observer );
 
-    scale_LSC( camera, illuminant );
+    scale_illuminant( camera, illuminant );
     auto WB  = _calculate_WB( camera, illuminant );
     auto TI  = calculate_TI( illuminant, training_data );
     auto XYZ = calculate_XYZ( observer, illuminant, TI );

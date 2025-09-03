@@ -31,14 +31,14 @@ static const std::vector<std::vector<double> > CAT_D65_to_ACES = {
 /// The function generates the spectral power distribution for a daylight illuminant
 /// based on the requested correlated color temperature using CIE standard formulas.
 ///
-/// @param cct Correlated colour temperature of the requested illuminant (40-250 or 4000-25000 Kelvin)
+/// @param cct Correlated colour temperature of the requested illuminant either in Kelvin (in range of 4000-25000), or in short form from an illuminant name, e.g. 55 for D55 (in range of 40-250).
 /// @param spectrum Reference to a `Spectrum` object to fill with the calculated values
 /// @pre cct is in valid range for daylight calculations
 void calculate_daylight_SPD( const int &cct, Spectrum &spectrum );
 
 /// Calculate spectral power distribution (SPD) of blackbody radiation at given temperature.
 /// Generates a blackbody curve using Planck's law for the specified correlated color temperature.
-/// The function calculates spectral power distribution across visible wavelengths (380-780nm).
+/// The function calculates spectral power distribution across wavelengths defined by Spectrum object.
 ///
 /// @param cct Correlated colour temperature of the requested illuminant (1500-3999 Kelvin)
 /// @param spectrum Reference to a `Spectrum` object to fill with the calculated values
@@ -78,7 +78,7 @@ public:
     /// A helper method collecting spectral data files of a given type from the database.
     /// This function searches through the configured search directories to find all
     /// spectral data files matching the specified type (e.g., "camera", "illuminant").
-    /// It recursively searches subdirectories and returns JSON files matching the type.
+    /// It searches for type subdirectories at the top level of each directory and returns JSON files matching the type.
     ///
     /// @param type data type of the files to search for (e.g., "camera", "illuminant", "cmf")
     /// @return a collection of file paths found in the database
@@ -137,8 +137,7 @@ public:
 
     /// Calculate an input transform matrix using curve fitting optimization.
     /// This function computes the optimal IDT matrix by comparing camera RGB responses
-    /// with target XYZ values across all training patches. It uses the Ceres optimization
-    /// library to find the best 6-parameter transformation that minimizes color differences.
+    /// with target XYZ values across all training patches.
     /// The `camera`, `illuminant`, `observer` and `training_data` have to be configured prior to this call.
     ///
     /// @return `true` if calculated successfully, `false` otherwise
@@ -157,7 +156,7 @@ public:
 
     /// Get the white-balance multipliers calculated using `find_illuminant()` or `calculate_WB()`.
     /// This function returns a reference to the 3-element vector containing RGB white
-    /// balance multipliers. These multipliers normalize the camera response to achieve
+    /// balance multipliers. These multipliers scale the camera response to achieve
     /// proper white balance under the specified illuminant conditions.
     ///
     /// @return a reference to the 3-element white balance multiplier vector [R, G, B]

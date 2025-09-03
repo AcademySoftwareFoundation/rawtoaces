@@ -479,8 +479,8 @@ void testIDT_XYZTouv()
 
 void testIDT_GetCAT()
 {
-    vector<double> dIV( d50_white_point, d50_white_point + 3 );
-    vector<double> dOV( d60_white_point, d60_white_point + 3 );
+    vector<double> dIV( d50_white_point_XYZ, d50_white_point_XYZ + 3 );
+    vector<double> dOV( d60_white_point_XYZ, d60_white_point_XYZ + 3 );
 
     vector<vector<double>> CAT_test = calculate_CAT( dIV, dOV );
 

@@ -574,7 +574,7 @@ vector<vector<T>> XYZ_to_LAB( const vector<vector<T>> &XYZ )
     vector<vector<T>> tmpXYZ( XYZ.size(), vector<T>( 3, T( 1.0 ) ) );
     FORIJ( XYZ.size(), 3 )
     {
-        tmpXYZ[i][j] = XYZ[i][j] / XYZ_white_point[j];
+        tmpXYZ[i][j] = XYZ[i][j] / ACES_white_point_XYZ[j];
         if ( tmpXYZ[i][j] > T( e ) )
             tmpXYZ[i][j] = ceres::pow( tmpXYZ[i][j], T( 1.0 / 3.0 ) );
         else

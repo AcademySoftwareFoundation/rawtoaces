@@ -62,6 +62,8 @@ const double boltzmann_constant = 1.380662 * 1e-23;
 // Speed of light ([m/s] meters per second)
 const double light_speed = 2.99792458 * 1e8;
 
+const double max_double_value = std::numeric_limits<double>::max();
+
 // clang-format off
 
 static const double ACES_white_point_XYZ[3] = {0.952646074569846, 1.0,    1.00882518435159};

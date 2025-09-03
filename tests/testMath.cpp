@@ -86,7 +86,7 @@ void test_Cross2()
     vector<double> av( a, a + 2 );
     vector<double> bv( b, b + 2 );
 
-    double cross2_test = cross2( av, bv );
+    double cross2_test = cross2d_scalar( av, bv );
     OIIO_CHECK_EQUAL_THRESH( cross2_test, 3.50, 1e-5 );
 };
 
@@ -206,7 +206,7 @@ void test_ScaleVectorMax()
     double M_Scaled[10] = { 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 };
     vector<double> MV( M, M + 10 );
 
-    scaleVectorMax( MV );
+    scale_vector_max( MV );
     FORI( MV.size() )
     OIIO_CHECK_EQUAL_THRESH( M_Scaled[i], MV[i], 1e-5 );
 };
@@ -216,7 +216,7 @@ void test_ScaleVectorMin()
     double M[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
     vector<double> MV( M, M + 10 );
 
-    scaleVectorMin( MV );
+    scale_vector_min( MV );
     FORI( MV.size() )
     OIIO_CHECK_EQUAL_THRESH( M[i], MV[i], 1e-5 );
 };
@@ -433,7 +433,7 @@ void testIDT_XytoXYZ()
 {
     double         xy[3]  = { 0.7347, 0.2653 };
     double         XYZ[3] = { 0.7347, 0.2653, 0.0 };
-    vector<double> XYZV   = xyToXYZ( vector<double>( xy, xy + 2 ) );
+    vector<double> XYZV   = xy_to_XYZ( vector<double>( xy, xy + 2 ) );
 
     FORI( 3 )
     {
@@ -445,7 +445,7 @@ void testIDT_Uvtoxy()
 {
     double         uv[2] = { 0.7347, 0.2653 };
     double         xy[2] = { 0.658530026, 0.158530026 };
-    vector<double> xyV   = uvToxy( vector<double>( uv, uv + 2 ) );
+    vector<double> xyV   = uv_to_xy( vector<double>( uv, uv + 2 ) );
 
     FORI( 2 )
     {
@@ -457,7 +457,7 @@ void testIDT_UvtoXYZ()
 {
     double         uv[2]  = { 0.7347, 0.2653 };
     double         XYZ[3] = { 0.658530026, 0.158530026, 0.18293995 };
-    vector<double> XYZV   = uvToXYZ( vector<double>( uv, uv + 2 ) );
+    vector<double> XYZV   = uv_to_XYZ( vector<double>( uv, uv + 2 ) );
 
     FORI( 3 )
     {
@@ -469,7 +469,7 @@ void testIDT_XYZTouv()
 {
     double         XYZ[3] = { 0.658530026, 0.158530026, 0.18293995 };
     double         uv[2]  = { 0.7347, 0.2653 };
-    vector<double> uvV    = XYZTouv( vector<double>( XYZ, XYZ + 3 ) );
+    vector<double> uvV    = XYZ_to_uv( vector<double>( XYZ, XYZ + 3 ) );
 
     FORI( 2 )
     {
@@ -479,8 +479,8 @@ void testIDT_XYZTouv()
 
 void testIDT_GetCAT()
 {
-    vector<double> dIV( d50, d50 + 3 );
-    vector<double> dOV( d60, d60 + 3 );
+    vector<double> dIV( d50_white_point_XYZ, d50_white_point_XYZ + 3 );
+    vector<double> dOV( d60_white_point_XYZ, d60_white_point_XYZ + 3 );
 
     vector<vector<double>> CAT_test = calculate_CAT( dIV, dOV );
 
@@ -501,7 +501,7 @@ void test_XYZtoLAB()
     vector<vector<double>> XYZ( 190, ( vector<double>( 3 ) ) );
     FORIJ( 190, 3 )
     XYZ[i][j]                       = 116 / ( i * j + 1 );
-    vector<vector<double>> LAB_test = XYZtoLAB( XYZ );
+    vector<vector<double>> LAB_test = XYZ_to_LAB( XYZ );
 
     double LAB[190][3] = { { 549.7318794845, 39.7525650490, 2.8525942657 },
                            { 433.0216903128, 542.8137252717, 103.7466920825 },

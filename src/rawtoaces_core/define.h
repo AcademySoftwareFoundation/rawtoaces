@@ -56,21 +56,20 @@ const double e = 0.008856451679;
 const double k = 7.787037037037;
 
 // Planck's constant ([J*s] Joule-seconds)
-const double bh = 6.626176 * 1e-34;
+const double plancks_constant = 6.626176 * 1e-34;
 // Boltzmann constant ([J/K] Joules per Kelvin)
-const double bk = 1.380662 * 1e-23;
+const double boltzmann_constant = 1.380662 * 1e-23;
 // Speed of light ([m/s] meters per second)
-const double bc = 2.99792458 * 1e8;
+const double light_speed = 2.99792458 * 1e8;
 
-const double dmin = std::numeric_limits<double>::min();
-const double dmax = std::numeric_limits<double>::max();
+const double max_double_value = std::numeric_limits<double>::max();
 
 // clang-format off
 
-static const double XYZ_w[3] = {0.952646074569846, 1.0,    1.00882518435159};
-static const double d50  [3] = {0.9642,            1.0000, 0.8250};
-static const double d60  [3] = {0.952646074569846, 1.0000, 1.00882518435159};
-static const double d65  [3] = {0.9547,            1.0000, 1.0883};
+static const double ACES_white_point_XYZ[3] = {0.952646074569846, 1.0,    1.00882518435159};
+static const double d50_white_point_XYZ[3] = {0.9642,            1.0000, 0.8250};
+static const double d60_white_point_XYZ[3] = {0.952646074569846, 1.0000, 1.00882518435159};
+static const double d65_white_point_XYZ[3] = {0.9547,            1.0000, 1.0883};
 
 static const double neutral3[3][3] = {
     {1.0, 0.0, 0.0},
@@ -179,7 +178,7 @@ static const double chromaticitiesACES[4][2] = {
 };
 
 // Roberson UV Table
-static const double Robertson_uvtTable[][3] = {
+static const double robertson_uvt_table[][3] = {
     { 0.18006,  0.26352,   -0.24341 },
     { 0.18066,  0.26589,   -0.25479 },
     { 0.18133,  0.26846,   -0.26876 },
@@ -214,7 +213,7 @@ static const double Robertson_uvtTable[][3] = {
 };
 
 // Roberson Mired Matrix
-static const double RobertsonMired[] = {
+static const double robertson_mired_table[] = {
       1.0e-10, 10.0,  20.0,  30.0,  40.0,  50.0,  60.0,  70.0,
      80.0,     90.0, 100.0, 125.0, 150.0, 175.0, 200.0, 225.0,
     250.0,    275.0, 300.0, 325.0, 350.0, 375.0, 400.0, 425.0,
@@ -264,12 +263,6 @@ inline std::vector<std::string> openDir( std::string path = "." )
     }
 
     return paths;
-};
-
-// Function to clear the memories occupied by vectors
-template <typename T> inline void clearVM( std::vector<T> vct )
-{
-    std::vector<T>().swap( vct );
 };
 
 // Function to covert upper-case to lower-case

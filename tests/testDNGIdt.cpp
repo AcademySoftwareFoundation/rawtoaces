@@ -11,7 +11,7 @@
 void testIDT_CcttoMired()
 {
     double cct   = 6500.0;
-    double mired = rta::core::ccttoMired( cct );
+    double mired = rta::core::CCT_to_mired( cct );
     OIIO_CHECK_EQUAL_THRESH( mired, 153.8461538462, 1e-5 );
 };
 
@@ -21,14 +21,14 @@ void testIDT_RobertsonLength()
     double              uvt[] = { 0.1800600000, 0.2635200000, -0.2434100000 };
     std::vector<double> uvVector( uv, uv + 2 );
     std::vector<double> uvtVector( uvt, uvt + 3 );
-    double rLength = rta::core::robertsonLength( uvVector, uvtVector );
+    double rLength = rta::core::robertson_length( uvVector, uvtVector );
     OIIO_CHECK_EQUAL_THRESH( rLength, 0.060234937, 1e-5 );
 };
 
 void testIDT_LightSourceToColorTemp()
 {
     unsigned short tag = 17;
-    double         ct  = rta::core::lightSourceToColorTemp( tag );
+    double         ct  = rta::core::light_source_to_color_temp( tag );
     OIIO_CHECK_EQUAL_THRESH( ct, 2856.0, 1e-5 );
 };
 
@@ -58,7 +58,7 @@ void testIDT_XYZToColorTemperature()
 {
     double              XYZ[3] = { 0.9731171910, 1.0174927152, 0.9498565880 };
     std::vector<double> XYZVector( XYZ, XYZ + 3 );
-    double              cct = rta::core::XYZToColorTemperature( XYZVector );
+    double              cct = rta::core::XYZ_to_color_temperature( XYZVector );
 
     OIIO_CHECK_EQUAL_THRESH( cct, 5564.6648479019, 1e-5 );
 };
@@ -78,7 +78,7 @@ void testIDT_XYZtoCameraWeightedMatrix()
     const std::vector<double> &matrix2 =
         metadata.calibration[1].XYZ_to_RGB_matrix;
 
-    std::vector<double> result = rta::core::XYZtoCameraWeightedMatrix(
+    std::vector<double> result = rta::core::XYZ_to_camera_weighted_matrix(
         mirs[0], mirs[1], mirs[2], matrix1, matrix2 );
     delete di;
 
@@ -97,7 +97,7 @@ void testIDT_FindXYZtoCameraMtx()
                              -0.0411839968, 0.3103035015,  0.5718121924 };
     std::vector<double> neutralRGBVector( neutralRGB, neutralRGB + 3 );
     std::vector<double> result =
-        rta::core::findXYZtoCameraMtx( metadata, neutralRGBVector );
+        rta::core::find_XYZ_to_camera_matrix( metadata, neutralRGBVector );
 
     delete di;
 
@@ -109,7 +109,7 @@ void testIDT_ColorTemperatureToXYZ()
 {
     double              cct    = 6500.0;
     double              XYZ[3] = { 0.3135279229, 0.3235340821, 0.3629379950 };
-    std::vector<double> result = rta::core::colorTemperatureToXYZ( cct );
+    std::vector<double> result = rta::core::color_temperature_to_XYZ( cct );
 
     FORI( countSize( XYZ ) )
     OIIO_CHECK_EQUAL_THRESH( result[i], XYZ[i], 1e-5 );
@@ -121,7 +121,7 @@ void testIDT_MatrixRGBtoXYZ()
                       0.343966449765, 0.728166096613, -0.072132546379,
                       0.000000000000, 0.000000000000, 1.008825184352 };
     std::vector<double> result =
-        rta::core::matrixRGBtoXYZ( rta::core::chromaticitiesACES );
+        rta::core::matrix_RGB_to_XYZ( rta::core::chromaticitiesACES );
 
     FORI( countSize( XYZ ) )
     OIIO_CHECK_EQUAL_THRESH( result[i], XYZ[i], 1e-5 );

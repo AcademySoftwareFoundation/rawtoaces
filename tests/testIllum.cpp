@@ -17,7 +17,7 @@
 
 void testIllum_cctToxy()
 {
-    vector<double> xy = rta::core::cctToxy( 5000 * 1.4387752 / 1.438 );
+    vector<double> xy = rta::core::CCT_to_xy( 5000 * 1.4387752 / 1.438 );
 
     OIIO_CHECK_EQUAL_THRESH( xy[0], 0.3456619734948, 1e-9 );
     OIIO_CHECK_EQUAL_THRESH( xy[1], 0.3586032641691, 1e-9 );

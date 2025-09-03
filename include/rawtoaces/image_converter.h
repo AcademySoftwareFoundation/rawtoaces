@@ -41,20 +41,20 @@ public:
             /// the camera.
             Illuminant,
             /// Calculate white balance by averaging over a specified region of
-            /// the image. See `wbBox`. In this mode if an empty box if provided,
+            /// the image. See `WB_box`. In this mode if an empty box if provided,
             /// white balancing is done by averaging over the whole image.
             Box,
             /// Use custom white balancing multipliers. This mode is useful if
             /// the white balancing coefficients are calculated by an external
             /// tool.
             Custom
-        } wbMethod = WBMethod::Metadata;
+        } WB_method = WBMethod::Metadata;
 
         enum class MatrixMethod
         {
             /// Use the camera spectral sensitivity curves to solve for the colour
             /// conversion matrix. In this mode the illuminant is either provided
-            /// directly in `illuminant` if `wbMethod` ==
+            /// directly in `illuminant` if `WB_method` ==
             /// `WBMethod::Illuminant`, or the best illuminant is derived from the
             /// white balancing multipliers.
             Spectral,
@@ -67,7 +67,7 @@ public:
             /// Specify a custom matrix in `colourMatrix`. This mode is useful if
             /// the matrix is calculated by an external tool.
             Custom
-        } matrixMethod = MatrixMethod::Spectral;
+        } matrix_method = MatrixMethod::Spectral;
 
         /// Cropping mode.
         enum class CropMode
@@ -81,18 +81,18 @@ public:
         } crop_mode = CropMode::Hard;
 
         /// An illuminant to use for white balancing and/or colour matrix
-        /// calculation. Only used when `wbMethod` ==
-        /// `WBMethod::Illuminant` and `matrixMethod` == `MatrixMethod::Spectral`.
+        /// calculation. Only used when `WB_method` ==
+        /// `WBMethod::Illuminant` and `matrix_method` == `MatrixMethod::Spectral`.
         /// An illuminant can be provided as a black body correlated colour
         /// temperature, like `3200K`; or a D-series illuminant, like `D56`;
         /// or any other illuminant, in such case it must be present in the data
         /// folder.
         std::string illuminant;
 
-        float headroom           = 6.0;
-        int   wbBox[4]           = { 0 };
-        float customWB[4]        = { 1.0, 1.0, 1.0, 1.0 };
-        float customMatrix[3][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
+        float headroom            = 6.0;
+        int   WB_box[4]           = { 0 };
+        float custom_WB[4]        = { 1.0, 1.0, 1.0, 1.0 };
+        float custom_matrix[3][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
 
         std::string custom_camera_make;
         std::string custom_camera_model;
@@ -105,8 +105,8 @@ public:
         bool        half_size                = false;
         int         highlight_mode           = 0;
         int         flip                     = 0;
-        int         cropbox[4]               = { 0, 0, 0, 0 };
-        float       aberration[2]            = { 1.0f, 1.0f };
+        int         crop_box[4]              = { 0, 0, 0, 0 };
+        float       chromatic_aberration[2]  = { 1.0f, 1.0f };
         float       denoise_threshold        = 0;
         float       scale                    = 1.0f;
         std::string demosaic_algorithm       = "AHD";

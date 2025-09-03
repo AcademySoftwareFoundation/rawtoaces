@@ -57,9 +57,9 @@ void test_ImageConverter_settings()
 
     // Configure the converter.
     rta::util::ImageConverter converter;
-    converter.settings.wbMethod =
+    converter.settings.WB_method =
         rta::util::ImageConverter::Settings::WBMethod::Metadata;
-    converter.settings.matrixMethod =
+    converter.settings.matrix_method =
         rta::util::ImageConverter::Settings::MatrixMethod::Metadata;
 
     // Process an image.

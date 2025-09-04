@@ -211,8 +211,7 @@ bool prepare_transform_spectral(
 {
     std::string lower_illuminant = OIIO::Strutil::lower( settings.illuminant );
 
-    core::CameraInfo camera_info =
-        get_camera_info( image_spec, settings );
+    core::CameraInfo camera_info = get_camera_info( image_spec, settings );
     if ( camera_info.is_empty() )
         return false;
 

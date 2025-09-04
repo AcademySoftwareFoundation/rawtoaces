@@ -59,9 +59,9 @@ bool collect_image_files(
         std::vector<std::string> &curr_batch = batches.emplace_back();
         auto it = std::filesystem::directory_iterator( path );
 
-        for ( auto filename2: it )
+        for ( auto filename: it )
         {
-            check_and_add_file( filename2, curr_batch );
+            check_and_add_file( filename, curr_batch );
         }
     }
     else
@@ -81,21 +81,22 @@ std::vector<std::string> database_paths()
     const std::string separator    = ";";
     const std::string default_path = ".";
 #else
-    char              separator = ':';
+    char              separator   = ':';
+    const std::string legacy_path = "/usr/local/include/rawtoaces/data";
     const std::string default_path =
-        "/usr/local/share/rawtoaces/data"
-        ":/usr/local/include/rawtoaces/data"; // Old path for back compatibility
+        std::string( "/usr/local/share/rawtoaces/data" ) + separator +
+        legacy_path;
 #endif
 
     std::string path;
 
-    const char *env = getenv( "RAWTOACES_DATA_PATH" );
-    if ( !env )
+    const char *path_from_env = getenv( "RAWTOACES_DATA_PATH" );
+    if ( !path_from_env )
     {
         // Fallback to the old environment variable.
-        env = getenv( "AMPAS_DATA_PATH" );
+        path_from_env = getenv( "AMPAS_DATA_PATH" );
 
-        if ( env )
+        if ( path_from_env )
         {
             std::cerr << "Warning: The environment variable "
                       << "AMPAS_DATA_PATH is now deprecated. Please use "
@@ -103,9 +104,9 @@ std::vector<std::string> database_paths()
         }
     }
 
-    if ( env )
+    if ( path_from_env )
     {
-        path = env;
+        path = path_from_env;
     }
     else
     {
@@ -167,11 +168,11 @@ bool fetch_camera_make_and_model(
 /// Check if an attribute of a given name exists
 /// and has the type we are expecting.
 const OIIO::ParamValue *find_and_check_attribute(
-    const OIIO::ImageSpec &imageSpec,
+    const OIIO::ImageSpec &image_spec,
     const std::string     &name,
     OIIO::TypeDesc         type )
 {
-    auto attr = imageSpec.find_attribute( name );
+    auto attr = image_spec.find_attribute( name );
     if ( attr )
     {
         auto attr_type = attr->type();
@@ -191,7 +192,7 @@ void print_data_error( const std::string &data_type )
 }
 
 bool prepare_transform_spectral(
-    const OIIO::ImageSpec            &imageSpec,
+    const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,
     std::vector<double>              &WB_multipliers,
     std::vector<std::vector<double>> &IDT_matrix,
@@ -201,7 +202,7 @@ bool prepare_transform_spectral(
 
     std::string camera_make  = settings.custom_camera_make;
     std::string camera_model = settings.custom_camera_model;
-    if ( !fetch_camera_make_and_model( imageSpec, camera_make, camera_model ) )
+    if ( !fetch_camera_make_and_model( image_spec, camera_make, camera_model ) )
         return false;
 
     bool success = false;
@@ -252,38 +253,39 @@ bool prepare_transform_spectral(
 
     if ( lower_illuminant.empty() )
     {
-        std::vector<double> wb_multipliers( 4 );
+        std::vector<double> tmp_wb_multipliers( 4 );
 
         if ( WB_multipliers.size() == 4 )
         {
             for ( int i = 0; i < 3; i++ )
-                wb_multipliers[i] = WB_multipliers[i];
+                tmp_wb_multipliers[i] = WB_multipliers[i];
         }
         else
         {
             auto attr = find_and_check_attribute(
-                imageSpec,
+                image_spec,
                 "raw:pre_mul",
                 OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
             if ( attr )
             {
                 for ( int i = 0; i < 4; i++ )
-                    wb_multipliers[i] = attr->get_float_indexed( i );
+                    tmp_wb_multipliers[i] = attr->get_float_indexed( i );
             }
         }
 
-        if ( wb_multipliers[3] != 0 )
-            wb_multipliers[1] = ( wb_multipliers[1] + wb_multipliers[3] ) / 2.0;
-        wb_multipliers.resize( 3 );
+        if ( tmp_wb_multipliers[3] != 0 )
+            tmp_wb_multipliers[1] =
+                ( tmp_wb_multipliers[1] + tmp_wb_multipliers[3] ) / 2.0;
+        tmp_wb_multipliers.resize( 3 );
 
-        double min_val =
-            *std::min_element( wb_multipliers.begin(), wb_multipliers.end() );
+        double min_val = *std::min_element(
+            tmp_wb_multipliers.begin(), tmp_wb_multipliers.end() );
 
         if ( min_val > 0 && min_val != 1 )
             for ( int i = 0; i < 3; i++ )
-                wb_multipliers[i] /= min_val;
+                tmp_wb_multipliers[i] /= min_val;
 
-        success = solver.find_illuminant( wb_multipliers );
+        success = solver.find_illuminant( tmp_wb_multipliers );
 
         if ( !success )
         {
@@ -352,25 +354,25 @@ bool prepare_transform_spectral(
 }
 
 bool prepare_transform_DNG(
-    const OIIO::ImageSpec            &imageSpec,
+    const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,
     std::vector<std::vector<double>> &IDT_matrix,
     std::vector<std::vector<double>> &CAT_matrix )
 {
     std::string camera_make  = settings.custom_camera_make;
     std::string camera_model = settings.custom_camera_model;
-    if ( !fetch_camera_make_and_model( imageSpec, camera_make, camera_model ) )
+    if ( !fetch_camera_make_and_model( image_spec, camera_make, camera_model ) )
         return false;
 
     core::Metadata metadata;
 
     metadata.baseline_exposure =
-        imageSpec.get_float_attribute( "raw:dng:baseline_exposure" );
+        image_spec.get_float_attribute( "raw:dng:baseline_exposure" );
 
     metadata.neutral_RGB.resize( 3 );
 
     auto attr = find_and_check_attribute(
-        imageSpec, "raw:cam_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
+        image_spec, "raw:cam_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
     if ( attr )
     {
         for ( int i = 0; i < 3; i++ )
@@ -386,11 +388,12 @@ bool prepare_transform_DNG(
         auto index_string = std::to_string( k + 1 );
 
         auto key = "raw:dng:calibration_illuminant" + index_string;
-        metadata.calibration[k].illuminant = imageSpec.get_int_attribute( key );
+        metadata.calibration[k].illuminant =
+            image_spec.get_int_attribute( key );
 
         auto key1         = "raw:dng:color_matrix" + index_string;
         auto matrix1_attr = find_and_check_attribute(
-            imageSpec, key1, OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 12 ) );
+            image_spec, key1, OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 12 ) );
         if ( matrix1_attr )
         {
             for ( int i = 0; i < 3; i++ )
@@ -405,7 +408,7 @@ bool prepare_transform_DNG(
 
         auto key2         = "raw:dng:camera_calibration" + index_string;
         auto matrix2_attr = find_and_check_attribute(
-            imageSpec, key2, OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 16 ) );
+            image_spec, key2, OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 16 ) );
         if ( matrix2_attr )
         {
             for ( int i = 0; i < 3; i++ )
@@ -425,11 +428,11 @@ bool prepare_transform_DNG(
     if ( settings.verbosity > 0 )
     {
         std::cerr << "Input transform matrix:" << std::endl;
-        for ( auto &i: IDT_matrix )
+        for ( auto &IDT_matrix_row: IDT_matrix )
         {
-            for ( auto &j: i )
+            for ( auto &IDT_matrix_row_element: IDT_matrix_row )
             {
-                std::cerr << j << " ";
+                std::cerr << IDT_matrix_row_element << " ";
             }
             std::cerr << std::endl;
         }
@@ -441,7 +444,7 @@ bool prepare_transform_DNG(
 }
 
 bool prepare_transform_nonDNG(
-    const OIIO::ImageSpec            &imageSpec,
+    const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,
     std::vector<std::vector<double>> &IDT_matrix,
     std::vector<std::vector<double>> &CAT_matrix )
@@ -534,8 +537,10 @@ bool check_param(
         }
         else
         {
-            if ( ( param_value.size() == 0 ) ||
-                 ( ( param_value.size() == 1 ) && ( param_value[0] == 0 ) ) )
+            bool param_not_provided =
+                ( param_value.size() == 0 ) ||
+                ( ( param_value.size() == 1 ) && ( param_value[0] == 0 ) );
+            if ( param_not_provided )
             {
                 std::cerr << "Warning: " << mode_name << " was set to \""
                           << mode_value << "\", but no \"--" << param_name
@@ -556,8 +561,10 @@ bool check_param(
     }
     else
     {
-        if ( ( param_value.size() > 1 ) ||
-             ( ( param_value.size() == 1 ) && ( param_value[0] != 0 ) ) )
+        bool param_provided =
+            ( param_value.size() > 1 ) ||
+            ( ( param_value.size() == 1 ) && ( param_value[0] != 0 ) );
+        if ( param_provided )
         {
             std::cerr << "Warning: the \"--" << param_name
                       << "\" parameter provided, but the " << mode_name
@@ -817,55 +824,55 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
         std::cerr << std::endl;
     }
 
-    std::string wb_method = arg_parser["wb-method"].get();
+    std::string WB_method = arg_parser["wb-method"].get();
 
-    if ( wb_method == "metadata" )
+    if ( WB_method == "metadata" )
     {
-        settings.wbMethod = Settings::WBMethod::Metadata;
+        settings.WB_method = Settings::WBMethod::Metadata;
     }
-    else if ( wb_method == "illuminant" )
+    else if ( WB_method == "illuminant" )
     {
-        settings.wbMethod = Settings::WBMethod::Illuminant;
+        settings.WB_method = Settings::WBMethod::Illuminant;
     }
-    else if ( wb_method == "box" )
+    else if ( WB_method == "box" )
     {
-        settings.wbMethod = Settings::WBMethod::Box;
+        settings.WB_method = Settings::WBMethod::Box;
     }
-    else if ( wb_method == "custom" )
+    else if ( WB_method == "custom" )
     {
-        settings.wbMethod = Settings::WBMethod::Custom;
+        settings.WB_method = Settings::WBMethod::Custom;
     }
     else
     {
         std::cerr << std::endl
-                  << "Unsupported white balancing method: \"" << wb_method
+                  << "Unsupported white balancing method: \"" << WB_method
                   << "\"." << std::endl;
 
         return false;
     }
 
-    std::string mat_method = arg_parser["mat-method"].get();
+    std::string matrix_method = arg_parser["mat-method"].get();
 
-    if ( mat_method == "spectral" )
+    if ( matrix_method == "spectral" )
     {
-        settings.matrixMethod = Settings::MatrixMethod::Spectral;
+        settings.matrix_method = Settings::MatrixMethod::Spectral;
     }
-    else if ( mat_method == "metadata" )
+    else if ( matrix_method == "metadata" )
     {
-        settings.matrixMethod = Settings::MatrixMethod::Metadata;
+        settings.matrix_method = Settings::MatrixMethod::Metadata;
     }
-    else if ( mat_method == "Adobe" )
+    else if ( matrix_method == "Adobe" )
     {
-        settings.matrixMethod = Settings::MatrixMethod::Adobe;
+        settings.matrix_method = Settings::MatrixMethod::Adobe;
     }
-    else if ( mat_method == "custom" )
+    else if ( matrix_method == "custom" )
     {
-        settings.matrixMethod = Settings::MatrixMethod::Custom;
+        settings.matrix_method = Settings::MatrixMethod::Custom;
     }
     else
     {
         std::cerr << std::endl
-                  << "Unsupported matrix method: \"" << mat_method << "\"."
+                  << "Unsupported matrix method: \"" << matrix_method << "\"."
                   << std::endl;
 
         return false;
@@ -873,7 +880,7 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
 
     settings.illuminant = arg_parser["illuminant"].get();
 
-    if ( settings.wbMethod == Settings::WBMethod::Illuminant )
+    if ( settings.WB_method == Settings::WBMethod::Illuminant )
     {
         if ( settings.illuminant.empty() )
         {
@@ -895,109 +902,111 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
         }
     }
 
-    auto box = arg_parser["wb-box"].as_vec<int>();
+    auto WB_box = arg_parser["wb-box"].as_vec<int>();
     check_param(
         "white balancing mode",
         "box",
         "wb-box",
-        box,
+        WB_box,
         4,
         "The box will be ignored.",
-        settings.wbMethod == Settings::WBMethod::Box,
+        settings.WB_method == Settings::WBMethod::Box,
         [&]() {
             for ( int i = 0; i < 4; i++ )
-                settings.wbBox[i] = box[i];
+                settings.WB_box[i] = WB_box[i];
         },
         [&]() {
             for ( int i = 0; i < 4; i++ )
-                settings.wbBox[i] = 0;
+                settings.WB_box[i] = 0;
         } );
 
-    auto custom_wb = arg_parser["custom-wb"].as_vec<float>();
+    auto custom_WB = arg_parser["custom-wb"].as_vec<float>();
     check_param(
         "white balancing mode",
         "custom",
         "custom-wb",
-        custom_wb,
+        custom_WB,
         4,
         "The scalers will be ignored. The default values of (1, 1, 1, 1) will be used",
-        settings.wbMethod == Settings::WBMethod::Custom,
+        settings.WB_method == Settings::WBMethod::Custom,
         [&]() {
             for ( int i = 0; i < 4; i++ )
-                settings.customWB[i] = custom_wb[i];
+                settings.custom_WB[i] = custom_WB[i];
         },
         [&]() {
             for ( int i = 0; i < 4; i++ )
-                settings.customWB[i] = 1.0;
+                settings.custom_WB[i] = 1.0;
         } );
 
-    auto custom_mat = arg_parser["custom-mat"].as_vec<float>();
+    auto custom_matrix = arg_parser["custom-mat"].as_vec<float>();
     check_param(
         "matrix mode",
         "custom",
         "custom-mat",
-        custom_mat,
+        custom_matrix,
         9,
         "Identity matrix will be used",
-        settings.matrixMethod == Settings::MatrixMethod::Custom,
+        settings.matrix_method == Settings::MatrixMethod::Custom,
         [&]() {
             for ( int i = 0; i < 3; i++ )
                 for ( int j = 0; j < 3; j++ )
-                    settings.customMatrix[i][j] = custom_mat[i * 3 + j];
+                    settings.custom_matrix[i][j] = custom_matrix[i * 3 + j];
         },
         [&]() {
             for ( int i = 0; i < 3; i++ )
                 for ( int j = 0; j < 3; j++ )
-                    settings.customMatrix[i][j] = i == j ? 1.0 : 0.0;
+                    settings.custom_matrix[i][j] = i == j ? 1.0 : 0.0;
         } );
 
-    auto crop = arg_parser["crop-box"].as_vec<int>();
-    if ( crop.size() == 4 )
+    auto crop_box = arg_parser["crop_box-box"].as_vec<int>();
+    if ( crop_box.size() == 4 )
     {
         for ( size_t i = 0; i < 4; i++ )
-            settings.cropbox[i] = crop[i];
+            settings.crop_box[i] = crop_box[i];
     }
 
-    std::string cropping_mode = arg_parser["crop-mode"].get();
+    std::string crop_mode = arg_parser["crop-mode"].get();
 
-    if ( cropping_mode == "off" )
+    if ( crop_mode == "off" )
     {
         settings.crop_mode = Settings::CropMode::Off;
     }
-    else if ( cropping_mode == "soft" )
+    else if ( crop_mode == "soft" )
     {
         settings.crop_mode = Settings::CropMode::Soft;
     }
-    else if ( cropping_mode == "hard" )
+    else if ( crop_mode == "hard" )
     {
         settings.crop_mode = Settings::CropMode::Hard;
     }
     else
     {
         std::cerr << std::endl
-                  << "Unsupported cropping mode: \"" << cropping_mode << "\"."
+                  << "Unsupported cropping mode: \"" << crop_mode << "\"."
                   << std::endl;
 
         return false;
     }
 
-    auto aberration = arg_parser["chromatic-aberration"].as_vec<int>();
-    if ( aberration.size() == 2 )
+    auto chromatic_aberration =
+        arg_parser["chromatic-aberration"].as_vec<int>();
+    if ( chromatic_aberration.size() == 2 )
     {
         for ( size_t i = 0; i < 2; i++ )
-            settings.aberration[i] = aberration[i];
+            settings.chromatic_aberration[i] = chromatic_aberration[i];
     }
 
-    auto                         demosaic       = arg_parser["demosaic"].get();
-    static std::set<std::string> demosaic_algos = {
+    auto demosaic_algorithm = arg_parser["demosaic"].get();
+    static std::set<std::string> demosaic_algorithms = {
         "linear", "VNG",   "PPG",   "AHD",   "DCB", "AHD-Mod", "AFD",
         "VCD",    "Mixed", "LMMSE", "AMaZE", "DHT", "AAHD",    "AHD"
     };
 
-    if ( demosaic_algos.count( demosaic ) != 1 )
+    if ( demosaic_algorithms.count( demosaic_algorithm ) != 1 )
     {
         std::cerr << std::endl
-                  << "ERROR: unsupported demosaicing algorithm '" << demosaic
+                  << "ERROR: unsupported demosaicing algorithm '"
+                  << demosaic_algorithm
                   << ". The following methods are supported: "
                   << "'linear', 'VNG', 'PPG', 'AHD', 'DCB', 'AHD-Mod', 'AFD', "
                   << "'VCD', 'Mixed', 'LMMSE', 'AMaZE', 'DHT', 'AAHD', 'AHD'."
@@ -1006,7 +1015,7 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     }
     else
     {
-        settings.demosaic_algorithm = demosaic;
+        settings.demosaic_algorithm = demosaic_algorithm;
     }
 
     settings.custom_camera_make  = arg_parser["custom-camera-make"].get();
@@ -1032,7 +1041,7 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
 
     // If an illuminant was requested, confirm that we have it in the database
     // an error out early, before we start loading any images.
-    if ( settings.wbMethod == Settings::WBMethod::Illuminant )
+    if ( settings.WB_method == Settings::WBMethod::Illuminant )
     {
         core::SpectralSolver solver( settings.database_directories );
         if ( !solver.find_illuminant( settings.illuminant ) )
@@ -1097,10 +1106,10 @@ void fix_metadata( OIIO::ImageSpec &spec )
         { "Make", "cameraMake" }, { "Model", "cameraModel" }
     };
 
-    for ( auto i: standard_mapping )
+    for ( auto mapping_pair: standard_mapping )
     {
-        auto &src_name = i.first;
-        auto &dst_name = i.second;
+        auto &src_name = mapping_pair.first;
+        auto &dst_name = mapping_pair.second;
 
         auto src_attribute = spec.find_attribute( src_name );
         auto dst_attribute = spec.find_attribute( dst_name );
@@ -1130,16 +1139,16 @@ bool ImageConverter::configure(
     OIIO::ImageSpec temp_spec;
     temp_spec.extra_attribs = options;
 
-    OIIO::ImageSpec imageSpec;
-    auto imageInput = OIIO::ImageInput::create( "raw", false, &temp_spec );
-    bool result     = imageInput->open( input_filename, imageSpec, temp_spec );
+    OIIO::ImageSpec image_spec;
+    auto image_input = OIIO::ImageInput::create( "raw", false, &temp_spec );
+    bool result = image_input->open( input_filename, image_spec, temp_spec );
     if ( !result )
     {
         return false;
     }
 
-    fix_metadata( imageSpec );
-    return configure( imageSpec, options );
+    fix_metadata( image_spec );
+    return configure( image_spec, options );
 }
 
 // TODO:
@@ -1156,7 +1165,7 @@ bool ImageConverter::configure(
 // -G - green_matching() filter
 
 bool ImageConverter::configure(
-    const OIIO::ImageSpec &imageSpec, OIIO::ParamValueList &options )
+    const OIIO::ImageSpec &image_spec, OIIO::ParamValueList &options )
 {
     options["raw:use_camera_wb"] = 0;
     options["raw:use_auto_wb"]   = 0;
@@ -1171,85 +1180,89 @@ bool ImageConverter::configure(
     options["raw:Demosaic"]           = settings.demosaic_algorithm;
     options["raw:threshold"]          = settings.denoise_threshold;
 
-    if ( settings.cropbox[2] != 0 && settings.cropbox[3] != 0 )
+    if ( settings.crop_box[2] != 0 && settings.crop_box[3] != 0 )
     {
         options.attribute(
             "raw:cropbox",
             OIIO::TypeDesc( OIIO::TypeDesc::INT, 4 ),
-            settings.cropbox );
+            settings.crop_box );
     }
 
-    if ( settings.aberration[0] != 1.0 && settings.aberration[1] != 1.0 )
+    if ( settings.chromatic_aberration[0] != 1.0 &&
+         settings.chromatic_aberration[1] != 1.0 )
     {
         options.attribute(
             "raw:aber",
             OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 2 ),
-            settings.aberration );
+            settings.chromatic_aberration );
     }
 
     bool is_DNG =
-        imageSpec.extra_attribs.find( "raw:dng:version" )->get_int() > 0;
+        image_spec.extra_attribs.find( "raw:dng:version" )->get_int() > 0;
 
-    switch ( settings.wbMethod )
+    switch ( settings.WB_method )
     {
         case Settings::WBMethod::Metadata: {
-            float user_mul[4];
+            float custom_WB[4];
 
-            auto attr = find_and_check_attribute(
-                imageSpec,
+            auto camera_multiplier_attribute = find_and_check_attribute(
+                image_spec,
                 "raw:cam_mul",
                 OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
-            if ( attr )
+            if ( camera_multiplier_attribute )
             {
                 for ( int i = 0; i < 4; i++ )
                 {
-                    user_mul[i] = attr->get_float_indexed( i );
+                    custom_WB[i] =
+                        camera_multiplier_attribute->get_float_indexed( i );
                 }
 
                 options.attribute(
                     "raw:user_mul",
                     OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
-                    user_mul );
+                    custom_WB );
 
                 _WB_multipliers.resize( 4 );
                 for ( size_t i = 0; i < 4; i++ )
-                    _WB_multipliers[i] = user_mul[i];
+                    _WB_multipliers[i] = custom_WB[i];
             }
             break;
         }
         case Settings::WBMethod::Illuminant:
             // No configuration is required at this stage.
             break;
-        case Settings::WBMethod::Box:
+        case Settings::WBMethod::Box: {
+            bool is_empty_box = settings.WB_box[2] == 0 ||
+                                settings.WB_box[3] == 0;
 
-            if ( settings.wbBox[2] == 0 || settings.wbBox[3] == 0 )
+            if ( is_empty_box )
             {
-                // Empty box, use whole image.
+                // use whole image (auto white balancing)
                 options["raw:use_auto_wb"] = 1;
             }
             else
             {
-                int32_t box[4];
+                int32_t WB_box[4];
                 for ( int i = 0; i < 4; i++ )
                 {
-                    box[i] = settings.wbBox[i];
+                    WB_box[i] = settings.WB_box[i];
                 }
                 options.attribute(
                     "raw:greybox",
                     OIIO::TypeDesc( OIIO::TypeDesc::INT, 4 ),
-                    box );
+                    WB_box );
             }
             break;
-
+        }
         case Settings::WBMethod::Custom:
             options.attribute(
                 "raw:user_mul",
                 OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
-                settings.customWB );
+                settings.custom_WB );
 
             _WB_multipliers.resize( 4 );
             for ( size_t i = 0; i < 4; i++ )
-                _WB_multipliers[i] = settings.customWB[i];
+                _WB_multipliers[i] = settings.custom_WB[i];
             break;
 
         default:
@@ -1259,7 +1272,7 @@ bool ImageConverter::configure(
             return false;
     }
 
-    switch ( settings.matrixMethod )
+    switch ( settings.matrix_method )
     {
         case Settings::MatrixMethod::Spectral:
             options["raw:ColorSpace"]        = "raw";
@@ -1283,7 +1296,7 @@ bool ImageConverter::configure(
                 _IDT_matrix[i].resize( 3 );
                 for ( int j = 0; j < 3; j++ )
                 {
-                    _IDT_matrix[i][j] = settings.customMatrix[i][j];
+                    _IDT_matrix[i][j] = settings.custom_matrix[i][j];
                 }
             }
             break;
@@ -1295,14 +1308,14 @@ bool ImageConverter::configure(
     }
 
     bool spectral_white_balance =
-        settings.wbMethod == Settings::WBMethod::Illuminant;
+        settings.WB_method == Settings::WBMethod::Illuminant;
     bool spectral_matrix =
-        settings.matrixMethod == Settings::MatrixMethod::Spectral;
+        settings.matrix_method == Settings::MatrixMethod::Spectral;
 
     if ( spectral_white_balance || spectral_matrix )
     {
         if ( !prepare_transform_spectral(
-                 imageSpec,
+                 image_spec,
                  settings,
                  _WB_multipliers,
                  _IDT_matrix,
@@ -1315,23 +1328,23 @@ bool ImageConverter::configure(
 
         if ( spectral_white_balance )
         {
-            float user_mul[4];
+            float custom_WB[4];
 
             for ( size_t i = 0; i < _WB_multipliers.size(); i++ )
             {
-                user_mul[i] = _WB_multipliers[i];
+                custom_WB[i] = _WB_multipliers[i];
             }
             if ( _WB_multipliers.size() == 3 )
-                user_mul[3] = _WB_multipliers[1];
+                custom_WB[3] = _WB_multipliers[1];
 
             options.attribute(
                 "raw:user_mul",
                 OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
-                user_mul );
+                custom_WB );
         }
     }
 
-    if ( settings.matrixMethod == Settings::MatrixMethod::Metadata )
+    if ( settings.matrix_method == Settings::MatrixMethod::Metadata )
     {
         if ( is_DNG )
         {
@@ -1339,7 +1352,7 @@ bool ImageConverter::configure(
             options["raw:use_camera_wb"]     = 1;
 
             if ( !prepare_transform_DNG(
-                     imageSpec, settings, _IDT_matrix, _CAT_matrix ) )
+                     image_spec, settings, _IDT_matrix, _CAT_matrix ) )
             {
                 std::cerr << "ERROR: the colour space transform has not been "
                           << "configured properly (metadata mode)."
@@ -1350,7 +1363,7 @@ bool ImageConverter::configure(
         else
         {
             if ( !prepare_transform_nonDNG(
-                     imageSpec, settings, _IDT_matrix, _CAT_matrix ) )
+                     image_spec, settings, _IDT_matrix, _CAT_matrix ) )
             {
                 std::cerr << "ERROR: the colour space transform has not been "
                           << "configured properly (Adobe mode)." << std::endl;
@@ -1358,10 +1371,10 @@ bool ImageConverter::configure(
             }
         }
     }
-    else if ( settings.matrixMethod == Settings::MatrixMethod::Adobe )
+    else if ( settings.matrix_method == Settings::MatrixMethod::Adobe )
     {
         if ( !prepare_transform_nonDNG(
-                 imageSpec, settings, _IDT_matrix, _CAT_matrix ) )
+                 image_spec, settings, _IDT_matrix, _CAT_matrix ) )
         {
             std::cerr << "ERROR: the colour space transform has not been "
                       << "configured properly (Adobe mode)." << std::endl;
@@ -1377,9 +1390,9 @@ bool ImageConverter::load_image(
     const OIIO::ParamValueList &hints,
     OIIO::ImageBuf             &buffer )
 {
-    OIIO::ImageSpec imageSpec;
-    imageSpec.extra_attribs = hints;
-    buffer = OIIO::ImageBuf( path, 0, 0, nullptr, &imageSpec, nullptr );
+    OIIO::ImageSpec image_spec;
+    image_spec.extra_attribs = hints;
+    buffer = OIIO::ImageBuf( path, 0, 0, nullptr, &image_spec, nullptr );
 
     return buffer.read(
         0, 0, 0, buffer.nchannels(), true, OIIO::TypeDesc::FLOAT );
@@ -1393,28 +1406,28 @@ bool apply_matrix(
 {
     float M[4][4];
 
-    size_t n = matrix.size();
+    size_t num_rows = matrix.size();
 
-    if ( n )
+    if ( num_rows )
     {
-        size_t m = matrix[0].size();
+        size_t num_columns = matrix[0].size();
 
-        for ( size_t i = 0; i < n; i++ )
+        for ( size_t i = 0; i < num_rows; i++ )
         {
-            for ( size_t j = 0; j < m; j++ )
+            for ( size_t j = 0; j < num_columns; j++ )
             {
                 M[j][i] = matrix[i][j];
             }
 
-            for ( size_t j = m; j < 4; j++ )
+            for ( size_t j = num_columns; j < 4; j++ )
                 M[j][i] = 0;
         }
 
-        for ( size_t i = n; i < 4; i++ )
+        for ( size_t i = num_rows; i < 4; i++ )
         {
-            for ( size_t j = 0; j < m; j++ )
+            for ( size_t j = 0; j < num_columns; j++ )
                 M[j][i] = 0;
-            for ( size_t j = m; j < 4; j++ )
+            for ( size_t j = num_columns; j < 4; j++ )
                 M[j][i] = 1;
         }
     }
@@ -1567,20 +1580,20 @@ bool ImageConverter::save_image(
     const float chromaticities[] = { 0.7347, 0.2653, 0,       1,
                                      0.0001, -0.077, 0.32168, 0.33767 };
 
-    OIIO::ImageSpec imageSpec = buf.spec();
-    imageSpec.set_format( OIIO::TypeDesc::HALF );
-    imageSpec["acesImageContainerFlag"] = 1;
-    imageSpec["compression"]            = "none";
-    imageSpec.attribute(
+    OIIO::ImageSpec image_spec = buf.spec();
+    image_spec.set_format( OIIO::TypeDesc::HALF );
+    image_spec["acesImageContainerFlag"] = 1;
+    image_spec["compression"]            = "none";
+    image_spec.attribute(
         "chromaticities",
         OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 8 ),
         chromaticities );
 
-    auto imageOutput = OIIO::ImageOutput::create( "exr" );
-    bool result      = imageOutput->open( output_filename, imageSpec );
+    auto image_output = OIIO::ImageOutput::create( "exr" );
+    bool result       = image_output->open( output_filename, image_spec );
     if ( result )
     {
-        result = buf.write( imageOutput.get() );
+        result = buf.write( image_output.get() );
     }
     return result;
 }

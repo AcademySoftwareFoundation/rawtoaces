@@ -47,10 +47,10 @@ void test_AcesRender()
     OIIO_CHECK_EQUAL( files.size(), 1 );
 
     OIIO_CHECK_ASSERT(
-        converter.settings.wbMethod ==
+        converter.settings.WB_method ==
         rta::util::ImageConverter::Settings::WBMethod::Metadata );
     OIIO_CHECK_ASSERT(
-        converter.settings.matrixMethod ==
+        converter.settings.matrix_method ==
         rta::util::ImageConverter::Settings::MatrixMethod::Metadata );
 
     // Disable for now. Needs better checks if the installed OIIO version

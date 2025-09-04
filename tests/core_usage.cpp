@@ -18,14 +18,13 @@
 /// Every other bit of data should be the same.
 void configure_spectral_solver( rta::core::SpectralSolver &solver )
 {
-    const std::string camera_make  = "nikon";
-    const std::string camera_model = "d200";
+    const rta::core::CameraInfo camera_info( "nikon", "d200" );
 
     // Spectral curves to use.
     const std::string observer_path = "cmf/cmf_1931.json";
     const std::string training_path = "training/training_spectral.json";
 
-    solver.find_camera( camera_make, camera_model );
+    solver.find_camera( camera_info );
     solver.load_spectral_data( observer_path, solver.observer );
     solver.load_spectral_data( training_path, solver.training_data );
 }

@@ -286,10 +286,9 @@ bool SpectralSolver::load_spectral_data(
 }
 
 bool SpectralSolver::find_camera(
-    const std::string &make, const std::string &model )
+    const CameraInfo &camera_info )
 {
-    assert( !make.empty() );
-    assert( !model.empty() );
+    assert( !camera_info.is_empty() );
 
     auto camera_files = collect_data_files( "camera" );
 
@@ -297,9 +296,9 @@ bool SpectralSolver::find_camera(
     {
         camera.load( camera_file );
 
-        if ( is_not_equal_insensitive( camera.manufacturer, make ) )
+        if ( is_not_equal_insensitive( camera.manufacturer, camera_info.make ) )
             continue;
-        if ( is_not_equal_insensitive( camera.model, model ) )
+        if ( is_not_equal_insensitive( camera.model, camera_info.model ) )
             continue;
         return true;
     }

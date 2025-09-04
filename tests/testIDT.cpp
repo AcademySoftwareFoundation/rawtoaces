@@ -701,15 +701,14 @@ void testIDT_LoadCMF()
 
 void load_camera_helper(
     rta::core::SpectralSolver &solver,
-    const std::string         &camera_make,
-    const std::string         &camera_model,
+    const rta::core::CameraInfo &camera_info,
     const std::string         &illuminant_name,
     bool                       load_training,
     bool                       load_observer )
 {
 
     {
-        bool result = solver.find_camera( camera_make, camera_model );
+        bool result = solver.find_camera( camera_info );
         OIIO_CHECK_ASSERT( result );
     }
 
@@ -819,7 +818,7 @@ void testIDT_CalWB()
 void testIDT_ChooseIllumSrc()
 {
     rta::core::SpectralSolver solver( { DATA_PATH } );
-    load_camera_helper( solver, "nikon", "d200", "", true, false );
+    load_camera_helper( solver, rta::core::CameraInfo( "nikon", "d200" ), "", true, false );
 
     float          wb[3] = { 1.0, 1.0, 1.0 };
     vector<double> wbv( wb, wb + 3 );
@@ -857,7 +856,7 @@ void testIDT_ChooseIllumSrc()
 void testIDT_ChooseIllumType()
 {
     rta::core::SpectralSolver solver( { DATA_PATH } );
-    load_camera_helper( solver, "nikon", "d200", "iso7589", true, false );
+    load_camera_helper( solver, rta::core::CameraInfo( "nikon", "d200" ), "iso7589", true, false );
 
     float          wb[3] = { 1.0, 1.0, 1.0 };
     vector<double> wbv( wb, wb + 3 );
@@ -5271,7 +5270,7 @@ void testIDT_CurveFit()
 void testIDT_CalIDT()
 {
     rta::core::SpectralSolver solver( { DATA_PATH } );
-    load_camera_helper( solver, "arri", "d21", "iso7589", true, true );
+    load_camera_helper( solver, rta::core::CameraInfo( "arri", "d21" ), "iso7589", true, true );
     solver.calculate_WB();
 
     OIIO_CHECK_ASSERT( solver.calculate_IDT_matrix() );

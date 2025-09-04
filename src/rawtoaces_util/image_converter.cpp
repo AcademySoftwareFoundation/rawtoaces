@@ -17,30 +17,43 @@ namespace rta
 namespace util
 {
 
+/**
+ * Checks if a file path is valid for processing and adds it to a batch list if appropriate.
+ * 
+ * This function validates that the given path points to a regular file or symbolic link,
+ * filters out unwanted files (system files like .DS_Store and certain image formats like EXR and JPG),
+ * and adds valid file paths to the provided batch vector for further processing.
+ * 
+ * @param path The filesystem path to check
+ * @param batch Reference to a vector of strings to add valid file paths to
+ * @return true if the file was processed (either added to batch or filtered out), 
+ *         false if the file should be ignored
+ */
 bool check_and_add_file(
     const std::filesystem::path &path, std::vector<std::string> &batch )
 {
-    if ( std::filesystem::is_regular_file( path ) ||
-         std::filesystem::is_symlink( path ) )
-    {
-        static const std::set<std::string> ignore_filenames = { ".DS_Store" };
-        std::string                        filename = path.filename().string();
-        if ( ignore_filenames.count( filename ) > 0 )
-            return false;
-
-        static const std::set<std::string> ignore_extensions = {
-            ".exr", ".EXR", ".jpg", ".JPG", ".jpeg", ".JPEG"
-        };
-        std::string extension = path.extension().string();
-        if ( ignore_extensions.count( extension ) > 0 )
-            return false;
-
-        batch.push_back( path.string() );
-    }
-    else
+    bool is_regular_file = std::filesystem::is_regular_file( path ) ||
+                           std::filesystem::is_symlink( path );
+    if ( !is_regular_file )
     {
         std::cerr << "Not a regular file: " << path << std::endl;
+        return false;
     }
+
+    static const std::set<std::string> ignore_filenames = { ".DS_Store" };
+    std::string                        filename = path.filename().string();
+    if ( ignore_filenames.count( filename ) > 0 )
+        return false;
+
+    static const std::set<std::string> ignore_extensions = { ".exr",
+                                                             ".jpg",
+                                                             ".jpeg" };
+    std::string extension = OIIO::Strutil::lower( path.extension().string() );
+    if ( ignore_extensions.count( extension ) > 0 )
+        return false;
+
+    batch.push_back( path.string() );
+
     return true;
 }
 
@@ -72,7 +85,12 @@ bool collect_image_files(
     return true;
 }
 
-// Adapted from define.h pathsFinder()
+/// Gets the list of database paths for rawtoaces data files.
+///
+/// Checks environment variables (RAWTOACES_DATA_PATH or deprecated AMPAS_DATA_PATH)
+/// and falls back to platform-specific default paths.
+///
+/// @return Vector of unique database directory paths
 std::vector<std::string> database_paths()
 {
     std::vector<std::string> result;
@@ -81,11 +99,10 @@ std::vector<std::string> database_paths()
     const std::string separator    = ";";
     const std::string default_path = ".";
 #else
-    char              separator   = ':';
+    const std::string separator   = ":";
     const std::string legacy_path = "/usr/local/include/rawtoaces/data";
     const std::string default_path =
-        std::string( "/usr/local/share/rawtoaces/data" ) + separator +
-        legacy_path;
+        "/usr/local/share/rawtoaces/data" + separator + legacy_path;
 #endif
 
     std::string path;
@@ -113,31 +130,25 @@ std::vector<std::string> database_paths()
         path = default_path;
     }
 
-    size_t pos = 0;
-
-    while ( pos < path.size() )
-    {
-        size_t end = path.find( separator, pos );
-
-        if ( end == std::string::npos )
-            end = path.size();
-
-        std::string pathItem = path.substr( pos, end - pos );
-
-        if ( find( result.begin(), result.end(), pathItem ) == result.end() )
-            result.push_back( pathItem );
-
-        pos = end + 1;
-    }
+    OIIO::Strutil::split( path, result, separator );
 
     return result;
 };
 
-bool fetch_camera_make_and_model(
-    const OIIO::ImageSpec &spec,
-    std::string           &camera_make,
-    std::string           &camera_model )
+/// Get camera info (with make and model) from image metadata or custom settings.
+///
+/// Returns camera information using custom settings if provided, otherwise
+/// extracts from image metadata. Returns empty CameraInfo if required metadata is missing.
+///
+/// @param spec Image specification containing metadata
+/// @param settings Converter settings with optional custom camera info
+/// @return CameraInfo struct with make and model, or empty if unavailable
+rta::core::CameraInfo get_camera_info(
+    const OIIO::ImageSpec &spec, const ImageConverter::Settings &settings )
 {
+    std::string camera_make  = settings.custom_camera_make;
+    std::string camera_model = settings.custom_camera_model;
+
     if ( camera_make.empty() )
     {
         camera_make = spec["cameraMake"];
@@ -146,7 +157,7 @@ bool fetch_camera_make_and_model(
             std::cerr << "Missing the camera manufacturer name in the file "
                       << "metadata. You can provide a camera make using the "
                       << "--custom-camera-make parameter" << std::endl;
-            return false;
+            return rta::core::CameraInfo();
         }
     }
 
@@ -156,13 +167,13 @@ bool fetch_camera_make_and_model(
         if ( camera_model.empty() )
         {
             std::cerr << "Missing the camera model name in the file metadata. "
-                      << "You can provide a camera make using the "
-                      << "--custom-camera-make parameter" << std::endl;
-            return false;
+                      << "You can provide a camera model using the "
+                      << "--custom-camera-model parameter" << std::endl;
+            return rta::core::CameraInfo();
         }
     }
 
-    return true;
+    return rta::core::CameraInfo( camera_make, camera_model );
 }
 
 /// Check if an attribute of a given name exists
@@ -200,9 +211,9 @@ bool prepare_transform_spectral(
 {
     std::string lower_illuminant = OIIO::Strutil::lower( settings.illuminant );
 
-    std::string camera_make  = settings.custom_camera_make;
-    std::string camera_model = settings.custom_camera_model;
-    if ( !fetch_camera_make_and_model( image_spec, camera_make, camera_model ) )
+    core::CameraInfo camera_info =
+        get_camera_info( image_spec, settings );
+    if ( camera_info.is_empty() )
         return false;
 
     bool success = false;
@@ -210,12 +221,12 @@ bool prepare_transform_spectral(
     core::SpectralSolver solver( settings.database_directories );
     solver.verbosity = settings.verbosity;
 
-    success = solver.find_camera( camera_make.c_str(), camera_model.c_str() );
+    success = solver.find_camera( camera_info );
     if ( !success )
     {
         const std::string data_type = "spectral data for camera make = '" +
-                                      camera_make + "', model = '" +
-                                      camera_model + "'";
+                                      camera_info.make + "', model = '" +
+                                      camera_info.model + "'";
         print_data_error( data_type );
         return false;
     }
@@ -359,10 +370,10 @@ bool prepare_transform_DNG(
     std::vector<std::vector<double>> &IDT_matrix,
     std::vector<std::vector<double>> &CAT_matrix )
 {
-    std::string camera_make  = settings.custom_camera_make;
-    std::string camera_model = settings.custom_camera_model;
-    if ( !fetch_camera_make_and_model( image_spec, camera_make, camera_model ) )
-        return false;
+    // TO Does this function even need the camera info?
+    // core::CameraInfo camera_info = get_camera_info( image_spec, settings );
+    // if ( camera_info.is_empty() )
+    //     return false;
 
     core::Metadata metadata;
 

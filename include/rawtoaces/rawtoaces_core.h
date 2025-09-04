@@ -25,6 +25,18 @@ static const std::vector<std::vector<double> > CAT_D65_to_ACES = {
     { -0.00029980928869024906, -0.0010516909063249997,  0.92820279627476576   }
 };
 
+struct CameraInfo {
+    std::string make;
+    std::string model;
+    
+    CameraInfo() = default;
+    CameraInfo(const std::string& _make, const std::string& _model) : make(_make), model(_model) {}
+
+    bool is_empty() const {
+        return make.empty() && model.empty();
+    }
+};
+
 // clang-format on
 
 /// Calculate spectral power distribution (SPD) of CIE standard daylight illuminant.
@@ -101,10 +113,9 @@ public:
     /// a match for the specified camera manufacturer and model. It loads the
     /// spectral sensitivity data into the camera member variable.
     ///
-    /// @param make the camera make to search for
-    /// @param model the camera model to search for
+    /// @param camera_info the camera make and model to search for
     /// @return `true` if loaded successfully, `false` otherwise
-    bool find_camera( const std::string &make, const std::string &model );
+    bool find_camera( const CameraInfo &camera_info );
 
     /// Find spectral power distribution data of an illuminant of the given type.
     /// This function can handle both built-in illuminant types (e.g., "d55", "3200k")

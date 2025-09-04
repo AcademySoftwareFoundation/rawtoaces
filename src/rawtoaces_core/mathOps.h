@@ -20,17 +20,6 @@ namespace core
 {
 
 // Non-class functions
-inline double invertD( double val )
-{
-    assert( fabs( val - 0.0 ) >= DBL_EPSILON );
-
-    return 1.0 / val;
-};
-
-template <typename T> T clip( T val, T target )
-{
-    return std::min( val, target );
-};
 
 template <typename T> int isSquare( const vector<vector<T>> &vm )
 {
@@ -126,16 +115,6 @@ template <typename T> vector<T> invertV( const vector<T> &vMtx )
     return result;
 };
 
-template <typename T> vector<vector<T>> diagVM( const vector<T> &vct )
-{
-    assert( vct.size() != 0 );
-    vector<vector<T>> vctdiag( vct.size(), vector<T>( vct.size(), T( 0.0 ) ) );
-
-    FORI( vct.size() ) vctdiag[i][i] = vct[i];
-
-    return vctdiag;
-};
-
 template <typename T> vector<T> diagV( const vector<T> &vct )
 {
     assert( vct.size() != 0 );
@@ -205,55 +184,6 @@ template <typename T> void scaleVector( vector<T> &vct, const T scale )
     return;
 };
 
-template <typename T> void scale_vector_max( vector<T> &vector )
-{
-    Eigen::Matrix<T, Eigen::Dynamic, 1> column_vector;
-    column_vector.resize( vector.size(), 1 );
-
-    FORI( vector.size() )
-    {
-        column_vector( i, 0 ) = vector[i];
-    }
-    column_vector *= ( 1.0 / column_vector.maxCoeff() );
-
-    FORI( vector.size() )
-    {
-        vector[i] = column_vector( i, 0 );
-    }
-
-    return;
-};
-
-template <typename T> void scale_vector_min( vector<T> &vector )
-{
-    Eigen::Matrix<T, Eigen::Dynamic, 1> column_vector;
-    column_vector.resize( vector.size(), 1 );
-
-    FORI( vector.size() )
-    {
-        column_vector( i, 0 ) = vector[i];
-    }
-    column_vector *= ( 1.0 / column_vector.minCoeff() );
-
-    FORI( vector.size() )
-    {
-        vector[i] = column_vector( i, 0 );
-    }
-
-    return;
-};
-
-template <typename T> void scaleVectorD( vector<T> &vct )
-{
-    Eigen::Matrix<T, Eigen::Dynamic, 1> v;
-    v.resize( vct.size(), 1 );
-
-    FORI( v.rows() ) v( i, 0 ) = vct[i];
-    FORI( v.rows() ) vct[i]    = v.maxCoeff() / vct[i];
-
-    return;
-};
-
 template <typename T>
 vector<T> mulVectorElement( const vector<T> &vct1, const vector<T> &vct2 )
 {
@@ -273,21 +203,6 @@ vector<T> mulVectorElement( const vector<T> &vct1, const vector<T> &vct2 )
     vector<T> vct3( a1.data(), a1.data() + a1.rows() * a1.cols() );
 
     return vct3;
-};
-
-template <typename T>
-vector<T> divVectorElement( const vector<T> &vct1, const vector<T> &vct2 )
-{
-    assert( vct1.size() == vct2.size() );
-
-    vector<T> vct2D( vct2.size(), T( 1.0 ) );
-    FORI( vct2.size() )
-    {
-        assert( vct2[i] != T( 0.0 ) );
-        vct2D[i] = T( 1.0 ) / vct2[i];
-    }
-
-    return mulVectorElement( vct1, vct2D );
 };
 
 template <typename T>
@@ -366,73 +281,6 @@ template <typename T>
 vector<T> mulVector( const vector<T> &vct1, const vector<vector<T>> &vct2 )
 {
     return mulVector( vct2, vct1 );
-};
-
-template <typename T>
-T *mulVectorArray(
-    T                            *data,
-    const uint32_t                total,
-    const uint8_t                 dim,
-    const vector<vector<double>> &vct )
-{
-    assert( vct.size() == dim && isSquare( vct ) );
-
-    /**
-    // new implementation based on Eigen::Eigen::Matrix (Slow...)
-     
-    Eigen::Matrix <T, Eigen::Dynamic, Eigen::Dynamic> MI, mvct;
-    MI.resize(total/dim, dim);
-    mvct.resize(dim, dim);
-    FORIJ(MI.rows(), MI.cols()) MI(i,j) = data[i*dim+j];
-    FORIJ(dim, dim) mvct(i,j) = static_cast<T>(vct[i][j]);
-    
-    Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic,RowMajor> MR(MI * (mvct.transpose()));
-    FORI(total) data[i] = MR(i);
-    */
-
-    if ( dim == 3 || dim == 4 )
-    {
-        for ( uint32_t i = 0; i < total; i += dim )
-        {
-            T temp[4];
-
-            for ( uint8_t j = 0; j < dim; j++ )
-            {
-                temp[j] = 0;
-
-                for ( uint8_t k = 0; k < dim; k++ )
-                    temp[j] += vct[j][k] * data[i + k];
-            }
-
-            for ( uint8_t j = 0; j < dim; j++ )
-                data[i + j] = temp[j];
-        }
-    }
-
-    return data;
-};
-
-template <typename T>
-vector<vector<T>>
-solveVM( const vector<vector<T>> &vct1, const vector<vector<T>> &vct2 )
-{
-
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m1, m2, m3;
-    m1.resize( vct1.size(), vct1[0].size() );
-    m2.resize( vct2.size(), vct2[0].size() );
-
-    FORIJ( vct1.size(), vct1[0].size() )
-    m1( i, j ) = vct1[i][j];
-    FORIJ( vct2.size(), vct2[0].size() )
-    m2( i, j ) = vct2[i][j];
-
-    // colPivHouseholderQr()
-    m3 = m1.jacobiSvd( Eigen::ComputeThinU | Eigen::ComputeThinV ).solve( m2 );
-
-    vector<vector<T>> vct3( m3.rows(), vector<T>( m3.cols() ) );
-    FORIJ( m3.rows(), m3.cols() ) vct3[i][j] = m3( i, j );
-
-    return vct3;
 };
 
 /// Calculate the Sum of Squared Errors (SSE) between two vectors.

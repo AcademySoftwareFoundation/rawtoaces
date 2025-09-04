@@ -285,8 +285,7 @@ bool SpectralSolver::load_spectral_data(
     }
 }
 
-bool SpectralSolver::find_camera(
-    const CameraInfo &camera_info )
+bool SpectralSolver::find_camera( const CameraInfo &camera_info )
 {
     assert( !camera_info.is_empty() );
 

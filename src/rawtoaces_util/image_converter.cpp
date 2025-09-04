@@ -194,7 +194,7 @@ void print_data_error( const std::string &data_type )
 bool prepare_transform_spectral(
     const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,
-    std::vector<double>              &solved_WB_multipliers,
+    std::vector<double>              &WB_multipliers,
     std::vector<std::vector<double>> &IDT_matrix,
     std::vector<std::vector<double>> &CAT_matrix )
 {
@@ -253,12 +253,12 @@ bool prepare_transform_spectral(
 
     if ( lower_illuminant.empty() )
     {
-        std::vector<double> wb_multipliers( 4 );
+        std::vector<double> tmp_wb_multipliers( 4 );
 
-        if ( solved_WB_multipliers.size() == 4 )
+        if ( WB_multipliers.size() == 4 )
         {
             for ( int i = 0; i < 3; i++ )
-                wb_multipliers[i] = solved_WB_multipliers[i];
+                tmp_wb_multipliers[i] = WB_multipliers[i];
         }
         else
         {
@@ -269,22 +269,23 @@ bool prepare_transform_spectral(
             if ( attr )
             {
                 for ( int i = 0; i < 4; i++ )
-                    wb_multipliers[i] = attr->get_float_indexed( i );
+                    tmp_wb_multipliers[i] = attr->get_float_indexed( i );
             }
         }
 
-        if ( wb_multipliers[3] != 0 )
-            wb_multipliers[1] = ( wb_multipliers[1] + wb_multipliers[3] ) / 2.0;
-        wb_multipliers.resize( 3 );
+        if ( tmp_wb_multipliers[3] != 0 )
+            tmp_wb_multipliers[1] =
+                ( tmp_wb_multipliers[1] + tmp_wb_multipliers[3] ) / 2.0;
+        tmp_wb_multipliers.resize( 3 );
 
-        double min_val =
-            *std::min_element( wb_multipliers.begin(), wb_multipliers.end() );
+        double min_val = *std::min_element(
+            tmp_wb_multipliers.begin(), tmp_wb_multipliers.end() );
 
         if ( min_val > 0 && min_val != 1 )
             for ( int i = 0; i < 3; i++ )
-                wb_multipliers[i] /= min_val;
+                tmp_wb_multipliers[i] /= min_val;
 
-        success = solver.find_illuminant( wb_multipliers );
+        success = solver.find_illuminant( tmp_wb_multipliers );
 
         if ( !success )
         {
@@ -310,12 +311,12 @@ bool prepare_transform_spectral(
             return false;
         }
 
-        solved_WB_multipliers = solver.get_WB_multipliers();
+        WB_multipliers = solver.get_WB_multipliers();
 
         if ( settings.verbosity > 0 )
         {
             std::cerr << "White balance coefficients:" << std::endl;
-            for ( auto &wb_multiplier: solved_WB_multipliers )
+            for ( auto &wb_multiplier: WB_multipliers )
             {
                 std::cerr << wb_multiplier << " ";
             }

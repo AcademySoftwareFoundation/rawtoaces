@@ -633,11 +633,39 @@ bool check_param(
         }
         else
         {
-            on_success(); // TODO Verify with Anton.
+            on_success();
             return true;
         }
     }
 }
+
+template <typename T> bool contains( const std::vector<T> &vec, const T &value )
+{
+    return std::find( vec.begin(), vec.end(), value ) != vec.end();
+}
+
+static std::vector<std::string> supported_wb_methods = {
+    "metadata", "illuminant", "box", "custom"
+};
+static std::vector<std::string> supported_matrix_methods = {
+    "spectral", "metadata", "Adobe", "custom"
+};
+static std::vector<std::string> supported_crop_modes          = { "off",
+                                                                  "soft",
+                                                                  "hard" };
+static std::vector<std::string> supported_demosaic_algorithms = {
+    "linear", "VNG",   "PPG",   "AHD",   "DCB", "AHD-Mod", "AFD",
+    "VCD",    "Mixed", "LMMSE", "AMaZE", "DHT", "AAHD",    "AHD"
+};
+
+const std::string supported_wb_methods_string =
+    OIIO::Strutil::join( supported_wb_methods, ", " );
+const std::string supported_matrix_methods_string =
+    OIIO::Strutil::join( supported_matrix_methods, ", " );
+const std::string supported_crop_modes_string =
+    OIIO::Strutil::join( supported_crop_modes, ", " );
+const std::string supported_demosaic_algorithms_string =
+    OIIO::Strutil::join( supported_demosaic_algorithms, ", " );
 
 void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
 {
@@ -652,16 +680,16 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
 
     arg_parser.arg( "--wb-method" )
         .help(
-            "White balance method. Supported options: metadata, illuminant, "
-            "box, custom." )
+            "White balance method. Supported options: " +
+            supported_wb_methods_string + "." )
         .metavar( "STR" )
         .defaultval( "metadata" )
         .action( OIIO::ArgParse::store() );
 
     arg_parser.arg( "--mat-method" )
         .help(
-            "IDT matrix calculation method. Supported options: spectral, "
-            "metadata, Adobe, custom." )
+            "IDT matrix calculation method. Supported options: " +
+            supported_matrix_methods_string + "." )
         .metavar( "STR" )
         .defaultval( "spectral" )
         .action( OIIO::ArgParse::store() );
@@ -820,9 +848,8 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
 
     arg_parser.arg( "--demosaic" )
         .help(
-            "Demosaicing algorithm. Supported options: 'linear', 'VNG', 'PPG', "
-            "'AHD', 'DCB', 'AHD-Mod', 'AFD', 'VCD', 'Mixed', 'LMMSE', 'AMaZE', "
-            "'DHT', 'AAHD', 'AHD'." )
+            "Demosaicing algorithm. Supported options: " +
+            supported_demosaic_algorithms_string + "." )
         .metavar( "STR" )
         .defaultval( "AHD" )
         .action( OIIO::ArgParse::store() );
@@ -883,18 +910,13 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
 
     std::string WB_method = arg_parser["wb-method"].get();
 
-    std::set<std::string> supported_wb_methods = {
-        "metadata", "illuminant", "box", "custom"
-    };
-
-    bool is_wb_method_supported = supported_wb_methods.count( WB_method ) != 1;
+    bool is_wb_method_supported = contains( supported_wb_methods, WB_method );
     if ( !is_wb_method_supported )
     {
         std::cerr << std::endl
                   << "ERROR: unsupported white balancing method '" << WB_method
-                  << "'. The following methods are supported: '"
-                  << OIIO::Strutil::join( supported_wb_methods, "', '" ) << "'."
-                  << std::endl;
+                  << "'. The following methods are supported: "
+                  << supported_wb_methods_string << "." << std::endl;
         return false;
     }
 
@@ -917,19 +939,14 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
 
     std::string matrix_method = arg_parser["mat-method"].get();
 
-    std::set<std::string> supported_matrix_methods = {
-        "spectral", "metadata", "Adobe", "custom"
-    };
-
     bool is_matrix_method_supported =
-        supported_matrix_methods.count( matrix_method ) != 1;
+        contains( supported_matrix_methods, matrix_method );
     if ( !is_matrix_method_supported )
     {
         std::cerr << std::endl
                   << "ERROR: unsupported matrix method '" << matrix_method
-                  << "'. The following methods are supported: '"
-                  << OIIO::Strutil::join( supported_matrix_methods, "', '" )
-                  << "'." << std::endl;
+                  << "'. The following methods are supported: "
+                  << supported_matrix_methods_string << "." << std::endl;
         return false;
     }
 
@@ -1038,16 +1055,13 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
 
     std::string crop_mode = arg_parser["crop-mode"].get();
 
-    std::set<std::string> supported_crop_modes = { "off", "soft", "hard" };
-
-    bool is_crop_mode_supported = supported_crop_modes.count( crop_mode ) != 1;
+    bool is_crop_mode_supported = contains( supported_crop_modes, crop_mode );
     if ( !is_crop_mode_supported )
     {
         std::cerr << std::endl
                   << "ERROR: unsupported cropping mode '" << crop_mode
-                  << "'. The following modes are supported: '"
-                  << OIIO::Strutil::join( supported_crop_modes, "', '" ) << "'."
-                  << std::endl;
+                  << "'. The following modes are supported: "
+                  << supported_crop_modes_string << "." << std::endl;
         return false;
     }
 
@@ -1072,23 +1086,17 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
             settings.chromatic_aberration[i] = chromatic_aberration[i];
     }
 
-    auto demosaic_algorithm = arg_parser["demosaic"].get();
-    static std::set<std::string> supported_demosaic_algorithms = {
-        "linear", "VNG",   "PPG",   "AHD",   "DCB", "AHD-Mod", "AFD",
-        "VCD",    "Mixed", "LMMSE", "AMaZE", "DHT", "AAHD",    "AHD"
-    };
+    std::string demosaic_algorithm = arg_parser["demosaic"].get();
 
     bool is_demosaic_algorithm_supported =
-        supported_demosaic_algorithms.count( demosaic_algorithm ) != 1;
+        contains( supported_demosaic_algorithms, demosaic_algorithm );
     if ( !is_demosaic_algorithm_supported )
     {
         std::cerr << std::endl
                   << "ERROR: unsupported demosaicing algorithm '"
                   << demosaic_algorithm
-                  << "'. The following methods are supported: '"
-                  << OIIO::Strutil::join(
-                         supported_demosaic_algorithms, "', '" )
-                  << "'." << std::endl;
+                  << "'. The following methods are supported: "
+                  << supported_demosaic_algorithms_string << "." << std::endl;
         return false;
     }
     else

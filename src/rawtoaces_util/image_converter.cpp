@@ -639,34 +639,6 @@ bool check_param(
     }
 }
 
-template <typename T> bool contains( const std::vector<T> &vec, const T &value )
-{
-    return std::find( vec.begin(), vec.end(), value ) != vec.end();
-}
-
-static std::vector<std::string> supported_wb_methods = {
-    "metadata", "illuminant", "box", "custom"
-};
-static std::vector<std::string> supported_matrix_methods = {
-    "spectral", "metadata", "Adobe", "custom"
-};
-static std::vector<std::string> supported_crop_modes          = { "off",
-                                                                  "soft",
-                                                                  "hard" };
-static std::vector<std::string> supported_demosaic_algorithms = {
-    "linear", "VNG",   "PPG",   "AHD",   "DCB", "AHD-Mod", "AFD",
-    "VCD",    "Mixed", "LMMSE", "AMaZE", "DHT", "AAHD",    "AHD"
-};
-
-const std::string supported_wb_methods_string =
-    OIIO::Strutil::join( supported_wb_methods, ", " );
-const std::string supported_matrix_methods_string =
-    OIIO::Strutil::join( supported_matrix_methods, ", " );
-const std::string supported_crop_modes_string =
-    OIIO::Strutil::join( supported_crop_modes, ", " );
-const std::string supported_demosaic_algorithms_string =
-    OIIO::Strutil::join( supported_demosaic_algorithms, ", " );
-
 void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
 {
     arg_parser.intro( HelpString );
@@ -680,16 +652,16 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
 
     arg_parser.arg( "--wb-method" )
         .help(
-            "White balance method. Supported options: " +
-            supported_wb_methods_string + "." )
+            "White balance method. Supported options: metadata, illuminant, "
+            "box, custom." )
         .metavar( "STR" )
         .defaultval( "metadata" )
         .action( OIIO::ArgParse::store() );
 
     arg_parser.arg( "--mat-method" )
         .help(
-            "IDT matrix calculation method. Supported options: " +
-            supported_matrix_methods_string + "." )
+            "IDT matrix calculation method. Supported options: spectral, "
+            "metadata, Adobe, custom." )
         .metavar( "STR" )
         .defaultval( "spectral" )
         .action( OIIO::ArgParse::store() );
@@ -848,8 +820,9 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
 
     arg_parser.arg( "--demosaic" )
         .help(
-            "Demosaicing algorithm. Supported options: " +
-            supported_demosaic_algorithms_string + "." )
+            "Demosaicing algorithm. Supported options: 'linear', 'VNG', 'PPG', "
+            "'AHD', 'DCB', 'AHD-Mod', 'AFD', 'VCD', 'Mixed', 'LMMSE', 'AMaZE', "
+            "'DHT', 'AAHD', 'AHD'." )
         .metavar( "STR" )
         .defaultval( "AHD" )
         .action( OIIO::ArgParse::store() );
@@ -910,16 +883,6 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
 
     std::string WB_method = arg_parser["wb-method"].get();
 
-    bool is_wb_method_supported = contains( supported_wb_methods, WB_method );
-    if ( !is_wb_method_supported )
-    {
-        std::cerr << std::endl
-                  << "ERROR: unsupported white balancing method '" << WB_method
-                  << "'. The following methods are supported: "
-                  << supported_wb_methods_string << "." << std::endl;
-        return false;
-    }
-
     if ( WB_method == "metadata" )
     {
         settings.WB_method = Settings::WBMethod::Metadata;
@@ -936,19 +899,18 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     {
         settings.WB_method = Settings::WBMethod::Custom;
     }
-
-    std::string matrix_method = arg_parser["mat-method"].get();
-
-    bool is_matrix_method_supported =
-        contains( supported_matrix_methods, matrix_method );
-    if ( !is_matrix_method_supported )
+    else
     {
-        std::cerr << std::endl
-                  << "ERROR: unsupported matrix method '" << matrix_method
-                  << "'. The following methods are supported: "
-                  << supported_matrix_methods_string << "." << std::endl;
+        std::cerr
+            << std::endl
+            << "Unsupported white balancing method: '" << WB_method << "'. "
+            << "The following methods are supported: metadata, illuminant, box, custom."
+            << std::endl;
+
         return false;
     }
+
+    std::string matrix_method = arg_parser["mat-method"].get();
 
     if ( matrix_method == "spectral" )
     {
@@ -965,6 +927,16 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     else if ( matrix_method == "custom" )
     {
         settings.matrix_method = Settings::MatrixMethod::Custom;
+    }
+    else
+    {
+        std::cerr
+            << std::endl
+            << "Unsupported matrix method: '" << matrix_method << "'. "
+            << "The following methods are supported: spectral, metadata, Adobe, custom."
+            << std::endl;
+
+        return false;
     }
 
     settings.illuminant        = arg_parser["illuminant"].get();
@@ -1046,7 +1018,7 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
                     settings.custom_matrix[i][j] = i == j ? 1.0 : 0.0;
         } );
 
-    auto crop_box = arg_parser["crop_box-box"].as_vec<int>();
+    auto crop_box = arg_parser["crop-box"].as_vec<int>();
     if ( crop_box.size() == 4 )
     {
         for ( size_t i = 0; i < 4; i++ )
@@ -1054,16 +1026,6 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     }
 
     std::string crop_mode = arg_parser["crop-mode"].get();
-
-    bool is_crop_mode_supported = contains( supported_crop_modes, crop_mode );
-    if ( !is_crop_mode_supported )
-    {
-        std::cerr << std::endl
-                  << "ERROR: unsupported cropping mode '" << crop_mode
-                  << "'. The following modes are supported: "
-                  << supported_crop_modes_string << "." << std::endl;
-        return false;
-    }
 
     if ( crop_mode == "off" )
     {
@@ -1077,6 +1039,15 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     {
         settings.crop_mode = Settings::CropMode::Hard;
     }
+    else
+    {
+        std::cerr << std::endl
+                  << "Unsupported cropping mode: '" << crop_mode << "'. "
+                  << "The following modes are supported: off, soft, hard."
+                  << std::endl;
+
+        return false;
+    }
 
     auto chromatic_aberration =
         arg_parser["chromatic-aberration"].as_vec<int>();
@@ -1086,22 +1057,26 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
             settings.chromatic_aberration[i] = chromatic_aberration[i];
     }
 
-    std::string demosaic_algorithm = arg_parser["demosaic"].get();
+    auto                         demosaic       = arg_parser["demosaic"].get();
+    static std::set<std::string> demosaic_algos = {
+        "linear", "VNG",   "PPG",   "AHD",   "DCB", "AHD-Mod", "AFD",
+        "VCD",    "Mixed", "LMMSE", "AMaZE", "DHT", "AAHD",    "AHD"
+    };
 
-    bool is_demosaic_algorithm_supported =
-        contains( supported_demosaic_algorithms, demosaic_algorithm );
-    if ( !is_demosaic_algorithm_supported )
+    if ( demosaic_algos.count( demosaic ) != 1 )
     {
         std::cerr << std::endl
-                  << "ERROR: unsupported demosaicing algorithm '"
-                  << demosaic_algorithm
-                  << "'. The following methods are supported: "
-                  << supported_demosaic_algorithms_string << "." << std::endl;
+                  << "ERROR: unsupported demosaicing algorithm '" << demosaic
+                  << "'. "
+                  << "The following algorithms are supported: "
+                  << "'linear', 'VNG', 'PPG', 'AHD', 'DCB', 'AHD-Mod', 'AFD', "
+                  << "'VCD', 'Mixed', 'LMMSE', 'AMaZE', 'DHT', 'AAHD', 'AHD'."
+                  << std::endl;
         return false;
     }
     else
     {
-        settings.demosaic_algorithm = demosaic_algorithm;
+        settings.demosaic_algorithm = demosaic;
     }
 
     settings.custom_camera_make  = arg_parser["custom-camera-make"].get();

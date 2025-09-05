@@ -11,7 +11,7 @@ namespace rta
 namespace util
 {
 
-/// Collect all files from a given`path` into batchs. If the `path` is a
+/// Collect all files from a given `path` into batchs. If the `path` is a
 /// directory, create an entry in `batches` and fill it with the file names
 /// from that directory. If the `path` is a file, add its name to the first
 /// entry in `batches`.
@@ -21,6 +21,19 @@ namespace util
 /// exist.
 bool collect_image_files(
     const std::string &path, std::vector<std::vector<std::string>> &batches );
+
+struct CameraIdentifier
+{
+    std::string make;
+    std::string model;
+
+    CameraIdentifier() = default;
+    CameraIdentifier( const std::string &_make, const std::string &_model )
+        : make( _make ), model( _model )
+    {}
+
+    bool is_empty() const { return make.empty() && model.empty(); }
+};
 
 class ImageConverter
 {

@@ -17,6 +17,16 @@ namespace rta
 namespace util
 {
 
+struct CameraIdentifier
+{
+    std::string make;
+    std::string model;
+
+    CameraIdentifier() = default;
+
+    bool is_empty() const { return make.empty() && model.empty(); }
+};
+
 /**
  * Checks if a file path is valid for processing and adds it to a batch list if appropriate.
  * 
@@ -173,7 +183,7 @@ CameraIdentifier get_camera_identifier(
         }
     }
 
-    return CameraIdentifier( camera_make, camera_model );
+    return { camera_make, camera_model };
 }
 
 void print_data_error( const std::string &data_type )
@@ -278,9 +288,7 @@ bool prepare_transform_spectral(
         {
             // Extract white balance from RAW metadata
             auto attr = image_spec.find_attribute(
-                "raw:pre_mul",
-                OIIO::TypeDesc(
-                    OIIO::TypeDesc::FLOAT, OIIO::TypeDesc::AGGREGATE::VEC4 ) );
+                "raw:pre_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
             if ( attr )
             {
                 for ( int i = 0; i < 4; i++ )
@@ -401,9 +409,7 @@ bool prepare_transform_DNG(
     metadata.neutral_RGB.resize( 3 );
 
     auto attr = image_spec.find_attribute(
-        "raw:cam_mul",
-        OIIO::TypeDesc(
-            OIIO::TypeDesc::FLOAT, OIIO::TypeDesc::AGGREGATE::VEC4 ) );
+        "raw:cam_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
     if ( attr )
     {
         for ( int i = 0; i < 3; i++ )
@@ -443,9 +449,7 @@ bool prepare_transform_DNG(
         // Extract camera calibration matrix
         auto key2         = "raw:dng:camera_calibration" + index_string;
         auto matrix2_attr = image_spec.find_attribute(
-            key2,
-            OIIO::TypeDesc(
-                OIIO::TypeDesc::FLOAT, OIIO::TypeDesc::AGGREGATE::MATRIX44 ) );
+            key2, OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 16 ) );
         if ( matrix2_attr )
         {
             for ( int i = 0; i < 3; i++ )
@@ -848,18 +852,6 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
         [&]( OIIO::cspan<const char *> argv ) { settings.verbosity++; } );
 }
 
-/// Helper function to extract keys from a map into a vector
-template <typename MapType>
-std::vector<std::string> get_map_keys( const MapType &map )
-{
-    std::vector<std::string> keys;
-    for ( const auto &pair: map )
-    {
-        keys.push_back( pair.first );
-    }
-    return keys;
-}
-
 bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
 {
     settings.database_directories = database_paths();
@@ -891,48 +883,72 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
 
     std::string WB_method = arg_parser["wb-method"].get();
 
-    static std::map<std::string, Settings::WBMethod> wb_methods = {
-        { "metadata", Settings::WBMethod::Metadata },
-        { "illuminant", Settings::WBMethod::Illuminant },
-        { "box", Settings::WBMethod::Box },
-        { "custom", Settings::WBMethod::Custom }
+    std::set<std::string> supported_wb_methods = {
+        "metadata", "illuminant", "box", "custom"
     };
 
-    auto wb_it = wb_methods.find( WB_method );
-    if ( wb_it == wb_methods.end() )
+    bool is_wb_method_supported = supported_wb_methods.count( WB_method ) != 1;
+    if ( !is_wb_method_supported )
     {
         std::cerr << std::endl
                   << "ERROR: unsupported white balancing method '" << WB_method
                   << "'. The following methods are supported: '"
-                  << OIIO::Strutil::join( get_map_keys( wb_methods ), "', '" )
-                  << "'." << std::endl;
+                  << OIIO::Strutil::join( supported_wb_methods, "', '" ) << "'."
+                  << std::endl;
         return false;
     }
 
-    settings.WB_method = wb_it->second;
+    if ( WB_method == "metadata" )
+    {
+        settings.WB_method = Settings::WBMethod::Metadata;
+    }
+    else if ( WB_method == "illuminant" )
+    {
+        settings.WB_method = Settings::WBMethod::Illuminant;
+    }
+    else if ( WB_method == "box" )
+    {
+        settings.WB_method = Settings::WBMethod::Box;
+    }
+    else if ( WB_method == "custom" )
+    {
+        settings.WB_method = Settings::WBMethod::Custom;
+    }
 
     std::string matrix_method = arg_parser["mat-method"].get();
 
-    static std::map<std::string, Settings::MatrixMethod> matrix_methods = {
-        { "spectral", Settings::MatrixMethod::Spectral },
-        { "metadata", Settings::MatrixMethod::Metadata },
-        { "Adobe", Settings::MatrixMethod::Adobe },
-        { "custom", Settings::MatrixMethod::Custom }
+    std::set<std::string> supported_matrix_methods = {
+        "spectral", "metadata", "Adobe", "custom"
     };
 
-    auto matrix_it = matrix_methods.find( matrix_method );
-    if ( matrix_it == matrix_methods.end() )
+    bool is_matrix_method_supported =
+        supported_matrix_methods.count( matrix_method ) != 1;
+    if ( !is_matrix_method_supported )
     {
         std::cerr << std::endl
                   << "ERROR: unsupported matrix method '" << matrix_method
                   << "'. The following methods are supported: '"
-                  << OIIO::Strutil::join(
-                         get_map_keys( matrix_methods ), "', '" )
+                  << OIIO::Strutil::join( supported_matrix_methods, "', '" )
                   << "'." << std::endl;
         return false;
     }
 
-    settings.matrix_method = matrix_it->second;
+    if ( matrix_method == "spectral" )
+    {
+        settings.matrix_method = Settings::MatrixMethod::Spectral;
+    }
+    else if ( matrix_method == "metadata" )
+    {
+        settings.matrix_method = Settings::MatrixMethod::Metadata;
+    }
+    else if ( matrix_method == "Adobe" )
+    {
+        settings.matrix_method = Settings::MatrixMethod::Adobe;
+    }
+    else if ( matrix_method == "custom" )
+    {
+        settings.matrix_method = Settings::MatrixMethod::Custom;
+    }
 
     settings.illuminant        = arg_parser["illuminant"].get();
     bool is_illuminant_defined = !settings.illuminant.empty();
@@ -1022,24 +1038,31 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
 
     std::string crop_mode = arg_parser["crop-mode"].get();
 
-    static std::map<std::string, Settings::CropMode> crop_modes = {
-        { "off", Settings::CropMode::Off },
-        { "soft", Settings::CropMode::Soft },
-        { "hard", Settings::CropMode::Hard }
-    };
+    std::set<std::string> supported_crop_modes = { "off", "soft", "hard" };
 
-    auto crop_it = crop_modes.find( crop_mode );
-    if ( crop_it == crop_modes.end() )
+    bool is_crop_mode_supported = supported_crop_modes.count( crop_mode ) != 1;
+    if ( !is_crop_mode_supported )
     {
         std::cerr << std::endl
                   << "ERROR: unsupported cropping mode '" << crop_mode
                   << "'. The following modes are supported: '"
-                  << OIIO::Strutil::join( get_map_keys( crop_modes ), "', '" )
-                  << "'." << std::endl;
+                  << OIIO::Strutil::join( supported_crop_modes, "', '" ) << "'."
+                  << std::endl;
         return false;
     }
 
-    settings.crop_mode = crop_it->second;
+    if ( crop_mode == "off" )
+    {
+        settings.crop_mode = Settings::CropMode::Off;
+    }
+    else if ( crop_mode == "soft" )
+    {
+        settings.crop_mode = Settings::CropMode::Soft;
+    }
+    else if ( crop_mode == "hard" )
+    {
+        settings.crop_mode = Settings::CropMode::Hard;
+    }
 
     auto chromatic_aberration =
         arg_parser["chromatic-aberration"].as_vec<int>();
@@ -1050,19 +1073,22 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     }
 
     auto demosaic_algorithm = arg_parser["demosaic"].get();
-    static std::set<std::string> demosaic_algorithms = {
+    static std::set<std::string> supported_demosaic_algorithms = {
         "linear", "VNG",   "PPG",   "AHD",   "DCB", "AHD-Mod", "AFD",
         "VCD",    "Mixed", "LMMSE", "AMaZE", "DHT", "AAHD",    "AHD"
     };
 
-    if ( demosaic_algorithms.count( demosaic_algorithm ) != 1 )
+    bool is_demosaic_algorithm_supported =
+        supported_demosaic_algorithms.count( demosaic_algorithm ) != 1;
+    if ( !is_demosaic_algorithm_supported )
     {
         std::cerr << std::endl
                   << "ERROR: unsupported demosaicing algorithm '"
                   << demosaic_algorithm
                   << "'. The following methods are supported: '"
-                  << OIIO::Strutil::join( demosaic_algorithms, "', '" ) << "'."
-                  << std::endl;
+                  << OIIO::Strutil::join(
+                         supported_demosaic_algorithms, "', '" )
+                  << "'." << std::endl;
         return false;
     }
     else
@@ -1232,24 +1258,21 @@ bool ImageConverter::configure(
     options["raw:Demosaic"]           = settings.demosaic_algorithm;
     options["raw:threshold"]          = settings.denoise_threshold;
 
-    const OIIO::TypeDesc float_vec4_type_desc(
-        OIIO::TypeDesc::FLOAT, OIIO::TypeDesc::AGGREGATE::VEC4 );
-    const OIIO::TypeDesc int_vec4_type_desc(
-        OIIO::TypeDesc::INT, OIIO::TypeDesc::AGGREGATE::VEC4 );
-    const OIIO::TypeDesc float_vec2_type_desc(
-        OIIO::TypeDesc::FLOAT, OIIO::TypeDesc::AGGREGATE::VEC2 );
-
     if ( settings.crop_box[2] != 0 && settings.crop_box[3] != 0 )
     {
         options.attribute(
-            "raw:cropbox", int_vec4_type_desc, settings.crop_box );
+            "raw:cropbox",
+            OIIO::TypeDesc( OIIO::TypeDesc::INT, 4 ),
+            settings.crop_box );
     }
 
     if ( settings.chromatic_aberration[0] != 1.0 &&
          settings.chromatic_aberration[1] != 1.0 )
     {
         options.attribute(
-            "raw:aber", float_vec2_type_desc, settings.chromatic_aberration );
+            "raw:aber",
+            OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 2 ),
+            settings.chromatic_aberration );
     }
 
     bool is_DNG =
@@ -1261,7 +1284,7 @@ bool ImageConverter::configure(
             float custom_WB[4];
 
             auto camera_multiplier_attribute = image_spec.find_attribute(
-                "raw:cam_mul", float_vec4_type_desc );
+                "raw:cam_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
             if ( camera_multiplier_attribute )
             {
                 for ( int i = 0; i < 4; i++ )
@@ -1271,7 +1294,9 @@ bool ImageConverter::configure(
                 }
 
                 options.attribute(
-                    "raw:user_mul", float_vec4_type_desc, custom_WB );
+                    "raw:user_mul",
+                    OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
+                    custom_WB );
 
                 _WB_multipliers.resize( 4 );
                 for ( size_t i = 0; i < 4; i++ )
@@ -1298,13 +1323,18 @@ bool ImageConverter::configure(
                 {
                     WB_box[i] = settings.WB_box[i];
                 }
-                options.attribute( "raw:greybox", int_vec4_type_desc, WB_box );
+                options.attribute(
+                    "raw:greybox",
+                    OIIO::TypeDesc( OIIO::TypeDesc::INT, 4 ),
+                    WB_box );
             }
             break;
         }
         case Settings::WBMethod::Custom:
             options.attribute(
-                "raw:user_mul", float_vec4_type_desc, settings.custom_WB );
+                "raw:user_mul",
+                OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
+                settings.custom_WB );
 
             _WB_multipliers.resize( 4 );
             for ( size_t i = 0; i < 4; i++ )
@@ -1384,7 +1414,9 @@ bool ImageConverter::configure(
                 custom_WB[3] = _WB_multipliers[1];
 
             options.attribute(
-                "raw:user_mul", float_vec4_type_desc, custom_WB );
+                "raw:user_mul",
+                OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
+                custom_WB );
         }
     }
 

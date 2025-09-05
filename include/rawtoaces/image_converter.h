@@ -22,19 +22,6 @@ namespace util
 bool collect_image_files(
     const std::string &path, std::vector<std::vector<std::string>> &batches );
 
-struct CameraIdentifier
-{
-    std::string make;
-    std::string model;
-
-    CameraIdentifier() = default;
-    CameraIdentifier( const std::string &_make, const std::string &_model )
-        : make( _make ), model( _model )
-    {}
-
-    bool is_empty() const { return make.empty() && model.empty(); }
-};
-
 class ImageConverter
 {
 public:

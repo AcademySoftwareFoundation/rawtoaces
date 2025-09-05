@@ -25,6 +25,17 @@ struct CameraIdentifier
     CameraIdentifier() = default;
 
     bool is_empty() const { return make.empty() && model.empty(); }
+
+    operator std::string() const
+    {
+        return "make: '" + make + "', model: '" + model + "'";
+    }
+
+    friend std::string
+    operator+( const std::string &lhs, const CameraIdentifier &rhs )
+    {
+        return lhs + static_cast<std::string>( rhs );
+    }
 };
 
 /**
@@ -232,9 +243,8 @@ bool prepare_transform_spectral(
         solver.find_camera( camera_identifier.make, camera_identifier.model );
     if ( !success )
     {
-        const std::string data_type = "spectral data for camera make = '" +
-                                      camera_identifier.make + "', model = '" +
-                                      camera_identifier.model + "'";
+        const std::string data_type =
+            "spectral data for camera " + camera_identifier;
         print_data_error( data_type );
         return false;
     }
@@ -859,26 +869,19 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     if ( arg_parser["list-cameras"].get<int>() )
     {
         auto cameras = supported_cameras();
-        std::cout << std::endl
-                  << "Spectral sensitivity data are available for the "
-                  << "following cameras:" << std::endl;
-        for ( const auto &camera: cameras )
-        {
-            std::cerr << std::endl << camera;
-        }
-        std::cerr << std::endl;
+        std::cout
+            << std::endl
+            << "Spectral sensitivity data is available for the following cameras:"
+            << std::endl
+            << OIIO::Strutil::join( cameras, "\n" ) << std::endl;
     }
 
     if ( arg_parser["list-illuminants"].get<int>() )
     {
         auto illuminants = supported_illuminants();
         std::cerr << std::endl
-                  << "The following illuminants are supported:" << std::endl;
-        for ( const auto &illuminant: illuminants )
-        {
-            std::cerr << std::endl << illuminant;
-        }
-        std::cerr << std::endl;
+                  << "The following illuminants are supported:" << std::endl
+                  << OIIO::Strutil::join( illuminants, "\n" ) << std::endl;
     }
 
     std::string WB_method = arg_parser["wb-method"].get();
@@ -1057,26 +1060,25 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
             settings.chromatic_aberration[i] = chromatic_aberration[i];
     }
 
-    auto                         demosaic       = arg_parser["demosaic"].get();
-    static std::set<std::string> demosaic_algos = {
+    auto demosaic_algorithm = arg_parser["demosaic"].get();
+    static std::set<std::string> demosaic_algorithms = {
         "linear", "VNG",   "PPG",   "AHD",   "DCB", "AHD-Mod", "AFD",
         "VCD",    "Mixed", "LMMSE", "AMaZE", "DHT", "AAHD",    "AHD"
     };
 
-    if ( demosaic_algos.count( demosaic ) != 1 )
+    if ( demosaic_algorithms.count( demosaic_algorithm ) != 1 )
     {
         std::cerr << std::endl
-                  << "ERROR: unsupported demosaicing algorithm '" << demosaic
-                  << "'. "
+                  << "Unsupported demosaicing algorithm: '"
+                  << demosaic_algorithm << "'. "
                   << "The following algorithms are supported: "
-                  << "'linear', 'VNG', 'PPG', 'AHD', 'DCB', 'AHD-Mod', 'AFD', "
-                  << "'VCD', 'Mixed', 'LMMSE', 'AMaZE', 'DHT', 'AAHD', 'AHD'."
+                  << OIIO::Strutil::join( demosaic_algorithms, ", " ) << "."
                   << std::endl;
         return false;
     }
     else
     {
-        settings.demosaic_algorithm = demosaic;
+        settings.demosaic_algorithm = demosaic_algorithm;
     }
 
     settings.custom_camera_make  = arg_parser["custom-camera-make"].get();

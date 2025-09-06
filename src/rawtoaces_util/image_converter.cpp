@@ -17,30 +17,64 @@ namespace rta
 namespace util
 {
 
+struct CameraIdentifier
+{
+    std::string make;
+    std::string model;
+
+    CameraIdentifier() = default;
+
+    bool is_empty() const { return make.empty() && model.empty(); }
+
+    operator std::string() const
+    {
+        return "make: '" + make + "', model: '" + model + "'";
+    }
+
+    friend std::string
+    operator+( const std::string &lhs, const CameraIdentifier &rhs )
+    {
+        return lhs + static_cast<std::string>( rhs );
+    }
+};
+
+/**
+ * Checks if a file path is valid for processing and adds it to a batch list if appropriate.
+ * 
+ * This function validates that the given path points to a regular file or symbolic link,
+ * filters out unwanted files (system files like .DS_Store and certain image formats like EXR and JPG),
+ * and adds valid file paths to the provided batch vector for further processing.
+ * 
+ * @param path The filesystem path to check
+ * @param batch Reference to a vector of strings to add valid file paths to
+ * @return true if the file was processed (either added to batch or filtered out), 
+ *         false if the file should be ignored
+ */
 bool check_and_add_file(
     const std::filesystem::path &path, std::vector<std::string> &batch )
 {
-    if ( std::filesystem::is_regular_file( path ) ||
-         std::filesystem::is_symlink( path ) )
-    {
-        static const std::set<std::string> ignore_filenames = { ".DS_Store" };
-        std::string                        filename = path.filename().string();
-        if ( ignore_filenames.count( filename ) > 0 )
-            return false;
-
-        static const std::set<std::string> ignore_extensions = {
-            ".exr", ".EXR", ".jpg", ".JPG", ".jpeg", ".JPEG"
-        };
-        std::string extension = path.extension().string();
-        if ( ignore_extensions.count( extension ) > 0 )
-            return false;
-
-        batch.push_back( path.string() );
-    }
-    else
+    bool is_regular_file = std::filesystem::is_regular_file( path ) ||
+                           std::filesystem::is_symlink( path );
+    if ( !is_regular_file )
     {
         std::cerr << "Not a regular file: " << path << std::endl;
+        return false;
     }
+
+    static const std::set<std::string> ignore_filenames = { ".DS_Store" };
+    std::string                        filename = path.filename().string();
+    if ( ignore_filenames.count( filename ) > 0 )
+        return false;
+
+    static const std::set<std::string> ignore_extensions = { ".exr",
+                                                             ".jpg",
+                                                             ".jpeg" };
+    std::string extension = OIIO::Strutil::lower( path.extension().string() );
+    if ( ignore_extensions.count( extension ) > 0 )
+        return false;
+
+    batch.push_back( path.string() );
+
     return true;
 }
 
@@ -72,7 +106,12 @@ bool collect_image_files(
     return true;
 }
 
-// Adapted from define.h pathsFinder()
+/// Gets the list of database paths for rawtoaces data files.
+///
+/// Checks environment variables (RAWTOACES_DATA_PATH or deprecated AMPAS_DATA_PATH)
+/// and falls back to platform-specific default paths.
+///
+/// @return Vector of unique database directory paths
 std::vector<std::string> database_paths()
 {
     std::vector<std::string> result;
@@ -81,11 +120,10 @@ std::vector<std::string> database_paths()
     const std::string separator    = ";";
     const std::string default_path = ".";
 #else
-    char              separator   = ':';
+    const std::string separator   = ":";
     const std::string legacy_path = "/usr/local/include/rawtoaces/data";
     const std::string default_path =
-        std::string( "/usr/local/share/rawtoaces/data" ) + separator +
-        legacy_path;
+        "/usr/local/share/rawtoaces/data" + separator + legacy_path;
 #endif
 
     std::string path;
@@ -113,31 +151,25 @@ std::vector<std::string> database_paths()
         path = default_path;
     }
 
-    size_t pos = 0;
-
-    while ( pos < path.size() )
-    {
-        size_t end = path.find( separator, pos );
-
-        if ( end == std::string::npos )
-            end = path.size();
-
-        std::string pathItem = path.substr( pos, end - pos );
-
-        if ( find( result.begin(), result.end(), pathItem ) == result.end() )
-            result.push_back( pathItem );
-
-        pos = end + 1;
-    }
+    OIIO::Strutil::split( path, result, separator );
 
     return result;
 };
 
-bool fetch_camera_make_and_model(
-    const OIIO::ImageSpec &spec,
-    std::string           &camera_make,
-    std::string           &camera_model )
+/// Get camera info (with make and model) from image metadata or custom settings.
+///
+/// Returns camera information using custom settings if provided, otherwise
+/// extracts from image metadata. Returns empty CameraInfo if required metadata is missing.
+///
+/// @param spec Image specification containing metadata
+/// @param settings Converter settings with optional custom camera info
+/// @return CameraInfo struct with make and model, or empty if unavailable
+CameraIdentifier get_camera_identifier(
+    const OIIO::ImageSpec &spec, const ImageConverter::Settings &settings )
 {
+    std::string camera_make  = settings.custom_camera_make;
+    std::string camera_model = settings.custom_camera_model;
+
     if ( camera_make.empty() )
     {
         camera_make = spec["cameraMake"];
@@ -146,7 +178,7 @@ bool fetch_camera_make_and_model(
             std::cerr << "Missing the camera manufacturer name in the file "
                       << "metadata. You can provide a camera make using the "
                       << "--custom-camera-make parameter" << std::endl;
-            return false;
+            return CameraIdentifier();
         }
     }
 
@@ -156,32 +188,13 @@ bool fetch_camera_make_and_model(
         if ( camera_model.empty() )
         {
             std::cerr << "Missing the camera model name in the file metadata. "
-                      << "You can provide a camera make using the "
-                      << "--custom-camera-make parameter" << std::endl;
-            return false;
+                      << "You can provide a camera model using the "
+                      << "--custom-camera-model parameter" << std::endl;
+            return CameraIdentifier();
         }
     }
 
-    return true;
-}
-
-/// Check if an attribute of a given name exists
-/// and has the type we are expecting.
-const OIIO::ParamValue *find_and_check_attribute(
-    const OIIO::ImageSpec &image_spec,
-    const std::string     &name,
-    OIIO::TypeDesc         type )
-{
-    auto attr = image_spec.find_attribute( name );
-    if ( attr )
-    {
-        auto attr_type = attr->type();
-        if ( attr_type == type )
-        {
-            return attr;
-        }
-    }
-    return nullptr;
+    return { camera_make, camera_model };
 }
 
 void print_data_error( const std::string &data_type )
@@ -191,6 +204,20 @@ void print_data_error( const std::string &data_type )
               << "in RAWTOACES_DATABASE_PATH" << std::endl;
 }
 
+/// Prepares spectral transformation matrices for RAW to ACES conversion
+///
+/// This method initializes a spectral solver to find the appropriate camera data,
+/// loads training and observer spectral data, determines the illuminant (either from
+/// settings or by analyzing white balance multipliers), calculates white balance
+/// coefficients, and computes the IDT matrix. The CAT (Chromatic Adaptation Transform) matrix is not used in spectral
+/// mode as chromatic adaptation is embedded within the IDT (Input Device Transform) matrix.
+///
+/// @param image_spec OpenImageIO image specification containing metadata
+/// @param settings ImageConverter settings including illuminant and verbosity
+/// @param WB_multipliers Output white balance multipliers (3-element vector)
+/// @param IDT_matrix Output Input Device Transform matrix (3x3 matrix)
+/// @param CAT_matrix Output Chromatic Adaptation Transform matrix (cleared in spectral mode)
+/// @return true if transformation matrices were successfully prepared, false otherwise
 bool prepare_transform_spectral(
     const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,
@@ -198,28 +225,31 @@ bool prepare_transform_spectral(
     std::vector<std::vector<double>> &IDT_matrix,
     std::vector<std::vector<double>> &CAT_matrix )
 {
+    // Step 1: Initialize and validate camera identification
     std::string lower_illuminant = OIIO::Strutil::lower( settings.illuminant );
 
-    std::string camera_make  = settings.custom_camera_make;
-    std::string camera_model = settings.custom_camera_model;
-    if ( !fetch_camera_make_and_model( image_spec, camera_make, camera_model ) )
+    CameraIdentifier camera_identifier =
+        get_camera_identifier( image_spec, settings );
+    if ( camera_identifier.is_empty() )
         return false;
 
     bool success = false;
 
+    // Step 2: Initialize spectral solver and find camera data
     core::SpectralSolver solver( settings.database_directories );
     solver.verbosity = settings.verbosity;
 
-    success = solver.find_camera( camera_make.c_str(), camera_model.c_str() );
+    success =
+        solver.find_camera( camera_identifier.make, camera_identifier.model );
     if ( !success )
     {
-        const std::string data_type = "spectral data for camera make = '" +
-                                      camera_make + "', model = '" +
-                                      camera_model + "'";
+        const std::string data_type =
+            "spectral data for camera " + camera_identifier;
         print_data_error( data_type );
         return false;
     }
 
+    // Step 3: Load training spectral data
     const std::string training_path = "training/training_spectral.json";
     success = solver.load_spectral_data( training_path, solver.training_data );
     if ( !success )
@@ -229,6 +259,7 @@ bool prepare_transform_spectral(
         return false;
     }
 
+    // Step 4: Load observer (CMF) spectral data
     const std::string observer_path = "cmf/cmf_1931.json";
     success = solver.load_spectral_data( observer_path, solver.observer );
     if ( !success )
@@ -238,8 +269,10 @@ bool prepare_transform_spectral(
         return false;
     }
 
+    // Step 5: Determine illuminant and calculate white balance
     if ( !lower_illuminant.empty() )
     {
+        // Use specified illuminant from settings
         success = solver.find_illuminant( lower_illuminant );
 
         if ( !success )
@@ -253,6 +286,7 @@ bool prepare_transform_spectral(
 
     if ( lower_illuminant.empty() )
     {
+        // Auto-detect illuminant from white balance multipliers
         std::vector<double> tmp_wb_multipliers( 4 );
 
         if ( WB_multipliers.size() == 4 )
@@ -262,10 +296,9 @@ bool prepare_transform_spectral(
         }
         else
         {
-            auto attr = find_and_check_attribute(
-                image_spec,
-                "raw:pre_mul",
-                OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
+            // Extract white balance from RAW metadata
+            auto attr = image_spec.find_attribute(
+                "raw:pre_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
             if ( attr )
             {
                 for ( int i = 0; i < 4; i++ )
@@ -273,11 +306,13 @@ bool prepare_transform_spectral(
             }
         }
 
+        // Average green channels if 4-channel data
         if ( tmp_wb_multipliers[3] != 0 )
             tmp_wb_multipliers[1] =
                 ( tmp_wb_multipliers[1] + tmp_wb_multipliers[3] ) / 2.0;
         tmp_wb_multipliers.resize( 3 );
 
+        // Normalize white balance multipliers
         double min_val = *std::min_element(
             tmp_wb_multipliers.begin(), tmp_wb_multipliers.end() );
 
@@ -302,6 +337,7 @@ bool prepare_transform_spectral(
     }
     else
     {
+        // Calculate white balance for specified illuminant
         success = solver.calculate_WB();
 
         if ( !success )
@@ -324,6 +360,7 @@ bool prepare_transform_spectral(
         }
     }
 
+    // Step 6: Calculate Input Device Transform (IDT) matrix
     success = solver.calculate_IDT_matrix();
     if ( !success )
     {
@@ -347,38 +384,49 @@ bool prepare_transform_spectral(
         }
     }
 
+    // Step 7: Clear CAT matrix (not used in spectral mode)
     // CAT is embedded in IDT in spectral mode
     CAT_matrix.resize( 0 );
 
     return true;
 }
 
+/// Prepares DNG transformation matrices for RAW to ACES conversion
+///
+/// This method extracts DNG metadata including baseline exposure, neutral RGB values,
+/// and calibration matrices for two illuminants, then uses a MetadataSolver to calculate
+/// the Input Device Transform (IDT) matrix. The Chromatic Adaptation Transform (CAT)
+/// matrix is not applied for DNG files as chromatic adaptation is handled differently.
+///
+/// @param image_spec OpenImageIO image specification containing DNG metadata
+/// @param settings ImageConverter settings including verbosity level
+/// @param IDT_matrix Output Input Device Transform matrix (3x3 matrix)
+/// @param CAT_matrix Output Chromatic Adaptation Transform matrix (cleared for DNG)
+/// @return true if transformation matrices were successfully prepared, false otherwise
 bool prepare_transform_DNG(
     const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,
     std::vector<std::vector<double>> &IDT_matrix,
     std::vector<std::vector<double>> &CAT_matrix )
 {
-    std::string camera_make  = settings.custom_camera_make;
-    std::string camera_model = settings.custom_camera_model;
-    if ( !fetch_camera_make_and_model( image_spec, camera_make, camera_model ) )
-        return false;
-
+    // Step 1: Extract basic DNG metadata
     core::Metadata metadata;
 
     metadata.baseline_exposure =
         image_spec.get_float_attribute( "raw:dng:baseline_exposure" );
 
+    // Step 2: Extract neutral RGB values from camera multipliers
     metadata.neutral_RGB.resize( 3 );
 
-    auto attr = find_and_check_attribute(
-        image_spec, "raw:cam_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
+    auto attr = image_spec.find_attribute(
+        "raw:cam_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
     if ( attr )
     {
         for ( int i = 0; i < 3; i++ )
             metadata.neutral_RGB[i] = 1.0 / attr->get_float_indexed( i );
     }
 
+    // Step 3: Extract calibration data for two illuminants
     for ( size_t k = 0; k < 2; k++ )
     {
         auto &calibration = metadata.calibration[k];
@@ -387,13 +435,15 @@ bool prepare_transform_DNG(
 
         auto index_string = std::to_string( k + 1 );
 
+        // Extract illuminant type for this calibration
         auto key = "raw:dng:calibration_illuminant" + index_string;
         metadata.calibration[k].illuminant =
             image_spec.get_int_attribute( key );
 
+        // Extract XYZ to RGB color matrix
         auto key1         = "raw:dng:color_matrix" + index_string;
-        auto matrix1_attr = find_and_check_attribute(
-            image_spec, key1, OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 12 ) );
+        auto matrix1_attr = image_spec.find_attribute(
+            key1, OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 12 ) );
         if ( matrix1_attr )
         {
             for ( int i = 0; i < 3; i++ )
@@ -406,9 +456,10 @@ bool prepare_transform_DNG(
             }
         }
 
+        // Extract camera calibration matrix
         auto key2         = "raw:dng:camera_calibration" + index_string;
-        auto matrix2_attr = find_and_check_attribute(
-            image_spec, key2, OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 16 ) );
+        auto matrix2_attr = image_spec.find_attribute(
+            key2, OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 16 ) );
         if ( matrix2_attr )
         {
             for ( int i = 0; i < 3; i++ )
@@ -422,6 +473,7 @@ bool prepare_transform_DNG(
         }
     }
 
+    // Step 4: Calculate IDT matrix using metadata solver
     core::MetadataSolver solver( metadata );
     IDT_matrix = solver.calculate_IDT_matrix();
 
@@ -438,14 +490,13 @@ bool prepare_transform_DNG(
         }
     }
 
+    // Step 5: Clear CAT matrix (not used for DNG)
     // Do not apply CAT for DNG
     CAT_matrix.resize( 0 );
     return true;
 }
 
-bool prepare_transform_nonDNG(
-    const OIIO::ImageSpec            &image_spec,
-    const ImageConverter::Settings   &settings,
+void prepare_transform_nonDNG(
     std::vector<std::vector<double>> &IDT_matrix,
     std::vector<std::vector<double>> &CAT_matrix )
 {
@@ -453,69 +504,85 @@ bool prepare_transform_nonDNG(
     IDT_matrix.resize( 0 );
 
     CAT_matrix = rta::core::CAT_D65_to_ACES;
-
-    return true;
 }
 
 const char *HelpString =
-    "Rawtoaces converts raw image files from a digital camera to "
-    "the Academy Colour Encoding System (ACES) compliant images.\n"
-    "The process consists of two parts:\n"
-    "- the colour values get converted from the camera native colour "
-    "space to the ACES AP0 (see \"SMPTE ST 2065-1\"), and \n"
-    "- the image file gets converted from the camera native raw "
-    "file format to the ACES Image Container file format "
-    "(see \"SMPTE ST 2065-4\").\n"
-    "\n"
-    "Rawtoaces supports the following white-balancing modes:\n"
-    "- \"metadata\" uses the white-balancing coefficients from the raw "
-    "image file, provided by the camera.\n"
-    "- \"illuminant\" performs white balancing to the illuminant, "
-    "provided in the \"--illuminant\" parameter. The list of the "
-    "supported illuminants can be seen using the "
-    "\"--list-illuminants\" parameter. This mode requires spectral "
-    "sensitivity data for the camera model the image comes from. "
-    "The list of cameras such data is available for, can be "
-    "seen using the \"--list-cameras\" parameter. In addition to the named "
-    "illuminants, which are stored under ${RAWTOACES_DATA_PATH}/illuminant, "
-    "blackbody illuminants of a given colour temperature can me used (use 'K' "
-    "suffix, i.e. '3200K'), as well as daylight illuminants (use the 'D' "
-    "prefix, i.e. 'D65').\n"
-    "- \"box\" performs white-balancing to make the given region of "
-    "the image appear neutral gray. The box position (origin and size) "
-    "can be specified using the \"--wb-box\" parameter. In case no such "
-    "parameter provided, the whole image is used for white-balancing.\n"
-    "- \"custom\" uses the custom white balancing coefficients "
-    "provided using the -\"custom-wb\" parameter.\n"
-    "\n"
-    "Rawtoaces supports the following methods of color matrix "
-    "computation:\n"
-    "- \"spectral\" uses the camera sensor's spectral sensitivity data "
-    "to compute the optimal matrix. This mode requires spectral "
-    "sensitivity data for the camera model the image comes from. "
-    "The list of cameras such data is available for, can be "
-    "seen using the \"--list-cameras\" parameter.\n"
-    "- \"metadata\" uses the matrix (matrices) contained in the raw "
-    "image file metadata. This mode works best with the images using "
-    "the DNG format, as the DNG standard mandates the presense of "
-    "such matrices.\n"
-    "- \"Adobe\" uses the Adobe coefficients provided by LibRaw. \n"
-    "- \"custom\" uses a user-provided color conversion matrix. "
-    "A matrix can be specified using the \"--custom-mat\" parameter.\n"
-    "\n"
-    "The paths rawtoaces uses to search for the spectral sensitivity "
-    "data can be specified in the RAWTOACES_DATA_PATH environment "
-    "variable.\n";
+    R"(Rawtoaces converts raw image files from a digital camera to 
+the Academy Colour Encoding System (ACES) compliant images.
+The process consists of two parts:
+- the colour values get converted from the camera native colour 
+space to the ACES AP0 (see "SMPTE ST 2065-1"), and 
+- the image file gets converted from the camera native raw 
+file format to the ACES Image Container file format 
+(see "SMPTE ST 2065-4").
 
-const char *UsageString =
-    "\n"
-    "    rawtoaces --wb-method METHOD --mat-method METHOD [PARAMS] "
-    "path/to/dir/or/file ...\n"
-    "Examples: \n"
-    "    rawtoaces --wb-method metadata --mat-method metadata raw_file.dng\n"
-    "    rawtoaces --wb-method illuminant --illuminant 3200K --mat-method "
-    "spectral raw_file.cr3\n";
+Rawtoaces supports the following white-balancing modes:
+- "metadata" uses the white-balancing coefficients from the raw 
+image file, provided by the camera.
+- "illuminant" performs white balancing to the illuminant, 
+provided in the "--illuminant" parameter. The list of the 
+supported illuminants can be seen using the 
+"--list-illuminants" parameter. This mode requires spectral 
+sensitivity data for the camera model the image comes from. 
+The list of cameras such data is available for, can be 
+seen using the "--list-cameras" parameter. In addition to the named 
+illuminants, which are stored under ${RAWTOACES_DATA_PATH}/illuminant, 
+blackbody illuminants of a given colour temperature can me used (use 'K' 
+suffix, i.e. '3200K'), as well as daylight illuminants (use the 'D' 
+prefix, i.e. 'D65').
+- "box" performs white-balancing to make the given region of 
+the image appear neutral gray. The box position (origin and size) 
+can be specified using the "--wb-box" parameter. In case no such 
+parameter provided, the whole image is used for white-balancing.
+- "custom" uses the custom white balancing coefficients 
+provided using the -"custom-wb" parameter.
 
+Rawtoaces supports the following methods of color matrix 
+computation:
+- "spectral" uses the camera sensor's spectral sensitivity data 
+to compute the optimal matrix. This mode requires spectral 
+sensitivity data for the camera model the image comes from. 
+The list of cameras such data is available for, can be 
+seen using the "--list-cameras" parameter.
+- "metadata" uses the matrix (matrices) contained in the raw 
+image file metadata. This mode works best with the images using 
+the DNG format, as the DNG standard mandates the presense of 
+such matrices.
+- "Adobe" uses the Adobe coefficients provided by LibRaw. 
+- "custom" uses a user-provided color conversion matrix. 
+A matrix can be specified using the "--custom-mat" parameter.
+
+The paths rawtoaces uses to search for the spectral sensitivity 
+data can be specified in the RAWTOACES_DATA_PATH environment 
+variable.
+)";
+
+const char *UsageString = R"(
+    rawtoaces --wb-method METHOD --mat-method METHOD [PARAMS] path/to/dir/or/file ...
+Examples: 
+    rawtoaces --wb-method metadata --mat-method metadata raw_file.dng
+    rawtoaces --wb-method illuminant --illuminant 3200K --mat-method spectral raw_file.cr3
+)";
+
+/// Validates command-line parameter consistency with selected processing mode
+///
+/// This template function ensures that command-line parameters are properly configured
+/// for the selected processing mode. It validates parameter count, provides appropriate
+/// warnings for missing or incorrect parameters, and executes callback functions based
+/// on validation results. The function handles two main scenarios: when the parameter
+/// is required for the current mode (is_correct_mode=true) and when it should not be
+/// provided for the current mode (is_correct_mode=false).
+///
+/// @param mode_name Name of the mode being checked (e.g., "wb-method", "mat-method")
+/// @param mode_value Value of the mode (e.g., "illuminant", "spectral", "metadata")
+/// @param param_name Name of the parameter being validated (e.g., "illuminant", "custom-wb")
+/// @param param_value Vector of parameter values to validate
+/// @param correct_size Expected number of values for the parameter
+/// @param default_value_message Message explaining default behavior when parameter is missing
+/// @param is_correct_mode Whether the current mode matches the expected mode for this parameter
+/// @param on_success Callback function to execute on successful validation
+/// @param on_failure Callback function to execute on validation failure
+/// @return true if parameter is valid for the current mode, false otherwise
 template <typename T, typename F1, typename F2>
 bool check_param(
     const std::string    &mode_name,
@@ -576,6 +643,7 @@ bool check_param(
         }
         else
         {
+            on_success();
             return true;
         }
     }
@@ -801,27 +869,21 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     if ( arg_parser["list-cameras"].get<int>() )
     {
         auto cameras = supported_cameras();
-        std::cout << std::endl
-                  << "Spectral sensitivity data are available for the "
-                  << "following cameras:" << std::endl;
-        for ( const auto &camera: cameras )
-        {
-            std::cerr << std::endl << camera;
-        }
-        std::cerr << std::endl;
+        std::cout
+            << std::endl
+            << "Spectral sensitivity data is available for the following cameras:"
+            << std::endl
+            << OIIO::Strutil::join( cameras, "\n" ) << std::endl;
+        exit( 0 );
     }
 
     if ( arg_parser["list-illuminants"].get<int>() )
     {
-        // gather a list of illuminants supported
         auto illuminants = supported_illuminants();
-        std::cerr << std::endl
-                  << "The following illuminants are supported:" << std::endl;
-        for ( const auto &illuminant: illuminants )
-        {
-            std::cerr << std::endl << illuminant;
-        }
-        std::cerr << std::endl;
+        std::cout << std::endl
+                  << "The following illuminants are supported:" << std::endl
+                  << OIIO::Strutil::join( illuminants, "\n" ) << std::endl;
+        exit( 0 );
     }
 
     std::string WB_method = arg_parser["wb-method"].get();
@@ -844,9 +906,11 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     }
     else
     {
-        std::cerr << std::endl
-                  << "Unsupported white balancing method: \"" << WB_method
-                  << "\"." << std::endl;
+        std::cerr
+            << std::endl
+            << "Unsupported white balancing method: '" << WB_method << "'. "
+            << "The following methods are supported: metadata, illuminant, box, custom."
+            << std::endl;
 
         return false;
     }
@@ -871,35 +935,36 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     }
     else
     {
-        std::cerr << std::endl
-                  << "Unsupported matrix method: \"" << matrix_method << "\"."
-                  << std::endl;
+        std::cerr
+            << std::endl
+            << "Unsupported matrix method: '" << matrix_method << "'. "
+            << "The following methods are supported: spectral, metadata, Adobe, custom."
+            << std::endl;
 
         return false;
     }
 
-    settings.illuminant = arg_parser["illuminant"].get();
+    settings.illuminant        = arg_parser["illuminant"].get();
+    bool is_illuminant_defined = !settings.illuminant.empty();
+    bool is_WB_method_illuminant =
+        settings.WB_method == Settings::WBMethod::Illuminant;
 
-    if ( settings.WB_method == Settings::WBMethod::Illuminant )
+    if ( is_WB_method_illuminant && !is_illuminant_defined )
     {
-        if ( settings.illuminant.empty() )
-        {
-            std::cerr << "Warning: the white balancing method was set to "
-                      << "\"illuminant\", but no \"--illuminant\" parameter "
-                      << "provided. D55 will be used as default." << std::endl;
-            settings.illuminant = "D55"; // Set default illuminant
-        }
+        std::cerr << "Warning: the white balancing method was set to "
+                  << "\"illuminant\", but no \"--illuminant\" parameter "
+                  << "provided. D55 will be used as default." << std::endl;
+
+        std::string default_illuminant = "D55";
+        settings.illuminant            = default_illuminant;
     }
-    else
+    else if ( !is_WB_method_illuminant && is_illuminant_defined )
     {
-        if ( !settings.illuminant.empty() )
-        {
-            std::cerr << "Warning: the \"--illuminant\" parameter provided "
-                      << "but the white balancing mode different from "
-                      << "\"illuminant\" "
-                      << "requested. The custom illuminant will be ignored."
-                      << std::endl;
-        }
+        std::cerr << "Warning: the \"--illuminant\" parameter provided "
+                  << "but the white balancing mode different from "
+                  << "\"illuminant\" "
+                  << "requested. The custom illuminant will be ignored."
+                  << std::endl;
     }
 
     auto WB_box = arg_parser["wb-box"].as_vec<int>();
@@ -958,7 +1023,7 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
                     settings.custom_matrix[i][j] = i == j ? 1.0 : 0.0;
         } );
 
-    auto crop_box = arg_parser["crop_box-box"].as_vec<int>();
+    auto crop_box = arg_parser["crop-box"].as_vec<int>();
     if ( crop_box.size() == 4 )
     {
         for ( size_t i = 0; i < 4; i++ )
@@ -982,7 +1047,8 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     else
     {
         std::cerr << std::endl
-                  << "Unsupported cropping mode: \"" << crop_mode << "\"."
+                  << "Unsupported cropping mode: '" << crop_mode << "'. "
+                  << "The following modes are supported: off, soft, hard."
                   << std::endl;
 
         return false;
@@ -1005,11 +1071,10 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     if ( demosaic_algorithms.count( demosaic_algorithm ) != 1 )
     {
         std::cerr << std::endl
-                  << "ERROR: unsupported demosaicing algorithm '"
-                  << demosaic_algorithm
-                  << ". The following methods are supported: "
-                  << "'linear', 'VNG', 'PPG', 'AHD', 'DCB', 'AHD-Mod', 'AFD', "
-                  << "'VCD', 'Mixed', 'LMMSE', 'AMaZE', 'DHT', 'AAHD', 'AHD'."
+                  << "Unsupported demosaicing algorithm: '"
+                  << demosaic_algorithm << "'. "
+                  << "The following algorithms are supported: "
+                  << OIIO::Strutil::join( demosaic_algorithms, ", " ) << "."
                   << std::endl;
         return false;
     }
@@ -1205,10 +1270,8 @@ bool ImageConverter::configure(
         case Settings::WBMethod::Metadata: {
             float custom_WB[4];
 
-            auto camera_multiplier_attribute = find_and_check_attribute(
-                image_spec,
-                "raw:cam_mul",
-                OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
+            auto camera_multiplier_attribute = image_spec.find_attribute(
+                "raw:cam_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
             if ( camera_multiplier_attribute )
             {
                 for ( int i = 0; i < 4; i++ )
@@ -1362,24 +1425,12 @@ bool ImageConverter::configure(
         }
         else
         {
-            if ( !prepare_transform_nonDNG(
-                     image_spec, settings, _IDT_matrix, _CAT_matrix ) )
-            {
-                std::cerr << "ERROR: the colour space transform has not been "
-                          << "configured properly (Adobe mode)." << std::endl;
-                return false;
-            }
+            prepare_transform_nonDNG( _IDT_matrix, _CAT_matrix );
         }
     }
     else if ( settings.matrix_method == Settings::MatrixMethod::Adobe )
     {
-        if ( !prepare_transform_nonDNG(
-                 image_spec, settings, _IDT_matrix, _CAT_matrix ) )
-        {
-            std::cerr << "ERROR: the colour space transform has not been "
-                      << "configured properly (Adobe mode)." << std::endl;
-            return false;
-        }
+        prepare_transform_nonDNG( _IDT_matrix, _CAT_matrix );
     }
 
     return true;

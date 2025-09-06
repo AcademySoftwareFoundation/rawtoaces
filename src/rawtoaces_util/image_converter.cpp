@@ -874,14 +874,16 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
             << "Spectral sensitivity data is available for the following cameras:"
             << std::endl
             << OIIO::Strutil::join( cameras, "\n" ) << std::endl;
+        exit( 0 );
     }
 
     if ( arg_parser["list-illuminants"].get<int>() )
     {
         auto illuminants = supported_illuminants();
-        std::cerr << std::endl
+        std::cout << std::endl
                   << "The following illuminants are supported:" << std::endl
                   << OIIO::Strutil::join( illuminants, "\n" ) << std::endl;
+        exit( 0 );
     }
 
     std::string WB_method = arg_parser["wb-method"].get();

@@ -643,7 +643,8 @@ bool check_param(
         }
         else
         {
-            on_success();
+            // Correct mode and no parameter provided.
+            // Success but we don't want to execute the success callback.
             return true;
         }
     }

@@ -1,4 +1,8 @@
-# RAW to ACES Utility
+<p align="center">
+  <img src="ASWF/logos/rawtoaces-horizontal-color.png">
+</p>
+
+[![codecov](https://codecov.io/gh/AcademySoftwareFoundation/rawtoaces/branch/main/graph/badge.svg)](https://codecov.io/gh/AcademySoftwareFoundation/rawtoaces)
 
 ## Table of Contents
 1. [Introduction](#introduction)

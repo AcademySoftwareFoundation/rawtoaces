@@ -1,0 +1,37 @@
+# Codecov configuration for rawtoaces project
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 5%
+        informational: true
+    patch:
+      default:
+        target: 70%
+        threshold: 5%
+
+comment:
+  layout: "header,diff,files,footer"
+  behavior: default
+  require_changes: false
+  require_base: no
+  require_head: yes
+
+github_checks:
+  annotations: true
+
+ignore:
+  - "tests/"
+  - "**/test_*"
+  - "**/*_test.cpp"
+
+flags:
+  unittests:
+    paths:
+      - "src/"
+      - "include/"

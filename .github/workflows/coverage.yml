@@ -1,0 +1,68 @@
+name: Code Coverage
+
+on:
+  push:
+    # branches: [ main, develop ]
+  pull_request:
+    # branches: [ main, develop ]
+
+jobs:
+  coverage:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Needed for lcov
+    
+    - name: Install OS dependencies
+      shell: bash
+      run: |
+        build_scripts/install_deps_mac.bash
+    
+    - name: Install coverage dependencies
+      run: |
+        brew install lcov
+    
+    - name: Configure CMake
+      run: |
+        mkdir build-coverage
+        cd build-coverage
+        cmake \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DENABLE_COVERAGE=ON \
+          -DCMAKE_CXX_STANDARD=17 \
+          -DCMAKE_CXX_FLAGS="-g -O0" \
+          ..
+    
+    - name: Build
+      run: |
+        cd build-coverage
+        make -j$(sysctl -n hw.ncpu)
+    
+    - name: Run tests
+      run: |
+        cd build-coverage
+        ctest --output-on-failure
+    
+    - name: Generate coverage report
+      run: |
+        cd build-coverage
+        make coverage
+    
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN || '' }}
+        files: build-coverage/coverage/coverage_filtered.info
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+    
+    - name: Upload coverage report as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: build-coverage/coverage/
+        retention-days: 30

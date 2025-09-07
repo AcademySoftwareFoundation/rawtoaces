@@ -15,4 +15,9 @@ target_link_libraries(
         OpenImageIO::OpenImageIO
 )
 
+# Enable coverage for this test if coverage is enabled
+if( ENABLE_COVERAGE AND COVERAGE_SUPPORTED )
+    setup_coverage_flags(test_util)
+endif()
+
 add_test ( NAME test_util COMMAND test_util )

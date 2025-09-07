@@ -64,19 +64,24 @@ void test_AcesRender()
         converter.settings.matrix_method ==
         rta::util::ImageConverter::Settings::MatrixMethod::Metadata );
 
-    OIIO::ParamValueList hints;
-    bool result = converter.configure( pathToRaw.string(), hints );
-    OIIO_CHECK_EQUAL( result, true );
+    // Disable for now. Needs better checks if the installed OIIO version
+    // is compatible.
+    if ( true ) //(OIIO::openimageio_version() > 20500 )
+    {
+        OIIO::ParamValueList hints;
+        bool result = converter.configure( pathToRaw.string(), hints );
+        OIIO_CHECK_EQUAL( result, true );
 
-    auto idt = converter.get_IDT_matrix();
+        auto idt = converter.get_IDT_matrix();
 
-    double matrix[3][3] = { { 1.0536466144, 0.0039044182, 0.0049084502 },
-                            { -0.4899562165, 1.3614787986, 0.1020844728 },
-                            { -0.0024498461, 0.0060497128, 1.0139159537 } };
+        double matrix[3][3] = { { 1.0536466144, 0.0039044182, 0.0049084502 },
+                                { -0.4899562165, 1.3614787986, 0.1020844728 },
+                                { -0.0024498461, 0.0060497128, 1.0139159537 } };
 
-    for ( size_t i = 0; i < 3; i++ )
-        for ( size_t j = 0; j < 3; j++ )
-            OIIO_CHECK_EQUAL_THRESH( idt[i][j], matrix[i][j], 1e-5 );
+        for ( size_t i = 0; i < 3; i++ )
+            for ( size_t j = 0; j < 3; j++ )
+                OIIO_CHECK_EQUAL_THRESH( idt[i][j], matrix[i][j], 1e-5 );
+    }
 };
 
 int main( int, char ** )

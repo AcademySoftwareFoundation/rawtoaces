@@ -64,7 +64,6 @@ void test_AcesRender()
         converter.settings.matrix_method ==
         rta::util::ImageConverter::Settings::MatrixMethod::Metadata );
 
-
     OIIO::ParamValueList hints;
     bool result = converter.configure( pathToRaw.string(), hints );
     OIIO_CHECK_EQUAL( result, true );

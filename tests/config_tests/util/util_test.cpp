@@ -66,7 +66,7 @@ void test_AcesRender()
 
     // Disable for now. Needs better checks if the installed OIIO version
     // is compatible.
-    if ( true ) //(OIIO::openimageio_version() > 20500 )
+    if ( false ) //(OIIO::openimageio_version() > 20500 )
     {
         OIIO::ParamValueList hints;
         bool result = converter.configure( pathToRaw.string(), hints );

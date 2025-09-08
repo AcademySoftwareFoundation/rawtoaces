@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <string>
 #include <vector>
+#include <OpenImageIO/imageio.h>
 
 // Contains the declarations of the private functions,
 // exposed here for unit-testing.
@@ -15,11 +16,12 @@ namespace rta
 namespace util
 {
 
-
 bool collect_image_files(
     const std::string &path, std::vector<std::vector<std::string>> &batches );
 
 std::vector<std::string> database_paths();
+
+void fix_metadata( OIIO::ImageSpec &spec );
 
 } // namespace util
 } // namespace rta

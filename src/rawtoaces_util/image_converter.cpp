@@ -69,7 +69,7 @@ void check_and_add_file(
     static const std::set<std::string> ignore_extensions = { ".exr",
                                                              ".jpg",
                                                              ".jpeg" };
-    std::string extension =  OIIO::Strutil::lower(path.extension().string());
+    std::string extension = OIIO::Strutil::lower( path.extension().string() );
     if ( ignore_extensions.count( extension ) > 0 )
         return;
 
@@ -1165,6 +1165,8 @@ std::vector<std::string> ImageConverter::supported_cameras()
 /// Normalise the metadata in the cases where the OIIO attribute name
 /// doesn't match the standard OpenEXR and/or ACES Container attribute name.
 /// We only check the attribute names which are set by the raw input plugin.
+///
+/// @param spec ImageSpec to modify
 void fix_metadata( OIIO::ImageSpec &spec )
 {
     const std::map<std::string, std::string> standard_mapping = {

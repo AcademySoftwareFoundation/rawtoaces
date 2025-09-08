@@ -13,6 +13,7 @@
 #include <iostream>
 #include <vector>
 #include <sys/stat.h>  // for mkfifo
+#include <cstdlib>     // for setenv, unsetenv
 
 #include "../src/rawtoaces_util/rawtoaces_util_priv.h"
 
@@ -179,6 +180,107 @@ void test_collect_image_files_directory_with_only_filtered_files()
     OIIO_CHECK_EQUAL(batches[0].size(), 0); // All files filtered out
 }
 
+/// Tests database_paths with no environment variables set (uses default paths)
+void test_database_paths_default()
+{
+    // Clear environment variables to test default behavior
+    unsetenv("RAWTOACES_DATA_PATH");
+    unsetenv("AMPAS_DATA_PATH");
+    
+    std::vector<std::string> paths = database_paths();
+    
+    // Should have at least one default path
+    OIIO_CHECK_EQUAL(paths.empty(), false);
+    
+    // On Unix systems, should have both new and legacy paths
+    #if !defined(WIN32) && !defined(WIN64)
+    OIIO_CHECK_EQUAL(paths.size(), 2);
+    OIIO_CHECK_EQUAL(paths[0], "/usr/local/share/rawtoaces/data");
+    OIIO_CHECK_EQUAL(paths[1], "/usr/local/include/rawtoaces/data");
+    #else
+    // On Windows, should have just the current directory
+    OIIO_CHECK_EQUAL(paths.size(), 1);
+    OIIO_CHECK_EQUAL(paths[0], ".");
+    #endif
+}
+
+/// Tests database_paths with RAWTOACES_DATA_PATH environment variable set
+void test_database_paths_rawtoaces_env()
+{
+    // Set RAWTOACES_DATA_PATH
+    setenv("RAWTOACES_DATA_PATH", "/custom/path1:/custom/path2", 1);
+    unsetenv("AMPAS_DATA_PATH");
+    
+    std::vector<std::string> paths = database_paths();
+    
+    OIIO_CHECK_EQUAL(paths.size(), 2);
+    OIIO_CHECK_EQUAL(paths[0], "/custom/path1");
+    OIIO_CHECK_EQUAL(paths[1], "/custom/path2");
+    
+    // Clean up
+    unsetenv("RAWTOACES_DATA_PATH");
+}
+
+/// Tests database_paths with deprecated AMPAS_DATA_PATH environment variable
+void test_database_paths_ampas_env()
+{
+    // Set AMPAS_DATA_PATH (deprecated)
+    unsetenv("RAWTOACES_DATA_PATH");
+    setenv("AMPAS_DATA_PATH", "/deprecated/path1:/deprecated/path2", 1);
+    
+    std::vector<std::string> paths = database_paths();
+    
+    OIIO_CHECK_EQUAL(paths.size(), 2);
+    OIIO_CHECK_EQUAL(paths[0], "/deprecated/path1");
+    OIIO_CHECK_EQUAL(paths[1], "/deprecated/path2");
+    
+    // Clean up
+    unsetenv("AMPAS_DATA_PATH");
+}
+
+/// Tests database_paths with both environment variables set (RAWTOACES_DATA_PATH should take precedence)
+void test_database_paths_both_env()
+{
+    // Set both environment variables
+    setenv("RAWTOACES_DATA_PATH", "/preferred/path1:/preferred/path2", 1);
+    setenv("AMPAS_DATA_PATH", "/deprecated/path1:/deprecated/path2", 1);
+    
+    std::vector<std::string> paths = database_paths();
+    
+    // RAWTOACES_DATA_PATH should take precedence
+    OIIO_CHECK_EQUAL(paths.size(), 2);
+    OIIO_CHECK_EQUAL(paths[0], "/preferred/path1");
+    OIIO_CHECK_EQUAL(paths[1], "/preferred/path2");
+    
+    // Clean up
+    unsetenv("RAWTOACES_DATA_PATH");
+    unsetenv("AMPAS_DATA_PATH");
+}
+
+/// Tests database_paths with Windows-style path separator
+void test_database_paths_windows_separator()
+{
+    // Set RAWTOACES_DATA_PATH with Windows-style separator
+    setenv("RAWTOACES_DATA_PATH", "/path1;/path2;/path3", 1);
+    
+    std::vector<std::string> paths = database_paths();
+    
+    // Should split by the appropriate separator for the platform
+    #if defined(WIN32) || defined(WIN64)
+    OIIO_CHECK_EQUAL(paths.size(), 3);
+    OIIO_CHECK_EQUAL(paths[0], "/path1");
+    OIIO_CHECK_EQUAL(paths[1], "/path2");
+    OIIO_CHECK_EQUAL(paths[2], "/path3");
+    #else
+    // On Unix, semicolon won't be split, so we get one path
+    OIIO_CHECK_EQUAL(paths.size(), 1);
+    OIIO_CHECK_EQUAL(paths[0], "/path1;/path2;/path3");
+    #endif
+    
+    // Clean up
+    unsetenv("RAWTOACES_DATA_PATH");
+}
+
 int main(int, char**)
 {
     test_collect_image_files_directory();
@@ -186,6 +288,12 @@ int main(int, char**)
     test_collect_image_files_nonexistent_path();
     test_collect_image_files_empty_directory();
     test_collect_image_files_directory_with_only_filtered_files();
+    
+    test_database_paths_default();
+    test_database_paths_rawtoaces_env();
+    test_database_paths_ampas_env();
+    test_database_paths_both_env();
+    test_database_paths_windows_separator();
     
     return unit_test_failures;
 }

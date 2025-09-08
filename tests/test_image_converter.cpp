@@ -47,7 +47,8 @@ class TestDirectory
 public:
     TestDirectory()
     {
-        test_dir = (std::filesystem::temp_directory_path() / "rawtoaces_test").string();
+        test_dir = ( std::filesystem::temp_directory_path() / "rawtoaces_test" )
+                       .string();
         std::filesystem::create_directories( test_dir );
     }
 
@@ -396,23 +397,100 @@ void test_fix_metadata_unsupported_type()
 
 int main( int, char ** )
 {
-    test_collect_image_files_directory();
-    test_collect_image_files_single_file();
-    test_collect_image_files_nonexistent_path();
-    test_collect_image_files_empty_directory();
-    test_collect_image_files_directory_with_only_filtered_files();
+    std::cout << "Starting Test_ImageConverter tests..." << std::endl;
 
-    test_database_paths_default();
-    test_database_paths_rawtoaces_env();
-    test_database_paths_ampas_env();
-    test_database_paths_both_env();
-    test_database_paths_windows_separator();
+    try
+    {
+        std::cout << "Running test_collect_image_files_directory..."
+                  << std::endl;
+        test_collect_image_files_directory();
+        std::cout << "✓ test_collect_image_files_directory passed" << std::endl;
 
-    test_fix_metadata_both_attributes();
-    test_fix_metadata_float_make();
-    test_fix_metadata_destination_exists();
-    test_fix_metadata_source_missing();
-    test_fix_metadata_unsupported_type();
+        std::cout << "Running test_collect_image_files_single_file..."
+                  << std::endl;
+        test_collect_image_files_single_file();
+        std::cout << "✓ test_collect_image_files_single_file passed"
+                  << std::endl;
+
+        std::cout << "Running test_collect_image_files_nonexistent_path..."
+                  << std::endl;
+        test_collect_image_files_nonexistent_path();
+        std::cout << "✓ test_collect_image_files_nonexistent_path passed"
+                  << std::endl;
+
+        std::cout << "Running test_collect_image_files_empty_directory..."
+                  << std::endl;
+        test_collect_image_files_empty_directory();
+        std::cout << "✓ test_collect_image_files_empty_directory passed"
+                  << std::endl;
+
+        std::cout
+            << "Running test_collect_image_files_directory_with_only_filtered_files..."
+            << std::endl;
+        test_collect_image_files_directory_with_only_filtered_files();
+        std::cout
+            << "✓ test_collect_image_files_directory_with_only_filtered_files passed"
+            << std::endl;
+
+        std::cout << "Running test_database_paths_default..." << std::endl;
+        test_database_paths_default();
+        std::cout << "✓ test_database_paths_default passed" << std::endl;
+
+        std::cout << "Running test_database_paths_rawtoaces_env..."
+                  << std::endl;
+        test_database_paths_rawtoaces_env();
+        std::cout << "✓ test_database_paths_rawtoaces_env passed" << std::endl;
+
+        std::cout << "Running test_database_paths_ampas_env..." << std::endl;
+        test_database_paths_ampas_env();
+        std::cout << "✓ test_database_paths_ampas_env passed" << std::endl;
+
+        std::cout << "Running test_database_paths_both_env..." << std::endl;
+        test_database_paths_both_env();
+        std::cout << "✓ test_database_paths_both_env passed" << std::endl;
+
+        std::cout << "Running test_database_paths_windows_separator..."
+                  << std::endl;
+        test_database_paths_windows_separator();
+        std::cout << "✓ test_database_paths_windows_separator passed"
+                  << std::endl;
+
+        std::cout << "Running test_fix_metadata_both_attributes..."
+                  << std::endl;
+        test_fix_metadata_both_attributes();
+        std::cout << "✓ test_fix_metadata_both_attributes passed" << std::endl;
+
+        std::cout << "Running test_fix_metadata_float_make..." << std::endl;
+        test_fix_metadata_float_make();
+        std::cout << "✓ test_fix_metadata_float_make passed" << std::endl;
+
+        std::cout << "Running test_fix_metadata_destination_exists..."
+                  << std::endl;
+        test_fix_metadata_destination_exists();
+        std::cout << "✓ test_fix_metadata_destination_exists passed"
+                  << std::endl;
+
+        std::cout << "Running test_fix_metadata_source_missing..." << std::endl;
+        test_fix_metadata_source_missing();
+        std::cout << "✓ test_fix_metadata_source_missing passed" << std::endl;
+
+        std::cout << "Running test_fix_metadata_unsupported_type..."
+                  << std::endl;
+        test_fix_metadata_unsupported_type();
+        std::cout << "✓ test_fix_metadata_unsupported_type passed" << std::endl;
+
+        std::cout << "All tests completed successfully!" << std::endl;
+    }
+    catch ( const std::exception &e )
+    {
+        std::cerr << "Exception caught in main: " << e.what() << std::endl;
+        return 1;
+    }
+    catch ( ... )
+    {
+        std::cerr << "Unknown exception caught in main" << std::endl;
+        return 1;
+    }
 
     return unit_test_failures;
 }

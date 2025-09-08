@@ -157,3 +157,19 @@ target_link_libraries(
 )
 
 add_test ( NAME Test_UsageTimer COMMAND Test_UsageTimer )
+
+################################################################################
+
+add_executable (
+	Test_ImageConverter
+	test_image_converter.cpp
+)
+
+target_link_libraries(
+    Test_ImageConverter
+    PUBLIC
+        ${RAWTOACES_UTIL_LIB}
+        OpenImageIO::OpenImageIO
+)
+
+add_test ( NAME Test_ImageConverter COMMAND Test_ImageConverter )

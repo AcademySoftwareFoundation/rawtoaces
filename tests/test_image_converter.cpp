@@ -47,7 +47,7 @@ class TestDirectory
 public:
     TestDirectory()
     {
-        test_dir = std::filesystem::temp_directory_path() / "rawtoaces_test";
+        test_dir = (std::filesystem::temp_directory_path() / "rawtoaces_test").string();
         std::filesystem::create_directories( test_dir );
     }
 

@@ -13,11 +13,32 @@
 #include <iostream>
 #include <vector>
 #include <sys/stat.h> // for mkfifo
-#include <cstdlib>    // for setenv, unsetenv
+#include <cstdlib>    // for set_env_var, unset_env_var
 
 #include "../src/rawtoaces_util/rawtoaces_util_priv.h"
 
 using namespace rta::util;
+
+// Cross-platform environment variable helpers
+#ifdef WIN32
+void set_env_var( const char *name, const char *value )
+{
+    SetEnvironmentVariableA( name, value );
+}
+void unset_env_var( const char *name )
+{
+    SetEnvironmentVariableA( name, nullptr );
+}
+#else
+void set_env_var( const char *name, const char *value )
+{
+    setenv( name, value, 1 );
+}
+void unset_env_var( const char *name )
+{
+    unsetenv( name );
+}
+#endif
 
 /// RAII (Resource Acquisition Is Initialization)
 /// helper class for test directory management
@@ -97,7 +118,7 @@ void test_collect_image_files_directory()
 
     OIIO_CHECK_EQUAL( result, true );
     OIIO_CHECK_EQUAL( batches.size(), 1 );
-    OIIO_CHECK_EQUAL( batches[0].size(), 5 ); // Should have 6 valid files
+    OIIO_CHECK_EQUAL( batches[0].size(), 5 ); // Should have 5 valid files
 
     // Check that the correct files are included
     std::vector<std::string> expected_files = { test_dir.path() + "/test1.raw",
@@ -185,8 +206,8 @@ void test_collect_image_files_directory_with_only_filtered_files()
 void test_database_paths_default()
 {
     // Clear environment variables to test default behavior
-    unsetenv( "RAWTOACES_DATA_PATH" );
-    unsetenv( "AMPAS_DATA_PATH" );
+    unset_env_var( "RAWTOACES_DATA_PATH" );
+    unset_env_var( "AMPAS_DATA_PATH" );
 
     std::vector<std::string> paths = database_paths();
 
@@ -209,8 +230,8 @@ void test_database_paths_default()
 void test_database_paths_rawtoaces_env()
 {
     // Set RAWTOACES_DATA_PATH
-    setenv( "RAWTOACES_DATA_PATH", "/custom/path1:/custom/path2", 1 );
-    unsetenv( "AMPAS_DATA_PATH" );
+    set_env_var( "RAWTOACES_DATA_PATH", "/custom/path1:/custom/path2" );
+    unset_env_var( "AMPAS_DATA_PATH" );
 
     std::vector<std::string> paths = database_paths();
 
@@ -219,15 +240,15 @@ void test_database_paths_rawtoaces_env()
     OIIO_CHECK_EQUAL( paths[1], "/custom/path2" );
 
     // Clean up
-    unsetenv( "RAWTOACES_DATA_PATH" );
+    unset_env_var( "RAWTOACES_DATA_PATH" );
 }
 
 /// Tests database_paths with deprecated AMPAS_DATA_PATH environment variable
 void test_database_paths_ampas_env()
 {
     // Set AMPAS_DATA_PATH (deprecated)
-    unsetenv( "RAWTOACES_DATA_PATH" );
-    setenv( "AMPAS_DATA_PATH", "/deprecated/path1:/deprecated/path2", 1 );
+    unset_env_var( "RAWTOACES_DATA_PATH" );
+    set_env_var( "AMPAS_DATA_PATH", "/deprecated/path1:/deprecated/path2" );
 
     std::vector<std::string> paths = database_paths();
 
@@ -236,15 +257,15 @@ void test_database_paths_ampas_env()
     OIIO_CHECK_EQUAL( paths[1], "/deprecated/path2" );
 
     // Clean up
-    unsetenv( "AMPAS_DATA_PATH" );
+    unset_env_var( "AMPAS_DATA_PATH" );
 }
 
 /// Tests database_paths with both environment variables set (RAWTOACES_DATA_PATH should take precedence)
 void test_database_paths_both_env()
 {
     // Set both environment variables
-    setenv( "RAWTOACES_DATA_PATH", "/preferred/path1:/preferred/path2", 1 );
-    setenv( "AMPAS_DATA_PATH", "/deprecated/path1:/deprecated/path2", 1 );
+    set_env_var( "RAWTOACES_DATA_PATH", "/preferred/path1:/preferred/path2" );
+    set_env_var( "AMPAS_DATA_PATH", "/deprecated/path1:/deprecated/path2" );
 
     std::vector<std::string> paths = database_paths();
 
@@ -254,15 +275,15 @@ void test_database_paths_both_env()
     OIIO_CHECK_EQUAL( paths[1], "/preferred/path2" );
 
     // Clean up
-    unsetenv( "RAWTOACES_DATA_PATH" );
-    unsetenv( "AMPAS_DATA_PATH" );
+    unset_env_var( "RAWTOACES_DATA_PATH" );
+    unset_env_var( "AMPAS_DATA_PATH" );
 }
 
 /// Tests database_paths with Windows-style path separator
 void test_database_paths_windows_separator()
 {
     // Set RAWTOACES_DATA_PATH with Windows-style separator
-    setenv( "RAWTOACES_DATA_PATH", "/path1;/path2;/path3", 1 );
+    set_env_var( "RAWTOACES_DATA_PATH", "/path1;/path2;/path3" );
 
     std::vector<std::string> paths = database_paths();
 
@@ -279,7 +300,7 @@ void test_database_paths_windows_separator()
 #endif
 
     // Clean up
-    unsetenv( "RAWTOACES_DATA_PATH" );
+    unset_env_var( "RAWTOACES_DATA_PATH" );
 }
 
 /// Tests fix_metadata with both Make and Model attributes

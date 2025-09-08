@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.12)
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
+# Include coverage support if enabled
+if( ENABLE_COVERAGE )
+    include( ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/CodeCoverage.cmake )
+endif()
+
 set( UTIL_PUBLIC_HEADER
     ../../include/rawtoaces/image_converter.h
     ../../include/rawtoaces/usage_timer.h
@@ -21,6 +26,11 @@ target_link_libraries ( ${RAWTOACES_UTIL_LIB}
 )
 
 target_compile_definitions( rawtoaces_util PRIVATE RAWTOACES_VERSION="${RAWTOACES_VERSION}" )
+
+# Enable coverage for this library if coverage is enabled
+if( ENABLE_COVERAGE AND COVERAGE_SUPPORTED )
+    setup_coverage_flags(${RAWTOACES_UTIL_LIB})
+endif()
 
 target_include_directories( ${RAWTOACES_UTIL_LIB} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>

@@ -30,8 +30,19 @@ void test_AcesRender()
 
     const int argc = sizeof( argv ) / sizeof( argv[0] );
 
-    std::filesystem::path pathToRaw = std::filesystem::absolute(
-        "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng" );
+    std::string image_path =
+        "/tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+
+    std::filesystem::path pathToRaw =
+        std::filesystem::absolute( "../.." + image_path );
+
+    // Depending if it run via tests/config_tests/CMakeLists.txt or
+    // as part of coverage via tests/CMakeLists.txt
+    if ( !std::filesystem::exists( pathToRaw ) )
+    {
+        pathToRaw = std::filesystem::absolute( "../../../.." + image_path );
+    }
+
     OIIO_CHECK_ASSERT( std::filesystem::exists( pathToRaw ) );
 
     rta::util::ImageConverter converter;

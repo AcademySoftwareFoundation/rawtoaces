@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.12)
 include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
+# Include coverage support if enabled
+if( ENABLE_COVERAGE )
+    include( ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/CodeCoverage.cmake )
+endif()
+
 set( CORE_PUBLIC_HEADER
     ../../include/rawtoaces/rawtoaces_core.h
     ../../include/rawtoaces/spectral_data.h
@@ -34,6 +39,11 @@ target_include_directories( ${RAWTOACES_CORE_LIB} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>
     $<INSTALL_INTERFACE:./include>
 )
+
+# Enable coverage for this library if coverage is enabled
+if( ENABLE_COVERAGE AND COVERAGE_SUPPORTED )
+    setup_coverage_flags(${RAWTOACES_CORE_LIB})
+endif()
 
 set_target_properties( ${RAWTOACES_CORE_LIB} PROPERTIES
     OUTPUT_NAME "rawtoaces_core"

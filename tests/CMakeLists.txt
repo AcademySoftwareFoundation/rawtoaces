@@ -1,5 +1,20 @@
 cmake_minimum_required(VERSION 3.12)
 
+# Enable coverage for all test targets if coverage is enabled
+if( ENABLE_COVERAGE AND COVERAGE_SUPPORTED )
+    message(STATUS "Enabling code coverage for test targets")
+    
+    # Helper function to setup coverage for test targets
+    function(setup_test_coverage target_name)
+        setup_coverage_flags(${target_name})
+    endfunction()
+else()
+    # Dummy function when coverage is disabled
+    function(setup_test_coverage target_name)
+        # Do nothing
+    endfunction()
+endif()
+
 ################################################################################
 
 add_executable (
@@ -14,6 +29,7 @@ target_link_libraries(
         OpenImageIO::OpenImageIO
 )
 
+setup_test_coverage(Test_core_usage)
 add_test ( NAME Test_core_usage COMMAND Test_core_usage )
 
 ################################################################################
@@ -29,6 +45,7 @@ target_link_libraries(
         OpenImageIO::OpenImageIO
 )
 
+setup_test_coverage(Test_util_usage)
 add_test ( NAME Test_util_usage COMMAND Test_util_usage )
 
 ################################################################################
@@ -44,6 +61,7 @@ target_link_libraries(
         OpenImageIO::OpenImageIO
 )
 
+setup_test_coverage(Test_SpectralData)
 add_test ( NAME Test_SpectralData COMMAND Test_SpectralData )
 
 ################################################################################
@@ -60,6 +78,7 @@ target_link_libraries(
         OpenImageIO::OpenImageIO
 )
 
+setup_test_coverage(Test_IDT)
 add_test ( NAME Test_IDT COMMAND Test_IDT )
 
 ################################################################################
@@ -76,6 +95,7 @@ target_link_libraries(
         OpenImageIO::OpenImageIO
 )
 
+setup_test_coverage(Test_Illum)
 add_test ( NAME Test_Illum COMMAND Test_Illum )
 
 ################################################################################
@@ -92,6 +112,7 @@ target_link_libraries(
         OpenImageIO::OpenImageIO
 )
 
+setup_test_coverage(Test_DNGIdt)
 add_test ( NAME Test_DNGIdt COMMAND Test_DNGIdt )
 
 ################################################################################
@@ -108,6 +129,7 @@ target_link_libraries(
         OpenImageIO::OpenImageIO
 )
 
+setup_test_coverage(Test_Math)
 add_test ( NAME Test_Math  COMMAND Test_Math )
 
 ################################################################################
@@ -124,6 +146,7 @@ target_link_libraries(
         OpenImageIO::OpenImageIO
 )
 
+setup_test_coverage(Test_Logic)
 add_test ( NAME Test_Logic COMMAND Test_Logic )
 
 ################################################################################
@@ -140,6 +163,7 @@ target_link_libraries(
         OpenImageIO::OpenImageIO
 )
 
+setup_test_coverage(Test_Misc)
 add_test ( NAME Test_Misc COMMAND Test_Misc )
 
 ################################################################################
@@ -156,4 +180,17 @@ target_link_libraries(
         OpenImageIO::OpenImageIO
 )
 
+setup_test_coverage(Test_UsageTimer)
 add_test ( NAME Test_UsageTimer COMMAND Test_UsageTimer )
+
+
+
+################################################################################
+# Coverage report generation
+if( ENABLE_COVERAGE AND COVERAGE_SUPPORTED )
+    # Include config_tests subdirectories
+    add_subdirectory(config_tests/core)
+    add_subdirectory(config_tests/util)
+
+    generate_coverage_report()
+endif()

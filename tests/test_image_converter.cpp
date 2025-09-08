@@ -230,18 +230,33 @@ void test_database_paths_default()
 /// Tests database_paths with RAWTOACES_DATA_PATH environment variable set
 void test_database_paths_rawtoaces_env()
 {
+    std::cout << "  Setting RAWTOACES_DATA_PATH..." << std::endl;
     // Set RAWTOACES_DATA_PATH
+#ifdef WIN32
+    set_env_var( "RAWTOACES_DATA_PATH", "C:\\custom\\path1;C:\\custom\\path2" );
+#else
     set_env_var( "RAWTOACES_DATA_PATH", "/custom/path1:/custom/path2" );
+#endif
     unset_env_var( "AMPAS_DATA_PATH" );
 
+    std::cout << "  Calling database_paths()..." << std::endl;
     std::vector<std::string> paths = database_paths();
+    std::cout << "  database_paths() returned " << paths.size() << " paths"
+              << std::endl;
 
     OIIO_CHECK_EQUAL( paths.size(), 2 );
+#ifdef WIN32
+    OIIO_CHECK_EQUAL( paths[0], "C:\\custom\\path1" );
+    OIIO_CHECK_EQUAL( paths[1], "C:\\custom\\path2" );
+#else
     OIIO_CHECK_EQUAL( paths[0], "/custom/path1" );
     OIIO_CHECK_EQUAL( paths[1], "/custom/path2" );
+#endif
 
+    std::cout << "  Cleaning up..." << std::endl;
     // Clean up
     unset_env_var( "RAWTOACES_DATA_PATH" );
+    std::cout << "  Cleanup complete" << std::endl;
 }
 
 /// Tests database_paths with deprecated AMPAS_DATA_PATH environment variable
@@ -249,13 +264,23 @@ void test_database_paths_ampas_env()
 {
     // Set AMPAS_DATA_PATH (deprecated)
     unset_env_var( "RAWTOACES_DATA_PATH" );
+#ifdef WIN32
+    set_env_var(
+        "AMPAS_DATA_PATH", "C:\\deprecated\\path1;C:\\deprecated\\path2" );
+#else
     set_env_var( "AMPAS_DATA_PATH", "/deprecated/path1:/deprecated/path2" );
+#endif
 
     std::vector<std::string> paths = database_paths();
 
     OIIO_CHECK_EQUAL( paths.size(), 2 );
+#ifdef WIN32
+    OIIO_CHECK_EQUAL( paths[0], "C:\\deprecated\\path1" );
+    OIIO_CHECK_EQUAL( paths[1], "C:\\deprecated\\path2" );
+#else
     OIIO_CHECK_EQUAL( paths[0], "/deprecated/path1" );
     OIIO_CHECK_EQUAL( paths[1], "/deprecated/path2" );
+#endif
 
     // Clean up
     unset_env_var( "AMPAS_DATA_PATH" );
@@ -265,15 +290,27 @@ void test_database_paths_ampas_env()
 void test_database_paths_both_env()
 {
     // Set both environment variables
+#ifdef WIN32
+    set_env_var(
+        "RAWTOACES_DATA_PATH", "C:\\preferred\\path1;C:\\preferred\\path2" );
+    set_env_var(
+        "AMPAS_DATA_PATH", "C:\\deprecated\\path1;C:\\deprecated\\path2" );
+#else
     set_env_var( "RAWTOACES_DATA_PATH", "/preferred/path1:/preferred/path2" );
     set_env_var( "AMPAS_DATA_PATH", "/deprecated/path1:/deprecated/path2" );
+#endif
 
     std::vector<std::string> paths = database_paths();
 
     // RAWTOACES_DATA_PATH should take precedence
     OIIO_CHECK_EQUAL( paths.size(), 2 );
+#ifdef WIN32
+    OIIO_CHECK_EQUAL( paths[0], "C:\\preferred\\path1" );
+    OIIO_CHECK_EQUAL( paths[1], "C:\\preferred\\path2" );
+#else
     OIIO_CHECK_EQUAL( paths[0], "/preferred/path1" );
     OIIO_CHECK_EQUAL( paths[1], "/preferred/path2" );
+#endif
 
     // Clean up
     unset_env_var( "RAWTOACES_DATA_PATH" );

@@ -643,8 +643,7 @@ bool check_param(
         }
         else
         {
-            // Correct mode and no parameter provided.
-            // Success but we don't want to execute the success callback.
+            // Incorrect mode and no parameter. We don't want any mode-specific parameters parsed when we are in wrong mode.
             return true;
         }
     }

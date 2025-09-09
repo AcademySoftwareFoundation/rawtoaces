@@ -2,6 +2,8 @@
   <img src="ASWF/logos/rawtoaces-horizontal-color.png">
 </p>
 
+[![CI](https://github.com/AcademySoftwareFoundation/rawtoaces/actions/workflows/ci.yml/badge.svg)](https://github.com/AcademySoftwareFoundation/rawtoaces/actions/workflows/ci.yml)
+[![Code scanning – CodeQL](https://github.com/AcademySoftwareFoundation/rawtoaces/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/AcademySoftwareFoundation/rawtoaces/actions/workflows/github-code-scanning/codeql)
 [![codecov](https://codecov.io/gh/AcademySoftwareFoundation/rawtoaces/branch/main/graph/badge.svg)](https://codecov.io/gh/AcademySoftwareFoundation/rawtoaces)
 
 ## Table of Contents

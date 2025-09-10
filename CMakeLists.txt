@@ -63,6 +63,7 @@ endforeach()
 
 option( ENABLE_SHARED "Enable Shared Libraries" ON )
 option( RTA_CENTOS7_CERES_HACK "Work around broken config in ceres-solver 1.12" OFF )
+option( ENABLE_COVERAGE "Enable code coverage reporting" OFF )
 
 if ( ENABLE_SHARED )
   set ( DO_SHARED SHARED )
@@ -71,6 +72,11 @@ else ()
 endif ()
 
 include ( configure.cmake )
+
+# Include coverage support if enabled
+if( ENABLE_COVERAGE )
+    include( ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CodeCoverage.cmake )
+endif()
 
 #################################################
 ##

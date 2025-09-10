@@ -16,16 +16,13 @@ void test_ImageConverter_arguments()
         return;
 
     const char *image_path =
-        "../../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+        "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
     std::string absolute_image_path =
         std::filesystem::absolute( image_path ).string();
 
     // Input parameters.
-    const char *argv[] = { "DUMMY PROGRAM PATH",
-                           "--wb-method",
-                           "metadata",
-                           "--mat-method",
-                           "metadata" };
+    const char *argv[] = { "DUMMY PROGRAM PATH", "--wb-method", "metadata",
+                           "--mat-method",       "metadata",    "--overwrite" };
 
     const size_t argc = sizeof( argv ) / sizeof( argv[0] );
 
@@ -61,6 +58,7 @@ void test_ImageConverter_settings()
         rta::util::ImageConverter::Settings::WBMethod::Metadata;
     converter.settings.matrix_method =
         rta::util::ImageConverter::Settings::MatrixMethod::Metadata;
+    converter.settings.overwrite = true;
 
     // Process an image.
     bool result = converter.process_image( absolute_image_path );
@@ -71,8 +69,8 @@ void test_ImageConverter_settings()
 
 int main( int, char ** )
 {
-    // Only run on the linux CI runners.
-#ifdef __LINUX__
+    // Run on Linux CI and macOS runners
+#if defined( __LINUX__ ) || defined( __APPLE__ )
     test_ImageConverter_arguments();
     test_ImageConverter_settings();
 #endif

@@ -13,21 +13,25 @@
 #include <iostream>
 #include <vector>
 #include <sys/stat.h> // for mkfifo
-#include <cstdlib>    // for set_env_var, unset_env_var
 
 #include "../src/rawtoaces_util/rawtoaces_util_priv.h"
 
 using namespace rta::util;
 
 // Cross-platform environment variable helpers
+/*
+Standard C Library vs POSIX
+getenv() - Part of standard C library (C89/C99) - available everywhere
+setenv()/unsetenv() - Part of POSIX standard - only on Unix-like systems
+*/
 #ifdef WIN32
 void set_env_var( const char *name, const char *value )
 {
-    SetEnvironmentVariableA( name, value );
+    _putenv_s( name, value );
 }
 void unset_env_var( const char *name )
 {
-    SetEnvironmentVariableA( name, nullptr );
+    _putenv_s( name, "" );
 }
 #else
 void set_env_var( const char *name, const char *value )
@@ -125,15 +129,17 @@ void test_collect_image_files_directory()
 
     OIIO_CHECK_EQUAL( result, true );
     OIIO_CHECK_EQUAL( batches.size(), 1 );
+    
     OIIO_CHECK_EQUAL( batches[0].size(), 5 ); // Should have 5 valid files
 
     // Check that the correct files are included
-    std::vector<std::string> expected_files = { test_dir.path() + "/test1.raw",
-                                                test_dir.path() + "/test2.cr2",
-                                                test_dir.path() + "/test3.nef",
-                                                test_dir.path() + "/test4.dng",
-                                                test_dir.path() +
-                                                    "/symlink.raw" };
+    std::vector<std::string> expected_files = { 
+        (std::filesystem::path(test_dir.path()) / "test1.raw").string(),
+        (std::filesystem::path(test_dir.path()) / "test2.cr2").string(),
+        (std::filesystem::path(test_dir.path()) / "test3.nef").string(),
+        (std::filesystem::path(test_dir.path()) / "test4.dng").string(),
+        (std::filesystem::path(test_dir.path()) / "symlink.raw").string()
+    };
 
     for ( const auto &expected: expected_files )
     {
@@ -155,7 +161,7 @@ void test_collect_image_files_directory()
 void test_collect_image_files_single_file()
 {
     TestDirectory test_dir;
-    std::string   test_file = test_dir.path() + "/test.raw";
+    std::string   test_file = (std::filesystem::path(test_dir.path()) / "test.raw").string();
     std::ofstream( test_file ).close();
 
     std::vector<std::vector<std::string>> batches;
@@ -236,7 +242,6 @@ void test_database_paths_default()
 /// Tests database_paths with RAWTOACES_DATA_PATH environment variable set
 void test_database_paths_rawtoaces_env()
 {
-    std::cout << "  Setting RAWTOACES_DATA_PATH..." << std::endl;
     // Set RAWTOACES_DATA_PATH
 #ifdef WIN32
     set_env_var( "RAWTOACES_DATA_PATH", "C:\\custom\\path1;C:\\custom\\path2" );
@@ -245,10 +250,7 @@ void test_database_paths_rawtoaces_env()
 #endif
     unset_env_var( "AMPAS_DATA_PATH" );
 
-    std::cout << "  Calling database_paths()..." << std::endl;
     std::vector<std::string> paths = database_paths();
-    std::cout << "  database_paths() returned " << paths.size() << " paths"
-              << std::endl;
 
     OIIO_CHECK_EQUAL( paths.size(), 2 );
 #ifdef WIN32
@@ -259,10 +261,8 @@ void test_database_paths_rawtoaces_env()
     OIIO_CHECK_EQUAL( paths[1], "/custom/path2" );
 #endif
 
-    std::cout << "  Cleaning up..." << std::endl;
     // Clean up
     unset_env_var( "RAWTOACES_DATA_PATH" );
-    std::cout << "  Cleanup complete" << std::endl;
 }
 
 /// Tests database_paths with deprecated AMPAS_DATA_PATH environment variable
@@ -440,89 +440,25 @@ void test_fix_metadata_unsupported_type()
 
 int main( int, char ** )
 {
-    std::cout << "Starting Test_ImageConverter tests..." << std::endl;
-
     try
     {
-        std::cout << "Running test_collect_image_files_directory..."
-                  << std::endl;
         test_collect_image_files_directory();
-        std::cout << "✓ test_collect_image_files_directory passed" << std::endl;
-
-        std::cout << "Running test_collect_image_files_single_file..."
-                  << std::endl;
         test_collect_image_files_single_file();
-        std::cout << "✓ test_collect_image_files_single_file passed"
-                  << std::endl;
-
-        std::cout << "Running test_collect_image_files_nonexistent_path..."
-                  << std::endl;
         test_collect_image_files_nonexistent_path();
-        std::cout << "✓ test_collect_image_files_nonexistent_path passed"
-                  << std::endl;
-
-        std::cout << "Running test_collect_image_files_empty_directory..."
-                  << std::endl;
         test_collect_image_files_empty_directory();
-        std::cout << "✓ test_collect_image_files_empty_directory passed"
-                  << std::endl;
-
-        std::cout
-            << "Running test_collect_image_files_directory_with_only_filtered_files..."
-            << std::endl;
         test_collect_image_files_directory_with_only_filtered_files();
-        std::cout
-            << "✓ test_collect_image_files_directory_with_only_filtered_files passed"
-            << std::endl;
-
-        std::cout << "Running test_database_paths_default..." << std::endl;
         test_database_paths_default();
-        std::cout << "✓ test_database_paths_default passed" << std::endl;
-
-        std::cout << "Running test_database_paths_rawtoaces_env..."
-                  << std::endl;
         test_database_paths_rawtoaces_env();
-        std::cout << "✓ test_database_paths_rawtoaces_env passed" << std::endl;
-
-        std::cout << "Running test_database_paths_ampas_env..." << std::endl;
         test_database_paths_ampas_env();
-        std::cout << "✓ test_database_paths_ampas_env passed" << std::endl;
-
-        std::cout << "Running test_database_paths_both_env..." << std::endl;
         test_database_paths_both_env();
-        std::cout << "✓ test_database_paths_both_env passed" << std::endl;
-
-        std::cout << "Running test_database_paths_windows_separator..."
-                  << std::endl;
         test_database_paths_windows_separator();
-        std::cout << "✓ test_database_paths_windows_separator passed"
-                  << std::endl;
-
-        std::cout << "Running test_fix_metadata_both_attributes..."
-                  << std::endl;
         test_fix_metadata_both_attributes();
-        std::cout << "✓ test_fix_metadata_both_attributes passed" << std::endl;
-
-        std::cout << "Running test_fix_metadata_float_make..." << std::endl;
         test_fix_metadata_float_make();
-        std::cout << "✓ test_fix_metadata_float_make passed" << std::endl;
-
-        std::cout << "Running test_fix_metadata_destination_exists..."
-                  << std::endl;
+        test_fix_metadata_float_make();
         test_fix_metadata_destination_exists();
-        std::cout << "✓ test_fix_metadata_destination_exists passed"
-                  << std::endl;
-
-        std::cout << "Running test_fix_metadata_source_missing..." << std::endl;
         test_fix_metadata_source_missing();
-        std::cout << "✓ test_fix_metadata_source_missing passed" << std::endl;
-
-        std::cout << "Running test_fix_metadata_unsupported_type..."
-                  << std::endl;
+        test_fix_metadata_source_missing();
         test_fix_metadata_unsupported_type();
-        std::cout << "✓ test_fix_metadata_unsupported_type passed" << std::endl;
-
-        std::cout << "All tests completed successfully!" << std::endl;
     }
     catch ( const std::exception &e )
     {

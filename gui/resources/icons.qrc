@@ -1,0 +1,20 @@
+<RCC>
+    <qresource prefix="/icons">
+    <file>rawtoaces.png</file>
+    <file alias="rawtoaces-brand.png">../../ASWF/logos/rawtoaces-horizontal-color.png</file>
+    <file>open-file.png</file>
+    <file>open-folder.png</file>
+    <file>clear.png</file>
+    <file>settings.png</file>
+    <file>convert.png</file>
+    <file>stop.png</file>
+    <file>zoom-in.png</file>
+    <file>zoom-out.png</file>
+    <file>zoom-fit.png</file>
+    <file>zoom-actual.png</file>
+    </qresource>
+    <qresource prefix="/images">
+    <file>logo.png</file>
+    <file>about.png</file>
+    </qresource>
+</RCC>

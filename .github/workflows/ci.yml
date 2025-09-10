@@ -24,6 +24,8 @@ jobs:
             os: ubuntu-latest
             container: aswf/ci-osl:2022-clang11.10
             vfxyear: 2022
+            cc_compiler: gcc
+            cxx_compiler: g++
             cxx_std: 17
           - desc: clang14
             nametag: linux-vfx2022-clang14
@@ -43,7 +45,6 @@ jobs:
     env:
       CXX: ${{matrix.cxx_compiler}}
       CC: ${{matrix.cc_compiler}}
-      OPENEXR_VERSION: ${{matrix.openexr_ver}}
 
     steps:
       - name: install nodejs20glibc2.17
@@ -140,14 +141,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - name: Print
         shell: bash
         run: |
           echo "CXX=${CXX}"
-          echo "matrix.cxx_compiler=${{matrix.cxx_compiler}}"
+          echo "matrix.cpp_compiler=${{matrix.cpp_compiler}}"
           yum search ceres-solver
-          
+      
       - name: Dependencies
         shell: bash
         run: |
@@ -280,3 +280,72 @@ jobs:
           --rerun-failed 
           --output-on-failure 
           --test-dir build_config_test
+
+  gui:
+    name: GUI (Linux/macOS)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            qt: qt6-base-dev
+          - os: macos-14
+            qt: qt
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install deps (Linux)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ libceres-dev nlohmann-json3-dev libopencv-dev libopenimageio-dev qt6-base-dev
+      - name: Install deps (macOS)
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          brew update
+          brew install cmake ceres-solver nlohmann-json openimageio qt
+      - name: Configure
+        run: |
+          if [[ "$RUNNER_OS" == "macOS" ]]; then export CMAKE_PREFIX_PATH="$(brew --prefix qt)"; fi
+          cmake -S . -B build -DRAWTOACES_BUILD_GUI=ON -DCMAKE_BUILD_TYPE=Release ${CMAKE_PREFIX_PATH:+-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}}
+      - name: Build GUI
+        run: cmake --build build --target rawtoaces-gui -j2
+      - name: Build GUI tests
+        run: cmake --build build/gui --target rawtoaces_gui_tests -j2
+      - name: Run GUI tests (offscreen)
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --test-dir build/gui -V
+
+  gui-windows:
+    name: GUI (Windows)
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup MSVC dev env
+        uses: ilammy/msvc-dev-cmd@v1
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.6.3'
+          arch: 'win64_msvc2019_64'
+      - name: Setup vcpkg and deps
+        shell: powershell
+        run: |
+          if (-not $env:VCPKG_ROOT) { echo "VCPKG_ROOT not set"; exit 1 }
+          & "$env:VCPKG_ROOT\vcpkg.exe" install ceres:x64-windows nlohmann-json:x64-windows openimageio:x64-windows
+      - name: Configure
+        shell: bash
+        run: |
+          cmake -S . -B build -A x64 \
+            -D CMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake \
+            -D CMAKE_BUILD_TYPE=Release \
+            -D RAWTOACES_BUILD_GUI=ON
+      - name: Build GUI
+        run: cmake --build build --config Release --target rawtoaces-gui -- -m:2
+      - name: Build GUI tests
+        run: cmake --build build\\gui --target rawtoaces_gui_tests --config Release -- -m:2
+      - name: Run GUI tests (offscreen)
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --test-dir build\\gui -C Release -V

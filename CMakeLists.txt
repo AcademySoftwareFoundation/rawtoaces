@@ -90,6 +90,27 @@ add_subdirectory("src/rawtoaces")
 enable_testing()
 add_subdirectory(tests)
 
+# Optional: Build the Qt6 GUI application
+# The GUI provides a user-friendly interface for RAWtoACES with features like:
+# - Drag & drop file management with thumbnails
+# - Complete parameter controls for all CLI options  
+# - Real-time conversion progress and logging
+# - Interactive image viewer with selection mapping
+# - Cross-platform support (macOS, Linux, Windows)
+# Requires Qt6 (Core, Widgets, Concurrent, Network modules)
+option(RAWTOACES_BUILD_GUI "Build the RAWtoACES Qt6 GUI application" OFF)
+if(RAWTOACES_BUILD_GUI)
+  message(STATUS "RAWtoACES GUI build is enabled")
+  message(STATUS "  - Requires Qt6 with Core, Widgets, Concurrent, Network modules")
+  message(STATUS "  - Optional: LibRaw for RAW file thumbnails")
+  message(STATUS "  - See gui/README.md for complete build instructions")
+  add_subdirectory(gui)
+else()
+  message(STATUS "RAWtoACES GUI build is disabled")
+  message(STATUS "  - Enable with: cmake -DRAWTOACES_BUILD_GUI=ON")
+  message(STATUS "  - For GUI build instructions, see gui/README.md")
+endif()
+
 #################################################
 ##
 ##   Install RAWTOACES.pc

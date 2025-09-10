@@ -2,3 +2,29 @@
 build/
 build-coverage/
 tests/materials/*.exr
+
+# GUI build artifacts
+gui/build/
+gui/compile_commands.json
+gui/CMakeCache.txt
+
+# IDE files
+.vscode/
+.idea/
+*.code-workspace
+
+# Temporary files
+*.tmp
+*.log
+*.bak
+*.orig
+*~
+
+# Testing files
+test_files/
+demo_*.sh
+*_testing_guide.sh
+
+# OS specific
+Thumbs.db
+.directory

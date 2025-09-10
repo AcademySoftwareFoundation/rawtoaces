@@ -36,6 +36,7 @@ The source code contains the following:
 * [`include/`](./include) - Public header files for the `rawtoaces` library
 * [`src/`](./src) - Source code for the core library, utility library, and the command line tool
 * [`unittest/`](./unittest) - Unit tests for `rawtoaces`
+* [`gui/`](./gui) - Optional Qt GUI (see `gui/README.md` for details)
 
 ## Prerequisites
 
@@ -111,6 +112,8 @@ $ sudo cmake --install build # Optional if you want it to be accessible system w
 ```
 
 The default process will install `librawtoaces_core_${rawtoaces_version}.dylib` and `librawtoaces_util_${rawtoaces_version}.dylib` to `/usr/local/lib`, a few header files to `/usr/local/include/rawtoaces` and a number of data files into `/usr/local/include/rawtoaces/data`.
+
+<!-- GUI documentation is maintained under gui/README.md to keep the root README focused on the CLI and libraries. -->
 
 #### Docker
 

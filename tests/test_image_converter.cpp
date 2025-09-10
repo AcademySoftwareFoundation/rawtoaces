@@ -76,10 +76,16 @@ public:
         std::ofstream( test_dir + "/test8.EXR" ).close();
         std::ofstream( test_dir + "/test9.JPG" ).close();
         std::ofstream( test_dir + "/test10.JPEG" ).close();
-
+        
+#ifdef WIN32
+        // On Windows, symlink creation requires elevated privileges
+        // Just create a regular file instead for testing purposes
+        std::ofstream( test_dir + "/symlink.raw" ).close();
+#else
         // Create a symlink to the regular file
         std::filesystem::create_symlink(
             "test1.raw", test_dir + "/symlink.raw" );
+#endif
 
         // Create a subdirectory (should be ignored)
         std::filesystem::create_directories( test_dir + "/subdir" );

@@ -129,16 +129,16 @@ void test_collect_image_files_directory()
 
     OIIO_CHECK_EQUAL( result, true );
     OIIO_CHECK_EQUAL( batches.size(), 1 );
-    
+
     OIIO_CHECK_EQUAL( batches[0].size(), 5 ); // Should have 5 valid files
 
     // Check that the correct files are included
-    std::vector<std::string> expected_files = { 
-        (std::filesystem::path(test_dir.path()) / "test1.raw").string(),
-        (std::filesystem::path(test_dir.path()) / "test2.cr2").string(),
-        (std::filesystem::path(test_dir.path()) / "test3.nef").string(),
-        (std::filesystem::path(test_dir.path()) / "test4.dng").string(),
-        (std::filesystem::path(test_dir.path()) / "symlink.raw").string()
+    std::vector<std::string> expected_files = {
+        ( std::filesystem::path( test_dir.path() ) / "test1.raw" ).string(),
+        ( std::filesystem::path( test_dir.path() ) / "test2.cr2" ).string(),
+        ( std::filesystem::path( test_dir.path() ) / "test3.nef" ).string(),
+        ( std::filesystem::path( test_dir.path() ) / "test4.dng" ).string(),
+        ( std::filesystem::path( test_dir.path() ) / "symlink.raw" ).string()
     };
 
     for ( const auto &expected: expected_files )
@@ -161,7 +161,8 @@ void test_collect_image_files_directory()
 void test_collect_image_files_single_file()
 {
     TestDirectory test_dir;
-    std::string   test_file = (std::filesystem::path(test_dir.path()) / "test.raw").string();
+    std::string   test_file =
+        ( std::filesystem::path( test_dir.path() ) / "test.raw" ).string();
     std::ofstream( test_file ).close();
 
     std::vector<std::vector<std::string>> batches;

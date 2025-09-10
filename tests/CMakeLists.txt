@@ -209,5 +209,3 @@ if( ENABLE_COVERAGE AND COVERAGE_SUPPORTED )
 
     generate_coverage_report()
 endif()
-
-################################################################################

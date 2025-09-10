@@ -443,16 +443,21 @@ int main( int, char ** )
 {
     try
     {
+        // Tests for collect_image_files
         test_collect_image_files_directory();
         test_collect_image_files_single_file();
         test_collect_image_files_nonexistent_path();
         test_collect_image_files_empty_directory();
         test_collect_image_files_directory_with_only_filtered_files();
+
+        // Tests for database_paths
         test_database_paths_default();
         test_database_paths_rawtoaces_env();
         test_database_paths_ampas_env();
         test_database_paths_both_env();
         test_database_paths_windows_separator();
+
+        // Tests for fix_metadata
         test_fix_metadata_both_attributes();
         test_fix_metadata_float_make();
         test_fix_metadata_float_make();

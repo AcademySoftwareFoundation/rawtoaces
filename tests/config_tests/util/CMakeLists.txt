@@ -4,12 +4,12 @@ cmake_minimum_required(VERSION 3.10)
 
 enable_testing()
 
-add_executable( test_util
-    util_test.cpp
+add_executable( test_installed_util
+    test_installed_util.cpp
 )
 
 target_link_libraries(
-    test_util
+    test_installed_util
     PUBLIC
         rawtoaces_util
         OpenImageIO::OpenImageIO
@@ -17,7 +17,7 @@ target_link_libraries(
 
 # Enable coverage for this test if coverage is enabled
 if( ENABLE_COVERAGE AND COVERAGE_SUPPORTED )
-    setup_coverage_flags(test_util)
+    setup_coverage_flags(test_installed_util)
 endif()
 
-add_test ( NAME test_util COMMAND test_util )
+add_test ( NAME test_installed_util COMMAND test_installed_util )

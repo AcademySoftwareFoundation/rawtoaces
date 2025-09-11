@@ -18,35 +18,35 @@ endif()
 ################################################################################
 
 add_executable (
-	Test_core_usage
-	core_usage.cpp
+	Test_usage_example_core
+	usage_example_core.cpp
 )
 
 target_link_libraries(
-    Test_core_usage
+    Test_usage_example_core
     PUBLIC
         ${RAWTOACES_CORE_LIB}
         OpenImageIO::OpenImageIO
 )
 
-setup_test_coverage(Test_core_usage)
-add_test ( NAME Test_core_usage COMMAND Test_core_usage )
+setup_test_coverage(Test_usage_example_core)
+add_test ( NAME Test_usage_example_core COMMAND Test_usage_example_core )
 
 ################################################################################
 add_executable (
-	Test_util_usage
-	util_usage.cpp
+	Test_usage_example_util
+	usage_example_util.cpp
 )
 
 target_link_libraries(
-    Test_util_usage
+    Test_usage_example_util
     PUBLIC
         ${RAWTOACES_UTIL_LIB}
         OpenImageIO::OpenImageIO
 )
 
-setup_test_coverage(Test_util_usage)
-add_test ( NAME Test_util_usage COMMAND Test_util_usage )
+setup_test_coverage(Test_usage_example_util)
+add_test ( NAME Test_usage_example_util COMMAND Test_usage_example_util )
 
 ################################################################################
 add_executable (

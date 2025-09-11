@@ -104,8 +104,6 @@ collect_image_files( const std::vector<std::string> &paths )
         }
         else
         {
-            // std::vector<std::string> &curr_batch = batches.emplace_back();
-            // check_and_add_file( path, curr_batch );
             check_and_add_file( path, batches[0] );
         }
     }
@@ -119,17 +117,6 @@ collect_image_files( const std::vector<std::string> &paths )
                 return batch.empty();
             } ),
         batches.end() );
-
-    // Print out batches for debugging
-    std::cout << "Batches content:" << std::endl;
-    for ( size_t i = 0; i < batches.size(); i++ )
-    {
-        std::cout << "Batch " << i << ":" << std::endl;
-        for ( const auto &file: batches[i] )
-        {
-            std::cout << "  " << file << std::endl;
-        }
-    }
 
     return batches;
 }

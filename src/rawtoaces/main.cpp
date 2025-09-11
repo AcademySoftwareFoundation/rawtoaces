@@ -36,19 +36,9 @@ int main( int argc, const char *argv[] )
         return 1;
     }
 
-    // Create a separate batch for each input directory.
-    // Reserve the first batch for the individual input files.
-    std::vector<std::vector<std::string>> batches( 1 );
-
     // Gather all the raw images from arg list
-    for ( const auto &path: files )
-    {
-        if ( !rta::util::collect_image_files( path, batches ) )
-        {
-            std::cerr << "File or directory not found: " << path << std::endl;
-            return 1;
-        }
-    }
+    std::vector<std::vector<std::string>> batches =
+        rta::util::collect_image_files( files );
 
     // Process raw files ...
     bool empty  = true;

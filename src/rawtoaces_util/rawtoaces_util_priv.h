@@ -16,9 +16,6 @@ namespace rta
 namespace util
 {
 
-bool collect_image_files(
-    const std::string &path, std::vector<std::vector<std::string>> &batches );
-
 std::vector<std::string> database_paths();
 
 void fix_metadata( OIIO::ImageSpec &spec );

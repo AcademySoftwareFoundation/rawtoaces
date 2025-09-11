@@ -77,33 +77,61 @@ void check_and_add_file(
     return;
 }
 
-bool collect_image_files(
-    const std::string &path, std::vector<std::vector<std::string>> &batches )
+std::vector<std::vector<std::string>>
+collect_image_files( const std::vector<std::string> &paths )
 {
-    if ( !std::filesystem::exists( path ) )
+    std::vector<std::vector<std::string>> batches( 1 );
+
+    for ( const auto &path: paths )
     {
-        return false;
-    }
-
-    auto canonical_filename = std::filesystem::canonical( path );
-
-    if ( std::filesystem::is_directory( path ) )
-    {
-        std::vector<std::string> &curr_batch = batches.emplace_back();
-        auto it = std::filesystem::directory_iterator( path );
-
-        for ( auto filename: it )
+        if ( !std::filesystem::exists( path ) )
         {
-            check_and_add_file( filename, curr_batch );
+            std::cerr << "File or directory not found: " << path << std::endl;
+            continue;
+        }
+
+        auto canonical_filename = std::filesystem::canonical( path );
+
+        if ( std::filesystem::is_directory( path ) )
+        {
+            std::vector<std::string> &curr_batch = batches.emplace_back();
+            auto it = std::filesystem::directory_iterator( path );
+
+            for ( auto filename: it )
+            {
+                check_and_add_file( filename, curr_batch );
+            }
+        }
+        else
+        {
+            // std::vector<std::string> &curr_batch = batches.emplace_back();
+            // check_and_add_file( path, curr_batch );
+            check_and_add_file( path, batches[0] );
         }
     }
-    else
+
+    // Remove empty batches
+    batches.erase(
+        std::remove_if(
+            batches.begin(),
+            batches.end(),
+            []( const std::vector<std::string> &batch ) {
+                return batch.empty();
+            } ),
+        batches.end() );
+
+    // Print out batches for debugging
+    std::cout << "Batches content:" << std::endl;
+    for ( size_t i = 0; i < batches.size(); i++ )
     {
-        std::vector<std::string> &curr_batch = batches.emplace_back();
-        check_and_add_file( path, curr_batch );
+        std::cout << "Batch " << i << ":" << std::endl;
+        for ( const auto &file: batches[i] )
+        {
+            std::cout << "  " << file << std::endl;
+        }
     }
 
-    return true;
+    return batches;
 }
 
 /// Gets the list of database paths for rawtoaces data files.

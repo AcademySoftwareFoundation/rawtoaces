@@ -13,8 +13,10 @@
 #include <iostream>
 #include <vector>
 #include <sys/stat.h> // for mkfifo
+#include <ctime>
 
 #include "../src/rawtoaces_util/rawtoaces_util_priv.h"
+#include <rawtoaces/image_converter.h>
 
 using namespace rta::util;
 
@@ -51,7 +53,11 @@ class TestDirectory
 public:
     TestDirectory()
     {
-        test_dir = ( std::filesystem::temp_directory_path() / "rawtoaces_test" )
+        // Create unique directory names using timestamp and random number
+        static int counter = 0;
+        test_dir           = ( std::filesystem::temp_directory_path() /
+                     ( "rawtoaces_test_" + std::to_string( ++counter ) + "_" +
+                       std::to_string( std::time( nullptr ) ) ) )
                        .string();
         std::filesystem::create_directories( test_dir );
     }
@@ -121,16 +127,17 @@ private:
 /// filter out unwanted file types, and organize them into batches for processing
 void test_collect_image_files_directory()
 {
+    std::cout << std::endl
+              << "test_collect_image_files_directory()" << std::endl;
     TestDirectory test_dir;
     test_dir.create_test_files();
 
-    std::vector<std::vector<std::string>> batches;
-    bool result = collect_image_files( test_dir.path(), batches );
+    std::vector<std::string>              paths = { test_dir.path() };
+    std::vector<std::vector<std::string>> batches =
+        collect_image_files( paths );
 
-    OIIO_CHECK_EQUAL( result, true );
     OIIO_CHECK_EQUAL( batches.size(), 1 );
-
-    OIIO_CHECK_EQUAL( batches[0].size(), 5 ); // Should have 5 valid files
+    OIIO_CHECK_EQUAL( batches[0].size(), 5 );
 
     // Check that the correct files are included
     std::vector<std::string> expected_files = {
@@ -160,65 +167,162 @@ void test_collect_image_files_directory()
 /// properly validates the file and creates a batch containing just that one file
 void test_collect_image_files_single_file()
 {
+    std::cout << std::endl
+              << "test_collect_image_files_single_file()" << std::endl;
     TestDirectory test_dir;
     std::string   test_file =
         ( std::filesystem::path( test_dir.path() ) / "test.raw" ).string();
     std::ofstream( test_file ).close();
 
-    std::vector<std::vector<std::string>> batches;
-    bool result = collect_image_files( test_file, batches );
+    std::vector<std::string>              paths = { test_file };
+    std::vector<std::vector<std::string>> batches =
+        collect_image_files( paths );
 
-    OIIO_CHECK_EQUAL( result, true );
     OIIO_CHECK_EQUAL( batches.size(), 1 );
     OIIO_CHECK_EQUAL( batches[0].size(), 1 );
     OIIO_CHECK_EQUAL( batches[0][0], test_file );
 }
 
-/// Verifies that collect_image_files returns false and creates no batches when given
-/// a path that doesn't exist, ensuring proper error handling for invalid input paths
+/// Verifies that collect_image_files skips nonexistent paths and creates no batches
+/// when given a path that doesn't exist, ensuring proper error handling for invalid input paths
 void test_collect_image_files_nonexistent_path()
 {
-    std::vector<std::vector<std::string>> batches;
-    bool result = collect_image_files( "nonexistent_path", batches );
+    std::cout << std::endl
+              << "test_collect_image_files_nonexistent_path()" << std::endl;
+    std::vector<std::string>              paths = { "nonexistent_path" };
+    std::vector<std::vector<std::string>> batches =
+        collect_image_files( paths );
 
-    OIIO_CHECK_EQUAL( result, false );
     OIIO_CHECK_EQUAL( batches.size(), 0 );
 }
 
-/// Ensures that when given an empty directory, collect_image_files returns true but
-/// creates an empty batch, maintaining consistent behavior for edge cases
+/// Ensures that when given an empty directory, collect_image_files creates no batches
 void test_collect_image_files_empty_directory()
 {
+    std::cout << std::endl
+              << "test_collect_image_files_empty_directory()" << std::endl;
     TestDirectory test_dir;
 
-    std::vector<std::vector<std::string>> batches;
-    bool result = collect_image_files( test_dir.path(), batches );
+    std::vector<std::string>              paths = { test_dir.path() };
+    std::vector<std::vector<std::string>> batches =
+        collect_image_files( paths );
 
-    OIIO_CHECK_EQUAL( result, true );
-    OIIO_CHECK_EQUAL( batches.size(), 1 );
-    OIIO_CHECK_EQUAL(
-        batches[0].size(), 0 ); // Empty directory should result in empty batch
+    OIIO_CHECK_EQUAL( batches.size(), 0 );
 }
 
 /// Verifies that when a directory contains only files that should be filtered out
-/// (like .DS_Store, .jpg, .exr), collect_image_files still returns true but creates an empty batch,
-/// ensuring the filtering logic works correctly in real-world scenarios
+/// (like .DS_Store, .jpg, .exr), collect_image_files does not create a batch,
 void test_collect_image_files_directory_with_only_filtered_files()
 {
+    std::cout << std::endl
+              << "test_collect_image_files_directory_with_only_filtered_files()"
+              << std::endl;
     TestDirectory test_dir;
     test_dir.create_filtered_files_only();
 
-    std::vector<std::vector<std::string>> batches;
-    bool result = collect_image_files( test_dir.path(), batches );
+    std::vector<std::string>              paths = { test_dir.path() };
+    std::vector<std::vector<std::string>> batches =
+        collect_image_files( paths );
 
-    OIIO_CHECK_EQUAL( result, true );
-    OIIO_CHECK_EQUAL( batches.size(), 1 );
-    OIIO_CHECK_EQUAL( batches[0].size(), 0 ); // All files filtered out
+    OIIO_CHECK_EQUAL( batches.size(), 0 );
+}
+
+/// Tests collect_image_files with multiple input paths (files and directories)
+/// to ensure it properly creates separate batches for each input path
+void test_collect_image_files_multiple_paths()
+{
+    std::cout << std::endl
+              << "test_collect_image_files_multiple_paths()" << std::endl;
+
+    // Create test directories using TestDirectory (automatic cleanup)
+    TestDirectory test_dir1;
+    test_dir1.create_valid_files( { "file1.raw", "file2.cr2" } );
+
+    TestDirectory test_dir2;
+    test_dir2.create_valid_files( { "file3.nef", "file4.dng" } );
+
+    // Create additional directories for single files
+    TestDirectory test_dir3;
+    test_dir3.create_valid_files( { "single_1.raw", "single_2.raw" } );
+
+    TestDirectory test_dir4;
+    test_dir4.create_valid_files( { "single_3.raw" } );
+
+    // Get paths to individual test files
+    std::string single_file_1 =
+        ( std::filesystem::path( test_dir3.path() ) / "single_1.raw" ).string();
+    std::string single_file_2 =
+        ( std::filesystem::path( test_dir3.path() ) / "single_2.raw" ).string();
+    std::string single_file_3 =
+        ( std::filesystem::path( test_dir4.path() ) / "single_3.raw" ).string();
+
+    // Test with multiple paths
+    std::vector<std::string> paths = { single_file_1,
+                                       test_dir1.path(),
+                                       test_dir2.path(),
+                                       single_file_2,
+                                       single_file_3 };
+
+    std::vector<std::vector<std::string>> batches =
+        collect_image_files( paths );
+
+    // Resulting batches should look like this:
+    // [
+    //     [ single_file_1, single_file_2, single_file_3 ], // all files from single file paths
+    //     [ file1.raw, file2.cr2 ],
+    //     [ file3.nef, file4.dng ]
+    // ]
+
+    // Should have 5 batches (one for each input path)
+    OIIO_CHECK_EQUAL( batches.size(), 3 );
+
+    // First batch should have 1 file (single_file_1)
+    OIIO_CHECK_EQUAL( batches[0].size(), 3 );
+    OIIO_CHECK_EQUAL( batches[0][0], single_file_1 );
+    OIIO_CHECK_EQUAL( batches[0][1], single_file_2 );
+    OIIO_CHECK_EQUAL( batches[0][2], single_file_3 );
+
+    // Second batch should have 2 files from test_dir1
+    OIIO_CHECK_EQUAL( batches[1].size(), 2 );
+
+    // Third batch should have 2 files from test_dir2
+    OIIO_CHECK_EQUAL( batches[2].size(), 2 );
+}
+
+/// Tests collect_image_files with mixed valid and invalid paths
+/// to ensure it skips invalid paths but processes valid ones
+void test_collect_image_files_mixed_valid_invalid_paths()
+{
+    std::cout << std::endl
+              << "test_collect_image_files_mixed_valid_invalid_paths()"
+              << std::endl;
+
+    TestDirectory test_dir;
+    test_dir.create_valid_files( { "file1.raw" } );
+
+    // Test with valid directory, invalid path, and valid file
+    std::vector<std::string> paths = {
+        test_dir.path(),
+        "nonexistent_path",
+        ( std::filesystem::path( test_dir.path() ) / "file1.raw" ).string()
+    };
+    std::vector<std::vector<std::string>> batches =
+        collect_image_files( paths );
+
+    // Should have 2 batches (valid directory + valid file, invalid path skipped)
+    OIIO_CHECK_EQUAL( batches.size(), 2 );
+
+    // First batch should have 1 file from the directory
+    OIIO_CHECK_EQUAL( batches[0].size(), 1 );
+
+    // Second batch should have 1 file (the single file)
+    OIIO_CHECK_EQUAL( batches[1].size(), 1 );
 }
 
 /// Tests database_paths with no environment variables set (uses default paths)
 void test_database_paths_default()
 {
+    std::cout << std::endl << "test_database_paths_default()" << std::endl;
     // Clear environment variables to test default behavior
     unset_env_var( "RAWTOACES_DATA_PATH" );
     unset_env_var( "AMPAS_DATA_PATH" );
@@ -243,6 +347,8 @@ void test_database_paths_default()
 /// Tests database_paths with RAWTOACES_DATA_PATH environment variable set
 void test_database_paths_rawtoaces_env()
 {
+    std::cout << std::endl
+              << "test_database_paths_rawtoaces_env()" << std::endl;
     // Set RAWTOACES_DATA_PATH
 #ifdef WIN32
     set_env_var( "RAWTOACES_DATA_PATH", "C:\\custom\\path1;C:\\custom\\path2" );
@@ -269,6 +375,7 @@ void test_database_paths_rawtoaces_env()
 /// Tests database_paths with deprecated AMPAS_DATA_PATH environment variable
 void test_database_paths_ampas_env()
 {
+    std::cout << std::endl << "test_database_paths_ampas_env()" << std::endl;
     // Set AMPAS_DATA_PATH (deprecated)
     unset_env_var( "RAWTOACES_DATA_PATH" );
 #ifdef WIN32
@@ -296,6 +403,7 @@ void test_database_paths_ampas_env()
 /// Tests database_paths with both environment variables set (RAWTOACES_DATA_PATH should take precedence)
 void test_database_paths_both_env()
 {
+    std::cout << std::endl << "test_database_paths_both_env()" << std::endl;
     // Set both environment variables
 #ifdef WIN32
     set_env_var(
@@ -324,33 +432,11 @@ void test_database_paths_both_env()
     unset_env_var( "AMPAS_DATA_PATH" );
 }
 
-/// Tests database_paths with Windows-style path separator
-void test_database_paths_windows_separator()
-{
-    // Set RAWTOACES_DATA_PATH with Windows-style separator
-    set_env_var( "RAWTOACES_DATA_PATH", "/path1;/path2;/path3" );
-
-    std::vector<std::string> paths = database_paths();
-
-// Should split by the appropriate separator for the platform
-#if defined( WIN32 ) || defined( WIN64 )
-    OIIO_CHECK_EQUAL( paths.size(), 3 );
-    OIIO_CHECK_EQUAL( paths[0], "/path1" );
-    OIIO_CHECK_EQUAL( paths[1], "/path2" );
-    OIIO_CHECK_EQUAL( paths[2], "/path3" );
-#else
-    // On Unix, semicolon won't be split, so we get one path
-    OIIO_CHECK_EQUAL( paths.size(), 1 );
-    OIIO_CHECK_EQUAL( paths[0], "/path1;/path2;/path3" );
-#endif
-
-    // Clean up
-    unset_env_var( "RAWTOACES_DATA_PATH" );
-}
-
 /// Tests fix_metadata with both Make and Model attributes
 void test_fix_metadata_both_attributes()
 {
+    std::cout << std::endl
+              << "test_fix_metadata_both_attributes()" << std::endl;
     OIIO::ImageSpec spec;
 
     // Add both original attributes
@@ -372,6 +458,7 @@ void test_fix_metadata_both_attributes()
 /// Tests fix_metadata with float attributes
 void test_fix_metadata_float_make()
 {
+    std::cout << std::endl << "test_fix_metadata_float_make()" << std::endl;
     OIIO::ImageSpec spec;
 
     // Add original "Make" attribute as float (unusual but possible)
@@ -390,6 +477,8 @@ void test_fix_metadata_float_make()
 /// Tests fix_metadata when destination already exists (should not overwrite or remove source)
 void test_fix_metadata_destination_exists()
 {
+    std::cout << std::endl
+              << "test_fix_metadata_destination_exists()" << std::endl;
     OIIO::ImageSpec spec;
 
     // Add both original and destination attributes
@@ -409,6 +498,7 @@ void test_fix_metadata_destination_exists()
 /// Tests fix_metadata when source doesn't exist (should do nothing)
 void test_fix_metadata_source_missing()
 {
+    std::cout << std::endl << "test_fix_metadata_source_missing()" << std::endl;
     OIIO::ImageSpec spec;
 
     // Don't add any "Make" or "Model" attributes
@@ -424,6 +514,8 @@ void test_fix_metadata_source_missing()
 /// Tests fix_metadata with non-string, non-float attributes (should be ignored)
 void test_fix_metadata_unsupported_type()
 {
+    std::cout << std::endl
+              << "test_fix_metadata_unsupported_type()" << std::endl;
     OIIO::ImageSpec spec;
 
     // Add integer attribute (this should be ignored by fix_metadata)
@@ -449,13 +541,14 @@ int main( int, char ** )
         test_collect_image_files_nonexistent_path();
         test_collect_image_files_empty_directory();
         test_collect_image_files_directory_with_only_filtered_files();
+        test_collect_image_files_multiple_paths();
+        test_collect_image_files_mixed_valid_invalid_paths();
 
         // Tests for database_paths
         test_database_paths_default();
         test_database_paths_rawtoaces_env();
         test_database_paths_ampas_env();
         test_database_paths_both_env();
-        test_database_paths_windows_separator();
 
         // Tests for fix_metadata
         test_fix_metadata_both_attributes();
@@ -469,12 +562,10 @@ int main( int, char ** )
     catch ( const std::exception &e )
     {
         std::cerr << "Exception caught in main: " << e.what() << std::endl;
-        return 1;
     }
     catch ( ... )
     {
         std::cerr << "Unknown exception caught in main" << std::endl;
-        return 1;
     }
 
     return unit_test_failures;

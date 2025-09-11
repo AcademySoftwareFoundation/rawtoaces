@@ -1203,8 +1203,6 @@ void fix_metadata( OIIO::ImageSpec &spec )
             {
                 if ( type.basetype == OIIO::TypeDesc::STRING )
                     spec[dst_name] = src_attribute->get_string();
-                else if ( type.basetype == OIIO::TypeDesc::FLOAT )
-                    spec[dst_name] = src_attribute->get_float();
             }
             spec.erase_attribute( src_name );
         }

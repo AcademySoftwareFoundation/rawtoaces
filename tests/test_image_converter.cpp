@@ -455,25 +455,6 @@ void test_fix_metadata_both_attributes()
     OIIO_CHECK_EQUAL( spec.find_attribute( "Model" ), nullptr );
 }
 
-/// Tests fix_metadata with float attributes
-void test_fix_metadata_float_make()
-{
-    std::cout << std::endl << "test_fix_metadata_float_make()" << std::endl;
-    OIIO::ImageSpec spec;
-
-    // Add original "Make" attribute as float (unusual but possible)
-    spec["Make"] = 42.5f;
-
-    // Call fix_metadata
-    fix_metadata( spec );
-
-    // Check that "cameraMake" was created with correct float value
-    OIIO_CHECK_EQUAL( spec.get_float_attribute( "cameraMake" ), 42.5f );
-
-    // Check that original "Make" was removed
-    OIIO_CHECK_EQUAL( spec.find_attribute( "Make" ), nullptr );
-}
-
 /// Tests fix_metadata when destination already exists (should not overwrite or remove source)
 void test_fix_metadata_destination_exists()
 {
@@ -511,7 +492,7 @@ void test_fix_metadata_source_missing()
     OIIO_CHECK_EQUAL( spec.find_attribute( "cameraModel" ), nullptr );
 }
 
-/// Tests fix_metadata with non-string, non-float attributes (should be ignored)
+/// Tests fix_metadata with non-string (should be ignored)
 void test_fix_metadata_unsupported_type()
 {
     std::cout << std::endl
@@ -519,7 +500,7 @@ void test_fix_metadata_unsupported_type()
     OIIO::ImageSpec spec;
 
     // Add integer attribute (this should be ignored by fix_metadata)
-    spec["Make"] = 42; // Integer, not string or float
+    spec["Make"] = 42; // Integer, not string
 
     // Call fix_metadata
     fix_metadata( spec );
@@ -552,8 +533,6 @@ int main( int, char ** )
 
         // Tests for fix_metadata
         test_fix_metadata_both_attributes();
-        test_fix_metadata_float_make();
-        test_fix_metadata_float_make();
         test_fix_metadata_destination_exists();
         test_fix_metadata_source_missing();
         test_fix_metadata_source_missing();

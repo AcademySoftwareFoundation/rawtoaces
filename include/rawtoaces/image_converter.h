@@ -12,12 +12,13 @@ namespace util
 {
 
 /// Collect all files from given `paths` into batches.
-/// For each path that is a directory, create an entry in the returned batches and fill it with the file names
-/// (unless all files are filtered out in which case no batch is created).
-/// All paths that are files are added to the first batch.
+/// For each path that is a directory, entries are created in the returned batches
+/// and fill it with the file names. Invalid paths are skipped with an error message.
+/// First batch is reserved for all paths that are files. If no such paths are provided,
+/// first batch will be empty.
+///
 /// @param paths vector of paths to files or directories to process.
 /// @return vector of batches, where each batch contains files from one input path.
-///         Non-existent paths are skipped with an error message.
 std::vector<std::vector<std::string>>
 collect_image_files( const std::vector<std::string> &paths );
 

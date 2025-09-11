@@ -136,8 +136,11 @@ void test_collect_image_files_directory()
     std::vector<std::vector<std::string>> batches =
         collect_image_files( paths );
 
-    OIIO_CHECK_EQUAL( batches.size(), 1 );
-    OIIO_CHECK_EQUAL( batches[0].size(), 5 );
+    OIIO_CHECK_EQUAL(
+        batches.size(),
+        2 ); // Empty batch for file paths, one batch for directory
+    OIIO_CHECK_EQUAL( batches[0].size(), 0 );
+    OIIO_CHECK_EQUAL( batches[1].size(), 5 );
 
     // Check that the correct files are included
     std::vector<std::string> expected_files = {
@@ -151,7 +154,7 @@ void test_collect_image_files_directory()
     for ( const auto &expected: expected_files )
     {
         bool found = false;
-        for ( const auto &actual: batches[0] )
+        for ( const auto &actual: batches[1] )
         {
             if ( actual == expected )
             {
@@ -183,8 +186,7 @@ void test_collect_image_files_single_file()
     OIIO_CHECK_EQUAL( batches[0][0], test_file );
 }
 
-/// Verifies that collect_image_files skips nonexistent paths and creates no batches
-/// when given a path that doesn't exist, ensuring proper error handling for invalid input paths
+/// Verifies that collect_image_files skips nonexistent paths and creates no batches for them.
 void test_collect_image_files_nonexistent_path()
 {
     std::cout << std::endl
@@ -193,7 +195,7 @@ void test_collect_image_files_nonexistent_path()
     std::vector<std::vector<std::string>> batches =
         collect_image_files( paths );
 
-    OIIO_CHECK_EQUAL( batches.size(), 0 );
+    OIIO_CHECK_EQUAL( batches.size(), 1 ); // Empty batch for file paths
 }
 
 /// Ensures that when given an empty directory, collect_image_files creates no batches
@@ -207,11 +209,15 @@ void test_collect_image_files_empty_directory()
     std::vector<std::vector<std::string>> batches =
         collect_image_files( paths );
 
-    OIIO_CHECK_EQUAL( batches.size(), 0 );
+    OIIO_CHECK_EQUAL(
+        batches.size(),
+        2 ); // Empty batch for file paths, one batch for directory
+    OIIO_CHECK_EQUAL( batches[0].size(), 0 );
+    OIIO_CHECK_EQUAL( batches[1].size(), 0 );
 }
 
 /// Verifies that when a directory contains only files that should be filtered out
-/// (like .DS_Store, .jpg, .exr), collect_image_files does not create a batch,
+/// (like .DS_Store, .jpg, .exr)
 void test_collect_image_files_directory_with_only_filtered_files()
 {
     std::cout << std::endl
@@ -224,7 +230,11 @@ void test_collect_image_files_directory_with_only_filtered_files()
     std::vector<std::vector<std::string>> batches =
         collect_image_files( paths );
 
-    OIIO_CHECK_EQUAL( batches.size(), 0 );
+    OIIO_CHECK_EQUAL(
+        batches.size(),
+        2 ); // Empty batch for file paths, one batch for directory
+    OIIO_CHECK_EQUAL( batches[0].size(), 0 );
+    OIIO_CHECK_EQUAL( batches[1].size(), 0 );
 }
 
 /// Tests collect_image_files with multiple input paths (files and directories)

@@ -108,16 +108,6 @@ collect_image_files( const std::vector<std::string> &paths )
         }
     }
 
-    // Remove empty batches
-    batches.erase(
-        std::remove_if(
-            batches.begin(),
-            batches.end(),
-            []( const std::vector<std::string> &batch ) {
-                return batch.empty();
-            } ),
-        batches.end() );
-
     return batches;
 }
 

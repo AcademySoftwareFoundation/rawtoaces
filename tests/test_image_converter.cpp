@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <sys/stat.h> // for mkfifo
 #include <ctime>
@@ -522,6 +523,183 @@ void test_fix_metadata_unsupported_type()
     OIIO_CHECK_EQUAL( spec.find_attribute( "Make" ), nullptr );
 }
 
+/// Helper function to get the test database path
+std::string get_test_database_path()
+{
+    // Get the current working directory (should be the project root)
+    std::string current_path = std::filesystem::current_path().string();
+    return current_path + "/tests/materials/test-database";
+}
+
+/// Helper function to set up test environment and capture output for parse_parameters tests
+struct ParseParametersTestResult
+{
+    bool        success;
+    std::string output;
+};
+
+/// Executes a parse_parameters test with the given command-line arguments and captures its output.
+///
+/// This helper function encapsulates all the common setup required for testing ImageConverter::parse_parameters,
+/// including environment configuration, argument parsing, stdout capture, and cleanup.
+///
+/// @param args Vector of command-line arguments to pass to parse_parameters (excluding program name).
+///             For example, {"--list-cameras"} or {"--list-illuminants", "--verbose"}.
+///
+/// @return ParseParametersTestResult containing:
+///         - success: true if parse_parameters executed successfully, false if argument parsing failed
+///         - output:  captured stdout output from the parse_parameters execution
+ParseParametersTestResult
+run_parse_parameters_test( const std::vector<std::string> &args )
+{
+    // Set up test data path to use the test database
+    std::string test_data_path = get_test_database_path();
+    set_env_var( "RAWTOACES_DATA_PATH", test_data_path.c_str() );
+
+    // Create ImageConverter instance
+    rta::util::ImageConverter converter;
+
+    // Create argument parser and initialize it
+    OIIO::ArgParse arg_parser;
+    converter.init_parser( arg_parser );
+
+    // Convert args to char* array for parsing
+    std::vector<const char *> argv;
+    argv.push_back( "rawtoaces" ); // Program name
+    for ( const auto &arg: args )
+    {
+        argv.push_back( arg.c_str() );
+    }
+
+    // Parse the arguments
+    int parse_result =
+        arg_parser.parse_args( static_cast<int>( argv.size() ), argv.data() );
+    if ( parse_result != 0 )
+    {
+        unset_env_var( "RAWTOACES_DATA_PATH" );
+        return { false, "" };
+    }
+
+    // Capture stdout to verify the output
+    std::ostringstream captured_output;
+    std::streambuf    *original_cout = std::cout.rdbuf();
+    std::cout.rdbuf( captured_output.rdbuf() );
+
+    // Call parse_parameters
+    bool result = converter.parse_parameters( arg_parser );
+
+    // Restore original cout
+    std::cout.rdbuf( original_cout );
+
+    // Clean up environment variable
+    unset_env_var( "RAWTOACES_DATA_PATH" );
+
+    return { result, captured_output.str() };
+}
+
+/// This test verifies that when --list-cameras is provided, the method
+/// calls supported_cameras() and outputs the camera list, then exits
+void test_parse_parameters_list_cameras()
+{
+    std::cout << std::endl
+              << "test_parse_parameters_list_cameras()" << std::endl;
+
+    // Run the test with --list-cameras argument
+    auto result = run_parse_parameters_test( { "--list-cameras" } );
+
+    // The method should return true (though it calls exit in real usage)
+    OIIO_CHECK_EQUAL( result.success, true );
+
+    // Verify the output contains expected camera list information
+    OIIO_CHECK_EQUAL(
+        result.output.find(
+            "Spectral sensitivity data is available for the following cameras:" ) !=
+            std::string::npos,
+        true );
+
+    // Verify that actual camera names from test data are present
+    // The format is "manufacturer / model" as defined in supported_cameras()
+    OIIO_CHECK_EQUAL(
+        result.output.find( "canon / eos 5d mark ii" ) != std::string::npos,
+        true );
+    OIIO_CHECK_EQUAL(
+        result.output.find( "nikon / d70" ) != std::string::npos, true );
+    OIIO_CHECK_EQUAL(
+        result.output.find( "sony / ilce-7rm2" ) != std::string::npos, true );
+
+    // Count occurrences of " / " to verify we have 3 camera entries
+    size_t camera_count = 0;
+    size_t pos          = 0;
+    while ( ( pos = result.output.find( " / ", pos ) ) != std::string::npos )
+    {
+        camera_count++;
+        pos += 3; // Move past " / "
+    }
+    OIIO_CHECK_EQUAL( camera_count, 3 );
+}
+
+/// This test verifies that when --list-illuminants is provided, the method
+/// calls supported_illuminants() and outputs the illuminant list, then exits
+void test_parse_parameters_list_illuminants()
+{
+    std::cout << std::endl
+              << "test_parse_parameters_list_illuminants()" << std::endl;
+
+    // Run the test with --list-illuminants argument
+    auto result = run_parse_parameters_test( { "--list-illuminants" } );
+
+    // The method should return true (though it calls exit in real usage)
+    OIIO_CHECK_EQUAL( result.success, true );
+
+    // Verify the output contains expected illuminant list information
+    OIIO_CHECK_EQUAL(
+        result.output.find( "The following illuminants are supported:" ) !=
+            std::string::npos,
+        true );
+
+    // Verify that actual illuminant names from test data are present
+    // The hardcoded illuminant types should be present
+    OIIO_CHECK_EQUAL(
+        result.output.find( "Day-light (e.g., D60, D6025)" ) !=
+            std::string::npos,
+        true );
+    OIIO_CHECK_EQUAL(
+        result.output.find( "Blackbody (e.g., 3200K)" ) != std::string::npos,
+        true );
+
+    // Verify that the specific illuminant from our test data is present
+    OIIO_CHECK_EQUAL(
+        result.output.find( "iso7589" ) != std::string::npos, true );
+
+    // Verify we have exactly 3 illuminants total (2 hardcoded + 1 from test data)
+    // Count newlines in the illuminant list section to verify count
+    size_t illuminant_count = 0;
+    size_t start_pos =
+        result.output.find( "The following illuminants are supported:" );
+    if ( start_pos != std::string::npos )
+    {
+        size_t end_pos = result.output.find(
+            "\n\n", start_pos ); // Look for double newline (end of list)
+        if ( end_pos == std::string::npos )
+        {
+            end_pos = result.output.length(); // If no double newline, go to end
+        }
+
+        std::string illuminant_section =
+            result.output.substr( start_pos, end_pos - start_pos );
+        size_t pos = 0;
+        while ( ( pos = illuminant_section.find( "\n", pos ) ) !=
+                std::string::npos )
+        {
+            illuminant_count++;
+            pos += 1;
+        }
+        // Subtract 1 for the header line
+        illuminant_count = ( illuminant_count > 0 ) ? illuminant_count - 1 : 0;
+    }
+    OIIO_CHECK_EQUAL( illuminant_count, 3 );
+}
+
 int main( int, char ** )
 {
     try
@@ -547,6 +725,10 @@ int main( int, char ** )
         test_fix_metadata_source_missing();
         test_fix_metadata_source_missing();
         test_fix_metadata_unsupported_type();
+
+        // Tests for parse_parameters
+        test_parse_parameters_list_cameras();
+        test_parse_parameters_list_illuminants();
     }
     catch ( const std::exception &e )
     {

@@ -1,0 +1,19 @@
+{
+    "header": {
+        "schema_version"         : "0.1.0",
+        "manufacturer"           : "cheburashka",
+        "model"                  : "model 1",
+        "description"            : "data for unit tests",
+        "document_creator"       : "sasha",
+        "document_creation_date" : "2017-04-11T12:00:00Z",
+        "license"                : "Some-License-4.2"
+    },
+    "spectral_data": {
+        "units"                 : "relative",
+        "index": {
+            "main": ["R", "G", "B"]
+        },
+        "data": {
+        }
+    }
+}

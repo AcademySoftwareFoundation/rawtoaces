@@ -620,14 +620,12 @@ void test_parse_parameters_list_cameras()
     // Verify that actual camera names from test data are present
     // The format is "manufacturer / model" as defined in supported_cameras()
     OIIO_CHECK_EQUAL(
-        result.output.find( "canon / eos 5d mark ii" ) != std::string::npos,
+        result.output.find( "cheburashka / model 1" ) != std::string::npos,
         true );
     OIIO_CHECK_EQUAL(
-        result.output.find( "nikon / d70" ) != std::string::npos, true );
-    OIIO_CHECK_EQUAL(
-        result.output.find( "sony / ilce-7rm2" ) != std::string::npos, true );
-
-    // Count occurrences of " / " to verify we have 3 camera entries
+        result.output.find( "karamba / M2" ) != std::string::npos, true );
+    
+    // Count occurrences of " / " to verify we have 2 camera entries
     size_t camera_count = 0;
     size_t pos          = 0;
     while ( ( pos = result.output.find( " / ", pos ) ) != std::string::npos )
@@ -635,7 +633,7 @@ void test_parse_parameters_list_cameras()
         camera_count++;
         pos += 3; // Move past " / "
     }
-    OIIO_CHECK_EQUAL( camera_count, 3 );
+    OIIO_CHECK_EQUAL( camera_count, 2 );
 }
 
 /// This test verifies that when --list-illuminants is provided, the method
@@ -669,7 +667,7 @@ void test_parse_parameters_list_illuminants()
 
     // Verify that the specific illuminant from our test data is present
     OIIO_CHECK_EQUAL(
-        result.output.find( "iso7589" ) != std::string::npos, true );
+        result.output.find( "iso4242" ) != std::string::npos, true );
 
     // Verify we have exactly 3 illuminants total (2 hardcoded + 1 from test data)
     // Count newlines in the illuminant list section to verify count

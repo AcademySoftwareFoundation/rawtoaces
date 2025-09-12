@@ -624,7 +624,7 @@ void test_parse_parameters_list_cameras()
         true );
     OIIO_CHECK_EQUAL(
         result.output.find( "karamba / M2" ) != std::string::npos, true );
-    
+
     // Count occurrences of " / " to verify we have 2 camera entries
     size_t camera_count = 0;
     size_t pos          = 0;

@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <sstream>
 #include <vector>
 #include <sys/stat.h> // for mkfifo
@@ -61,6 +62,10 @@ public:
                        std::to_string( std::time( nullptr ) ) ) )
                        .string();
         std::filesystem::create_directories( test_dir );
+
+        // Create database directory for test data
+        database_dir = test_dir + "/test-database";
+        std::filesystem::create_directories( database_dir );
     }
 
     ~TestDirectory() { std::filesystem::remove_all( test_dir ); }
@@ -70,6 +75,7 @@ public:
     TestDirectory &operator=( const TestDirectory & ) = delete;
 
     const std::string &path() const { return test_dir; }
+    const std::string &get_database_path() const { return database_dir; }
 
     void create_test_files()
     {
@@ -120,8 +126,51 @@ public:
         }
     }
 
+    /// Creates a test data file (camera or illuminant) with the specified header data
+    /// @param type The type of test data to create (e.g. camera or illuminant)
+    /// @param header_data JSON object containing the header data to include
+    /// @return The full path to the created file
+    std::string create_test_data_file(
+        const std::string &type, const nlohmann::json &header_data )
+    {
+        // Generate random filename
+        static int  file_counter = 0;
+        std::string filename = "test_data_" + std::to_string( ++file_counter ) +
+                               "_" + std::to_string( std::time( nullptr ) ) +
+                               ".json";
+
+        // Create target directory dynamically based on type
+        std::string target_dir = database_dir + "/" + type;
+        std::filesystem::create_directories( target_dir );
+        std::string file_path = target_dir + "/" + filename;
+
+        // Create JSON object using nlohmann/json
+        nlohmann::json json_data;
+
+        // Start with default header and merge user data
+        nlohmann::json header = header_data;
+
+        // Build spectral_data object
+        nlohmann::json spectral_data = { { "units", "relative" },
+                                         { "index",
+                                           { { "main", { "R", "G", "B" } } } },
+                                         { "data", nlohmann::json::object() } };
+
+        // Assemble final JSON
+        json_data["header"]        = header;
+        json_data["spectral_data"] = spectral_data;
+
+        // Write to file with pretty formatting
+        std::ofstream file( file_path );
+        file << json_data.dump( 4 ) << std::endl;
+        file.close();
+
+        return file_path;
+    }
+
 private:
     std::string test_dir;
+    std::string database_dir;
 };
 
 /// Verifies that collect_image_files can traverse a directory, identify valid RAW image files,
@@ -545,15 +594,18 @@ struct ParseParametersTestResult
 ///
 /// @param args Vector of command-line arguments to pass to parse_parameters (excluding program name).
 ///             For example, {"--list-cameras"} or {"--list-illuminants", "--verbose"}.
+/// @param database_path Path to the test database directory (optional, uses default if not provided)
 ///
 /// @return ParseParametersTestResult containing:
 ///         - success: true if parse_parameters executed successfully, false if argument parsing failed
 ///         - output:  captured stdout output from the parse_parameters execution
-ParseParametersTestResult
-run_parse_parameters_test( const std::vector<std::string> &args )
+ParseParametersTestResult run_parse_parameters_test(
+    const std::vector<std::string> &args,
+    const std::string              &database_path = "" )
 {
-    // Set up test data path to use the test database
-    std::string test_data_path = get_test_database_path();
+    // Set up test data path to use the provided database path or default
+    std::string test_data_path =
+        database_path.empty() ? get_test_database_path() : database_path;
     set_env_var( "RAWTOACES_DATA_PATH", test_data_path.c_str() );
 
     // Create ImageConverter instance
@@ -604,8 +656,18 @@ void test_parse_parameters_list_cameras()
     std::cout << std::endl
               << "test_parse_parameters_list_cameras()" << std::endl;
 
-    // Run the test with --list-cameras argument
-    auto result = run_parse_parameters_test( { "--list-cameras" } );
+    // Create test directory with dynamic database
+    TestDirectory test_dir;
+
+    // Create test camera data files
+    test_dir.create_test_data_file(
+        "camera", { { "manufacturer", "Canon" }, { "model", "EOS R6" } } );
+    test_dir.create_test_data_file(
+        "camera", { { "manufacturer", "Mamiya" }, { "model", "Mamiya 7" } } );
+
+    // Run the test with --list-cameras argument using the dynamic database
+    auto result = run_parse_parameters_test(
+        { "--list-cameras" }, test_dir.get_database_path() );
 
     // The method should return true (though it calls exit in real usage)
     OIIO_CHECK_EQUAL( result.success, true );
@@ -620,10 +682,9 @@ void test_parse_parameters_list_cameras()
     // Verify that actual camera names from test data are present
     // The format is "manufacturer / model" as defined in supported_cameras()
     OIIO_CHECK_EQUAL(
-        result.output.find( "cheburashka / model 1" ) != std::string::npos,
-        true );
+        result.output.find( "Canon / EOS R6" ) != std::string::npos, true );
     OIIO_CHECK_EQUAL(
-        result.output.find( "karamba / M2" ) != std::string::npos, true );
+        result.output.find( "Mamiya / Mamiya 7" ) != std::string::npos, true );
 
     // Count occurrences of " / " to verify we have 2 camera entries
     size_t camera_count = 0;
@@ -643,8 +704,16 @@ void test_parse_parameters_list_illuminants()
     std::cout << std::endl
               << "test_parse_parameters_list_illuminants()" << std::endl;
 
-    // Run the test with --list-illuminants argument
-    auto result = run_parse_parameters_test( { "--list-illuminants" } );
+    // Create test directory with dynamic database
+    TestDirectory test_dir;
+
+    // Create test illuminant data file
+    test_dir.create_test_data_file(
+        "illuminant", { { "illuminant", "my-illuminant" } } );
+
+    // Run the test with --list-illuminants argument using the dynamic database
+    auto result = run_parse_parameters_test(
+        { "--list-illuminants" }, test_dir.get_database_path() );
 
     // The method should return true (though it calls exit in real usage)
     OIIO_CHECK_EQUAL( result.success, true );
@@ -667,7 +736,7 @@ void test_parse_parameters_list_illuminants()
 
     // Verify that the specific illuminant from our test data is present
     OIIO_CHECK_EQUAL(
-        result.output.find( "iso4242" ) != std::string::npos, true );
+        result.output.find( "my-illuminant" ) != std::string::npos, true );
 
     // Verify we have exactly 3 illuminants total (2 hardcoded + 1 from test data)
     // Count newlines in the illuminant list section to verify count

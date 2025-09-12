@@ -571,14 +571,6 @@ void test_fix_metadata_unsupported_type()
     OIIO_CHECK_EQUAL( spec.find_attribute( "Make" ), nullptr );
 }
 
-/// Helper function to get the test database path
-std::string get_test_database_path()
-{
-    // Get the current working directory (should be the project root)
-    std::string current_path = std::filesystem::current_path().string();
-    return current_path + "/tests/materials/test-database";
-}
-
 /// Helper function to set up test environment and capture output for parse_parameters tests
 struct ParseParametersTestResult
 {
@@ -603,9 +595,7 @@ ParseParametersTestResult run_parse_parameters_test(
     const std::string              &database_path = "" )
 {
     // Set up test data path to use the provided database path or default
-    std::string test_data_path =
-        database_path.empty() ? get_test_database_path() : database_path;
-    set_env_var( "RAWTOACES_DATA_PATH", test_data_path.c_str() );
+    set_env_var( "RAWTOACES_DATA_PATH", database_path.c_str() );
 
     // Create ImageConverter instance
     rta::util::ImageConverter converter;

@@ -12,7 +12,6 @@
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
-#include <sstream>
 #include <vector>
 #include <sys/stat.h> // for mkfifo
 #include <ctime>

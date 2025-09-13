@@ -159,7 +159,7 @@ std::vector<std::string> database_paths()
     OIIO::Strutil::split( path, result, separator );
 
     return result;
-};
+}
 
 /// Get camera info (with make and model) from image metadata or custom settings.
 ///

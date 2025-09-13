@@ -285,8 +285,6 @@ void testIDT_LoadCMF()
     result = spectral_data.load( absolutePath.string() );
     OIIO_CHECK_ASSERT( result );
 
-    auto &data = spectral_data.data["main"];
-
     double cmf[401][3] = { { 0.001368, 3.90E-05, 0.006450001 },
                            { 0.00150205, 4.28E-05, 0.007083216 },
                            { 0.001642328, 4.69E-05, 0.007745488 },
@@ -812,7 +810,7 @@ void testIDT_CalWB()
     vector<double> WB_test = _calculate_WB( camera, illuminant );
 
     double WB[3] = { 1.1397265, 1.0000000, 2.3240151 };
-    for ( int i = 0; i < WB_test.size(); i++ )
+    for ( size_t i = 0; i < WB_test.size(); i++ )
     {
         OIIO_CHECK_EQUAL_THRESH( WB[i], WB_test[i], 1e-5 );
     }
@@ -852,7 +850,7 @@ void testIDT_ChooseIllumSrc()
     };
 
     OIIO_CHECK_EQUAL( illumType_Test, "d45" );
-    for ( int i = 0; i < illumData_Test.size(); i++ )
+    for ( size_t i = 0; i < illumData_Test.size(); i++ )
         OIIO_CHECK_EQUAL_THRESH( illumData[i], illumData_Test[i], 1e-5 );
 };
 
@@ -890,7 +888,7 @@ void testIDT_ChooseIllumType()
     };
 
     OIIO_CHECK_EQUAL( illumType_Test, "iso7589" );
-    for ( int i = 0; i < illumData_Test.size(); i++ )
+    for ( size_t i = 0; i < illumData_Test.size(); i++ )
         OIIO_CHECK_EQUAL_THRESH( illumData[i], illumData_Test[i], 1e-5 );
 };
 
@@ -5018,8 +5016,9 @@ void testIDT_CalXYZ()
                            { 0.2281042219, 0.1104278429, 0.1135106455 },
                            { 0.4603248290, 0.3206987361, 0.3960834297 } };
 
-    FORIJ( 190, 3 )
-    OIIO_CHECK_EQUAL_THRESH( XYZ[i][j], XYZ_test[i][j], 1e-5 );
+    for ( size_t i = 0; i < 190; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            OIIO_CHECK_EQUAL_THRESH( XYZ[i][j], XYZ_test[i][j], 1e-5 );
 };
 
 void testIDT_CalRGB()
@@ -5232,8 +5231,9 @@ void testIDT_CalRGB()
                            { 0.3303063191, 0.0484327700, 0.0971516302 },
                            { 0.5608623445, 0.2394587589, 0.3637261707 } };
 
-    FORIJ( 190, 3 )
-    OIIO_CHECK_EQUAL_THRESH( RGB[i][j], RGB_test[i][j], 1e-5 );
+    for ( size_t i = 0; i < 190; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            OIIO_CHECK_EQUAL_THRESH( RGB[i][j], RGB_test[i][j], 1e-5 );
 };
 
 void testIDT_CurveFit()
@@ -5266,8 +5266,9 @@ void testIDT_CurveFit()
                         { 0.0451759890, 1.0082622042, -0.0534381932 },
                         { 0.0247144012, -0.1245524896, 1.0998380884 } };
 
-    FORIJ( 3, 3 )
-    OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-5 );
+    for ( size_t i = 0; i < 3; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-5 );
 };
 
 void testIDT_CalIDT()
@@ -5283,8 +5284,9 @@ void testIDT_CalIDT()
                         { -0.0089998772, 1.2147199060, -0.2057200288 },
                         { -0.1312667887, -0.7361633199, 1.8674301085 } };
 
-    FORIJ( 3, 3 )
-    OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-4 );
+    for ( size_t i = 0; i < 3; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-4 );
 };
 
 int main( int, char ** )

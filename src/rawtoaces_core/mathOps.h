@@ -23,7 +23,7 @@ namespace core
 
 template <typename T> int isSquare( const vector<vector<T>> &vm )
 {
-    for ( int i = 0; i < vm.size(); i++ )
+    for ( size_t i = 0; i < vm.size(); i++ )
     {
         if ( vm[i].size() != vm.size() )
             return 0;
@@ -86,7 +86,9 @@ vector<vector<T>> invertVM( const vector<vector<T>> &vMtx )
 
     Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m;
     m.resize( vMtx.size(), vMtx[0].size() );
-    FORIJ( m.rows(), m.cols() ) m( i, j ) = vMtx[i][j];
+    for ( Eigen::Index i = 0; i < m.rows(); i++ )
+        for ( Eigen::Index j = 0; j < m.cols(); j++ )
+            m( i, j ) = vMtx[i][j];
 
     //    Map < Eigen::Matrix < T, Eigen::Dynamic, Eigen::Dynamic, RowMajor > > m (vMtx[0]);
     //    m.resize(vMtx.size(), vMtx[0].size());
@@ -94,23 +96,28 @@ vector<vector<T>> invertVM( const vector<vector<T>> &vMtx )
     m = m.inverse();
 
     vector<vector<T>> vMtxR( m.rows(), vector<T>( m.cols() ) );
-    FORIJ( m.rows(), m.cols() ) vMtxR[i][j] = m( i, j );
+    for ( Eigen::Index i = 0; i < m.rows(); i++ )
+        for ( Eigen::Index j = 0; j < m.cols(); j++ )
+            vMtxR[i][j] = m( i, j );
 
     return vMtxR;
 };
 
 template <typename T> vector<T> invertV( const vector<T> &vMtx )
 {
-    int               size = std::sqrt( static_cast<int>( vMtx.size() ) );
+    size_t            size = std::sqrt( static_cast<size_t>( vMtx.size() ) );
     vector<vector<T>> tmp( size, vector<T>( size ) );
 
-    FORIJ( size, size )
-    tmp[i][j] = vMtx[i * size + j];
+    for ( size_t i = 0; i < size; i++ )
+        for ( size_t j = 0; j < size; j++ )
+            tmp[i][j] = vMtx[i * size + j];
 
     tmp = invertVM( tmp );
     vector<T> result( vMtx.size() );
 
-    FORIJ( size, size ) result[i * size + j] = tmp[i][j];
+    for ( size_t i = 0; i < size; i++ )
+        for ( size_t j = 0; j < size; j++ )
+            result[i * size + j] = tmp[i][j];
 
     return result;
 };
@@ -138,11 +145,15 @@ vector<vector<T>> transposeVec( const vector<vector<T>> &vMtx )
     Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m;
     m.resize( vMtx.size(), vMtx[0].size() );
 
-    FORIJ( m.rows(), m.cols() ) m( i, j ) = vMtx[i][j];
+    for ( Eigen::Index i = 0; i < m.rows(); i++ )
+        for ( Eigen::Index j = 0; j < m.cols(); j++ )
+            m( i, j ) = vMtx[i][j];
     m.transposeInPlace();
 
     vector<vector<T>> vTran( m.rows(), vector<T>( m.cols() ) );
-    FORIJ( m.rows(), m.cols() ) vTran[i][j] = m( i, j );
+    for ( Eigen::Index i = 0; i < m.rows(); i++ )
+        for ( Eigen::Index j = 0; j < m.cols(); j++ )
+            vTran[i][j] = m( i, j );
 
     return vTran;
 };
@@ -162,12 +173,12 @@ template <typename T> T sumVectorM( const vector<vector<T>> &vct )
     size_t row = vct.size();
     size_t col = vct[0].size();
 
-    T                                   sum = T( 0 );
     Eigen::Matrix<T, Eigen::Dynamic, 1> v;
     v.resize( row * col, 1 );
 
-    FORIJ( row, col )
-    v( i * col + j ) = vct[i][j];
+    for ( size_t i = 0; i < row; i++ )
+        for ( size_t j = 0; j < col; j++ )
+            v( i * col + j ) = vct[i][j];
 
     return v.sum();
 };
@@ -177,11 +188,11 @@ template <typename T> void scaleVector( vector<T> &vct, const T scale )
     Eigen::Matrix<T, Eigen::Dynamic, 1> v;
     v.resize( vct.size(), 1 );
 
-    for ( int i = 0; i < vct.size(); i++ )
+    for ( size_t i = 0; i < vct.size(); i++ )
         v( i, 0 ) = vct[i];
     v *= scale;
 
-    for ( int i = 0; i < vct.size(); i++ )
+    for ( size_t i = 0; i < vct.size(); i++ )
         vct[i] = v( i, 0 );
 
     return;
@@ -214,8 +225,8 @@ vector<T> mulVector( vector<T> vct1, vector<T> vct2, int k = 3 )
     int rows = ( static_cast<int>( vct1.size() ) ) / k;
     int cols = ( static_cast<int>( vct2.size() ) ) / k;
 
-    assert( rows * k == vct1.size() );
-    assert( k * cols == vct2.size() );
+    assert( static_cast<size_t>( rows * k ) == vct1.size() );
+    assert( static_cast<size_t>( k * cols ) == vct2.size() );
 
     vector<T> vct3( rows * cols );
     T        *pA = &vct1[0];
@@ -246,15 +257,19 @@ mulVector( const vector<vector<T>> &vct1, const vector<vector<T>> &vct2 )
     m1.resize( vct1.size(), vct1[0].size() );
     m2.resize( vct2[0].size(), vct2.size() );
 
-    FORIJ( m1.rows(), m1.cols() )
-    m1( i, j ) = vct1[i][j];
-    FORIJ( m2.rows(), m2.cols() )
-    m2( i, j ) = vct2[j][i];
+    for ( Eigen::Index i = 0; i < m1.rows(); i++ )
+        for ( Eigen::Index j = 0; j < m1.cols(); j++ )
+            m1( i, j ) = vct1[i][j];
+    for ( Eigen::Index i = 0; i < m2.rows(); i++ )
+        for ( Eigen::Index j = 0; j < m2.cols(); j++ )
+            m2( i, j ) = vct2[j][i];
 
     m3 = m1 * m2;
 
     vector<vector<T>> vct3( m3.rows(), vector<T>( m3.cols() ) );
-    FORIJ( m3.rows(), m3.cols() ) vct3[i][j] = m3( i, j );
+    for ( Eigen::Index i = 0; i < m3.rows(); i++ )
+        for ( Eigen::Index j = 0; j < m3.cols(); j++ )
+            vct3[i][j] = m3( i, j );
 
     return vct3;
 };
@@ -268,9 +283,10 @@ vector<T> mulVector( const vector<vector<T>> &vct1, const vector<T> &vct2 )
     m1.resize( vct1.size(), vct1[0].size() );
     m2.resize( vct2.size(), 1 );
 
-    FORIJ( m1.rows(), m1.cols() )
-    m1( i, j ) = vct1[i][j];
-    for ( int i = 0; i < m2.rows(); i++ )
+    for ( Eigen::Index i = 0; i < m1.rows(); i++ )
+        for ( Eigen::Index j = 0; j < m1.cols(); j++ )
+            m1( i, j ) = vct1[i][j];
+    for ( Eigen::Index i = 0; i < m2.rows(); i++ )
         m2( i, 0 ) = vct2[i];
 
     m3 = m1 * m2;
@@ -301,7 +317,7 @@ T calculate_SSE( const vector<T> &tcp, const vector<T> &src )
     vector<T> tmp( src.size() );
 
     T sum = T( 0.0 );
-    for ( int i = 0; i < tcp.size(); i++ )
+    for ( size_t i = 0; i < tcp.size(); i++ )
         sum += std::pow( ( tcp[i] / src[i] - 1.0 ), T( 2.0 ) );
 
     return sum;
@@ -334,7 +350,7 @@ vector<T> interp1DLinear(
 
     vector<T> slope, intercept, Y1;
 
-    for ( int i = 0; i < X0.size() - 1; i++ )
+    for ( size_t i = 0; i < X0.size() - 1; i++ )
     {
         slope.push_back( ( Y0[i + 1] - Y0[i] ) / ( X0[i + 1] - X0[i] ) );
         intercept.push_back( Y0[i] - X0[i] * slope[i] );
@@ -343,7 +359,7 @@ vector<T> interp1DLinear(
     slope.push_back( slope[slope.size() - 1] );
     intercept.push_back( intercept[intercept.size() - 1] );
 
-    for ( int i = 0; i < X1.size(); i++ )
+    for ( size_t i = 0; i < X1.size(); i++ )
     {
         int index = findIndexInterp1( X1[i], X0, int( X0.size() ) );
         if ( index != -1 )
@@ -423,17 +439,18 @@ vector<vector<T>> XYZ_to_LAB( const vector<vector<T>> &XYZ )
     T add = T( 16.0 / 116.0 );
 
     vector<vector<T>> tmpXYZ( XYZ.size(), vector<T>( 3, T( 1.0 ) ) );
-    FORIJ( XYZ.size(), 3 )
-    {
-        tmpXYZ[i][j] = XYZ[i][j] / ACES_white_point_XYZ[j];
-        if ( tmpXYZ[i][j] > T( e ) )
-            tmpXYZ[i][j] = ceres::pow( tmpXYZ[i][j], T( 1.0 / 3.0 ) );
-        else
-            tmpXYZ[i][j] = T( k ) * tmpXYZ[i][j] + add;
-    }
+    for ( size_t i = 0; i < XYZ.size(); i++ )
+        for ( size_t j = 0; j < 3; j++ )
+        {
+            tmpXYZ[i][j] = XYZ[i][j] / ACES_white_point_XYZ[j];
+            if ( tmpXYZ[i][j] > T( e ) )
+                tmpXYZ[i][j] = ceres::pow( tmpXYZ[i][j], T( 1.0 / 3.0 ) );
+            else
+                tmpXYZ[i][j] = T( k ) * tmpXYZ[i][j] + add;
+        }
 
     vector<vector<T>> outCalcLab( XYZ.size(), vector<T>( 3 ) );
-    for ( int i = 0; i < XYZ.size(); i++ )
+    for ( size_t i = 0; i < XYZ.size(); i++ )
     {
         outCalcLab[i][0] = T( 116.0 ) * tmpXYZ[i][1] - T( 16.0 );
         outCalcLab[i][1] = T( 500.0 ) * ( tmpXYZ[i][0] - tmpXYZ[i][1] );
@@ -452,7 +469,9 @@ getCalcXYZt( const vector<vector<T>> &RGB, const T beta_params[6] )
     vector<vector<T>> BV( 3, vector<T>( 3 ) );
     vector<vector<T>> M( 3, vector<T>( 3 ) );
 
-    FORIJ( 3, 3 ) M[i][j] = T( acesrgb_XYZ_3[i][j] );
+    for ( size_t i = 0; i < 3; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            M[i][j] = T( acesrgb_XYZ_3[i][j] );
 
     BV[0][0] = beta_params[0];
     BV[0][1] = beta_params[1];

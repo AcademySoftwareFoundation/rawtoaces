@@ -139,8 +139,9 @@ void testIDT_GetDNGCATMatrix()
 
     delete di;
 
-    FORIJ( 3, 3 )
-    OIIO_CHECK_EQUAL_THRESH( result[i][j], matrix[i][j], 1e-5 );
+    for ( size_t i = 0; i < 3; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            OIIO_CHECK_EQUAL_THRESH( result[i][j], matrix[i][j], 1e-5 );
 };
 
 void testIDT_GetDNGIDTMatrix()
@@ -155,8 +156,9 @@ void testIDT_GetDNGIDTMatrix()
 
     delete di;
 
-    FORIJ( 3, 3 )
-    OIIO_CHECK_EQUAL_THRESH( result[i][j], matrix[i][j], 1e-5 );
+    for ( size_t i = 0; i < 3; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            OIIO_CHECK_EQUAL_THRESH( result[i][j], matrix[i][j], 1e-5 );
 };
 
 int main( int, char ** )

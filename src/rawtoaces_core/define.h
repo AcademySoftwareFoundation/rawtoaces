@@ -37,10 +37,6 @@
 #    define FALSE 0
 #endif
 
-#define FORJ( val ) for ( int j = 0; j < val; j++ )
-#define FORIJ( val1, val2 )                                                    \
-    for ( int i = 0; i < val1; i++ )                                           \
-        for ( int j = 0; j < val2; j++ )
 #define countSize( a ) ( static_cast<int>( sizeof( a ) / sizeof( ( a )[0] ) ) )
 
 namespace rta
@@ -269,7 +265,7 @@ inline void lowerCase( char *tex )
 {
     std::string tmp( tex );
 
-    for ( int i = 0; i < tmp.size(); i++ )
+    for ( size_t i = 0; i < tmp.size(); i++ )
         tex[i] = tolower( tex[i] );
 };
 
@@ -296,7 +292,7 @@ inline bool isCTLetterDigit( const char c )
 // to represent color temperature(s) (e.g., D60, 3200K)
 inline bool isValidCT( std::string str )
 {
-    int    i      = 0;
+    size_t i      = 0;
     size_t length = str.length();
 
     if ( length == 0 )

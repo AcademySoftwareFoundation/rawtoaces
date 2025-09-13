@@ -31,7 +31,7 @@ void test_LowerCase()
     char text_test[] = "rawtoaces";
 
     lowerCase( text );
-    for ( int i = 0; i < strlen( text ); i++ )
+    for ( size_t i = 0; i < strlen( text ); i++ )
         OIIO_CHECK_EQUAL( text[i], text_test[i] );
 };
 

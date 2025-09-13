@@ -860,11 +860,12 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
         .help(
             "(-v) Print progress messages. "
             "Repeated -v will increase verbosity." )
-        .action(
-            [&]( OIIO::cspan<const char *> argv ) { settings.verbosity++; } );
+        .action( [&]( OIIO::cspan<const char *> /* argv */ ) {
+            settings.verbosity++;
+        } );
 
     arg_parser.arg( "-v" ).hidden().action(
-        [&]( OIIO::cspan<const char *> argv ) { settings.verbosity++; } );
+        [&]( OIIO::cspan<const char *> /* argv */ ) { settings.verbosity++; } );
 }
 
 bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
@@ -1521,14 +1522,14 @@ bool ImageConverter::apply_matrix(
 }
 
 bool ImageConverter::apply_scale(
-    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi )
+    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI /* roi */ )
 {
     return OIIO::ImageBufAlgo::mul(
         dst, src, settings.headroom * settings.scale );
 }
 
 bool ImageConverter::apply_crop(
-    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi )
+    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI /* roi */ )
 {
     if ( settings.crop_mode == Settings::CropMode::Off )
     {

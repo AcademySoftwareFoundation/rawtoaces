@@ -78,7 +78,9 @@ void test_InvertVM()
                                { 613.114494, -518.860936, 72.376689 } };
 
     vector<vector<double>> MV( 3, vector<double>( 3 ) );
-    FORIJ( 3, 3 ) MV[i][j] = M[i][j];
+    for ( size_t i = 0; i < 3; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            MV[i][j] = M[i][j];
 
     vector<vector<double>> MV_Inverse = invertVM( MV );
 
@@ -145,11 +147,14 @@ void test_TransposeVec()
                           4.0000000000 } };
 
     vector<vector<double>> MV( 6, vector<double>( 3 ) );
-    FORIJ( 6, 3 ) MV[i][j]     = M[i][j];
+    for ( size_t i = 0; i < 6; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            MV[i][j] = M[i][j];
     vector<vector<double>> MVT = transposeVec( MV );
 
-    FORIJ( 3, 6 )
-    OIIO_CHECK_EQUAL_THRESH( MVT[i][j], MT[i][j], 1e-5 );
+    for ( size_t i = 0; i < 3; i++ )
+        for ( size_t j = 0; j < 6; j++ )
+            OIIO_CHECK_EQUAL_THRESH( MVT[i][j], MT[i][j], 1e-5 );
 };
 
 void test_SumVector()
@@ -171,7 +176,7 @@ void test_MulVectorElement()
     vector<double> MV2( M2, M2 + 10 );
 
     vector<double> MV3 = mulVectorElement( MV1, MV2 );
-    for ( int i = 0; i < MV3.size(); i++ )
+    for ( size_t i = 0; i < MV3.size(); i++ )
         OIIO_CHECK_EQUAL_THRESH( MV3[i], 10.0000000000, 1e-5 );
 };
 
@@ -193,15 +198,17 @@ void test_MulVector1()
 
     vector<vector<double>> MV1( 3, vector<double>( 3 ) );
     vector<vector<double>> MV2( 3, vector<double>( 3 ) );
-    FORIJ( 3, 3 )
-    {
-        MV1[i][j] = M1[i][j];
-        MV2[i][j] = M2[i][j];
-    }
+    for ( size_t i = 0; i < 3; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+        {
+            MV1[i][j] = M1[i][j];
+            MV2[i][j] = M2[i][j];
+        }
 
     vector<vector<double>> MV3 = mulVector( MV1, MV2 );
-    FORIJ( 3, 3 )
-    OIIO_CHECK_EQUAL_THRESH( MV3[i][j], M3[i][j], 1e-5 );
+    for ( size_t i = 0; i < 3; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            OIIO_CHECK_EQUAL_THRESH( MV3[i][j], M3[i][j], 1e-5 );
 };
 
 void test_MulVector2()
@@ -215,10 +222,11 @@ void test_MulVector2()
 
     vector<vector<double>> MV1( 3, vector<double>( 3 ) );
     vector<double>         MV2( M2, M2 + 3 );
-    FORIJ( 3, 3 )
-    {
-        MV1[i][j] = M1[i][j];
-    }
+    for ( size_t i = 0; i < 3; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+        {
+            MV1[i][j] = M1[i][j];
+        }
 
     vector<double> MV3 = mulVector( MV1, MV2 );
     for ( int i = 0; i < 3; i++ )
@@ -228,7 +236,7 @@ void test_MulVector2()
 void test_FindIndexInterp1()
 {
     int M[100];
-    for ( int i = 0; i < sizeof( M ) / sizeof( int ); i++ )
+    for ( size_t i = 0; i < sizeof( M ) / sizeof( int ); i++ )
         M[i] = i * 2;
 
     vector<int> MV( M, M + 100 );
@@ -283,15 +291,14 @@ void test_Interp1DLinear()
 
     vector<double> YV1 = interp1DLinear( XV0, XV1, YV0 );
 
-    for ( int i = 0; i < YV1.size(); i++ )
+    for ( size_t i = 0; i < YV1.size(); i++ )
         OIIO_CHECK_EQUAL_THRESH( YV1[i], Y1[i], 1e-5 );
 };
 
 void testIDT_XytoXYZ()
 {
-    double         xy[3]  = { 0.7347, 0.2653 };
-    double         XYZ[3] = { 0.7347, 0.2653, 0.0 };
-    vector<double> XYZV   = xy_to_XYZ( vector<double>( xy, xy + 2 ) );
+    double         xy[3] = { 0.7347, 0.2653 };
+    vector<double> XYZV  = xy_to_XYZ( vector<double>( xy, xy + 2 ) );
 
     for ( int i = 0; i < 3; i++ )
     {
@@ -357,8 +364,9 @@ void testIDT_GetCAT()
 void test_XYZtoLAB()
 {
     vector<vector<double>> XYZ( 190, ( vector<double>( 3 ) ) );
-    FORIJ( 190, 3 )
-    XYZ[i][j]                       = 116 / ( i * j + 1 );
+    for ( size_t i = 0; i < 190; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            XYZ[i][j] = 116 / ( i * j + 1 );
     vector<vector<double>> LAB_test = XYZ_to_LAB( XYZ );
 
     double LAB[190][3] = { { 549.7318794845, 39.7525650490, 2.8525942657 },
@@ -552,13 +560,14 @@ void test_XYZtoLAB()
                            { 0.0000000000, 2409.2865283442, 0.0000000000 },
                            { 0.0000000000, 2409.2865283442, 0.0000000000 } };
 
-    FORIJ( 190, 3 )
-    {
-        if ( LAB[i][j] == 0 )
-            OIIO_CHECK_LE( std::abs( LAB_test[i][j] ), 1e-7 );
-        else
-            OIIO_CHECK_EQUAL_THRESH( LAB_test[i][j], LAB[i][j], 1e-5 );
-    }
+    for ( size_t i = 0; i < 190; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+        {
+            if ( LAB[i][j] == 0 )
+                OIIO_CHECK_LE( std::abs( LAB_test[i][j] ), 1e-7 );
+            else
+                OIIO_CHECK_EQUAL_THRESH( LAB_test[i][j], LAB[i][j], 1e-5 );
+        }
 };
 
 void test_GetCalcXYZt()
@@ -566,8 +575,9 @@ void test_GetCalcXYZt()
     vector<vector<double>> RGB( 190, ( vector<double>( 3 ) ) );
     const double           BStart[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
 
-    FORIJ( 190, 3 )
-    RGB[i][j]                       = 10 / ( i * j + 1 );
+    for ( size_t i = 0; i < 190; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            RGB[i][j] = 10 / ( i * j + 1 );
     vector<vector<double>> XYZ_test = getCalcXYZt( RGB, BStart );
 
     double XYZ[190][3] = { { 9.5264607457, 10.0000000000, 10.0882518435 },
@@ -761,8 +771,9 @@ void test_GetCalcXYZt()
                            { 9.5255239594, 3.4396644977, 0.0000000000 },
                            { 9.5255239594, 3.4396644977, 0.0000000000 } };
 
-    FORIJ( 190, 3 )
-    OIIO_CHECK_EQUAL_THRESH( XYZ_test[i][j], XYZ[i][j], 1e-5 );
+    for ( size_t i = 0; i < 190; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            OIIO_CHECK_EQUAL_THRESH( XYZ_test[i][j], XYZ[i][j], 1e-5 );
 };
 
 int main( int, char ** )

@@ -174,7 +174,7 @@ SpectralSolver::SpectralSolver(
     {
         _IDT_matrix[i].resize( 3 );
         _WB_multipliers[i] = 1.0;
-        FORJ( 3 )
+        for ( size_t j = 0; j < 3; j++ )
         {
             _IDT_matrix[i][j] = neutral3[i][j];
         }
@@ -577,18 +577,17 @@ std::vector<std::vector<double>> calculate_XYZ(
 /// @param training_illuminants Training patches transformed by illuminant (from calculate_TI)
 /// @return 2D vector containing RGB values for each training patch
 std::vector<std::vector<double>> calculate_RGB(
-    const SpectralData          &camera,
-    const SpectralData          &illuminant,
+    const SpectralData &camera,
+    const SpectralData & /* illuminant */,
     const std::vector<double>   &WB_multipliers,
     const std::vector<Spectrum> &training_illuminants )
 {
     assert( training_illuminants.size() > 0 );
     assert( training_illuminants[0].values.size() == 81 );
 
-    const Spectrum &camera_r            = camera["R"];
-    const Spectrum &camera_g            = camera["G"];
-    const Spectrum &camera_b            = camera["B"];
-    const Spectrum &illuminant_spectrum = illuminant["power"];
+    const Spectrum &camera_r = camera["R"];
+    const Spectrum &camera_g = camera["G"];
+    const Spectrum &camera_b = camera["B"];
 
     std::vector<std::vector<double>> RGB;
     for ( auto &training_illuminant: training_illuminants )
@@ -1193,18 +1192,21 @@ vector<vector<double>> MetadataSolver::calculate_IDT_matrix()
 
     // 2. Converts the CAT matrix to a flattened format for matrix multiplication
     vector<double> XYZ_D65_acesrgb( 9 ), CAT( 9 );
-    FORIJ( 3, 3 )
-    {
-        XYZ_D65_acesrgb[i * 3 + j] = XYZ_D65_acesrgb_3[i][j];
-        CAT[i * 3 + j]             = CAT_matrix[i][j];
-    }
+    for ( size_t i = 0; i < 3; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+        {
+            XYZ_D65_acesrgb[i * 3 + j] = XYZ_D65_acesrgb_3[i][j];
+            CAT[i * 3 + j]             = CAT_matrix[i][j];
+        }
 
     // 3. Multiplies the D65 ACES RGB to XYZ matrix with the CAT matrix
     vector<double> matrix = mulVector( XYZ_D65_acesrgb, CAT, 3 );
 
     // 4. Reshapes the result into a 3×3 transformation matrix
     vector<vector<double>> DNG_IDT_matrix( 3, vector<double>( 3 ) );
-    FORIJ( 3, 3 ) DNG_IDT_matrix[i][j] = matrix[i * 3 + j];
+    for ( size_t i = 0; i < 3; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            DNG_IDT_matrix[i][j] = matrix[i * 3 + j];
 
     // 5. Validates the matrix properties (non-zero determinant)
     assert( std::fabs( sumVectorM( DNG_IDT_matrix ) - 0.0 ) > 1e-09 );
@@ -1232,11 +1234,15 @@ template <typename T>
 bool IDTOptimizationCost::operator()( const T *beta_params, T *residuals ) const
 {
     vector<vector<T>> RGB_copy( 190, vector<T>( 3 ) );
-    FORIJ( 190, 3 ) RGB_copy[i][j] = T( _RGB[i][j] );
+    for ( size_t i = 0; i < 190; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            RGB_copy[i][j] = T( _RGB[i][j] );
 
     vector<vector<T>> out_calc_LAB =
         XYZ_to_LAB( getCalcXYZt( RGB_copy, beta_params ) );
-    FORIJ( 190, 3 ) residuals[i * 3 + j] = _outLAB[i][j] - out_calc_LAB[i][j];
+    for ( size_t i = 0; i < 190; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            residuals[i * 3 + j] = _outLAB[i][j] - out_calc_LAB[i][j];
 
     return true;
 }

@@ -252,7 +252,6 @@ bool SpectralData::load( const std::string &path, bool reshape )
             auto  &set_entry = data[set_name];
             size_t count     = set_entry.size();
 
-            size_t channel_index = 0;
             for ( auto &[bin_wavelength, bin_values]:
                   spectral_data[set_name].items() )
             {
@@ -280,12 +279,10 @@ bool SpectralData::load( const std::string &path, bool reshape )
 
                 prev_wavelength = this_wavelength;
 
-                for ( int j = 0; j < count; j++ )
+                for ( size_t j = 0; j < count; j++ )
                 {
                     set_entry[j].second.values.push_back( bin_values[j] );
                 }
-
-                channel_index++;
             }
         }
 

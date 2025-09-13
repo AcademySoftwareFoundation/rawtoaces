@@ -258,7 +258,7 @@ inline std::vector<std::string> openDir( std::string path = "." )
     }
 
     return paths;
-};
+}
 
 // Function to covert upper-case to lower-case
 inline void lowerCase( char *tex )
@@ -267,7 +267,7 @@ inline void lowerCase( char *tex )
 
     for ( size_t i = 0; i < tmp.size(); i++ )
         tex[i] = tolower( tex[i] );
-};
+}
 
 // Function to check if a value is numeric
 inline bool isNumeric( const char *val )
@@ -278,7 +278,7 @@ inline bool isNumeric( const char *val )
     return (
         input.find_first_not_of( base.substr( 0, base.size() ) ) ==
         std::string::npos );
-};
+}
 
 // Function to check if a input is a alphabetic letter
 inline bool isCTLetterDigit( const char c )
@@ -286,7 +286,7 @@ inline bool isCTLetterDigit( const char c )
     return (
         ( c >= 'a' && c <= 'z' ) || ( c >= 'A' && c <= 'Z' ) || ( c == '-' ) ||
         isdigit( c ) );
-};
+}
 
 // Function to check if a string is a valid input
 // to represent color temperature(s) (e.g., D60, 3200K)
@@ -339,7 +339,7 @@ inline bool isValidCT( std::string str )
         return false;
 
     return true;
-};
+}
 
 } // namespace core
 } // namespace rta

@@ -22,23 +22,21 @@ void test_getCAT()
 
     vector<double> src( D65, D65 + 3 );
     vector<double> des( D60, D60 + 3 );
-    // FORI(3) src[i]= D65[i];
-    // FORI(3) des[i]= D60[i];
 
     vector<vector<double>> final_Output_getCAT = calculate_CAT( src, des );
 
     vector<double> destination( 3, 0 );
 
-    FORI( 3 )
-    destination[i] = final_Output_getCAT[i][0] * src[0] +
-                     final_Output_getCAT[i][1] * src[1] +
-                     final_Output_getCAT[i][2] * src[2];
+    for ( int i = 0; i < 3; i++ )
+        destination[i] = final_Output_getCAT[i][0] * src[0] +
+                         final_Output_getCAT[i][1] * src[1] +
+                         final_Output_getCAT[i][2] * src[2];
 
     OIIO_CHECK_EQUAL_THRESH( destination[0], des[0], 1e-9 );
     OIIO_CHECK_EQUAL_THRESH( destination[1], des[1], 1e-9 );
     OIIO_CHECK_EQUAL_THRESH( destination[2], des[2], 1e-9 );
 
-    FORI( 3 )
+    for ( int i = 0; i < 3; i++ )
     {
         OIIO_CHECK_EQUAL_THRESH(
             final_Output_getCAT[i][0], final_matrix[i][0], 5 );

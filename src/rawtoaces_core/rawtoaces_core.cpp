@@ -72,7 +72,7 @@ void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
     double m1 = ( -1.3515 - 1.7703 * xy[0] + 5.9114 * xy[1] ) / m0;
     double m2 = ( 0.03000 - 31.4424 * xy[0] + 30.0717 * xy[1] ) / m0;
 
-    FORI( countSize( s_series ) )
+    for ( int i = 0; i < countSize( s_series ); i++ )
     {
         wavelengths.push_back( s_series[i].wl );
         s00.push_back( s_series[i].RGB[0] );
@@ -81,7 +81,7 @@ void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
     }
 
     int num_wavelengths = wavelength_range / step + 1;
-    FORI( num_wavelengths )
+    for ( int i = 0; i < num_wavelengths; i++ )
     {
         wavelengths_interpolated.push_back( s_series[0].wl + step * i );
     }
@@ -90,7 +90,7 @@ void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
     s11 = interp1DLinear( wavelengths, wavelengths_interpolated, s10 );
     s21 = interp1DLinear( wavelengths, wavelengths_interpolated, s20 );
 
-    FORI( num_wavelengths )
+    for ( int i = 0; i < num_wavelengths; i++ )
     {
         int wavelength = s_series[0].wl + step * i;
         if ( wavelength >= 380 && wavelength <= 780 )
@@ -170,7 +170,7 @@ SpectralSolver::SpectralSolver(
     verbosity = 0;
     _IDT_matrix.resize( 3 );
     _WB_multipliers.resize( 3 );
-    FORI( 3 )
+    for ( int i = 0; i < 3; i++ )
     {
         _IDT_matrix[i].resize( 3 );
         _WB_multipliers[i] = 1.0;
@@ -691,7 +691,7 @@ bool curveFit(
         if ( verbosity > 1 )
         {
             printf( "The IDT matrix is ...\n" );
-            FORI( 3 )
+            for ( int i = 0; i < 3; i++ )
             {
                 printf(
                     "   %f %f %f\n",
@@ -843,7 +843,7 @@ double light_source_to_color_temp( const unsigned short tag )
         { 20, 5500 }, { 21, 6500 }, { 22, 7500 }
     };
 
-    FORI( countSize( exif_light_source_temperature_map ) )
+    for ( int i = 0; i < countSize( exif_light_source_temperature_map ); i++ )
     {
         if ( exif_light_source_temperature_map[i][0] ==
              static_cast<uint16_t>( tag ) )
@@ -1108,7 +1108,7 @@ vector<double> matrix_RGB_to_XYZ( const double chromaticities[][2] )
         xy_to_XYZ( vector<double>( chromaticities[3], chromaticities[3] + 2 ) );
 
     vector<double> rgb_matrix( 9 );
-    FORI( 3 )
+    for ( int i = 0; i < 3; i++ )
     {
         rgb_matrix[0 + i * 3] = red_XYZ[i];
         rgb_matrix[1 + i * 3] = green_XYZ[i];

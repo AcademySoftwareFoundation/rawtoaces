@@ -168,7 +168,8 @@ void testIDT_LoadIlluminant()
 
     vector<double> &illumTestData = illuminant["power"].values;
     OIIO_CHECK_EQUAL( illumTestData.size(), 81 );
-    FORI( 81 ) OIIO_CHECK_EQUAL_THRESH( illumTestData[i], iso7589[i], 1e-5 );
+    for ( int i = 0; i < 81; i++ )
+        OIIO_CHECK_EQUAL_THRESH( illumTestData[i], iso7589[i], 1e-5 );
 };
 
 void testIDT_LoadTrainingData()
@@ -688,7 +689,7 @@ void testIDT_LoadCMF()
                            { 4.45E-05, 1.61E-05, 0 },
                            { 4.15E-05, 1.50E-05, 0 } };
 
-    FORI( 81 )
+    for ( int i = 0; i < 81; i++ )
     {
         OIIO_CHECK_EQUAL_THRESH(
             spectral_data["X"].values[i], cmf[i * 5][0], 1e-5 );
@@ -780,8 +781,8 @@ void testIDT_scaleLSC()
     OIIO_CHECK_EQUAL( illumDataScaled.size(), 81 );
     OIIO_CHECK_EQUAL( illuminant.illuminant, "iso7589" );
     OIIO_CHECK_EQUAL( illuminant["power"].shape.step, 5 );
-    FORI( 81 )
-    OIIO_CHECK_EQUAL_THRESH( illumDataScaled[i], scaledIllum[i], 1e-5 );
+    for ( int i = 0; i < 81; i++ )
+        OIIO_CHECK_EQUAL_THRESH( illumDataScaled[i], scaledIllum[i], 1e-5 );
 };
 
 void testIDT_CalCM()
@@ -796,7 +797,8 @@ void testIDT_CalCM()
 
     float CM[81] = { 1.0000000000, 1.4418439699, 1.8703081160 };
 
-    FORI( 3 ) OIIO_CHECK_EQUAL_THRESH( CM[i], CM_test[i], 1e-5 );
+    for ( int i = 0; i < 3; i++ )
+        OIIO_CHECK_EQUAL_THRESH( CM[i], CM_test[i], 1e-5 );
 };
 
 void testIDT_CalWB()
@@ -810,7 +812,7 @@ void testIDT_CalWB()
     vector<double> WB_test = _calculate_WB( camera, illuminant );
 
     double WB[3] = { 1.1397265, 1.0000000, 2.3240151 };
-    FORI( WB_test.size() )
+    for ( int i = 0; i < WB_test.size(); i++ )
     {
         OIIO_CHECK_EQUAL_THRESH( WB[i], WB_test[i], 1e-5 );
     }
@@ -850,8 +852,8 @@ void testIDT_ChooseIllumSrc()
     };
 
     OIIO_CHECK_EQUAL( illumType_Test, "d45" );
-    FORI( illumData_Test.size() )
-    OIIO_CHECK_EQUAL_THRESH( illumData[i], illumData_Test[i], 1e-5 );
+    for ( int i = 0; i < illumData_Test.size(); i++ )
+        OIIO_CHECK_EQUAL_THRESH( illumData[i], illumData_Test[i], 1e-5 );
 };
 
 void testIDT_ChooseIllumType()
@@ -888,8 +890,8 @@ void testIDT_ChooseIllumType()
     };
 
     OIIO_CHECK_EQUAL( illumType_Test, "iso7589" );
-    FORI( illumData_Test.size() )
-    OIIO_CHECK_EQUAL_THRESH( illumData[i], illumData_Test[i], 1e-5 );
+    for ( int i = 0; i < illumData_Test.size(); i++ )
+        OIIO_CHECK_EQUAL_THRESH( illumData[i], illumData_Test[i], 1e-5 );
 };
 
 void testIDT_CalTI()

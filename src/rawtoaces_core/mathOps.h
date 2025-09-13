@@ -23,7 +23,7 @@ namespace core
 
 template <typename T> int isSquare( const vector<vector<T>> &vm )
 {
-    FORI( vm.size() )
+    for ( int i = 0; i < vm.size(); i++ )
     {
         if ( vm[i].size() != vm.size() )
             return 0;
@@ -122,7 +122,7 @@ template <typename T> vector<T> diagV( const vector<T> &vct )
     int       length = static_cast<int>( vct.size() );
     vector<T> vctdiag( length * length, T( 0.0 ) );
 
-    FORI( length )
+    for ( int i = 0; i < length; i++ )
     {
         vctdiag[i * length + i] = vct[i];
     }
@@ -151,7 +151,8 @@ template <typename T> T sumVector( const vector<T> &vct )
 {
     Eigen::Matrix<T, Eigen::Dynamic, 1> v;
     v.resize( vct.size(), 1 );
-    FORI( v.rows() ) v( i, 0 ) = vct[i];
+    for ( int i = 0; i < v.rows(); i++ )
+        v( i, 0 ) = vct[i];
 
     return v.sum();
 };
@@ -176,10 +177,12 @@ template <typename T> void scaleVector( vector<T> &vct, const T scale )
     Eigen::Matrix<T, Eigen::Dynamic, 1> v;
     v.resize( vct.size(), 1 );
 
-    FORI( vct.size() ) v( i, 0 ) = vct[i];
+    for ( int i = 0; i < vct.size(); i++ )
+        v( i, 0 ) = vct[i];
     v *= scale;
 
-    FORI( vct.size() ) vct[i] = v( i, 0 );
+    for ( int i = 0; i < vct.size(); i++ )
+        vct[i] = v( i, 0 );
 
     return;
 };
@@ -193,7 +196,7 @@ vector<T> mulVectorElement( const vector<T> &vct1, const vector<T> &vct2 )
     a1.resize( vct1.size(), 1 );
     a2.resize( vct1.size(), 1 );
 
-    FORI( a1.rows() )
+    for ( int i = 0; i < a1.rows(); i++ )
     {
         a1( i, 0 ) = vct1[i];
         a2( i, 0 ) = vct2[i];
@@ -267,8 +270,8 @@ vector<T> mulVector( const vector<vector<T>> &vct1, const vector<T> &vct2 )
 
     FORIJ( m1.rows(), m1.cols() )
     m1( i, j ) = vct1[i][j];
-    FORI( m2.rows() )
-    m2( i, 0 ) = vct2[i];
+    for ( int i = 0; i < m2.rows(); i++ )
+        m2( i, 0 ) = vct2[i];
 
     m3 = m1 * m2;
 
@@ -298,8 +301,8 @@ T calculate_SSE( const vector<T> &tcp, const vector<T> &src )
     vector<T> tmp( src.size() );
 
     T sum = T( 0.0 );
-    FORI( tcp.size() )
-    sum += std::pow( ( tcp[i] / src[i] - 1.0 ), T( 2.0 ) );
+    for ( int i = 0; i < tcp.size(); i++ )
+        sum += std::pow( ( tcp[i] / src[i] - 1.0 ), T( 2.0 ) );
 
     return sum;
 };
@@ -310,7 +313,7 @@ int findIndexInterp1( T val, const vector<T> &x, int size )
     T   dist  = T( 1e9 );
     int index = -1;
 
-    FORI( size )
+    for ( int i = 0; i < size; i++ )
     {
         T tmp = val - x[i];
         if ( tmp < dist && tmp >= T( 0 ) )
@@ -331,7 +334,7 @@ vector<T> interp1DLinear(
 
     vector<T> slope, intercept, Y1;
 
-    FORI( X0.size() - 1 )
+    for ( int i = 0; i < X0.size() - 1; i++ )
     {
         slope.push_back( ( Y0[i + 1] - Y0[i] ) / ( X0[i + 1] - X0[i] ) );
         intercept.push_back( Y0[i] - X0[i] * slope[i] );
@@ -340,7 +343,7 @@ vector<T> interp1DLinear(
     slope.push_back( slope[slope.size() - 1] );
     intercept.push_back( intercept[intercept.size() - 1] );
 
-    FORI( X1.size() )
+    for ( int i = 0; i < X1.size(); i++ )
     {
         int index = findIndexInterp1( X1[i], X0, int( X0.size() ) );
         if ( index != -1 )
@@ -430,7 +433,7 @@ vector<vector<T>> XYZ_to_LAB( const vector<vector<T>> &XYZ )
     }
 
     vector<vector<T>> outCalcLab( XYZ.size(), vector<T>( 3 ) );
-    FORI( XYZ.size() )
+    for ( int i = 0; i < XYZ.size(); i++ )
     {
         outCalcLab[i][0] = T( 116.0 ) * tmpXYZ[i][1] - T( 16.0 );
         outCalcLab[i][1] = T( 500.0 ) * ( tmpXYZ[i][0] - tmpXYZ[i][1] );

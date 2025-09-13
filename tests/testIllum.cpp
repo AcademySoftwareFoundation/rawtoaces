@@ -60,7 +60,8 @@ void testIllum_readSPD()
 
     vector<double> &illumTestData = illuminant["power"].values;
     OIIO_CHECK_EQUAL( illumTestData.size(), 81 );
-    FORI( 81 ) OIIO_CHECK_EQUAL_THRESH( illumTestData[i], iso7589[i], 1e-5 );
+    for ( int i = 0; i < 81; i++ )
+        OIIO_CHECK_EQUAL_THRESH( illumTestData[i], iso7589[i], 1e-5 );
 };
 
 void testIllum_calDayLightSPD()
@@ -99,8 +100,8 @@ void testIllum_calDayLightSPD()
     };
 
     vector<double> &data = illuminant.values;
-    FORI( data.size() )
-    OIIO_CHECK_EQUAL_THRESH( data[i], spd[i], 1e-5 );
+    for ( int i = 0; i < data.size(); i++ )
+        OIIO_CHECK_EQUAL_THRESH( data[i], spd[i], 1e-5 );
 };
 
 void testIllum_calBlackBodySPD()
@@ -129,8 +130,8 @@ void testIllum_calBlackBodySPD()
     };
 
     vector<double> &data = illuminant.values;
-    FORI( data.size() )
-    OIIO_CHECK_EQUAL_THRESH( data[i] * 1e-12, spd[i], 1e-5 );
+    for ( int i = 0; i < data.size(); i++ )
+        OIIO_CHECK_EQUAL_THRESH( data[i] * 1e-12, spd[i], 1e-5 );
 };
 
 int main( int, char ** )

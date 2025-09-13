@@ -37,7 +37,6 @@
 #    define FALSE 0
 #endif
 
-#define FORI( val ) for ( int i = 0; i < val; i++ )
 #define FORJ( val ) for ( int j = 0; j < val; j++ )
 #define FORIJ( val1, val2 )                                                    \
     for ( int i = 0; i < val1; i++ )                                           \
@@ -270,8 +269,8 @@ inline void lowerCase( char *tex )
 {
     std::string tmp( tex );
 
-    FORI( tmp.size() )
-    tex[i] = tolower( tex[i] );
+    for ( int i = 0; i < tmp.size(); i++ )
+        tex[i] = tolower( tex[i] );
 };
 
 // Function to check if a value is numeric

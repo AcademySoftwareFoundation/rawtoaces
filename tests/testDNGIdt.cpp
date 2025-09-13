@@ -82,8 +82,8 @@ void testIDT_XYZtoCameraWeightedMatrix()
         mirs[0], mirs[1], mirs[2], matrix1, matrix2 );
     delete di;
 
-    FORI( countSize( matrix ) )
-    OIIO_CHECK_EQUAL_THRESH( result[i], matrix[i], 1e-5 );
+    for ( int i = 0; i < countSize( matrix ); i++ )
+        OIIO_CHECK_EQUAL_THRESH( result[i], matrix[i], 1e-5 );
 };
 
 void testIDT_FindXYZtoCameraMtx()
@@ -101,8 +101,8 @@ void testIDT_FindXYZtoCameraMtx()
 
     delete di;
 
-    FORI( countSize( matrix ) )
-    OIIO_CHECK_EQUAL_THRESH( result[i], matrix[i], 1e-5 );
+    for ( int i = 0; i < countSize( matrix ); i++ )
+        OIIO_CHECK_EQUAL_THRESH( result[i], matrix[i], 1e-5 );
 };
 
 void testIDT_ColorTemperatureToXYZ()
@@ -111,8 +111,8 @@ void testIDT_ColorTemperatureToXYZ()
     double              XYZ[3] = { 0.3135279229, 0.3235340821, 0.3629379950 };
     std::vector<double> result = rta::core::color_temperature_to_XYZ( cct );
 
-    FORI( countSize( XYZ ) )
-    OIIO_CHECK_EQUAL_THRESH( result[i], XYZ[i], 1e-5 );
+    for ( int i = 0; i < countSize( XYZ ); i++ )
+        OIIO_CHECK_EQUAL_THRESH( result[i], XYZ[i], 1e-5 );
 };
 
 void testIDT_MatrixRGBtoXYZ()
@@ -123,8 +123,8 @@ void testIDT_MatrixRGBtoXYZ()
     std::vector<double> result =
         rta::core::matrix_RGB_to_XYZ( rta::core::chromaticitiesACES );
 
-    FORI( countSize( XYZ ) )
-    OIIO_CHECK_EQUAL_THRESH( result[i], XYZ[i], 1e-5 );
+    for ( int i = 0; i < countSize( XYZ ); i++ )
+        OIIO_CHECK_EQUAL_THRESH( result[i], XYZ[i], 1e-5 );
 };
 
 void testIDT_GetDNGCATMatrix()

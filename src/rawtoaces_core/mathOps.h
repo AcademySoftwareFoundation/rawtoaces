@@ -105,7 +105,7 @@ vector<vector<T>> invertVM( const vector<vector<T>> &vMtx )
 
 template <typename T> vector<T> invertV( const vector<T> &vMtx )
 {
-    size_t            size = std::sqrt( static_cast<size_t>( vMtx.size() ) );
+    size_t            size = std::sqrt( vMtx.size() );
     vector<vector<T>> tmp( size, vector<T>( size ) );
 
     for ( size_t i = 0; i < size; i++ )
@@ -126,10 +126,10 @@ template <typename T> vector<T> diagV( const vector<T> &vct )
 {
     assert( vct.size() != 0 );
 
-    int       length = static_cast<int>( vct.size() );
+    size_t    length = vct.size();
     vector<T> vctdiag( length * length, T( 0.0 ) );
 
-    for ( int i = 0; i < length; i++ )
+    for ( size_t i = 0; i < length; i++ )
     {
         vctdiag[i * length + i] = vct[i];
     }
@@ -162,7 +162,7 @@ template <typename T> T sumVector( const vector<T> &vct )
 {
     Eigen::Matrix<T, Eigen::Dynamic, 1> v;
     v.resize( vct.size(), 1 );
-    for ( int i = 0; i < v.rows(); i++ )
+    for ( Eigen::Index i = 0; i < v.rows(); i++ )
         v( i, 0 ) = vct[i];
 
     return v.sum();
@@ -207,7 +207,7 @@ vector<T> mulVectorElement( const vector<T> &vct1, const vector<T> &vct2 )
     a1.resize( vct1.size(), 1 );
     a2.resize( vct1.size(), 1 );
 
-    for ( int i = 0; i < a1.rows(); i++ )
+    for ( Eigen::Index i = 0; i < a1.rows(); i++ )
     {
         a1( i, 0 ) = vct1[i];
         a2( i, 0 ) = vct2[i];
@@ -222,22 +222,22 @@ vector<T> mulVectorElement( const vector<T> &vct1, const vector<T> &vct2 )
 template <typename T>
 vector<T> mulVector( vector<T> vct1, vector<T> vct2, int k = 3 )
 {
-    int rows = ( static_cast<int>( vct1.size() ) ) / k;
-    int cols = ( static_cast<int>( vct2.size() ) ) / k;
+    size_t rows = vct1.size() / k;
+    size_t cols = vct2.size() / k;
 
-    assert( static_cast<size_t>( rows * k ) == vct1.size() );
-    assert( static_cast<size_t>( k * cols ) == vct2.size() );
+    assert( rows * k == vct1.size() );
+    assert( k * cols == vct2.size() );
 
     vector<T> vct3( rows * cols );
     T        *pA = &vct1[0];
     T        *pB = &vct2[0];
     T        *pC = &vct3[0];
 
-    for ( int r = 0; r < rows; r++ )
+    for ( size_t r = 0; r < rows; r++ )
     {
         for ( int cArB = 0; cArB < k; cArB++ )
         {
-            for ( int c = 0; c < cols; c++ )
+            for ( size_t c = 0; c < cols; c++ )
             {
                 pC[r * cols + c] += pA[r * k + cArB] * pB[cArB * cols + c];
             }
@@ -324,18 +324,18 @@ T calculate_SSE( const vector<T> &tcp, const vector<T> &src )
 };
 
 template <typename T>
-int findIndexInterp1( T val, const vector<T> &x, int size )
+int findIndexInterp1( T val, const vector<T> &x, size_t size )
 {
     T   dist  = T( 1e9 );
     int index = -1;
 
-    for ( int i = 0; i < size; i++ )
+    for ( size_t i = 0; i < size; i++ )
     {
         T tmp = val - x[i];
         if ( tmp < dist && tmp >= T( 0 ) )
         {
             dist  = tmp;
-            index = i;
+            index = static_cast<int>( i );
         }
     }
 
@@ -361,7 +361,7 @@ vector<T> interp1DLinear(
 
     for ( size_t i = 0; i < X1.size(); i++ )
     {
-        int index = findIndexInterp1( X1[i], X0, int( X0.size() ) );
+        int index = findIndexInterp1( X1[i], X0, X0.size() );
         if ( index != -1 )
             Y1.push_back( slope[index] * X1[i] + intercept[index] );
         else

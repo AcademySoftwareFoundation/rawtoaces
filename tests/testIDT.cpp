@@ -5038,7 +5038,7 @@ void testIDT_CalRGB()
     scale_illuminant( camera, illuminant );
     auto WB       = _calculate_WB( camera, illuminant );
     auto TI       = calculate_TI( illuminant, training_data );
-    auto RGB_test = calculate_RGB( camera, illuminant, WB, TI );
+    auto RGB_test = calculate_RGB( camera, WB, TI );
 
     double RGB[190][3] = { { 0.0202216733, 0.0193805976, 0.0242277400 },
                            { 0.0895652372, 0.0893690961, 0.0891448525 },
@@ -5254,7 +5254,7 @@ void testIDT_CurveFit()
     auto WB  = _calculate_WB( camera, illuminant );
     auto TI  = calculate_TI( illuminant, training_data );
     auto XYZ = calculate_XYZ( observer, illuminant, TI );
-    auto RGB = calculate_RGB( camera, illuminant, WB, TI );
+    auto RGB = calculate_RGB( camera, WB, TI );
 
     double BStart[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
 

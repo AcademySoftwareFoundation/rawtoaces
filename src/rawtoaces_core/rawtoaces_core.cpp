@@ -577,8 +577,7 @@ std::vector<std::vector<double>> calculate_XYZ(
 /// @param training_illuminants Training patches transformed by illuminant (from calculate_TI)
 /// @return 2D vector containing RGB values for each training patch
 std::vector<std::vector<double>> calculate_RGB(
-    const SpectralData &camera,
-    const SpectralData & /* illuminant */,
+    const SpectralData          &camera,
     const std::vector<double>   &WB_multipliers,
     const std::vector<Spectrum> &training_illuminants )
 {
@@ -747,7 +746,7 @@ bool SpectralSolver::calculate_IDT_matrix()
     double beta_params_start[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
 
     auto TI  = calculate_TI( illuminant, training_data );
-    auto RGB = calculate_RGB( camera, illuminant, _WB_multipliers, TI );
+    auto RGB = calculate_RGB( camera, _WB_multipliers, TI );
     auto XYZ = calculate_XYZ( observer, illuminant, TI );
 
     return curveFit( RGB, XYZ, beta_params_start, verbosity, _IDT_matrix );

@@ -31,7 +31,6 @@ std::vector<std::vector<double>> calculate_XYZ(
 
 std::vector<std::vector<double>> calculate_RGB(
     const SpectralData          &camera,
-    const SpectralData          &illuminant,
     const std::vector<double>   &WB_multipliers,
     const std::vector<Spectrum> &TI );
 

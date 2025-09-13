@@ -16,10 +16,16 @@ set(RAWTOACES_UTIL_LIB "rawtoaces_util")
 
 set( CMAKE_MACOSX_RPATH 1 )
 
+# Set strict compiler flags by default for all builds
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-#    set(warnings "/W4 /WX /EHsc")
-    add_compile_options ( /W0 )
+    # MSVC strict flags
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX /EHsc")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4 /WX")
     add_compile_definitions( NOMINMAX )
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    # GCC/Clang strict flags
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra -pedantic")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -Wextra -pedantic")
 endif()
 
 if (NOT CONFIGURED_ONCE)

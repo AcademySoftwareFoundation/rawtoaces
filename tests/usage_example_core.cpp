@@ -64,7 +64,7 @@ void test_SpectralSolver_multipliers()
         for ( size_t col = 0; col < 3; col++ )
             OIIO_CHECK_EQUAL_THRESH(
                 solved_IDT[row][col], true_IDT[row][col], 1e-5 );
-};
+}
 
 /// Test the spectral solver, white-balancing to a specific illuminant.
 void test_SpectralSolver_illuminant()
@@ -107,7 +107,7 @@ void test_SpectralSolver_illuminant()
         for ( size_t col = 0; col < 3; col++ )
             OIIO_CHECK_EQUAL_THRESH(
                 solved_IDT[row][col], true_IDT[row][col], 1e-5 );
-};
+}
 
 /// A helper function to init the metadata object.
 /// Normally the values come from a DNG file metadata.
@@ -157,7 +157,7 @@ void test_MetadataSolver()
         for ( size_t col = 0; col < 3; col++ )
             OIIO_CHECK_EQUAL_THRESH(
                 solved_IDT[row][col], true_IDT[row][col], 1e-5 );
-};
+}
 
 int main( int, char ** )
 {

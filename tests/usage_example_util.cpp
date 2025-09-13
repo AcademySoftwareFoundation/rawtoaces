@@ -38,7 +38,7 @@ void test_ImageConverter_arguments()
 
     // Check the result.
     OIIO_CHECK_ASSERT( result );
-};
+}
 
 /// Test the image converter, initialising the settings struct directly.
 void test_ImageConverter_settings()
@@ -65,7 +65,7 @@ void test_ImageConverter_settings()
 
     // Check the result.
     OIIO_CHECK_ASSERT( result );
-};
+}
 
 int main( int, char ** )
 {

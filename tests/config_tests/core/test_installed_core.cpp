@@ -48,11 +48,11 @@ void testIllum_calDayLightSPD()
     std::vector<double> &data = illuminant.values;
     for ( size_t i = 0; i < data.size(); i++ )
         OIIO_CHECK_EQUAL_THRESH( data[i], spd[i], 1e-5 );
-};
+}
 
 int main( int, char ** )
 {
     testIllum_calDayLightSPD();
 
     return unit_test_failures;
-};
+}

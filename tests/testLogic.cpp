@@ -45,7 +45,7 @@ void test_getCAT()
         OIIO_CHECK_EQUAL_THRESH(
             final_Output_getCAT[i][2], final_matrix[i][2], 5 );
     }
-};
+}
 
 int main( int, char ** )
 {

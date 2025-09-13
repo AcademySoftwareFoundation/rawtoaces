@@ -21,7 +21,7 @@ void testIllum_cctToxy()
 
     OIIO_CHECK_EQUAL_THRESH( xy[0], 0.3456619734948, 1e-9 );
     OIIO_CHECK_EQUAL_THRESH( xy[1], 0.3586032641691, 1e-9 );
-};
+}
 
 void testIllum_readSPD()
 {
@@ -62,7 +62,7 @@ void testIllum_readSPD()
     OIIO_CHECK_EQUAL( illumTestData.size(), 81 );
     for ( int i = 0; i < 81; i++ )
         OIIO_CHECK_EQUAL_THRESH( illumTestData[i], iso7589[i], 1e-5 );
-};
+}
 
 void testIllum_calDayLightSPD()
 {
@@ -102,7 +102,7 @@ void testIllum_calDayLightSPD()
     vector<double> &data = illuminant.values;
     for ( size_t i = 0; i < data.size(); i++ )
         OIIO_CHECK_EQUAL_THRESH( data[i], spd[i], 1e-5 );
-};
+}
 
 void testIllum_calBlackBodySPD()
 {
@@ -132,7 +132,7 @@ void testIllum_calBlackBodySPD()
     vector<double> &data = illuminant.values;
     for ( size_t i = 0; i < data.size(); i++ )
         OIIO_CHECK_EQUAL_THRESH( data[i] * 1e-12, spd[i], 1e-5 );
-};
+}
 
 int main( int, char ** )
 {

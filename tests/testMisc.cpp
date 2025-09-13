@@ -23,7 +23,7 @@ void test_OpenDir()
     OIIO_CHECK_EQUAL( fPaths.size(), 1 );
     std::vector<std::string>::iterator it = fPaths.begin();
     OIIO_CHECK_EQUAL( absolutePath_test.string(), *it );
-};
+}
 
 void test_LowerCase()
 {
@@ -33,7 +33,7 @@ void test_LowerCase()
     lowerCase( text );
     for ( size_t i = 0; i < strlen( text ); i++ )
         OIIO_CHECK_EQUAL( text[i], text_test[i] );
-};
+}
 
 void test_IsNumeric()
 {
@@ -42,7 +42,7 @@ void test_IsNumeric()
 
     const char val2[] = "123456789A";
     OIIO_CHECK_EQUAL( false, isNumeric( val2 ) );
-};
+}
 
 void test_IsCTLetterDigit()
 {
@@ -60,7 +60,7 @@ void test_IsCTLetterDigit()
 
     const char val5 = '.';
     OIIO_CHECK_EQUAL( false, isCTLetterDigit( val5 ) );
-};
+}
 
 void test_IsValidCT()
 {
@@ -90,7 +90,7 @@ void test_IsValidCT()
 
     std::string val9 = "d65k";
     OIIO_CHECK_EQUAL( false, isValidCT( val9 ) );
-};
+}
 
 int main( int, char ** )
 {

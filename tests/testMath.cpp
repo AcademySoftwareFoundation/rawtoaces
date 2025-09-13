@@ -24,7 +24,7 @@ void test_IsSquare()
     for ( int i = 0; i < 2; i++ )
         a[i].resize( 1 );
     OIIO_CHECK_EQUAL( isSquare( a ), 0 );
-};
+}
 
 void test_AddVectors()
 {
@@ -39,7 +39,7 @@ void test_AddVectors()
 
     for ( int i = 0; i < 5; i++ )
         OIIO_CHECK_EQUAL_THRESH( cv[i], c[i], 1e-9 );
-};
+}
 
 void test_SubVectors()
 {
@@ -54,7 +54,7 @@ void test_SubVectors()
 
     for ( int i = 0; i < 5; i++ )
         OIIO_CHECK_EQUAL_THRESH( cv[i], c[i], 1e-9 );
-};
+}
 
 void test_Cross2()
 {
@@ -66,7 +66,7 @@ void test_Cross2()
 
     double cross2_test = cross2d_scalar( av, bv );
     OIIO_CHECK_EQUAL_THRESH( cross2_test, 3.50, 1e-5 );
-};
+}
 
 void test_InvertVM()
 {
@@ -90,7 +90,7 @@ void test_InvertVM()
         OIIO_CHECK_EQUAL_THRESH( MV_Inverse[i][1], M_Inverse[i][1], 1e-5 );
         OIIO_CHECK_EQUAL_THRESH( MV_Inverse[i][2], M_Inverse[i][2], 1e-5 );
     }
-};
+}
 
 void test_InvertV()
 {
@@ -105,7 +105,7 @@ void test_InvertV()
 
     for ( int i = 0; i < 9; i++ )
         OIIO_CHECK_EQUAL_THRESH( V_Inverse[i], MV_Inverse[i], 1e-5 );
-};
+}
 
 void test_DiagV()
 {
@@ -118,7 +118,7 @@ void test_DiagV()
     {
         OIIO_CHECK_EQUAL_THRESH( DV[i], vd[i], 1e-5 );
     }
-};
+}
 
 void test_TransposeVec()
 {
@@ -155,7 +155,7 @@ void test_TransposeVec()
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 6; j++ )
             OIIO_CHECK_EQUAL_THRESH( MVT[i][j], MT[i][j], 1e-5 );
-};
+}
 
 void test_SumVector()
 {
@@ -164,7 +164,7 @@ void test_SumVector()
 
     double sum = sumVector( MV );
     OIIO_CHECK_EQUAL_THRESH( sum, 55.0000, 1e-5 );
-};
+}
 
 void test_MulVectorElement()
 {
@@ -178,7 +178,7 @@ void test_MulVectorElement()
     vector<double> MV3 = mulVectorElement( MV1, MV2 );
     for ( size_t i = 0; i < MV3.size(); i++ )
         OIIO_CHECK_EQUAL_THRESH( MV3[i], 10.0000000000, 1e-5 );
-};
+}
 
 void test_MulVector1()
 {
@@ -209,7 +209,7 @@ void test_MulVector1()
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
             OIIO_CHECK_EQUAL_THRESH( MV3[i][j], M3[i][j], 1e-5 );
-};
+}
 
 void test_MulVector2()
 {
@@ -231,7 +231,7 @@ void test_MulVector2()
     vector<double> MV3 = mulVector( MV1, MV2 );
     for ( int i = 0; i < 3; i++ )
         OIIO_CHECK_EQUAL_THRESH( MV3[i], M2[i], 1e-5 );
-};
+}
 
 void test_FindIndexInterp1()
 {
@@ -243,7 +243,7 @@ void test_FindIndexInterp1()
 
     int index = findIndexInterp1( 100, MV, (int)MV.size() );
     OIIO_CHECK_EQUAL( index, 50 );
-};
+}
 
 void test_Interp1DLinear()
 {
@@ -293,7 +293,7 @@ void test_Interp1DLinear()
 
     for ( size_t i = 0; i < YV1.size(); i++ )
         OIIO_CHECK_EQUAL_THRESH( YV1[i], Y1[i], 1e-5 );
-};
+}
 
 void testIDT_XytoXYZ()
 {
@@ -304,7 +304,7 @@ void testIDT_XytoXYZ()
     {
         OIIO_CHECK_EQUAL_THRESH( XYZV[i], XYZV[i], 1e-5 );
     }
-};
+}
 
 void testIDT_Uvtoxy()
 {
@@ -316,7 +316,7 @@ void testIDT_Uvtoxy()
     {
         OIIO_CHECK_EQUAL_THRESH( xy[i], xyV[i], 1e-5 );
     }
-};
+}
 
 void testIDT_UvtoXYZ()
 {
@@ -328,7 +328,7 @@ void testIDT_UvtoXYZ()
     {
         OIIO_CHECK_EQUAL_THRESH( XYZ[i], XYZV[i], 1e-5 );
     }
-};
+}
 
 void testIDT_XYZTouv()
 {
@@ -340,7 +340,7 @@ void testIDT_XYZTouv()
     {
         OIIO_CHECK_EQUAL_THRESH( uv[i], uvV[i], 1e-5 );
     }
-};
+}
 
 void testIDT_GetCAT()
 {
@@ -359,7 +359,7 @@ void testIDT_GetCAT()
         OIIO_CHECK_EQUAL_THRESH( CAT[i][1], CAT_test[i][1], 1e-5 );
         OIIO_CHECK_EQUAL_THRESH( CAT[i][2], CAT_test[i][2], 1e-5 );
     }
-};
+}
 
 void test_XYZtoLAB()
 {
@@ -568,7 +568,7 @@ void test_XYZtoLAB()
             else
                 OIIO_CHECK_EQUAL_THRESH( LAB_test[i][j], LAB[i][j], 1e-5 );
         }
-};
+}
 
 void test_GetCalcXYZt()
 {
@@ -774,7 +774,7 @@ void test_GetCalcXYZt()
     for ( size_t i = 0; i < 190; i++ )
         for ( size_t j = 0; j < 3; j++ )
             OIIO_CHECK_EQUAL_THRESH( XYZ_test[i][j], XYZ[i][j], 1e-5 );
-};
+}
 
 int main( int, char ** )
 {

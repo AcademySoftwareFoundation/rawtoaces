@@ -127,7 +127,7 @@ void testIDT_LoadCameraSpst()
             OIIO_CHECK_EQUAL_THRESH( spectrum.values[j], rgb[j][i], 1e-5 );
         }
     }
-};
+}
 
 void testIDT_LoadIlluminant()
 {
@@ -170,7 +170,7 @@ void testIDT_LoadIlluminant()
     OIIO_CHECK_EQUAL( illumTestData.size(), 81 );
     for ( int i = 0; i < 81; i++ )
         OIIO_CHECK_EQUAL_THRESH( illumTestData[i], iso7589[i], 1e-5 );
-};
+}
 
 void testIDT_LoadTrainingData()
 {
@@ -273,7 +273,7 @@ void testIDT_LoadTrainingData()
         OIIO_CHECK_EQUAL_THRESH(
             TS[i][2], training_data["patch3"].values[i], 1e-5 );
     }
-};
+}
 
 void testIDT_LoadCMF()
 {
@@ -696,7 +696,7 @@ void testIDT_LoadCMF()
         OIIO_CHECK_EQUAL_THRESH(
             spectral_data["Z"].values[i], cmf[i * 5][2], 1e-5 );
     }
-};
+}
 
 void load_camera_helper(
     rta::core::SpectralSolver &solver,
@@ -781,7 +781,7 @@ void testIDT_scaleLSC()
     OIIO_CHECK_EQUAL( illuminant["power"].shape.step, 5 );
     for ( int i = 0; i < 81; i++ )
         OIIO_CHECK_EQUAL_THRESH( illumDataScaled[i], scaledIllum[i], 1e-5 );
-};
+}
 
 void testIDT_CalCM()
 {
@@ -797,7 +797,7 @@ void testIDT_CalCM()
 
     for ( int i = 0; i < 3; i++ )
         OIIO_CHECK_EQUAL_THRESH( CM[i], CM_test[i], 1e-5 );
-};
+}
 
 void testIDT_CalWB()
 {
@@ -814,7 +814,7 @@ void testIDT_CalWB()
     {
         OIIO_CHECK_EQUAL_THRESH( WB[i], WB_test[i], 1e-5 );
     }
-};
+}
 
 void testIDT_ChooseIllumSrc()
 {
@@ -852,7 +852,7 @@ void testIDT_ChooseIllumSrc()
     OIIO_CHECK_EQUAL( illumType_Test, "d45" );
     for ( size_t i = 0; i < illumData_Test.size(); i++ )
         OIIO_CHECK_EQUAL_THRESH( illumData[i], illumData_Test[i], 1e-5 );
-};
+}
 
 void testIDT_ChooseIllumType()
 {
@@ -890,7 +890,7 @@ void testIDT_ChooseIllumType()
     OIIO_CHECK_EQUAL( illumType_Test, "iso7589" );
     for ( size_t i = 0; i < illumData_Test.size(); i++ )
         OIIO_CHECK_EQUAL_THRESH( illumData[i], illumData_Test[i], 1e-5 );
-};
+}
 
 void testIDT_CalTI()
 {
@@ -4804,7 +4804,7 @@ void testIDT_CalTI()
             OIIO_CHECK_EQUAL_THRESH( TI[j][i], spectrum.values[j], 1e-4 );
         }
     }
-};
+}
 
 void testIDT_CalXYZ()
 {
@@ -5019,7 +5019,7 @@ void testIDT_CalXYZ()
     for ( size_t i = 0; i < 190; i++ )
         for ( size_t j = 0; j < 3; j++ )
             OIIO_CHECK_EQUAL_THRESH( XYZ[i][j], XYZ_test[i][j], 1e-5 );
-};
+}
 
 void testIDT_CalRGB()
 {
@@ -5234,7 +5234,7 @@ void testIDT_CalRGB()
     for ( size_t i = 0; i < 190; i++ )
         for ( size_t j = 0; j < 3; j++ )
             OIIO_CHECK_EQUAL_THRESH( RGB[i][j], RGB_test[i][j], 1e-5 );
-};
+}
 
 void testIDT_CurveFit()
 {
@@ -5269,7 +5269,7 @@ void testIDT_CurveFit()
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
             OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-5 );
-};
+}
 
 void testIDT_CalIDT()
 {
@@ -5287,7 +5287,7 @@ void testIDT_CalIDT()
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
             OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-4 );
-};
+}
 
 int main( int, char ** )
 {

@@ -24,7 +24,7 @@
 #    include <windows.h>
 //#    define snprintf _snprintf
 #    define _CRT_SECURE_NO_WARNINGS
-#    define cmp_str stricmp
+#    define cmp_str _stricmp
 #else
 #    define cmp_str strcasecmp
 #endif
@@ -266,7 +266,7 @@ inline void lowerCase( char *tex )
     std::string tmp( tex );
 
     for ( size_t i = 0; i < tmp.size(); i++ )
-        tex[i] = tolower( tex[i] );
+        tex[i] = static_cast<char>( tolower( tex[i] ) );
 }
 
 // Function to check if a value is numeric

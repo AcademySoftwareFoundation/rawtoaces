@@ -237,7 +237,7 @@ void test_FindIndexInterp1()
 {
     int M[100];
     for ( size_t i = 0; i < sizeof( M ) / sizeof( int ); i++ )
-        M[i] = i * 2;
+        M[i] = static_cast<int>( i * 2 );
 
     vector<int> MV( M, M + 100 );
 
@@ -349,9 +349,9 @@ void testIDT_GetCAT()
 
     vector<vector<double>> CAT_test = calculate_CAT( dIV, dOV );
 
-    float CAT[3][3] = { { 0.9711790957, -0.0217386019, 0.0460288393 },
-                        { -0.0156935400, 1.0000112293, 0.0183278569 },
-                        { 0.0009710255, 0.0030856714, 1.2179433335 } };
+    float CAT[3][3] = { { 0.9711790957f, -0.0217386019f, 0.0460288393f },
+                        { -0.0156935400f, 1.0000112293f, 0.0183278569f },
+                        { 0.0009710255f, 0.0030856714f, 1.2179433335f } };
 
     for ( int i = 0; i < 3; i++ )
     {
@@ -366,7 +366,7 @@ void test_XYZtoLAB()
     vector<vector<double>> XYZ( 190, ( vector<double>( 3 ) ) );
     for ( size_t i = 0; i < 190; i++ )
         for ( size_t j = 0; j < 3; j++ )
-            XYZ[i][j] = 116 / ( i * j + 1 );
+            XYZ[i][j] = static_cast<double>( 116 / ( i * j + 1 ) );
     vector<vector<double>> LAB_test = XYZ_to_LAB( XYZ );
 
     double LAB[190][3] = { { 549.7318794845, 39.7525650490, 2.8525942657 },
@@ -577,7 +577,7 @@ void test_GetCalcXYZt()
 
     for ( size_t i = 0; i < 190; i++ )
         for ( size_t j = 0; j < 3; j++ )
-            RGB[i][j] = 10 / ( i * j + 1 );
+            RGB[i][j] = static_cast<double>( 10 / ( i * j + 1 ) );
     vector<vector<double>> XYZ_test = getCalcXYZt( RGB, BStart );
 
     double XYZ[190][3] = { { 9.5264607457, 10.0000000000, 10.0882518435 },

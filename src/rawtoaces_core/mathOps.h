@@ -105,7 +105,7 @@ vector<vector<T>> invertVM( const vector<vector<T>> &vMtx )
 
 template <typename T> vector<T> invertV( const vector<T> &vMtx )
 {
-    size_t            size = std::sqrt( vMtx.size() );
+    size_t            size = static_cast<size_t>( std::sqrt( vMtx.size() ) );
     vector<vector<T>> tmp( size, vector<T>( size ) );
 
     for ( size_t i = 0; i < size; i++ )

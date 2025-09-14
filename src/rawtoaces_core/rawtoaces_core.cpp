@@ -44,7 +44,7 @@ vector<double> CCT_to_xy( const double &cct )
 
 void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
 {
-    int step             = spectrum.shape.step;
+    int step             = static_cast<int>( spectrum.shape.step );
     int wavelength_range = s_series[53].wl - s_series[0].wl;
     assert( wavelength_range % step == 0 );
 
@@ -272,12 +272,12 @@ bool SpectralSolver::load_spectral_data(
     {
         for ( const auto &directory: _search_directories )
         {
-            std::filesystem::path path( directory );
-            path.append( file_path );
+            std::filesystem::path search_path( directory );
+            search_path.append( file_path );
 
-            if ( std::filesystem::exists( path ) )
+            if ( std::filesystem::exists( search_path ) )
             {
-                return out_data.load( path.string() );
+                return out_data.load( search_path.string() );
             }
         }
 
@@ -321,15 +321,15 @@ bool SpectralSolver::find_illuminant( const std::string &type )
     if ( is_daylight )
     {
         int               cct  = atoi( type.substr( 1 ).c_str() );
-        const std::string type = "d" + std::to_string( cct );
-        generate_illuminant( cct, type, true, illuminant );
+        const std::string illuminant_type = "d" + std::to_string( cct );
+        generate_illuminant( cct, illuminant_type, true, illuminant );
         return true;
     }
     else if ( is_blackbody )
     {
         int cct = atoi( type.substr( 0, type.length() - 1 ).c_str() );
-        const std::string type = std::to_string( cct ) + "k";
-        generate_illuminant( cct, type, false, illuminant );
+        const std::string illuminant_type = std::to_string( cct ) + "k";
+        generate_illuminant( cct, illuminant_type, false, illuminant );
         return true;
     }
     else
@@ -364,25 +364,25 @@ bool SpectralSolver::find_illuminant( const vector<double> &wb )
         // Daylight - pre-calculate
         for ( int cct = 4000; cct <= 25000; cct += 500 )
         {
-            SpectralData     &illuminant = _all_illuminants.emplace_back();
+            SpectralData     &illuminant_data = _all_illuminants.emplace_back();
             const std::string type       = "d" + std::to_string( cct / 100 );
-            generate_illuminant( cct, type, true, illuminant );
+            generate_illuminant( cct, type, true, illuminant_data );
         }
 
         // Blackbody - pre-calculate
         for ( int cct = 1500; cct < 4000; cct += 500 )
         {
-            SpectralData     &illuminant = _all_illuminants.emplace_back();
+            SpectralData     &illuminant_data = _all_illuminants.emplace_back();
             const std::string type       = std::to_string( cct ) + "k";
-            generate_illuminant( cct, type, false, illuminant );
+            generate_illuminant( cct, type, false, illuminant_data );
         }
 
         auto illuminant_files = collect_data_files( "illuminant" );
 
         for ( const auto &illuminant_file: illuminant_files )
         {
-            SpectralData &illuminant = _all_illuminants.emplace_back();
-            if ( !illuminant.load( illuminant_file ) )
+            SpectralData &illuminant_data = _all_illuminants.emplace_back();
+            if ( !illuminant_data.load( illuminant_file ) )
             {
                 _all_illuminants.pop_back();
                 continue;

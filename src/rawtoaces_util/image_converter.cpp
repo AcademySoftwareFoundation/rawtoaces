@@ -1065,7 +1065,8 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     if ( chromatic_aberration.size() == 2 )
     {
         for ( size_t i = 0; i < 2; i++ )
-            settings.chromatic_aberration[i] = static_cast<float>( chromatic_aberration[i] );
+            settings.chromatic_aberration[i] =
+                static_cast<float>( chromatic_aberration[i] );
     }
 
     auto demosaic_algorithm = arg_parser["demosaic"].get();
@@ -1634,7 +1635,7 @@ bool ImageConverter::save_image(
     // - acesImageContainerFlag present,
     // - no compression.
 
-    const float chromaticities[] = { 0.7347f, 0.2653f, 0.0f,       1.0f,
+    const float chromaticities[] = { 0.7347f, 0.2653f, 0.0f,     1.0f,
                                      0.0001f, -0.077f, 0.32168f, 0.33767f };
 
     OIIO::ImageSpec image_spec = buf.spec();

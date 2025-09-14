@@ -320,7 +320,7 @@ bool SpectralSolver::find_illuminant( const std::string &type )
 
     if ( is_daylight )
     {
-        int               cct  = atoi( type.substr( 1 ).c_str() );
+        int               cct             = atoi( type.substr( 1 ).c_str() );
         const std::string illuminant_type = "d" + std::to_string( cct );
         generate_illuminant( cct, illuminant_type, true, illuminant );
         return true;
@@ -365,7 +365,7 @@ bool SpectralSolver::find_illuminant( const vector<double> &wb )
         for ( int cct = 4000; cct <= 25000; cct += 500 )
         {
             SpectralData     &illuminant_data = _all_illuminants.emplace_back();
-            const std::string type       = "d" + std::to_string( cct / 100 );
+            const std::string type = "d" + std::to_string( cct / 100 );
             generate_illuminant( cct, type, true, illuminant_data );
         }
 
@@ -373,7 +373,7 @@ bool SpectralSolver::find_illuminant( const vector<double> &wb )
         for ( int cct = 1500; cct < 4000; cct += 500 )
         {
             SpectralData     &illuminant_data = _all_illuminants.emplace_back();
-            const std::string type       = std::to_string( cct ) + "k";
+            const std::string type            = std::to_string( cct ) + "k";
             generate_illuminant( cct, type, false, illuminant_data );
         }
 

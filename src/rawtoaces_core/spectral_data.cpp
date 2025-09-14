@@ -23,7 +23,9 @@ Spectrum::Spectrum( double value, const Shape &reference_shape )
 {
     if ( shape.step > 0 )
         values.resize(
-            static_cast<size_t>( ( shape.last - shape.first + shape.step ) / shape.step ), value );
+            static_cast<size_t>(
+                ( shape.last - shape.first + shape.step ) / shape.step ),
+            value );
 }
 
 template <typename Val_or_Ref, typename F>

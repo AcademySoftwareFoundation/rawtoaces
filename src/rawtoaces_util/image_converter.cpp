@@ -1096,7 +1096,7 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     settings.headroom    = arg_parser["headroom"].get<float>();
     settings.auto_bright = arg_parser["auto-bright"].get<int>();
     settings.adjust_maximum_threshold =
-        static_cast<float>( arg_parser["adjust-maximum-threshold"].get<int>() );
+        arg_parser["adjust-maximum-threshold"].get<float>();
     settings.black_level      = arg_parser["black-level"].get<int>();
     settings.saturation_level = arg_parser["saturation-level"].get<int>();
     settings.half_size        = arg_parser["half-size"].get<int>();

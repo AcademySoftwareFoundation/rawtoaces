@@ -1232,14 +1232,14 @@ vector<vector<double>> MetadataSolver::calculate_IDT_matrix()
 template <typename T>
 bool IDTOptimizationCost::operator()( const T *beta_params, T *residuals ) const
 {
-    vector<vector<T>> RGB_copy( 190, vector<T>( 3 ) );
-    for ( size_t i = 0; i < 190; i++ )
+    vector<vector<T>> RGB_copy( _RGB.size(), vector<T>( 3 ) );
+    for ( size_t i = 0; i < _RGB.size(); i++ )
         for ( size_t j = 0; j < 3; j++ )
             RGB_copy[i][j] = T( _RGB[i][j] );
 
     vector<vector<T>> out_calc_LAB =
         XYZ_to_LAB( getCalcXYZt( RGB_copy, beta_params ) );
-    for ( size_t i = 0; i < 190; i++ )
+    for ( size_t i = 0; i < _RGB.size(); i++ )
         for ( size_t j = 0; j < 3; j++ )
             residuals[i * 3 + j] = _outLAB[i][j] - out_calc_LAB[i][j];
 

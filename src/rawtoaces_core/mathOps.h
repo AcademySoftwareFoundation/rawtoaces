@@ -435,7 +435,8 @@ std::vector<std::vector<T>> calculate_CAT(
 template <typename T>
 vector<vector<T>> XYZ_to_LAB( const vector<vector<T>> &XYZ )
 {
-    assert( XYZ.size() == 190 );
+    assert( !XYZ.empty() );
+    assert( XYZ[0].size() == 3 );
     T add = T( 16.0 / 116.0 );
 
     vector<vector<T>> tmpXYZ( XYZ.size(), vector<T>( 3, T( 1.0 ) ) );
@@ -464,7 +465,7 @@ template <typename T>
 vector<vector<T>>
 getCalcXYZt( const vector<vector<T>> &RGB, const T beta_params[6] )
 {
-    assert( RGB.size() == 190 );
+    assert( !RGB.empty() );
 
     vector<vector<T>> BV( 3, vector<T>( 3 ) );
     vector<vector<T>> M( 3, vector<T>( 3 ) );

@@ -62,7 +62,7 @@ std::string run_rawtoaces_command( const std::vector<std::string> &args )
     std::string command;
 #ifdef WIN32
     // Use the standard path from build directory
-    command = "src\\rawtoaces\\Release\\rawtoaces.exe";
+    command = "..\\src\\rawtoaces\\Release\\rawtoaces.exe";
 #else
     command = "../src/rawtoaces/rawtoaces";
 #endif

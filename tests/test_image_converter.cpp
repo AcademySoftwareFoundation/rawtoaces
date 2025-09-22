@@ -58,19 +58,41 @@ std::string convert_linux_path_to_windows_path( const std::string &path )
 /// @return std::string containing the captured stdout output from the rawtoaces execution
 std::string run_rawtoaces_command( const std::vector<std::string> &args )
 {
-    // Build the command line - use absolute path to avoid working directory issues
+    // Build the command line - try multiple possible paths for different environments
     std::string command;
 #ifdef WIN32
-    // Get current working directory and build absolute path
-    char current_dir[1024];
-    if ( _getcwd( current_dir, sizeof( current_dir ) ) != nullptr )
+    // Try multiple possible paths in order of likelihood
+    std::vector<std::string> possible_paths = {
+        "src\\rawtoaces\\Release\\rawtoaces.exe",           // From project root
+        "build\\src\\rawtoaces\\Release\\rawtoaces.exe",    // From project root with build dir
+        "..\\..\\src\\rawtoaces\\Release\\rawtoaces.exe",   // From build/tests/Release
+        "..\\src\\rawtoaces\\Release\\rawtoaces.exe",       // From build/tests
+        "..\\..\\..\\src\\rawtoaces\\Release\\rawtoaces.exe" // From deeper nested dirs
+    };
+    
+    // Check if any of the possible paths exist
+    bool found = false;
+    for ( const auto &path : possible_paths )
     {
-        command = std::string( current_dir ) +
-                  "\\src\\rawtoaces\\Release\\rawtoaces.exe";
+        std::ifstream file( path );
+        if ( file.good() )
+        {
+            command = path;
+            found = true;
+            std::cout << "DEBUG: Found rawtoaces executable at: " << path << std::endl;
+            break;
+        }
+        else
+        {
+            std::cout << "DEBUG: Path not found: " << path << std::endl;
+        }
     }
-    else
+    
+    // If no path found, use the first one as fallback
+    if ( !found )
     {
-        command = "..\\..\\src\\rawtoaces\\Release\\rawtoaces.exe";
+        command = possible_paths[0];
+        std::cout << "DEBUG: No path found, using fallback: " << command << std::endl;
     }
 #else
     command = "../src/rawtoaces/rawtoaces";

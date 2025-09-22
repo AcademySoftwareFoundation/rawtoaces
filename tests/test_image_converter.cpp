@@ -21,6 +21,21 @@
 
 using namespace rta::util;
 
+
+std::string convert_linux_path_to_windows_path( const std::string &path ){
+    std::vector<std::string> segments;
+    OIIO::Strutil::split(path, segments, ":");
+    
+    for (auto& segment : segments) {
+        // Convert forward slashes to backslashes
+        std::replace(segment.begin(), segment.end(), '/', '\\');
+        // Add drive letter
+        segment = "c:" + segment;
+    }
+    
+    return OIIO::Strutil::join(segments, ";");
+}
+
 // Cross-platform environment variable helpers
 /*
 Standard C Library vs POSIX
@@ -28,22 +43,34 @@ getenv() - Part of standard C library (C89/C99) - available everywhere
 setenv()/unsetenv() - Part of POSIX standard - only on Unix-like systems
 */
 #ifdef WIN32
-void set_env_var( const char *name, const char *value )
+void set_env_var( std::string name, std::string value )
 {
-    _putenv_s( name, value );
+    _putenv_s( name.c_str(), value.c_str() );
 }
-void unset_env_var( const char *name )
+
+std::string to_os_path(std::string linux_path )
 {
-    _putenv_s( name, "" );
+    return convert_linux_path_to_windows_path(linux_path);
+}
+
+void unset_env_var( std::string name )
+{
+    _putenv_s( name.c_str(), "" );
 }
 #else
-void set_env_var( const char *name, const char *value )
+std::string to_os_path(std::string linux_path )
 {
-    setenv( name, value, 1 );
+    return linux_path;
 }
-void unset_env_var( const char *name )
+
+void set_env_var( std::string name, std::string value )
 {
-    unsetenv( name );
+    setenv( name.c_str(), value.c_str(), 1 );
+}
+
+void unset_env_var( std::string name )
+{
+    unsetenv( name.c_str() );
 }
 #endif
 
@@ -392,14 +419,14 @@ void test_database_paths_default()
     OIIO_CHECK_EQUAL( paths.empty(), false );
 
 // On Unix systems, should have both new and legacy paths
-#if !defined( WIN32 ) && !defined( WIN64 )
-    OIIO_CHECK_EQUAL( paths.size(), 2 );
-    OIIO_CHECK_EQUAL( paths[0], "/usr/local/share/rawtoaces/data" );
-    OIIO_CHECK_EQUAL( paths[1], "/usr/local/include/rawtoaces/data" );
-#else
+#ifdef WIN32
     // On Windows, should have just the current directory
     OIIO_CHECK_EQUAL( paths.size(), 1 );
     OIIO_CHECK_EQUAL( paths[0], "." );
+#else
+    OIIO_CHECK_EQUAL( paths.size(), 2 );
+    OIIO_CHECK_EQUAL( paths[0], "/usr/local/share/rawtoaces/data" );
+    OIIO_CHECK_EQUAL( paths[1], "/usr/local/include/rawtoaces/data" );
 #endif
 }
 
@@ -408,24 +435,14 @@ void test_database_paths_rawtoaces_env()
 {
     std::cout << std::endl
               << "test_database_paths_rawtoaces_env()" << std::endl;
-    // Set RAWTOACES_DATA_PATH
-#ifdef WIN32
-    set_env_var( "RAWTOACES_DATA_PATH", "C:\\custom\\path1;C:\\custom\\path2" );
-#else
-    set_env_var( "RAWTOACES_DATA_PATH", "/custom/path1:/custom/path2" );
-#endif
+    set_env_var( "RAWTOACES_DATA_PATH", to_os_path( "/custom/path1:/custom/path2" ) );
     unset_env_var( "AMPAS_DATA_PATH" );
 
     std::vector<std::string> paths = database_paths();
 
     OIIO_CHECK_EQUAL( paths.size(), 2 );
-#ifdef WIN32
-    OIIO_CHECK_EQUAL( paths[0], "C:\\custom\\path1" );
-    OIIO_CHECK_EQUAL( paths[1], "C:\\custom\\path2" );
-#else
-    OIIO_CHECK_EQUAL( paths[0], "/custom/path1" );
-    OIIO_CHECK_EQUAL( paths[1], "/custom/path2" );
-#endif
+    OIIO_CHECK_EQUAL( paths[0], to_os_path( "/custom/path1" ) );
+    OIIO_CHECK_EQUAL( paths[1], to_os_path( "/custom/path2" ) );
 
     // Clean up
     unset_env_var( "RAWTOACES_DATA_PATH" );
@@ -437,23 +454,14 @@ void test_database_paths_ampas_env()
     std::cout << std::endl << "test_database_paths_ampas_env()" << std::endl;
     // Set AMPAS_DATA_PATH (deprecated)
     unset_env_var( "RAWTOACES_DATA_PATH" );
-#ifdef WIN32
     set_env_var(
-        "AMPAS_DATA_PATH", "C:\\deprecated\\path1;C:\\deprecated\\path2" );
-#else
-    set_env_var( "AMPAS_DATA_PATH", "/deprecated/path1:/deprecated/path2" );
-#endif
+        "AMPAS_DATA_PATH", to_os_path( "/deprecated/path1:/deprecated/path2" ) );
 
     std::vector<std::string> paths = database_paths();
 
     OIIO_CHECK_EQUAL( paths.size(), 2 );
-#ifdef WIN32
-    OIIO_CHECK_EQUAL( paths[0], "C:\\deprecated\\path1" );
-    OIIO_CHECK_EQUAL( paths[1], "C:\\deprecated\\path2" );
-#else
-    OIIO_CHECK_EQUAL( paths[0], "/deprecated/path1" );
-    OIIO_CHECK_EQUAL( paths[1], "/deprecated/path2" );
-#endif
+    OIIO_CHECK_EQUAL( paths[0], to_os_path( "/deprecated/path1" ) );
+    OIIO_CHECK_EQUAL( paths[1], to_os_path( "/deprecated/path2" ) );
 
     // Clean up
     unset_env_var( "AMPAS_DATA_PATH" );
@@ -464,27 +472,17 @@ void test_database_paths_both_env()
 {
     std::cout << std::endl << "test_database_paths_both_env()" << std::endl;
     // Set both environment variables
-#ifdef WIN32
     set_env_var(
-        "RAWTOACES_DATA_PATH", "C:\\preferred\\path1;C:\\preferred\\path2" );
+        "RAWTOACES_DATA_PATH", to_os_path( "/preferred/path1:/preferred/path2" ) );
     set_env_var(
-        "AMPAS_DATA_PATH", "C:\\deprecated\\path1;C:\\deprecated\\path2" );
-#else
-    set_env_var( "RAWTOACES_DATA_PATH", "/preferred/path1:/preferred/path2" );
-    set_env_var( "AMPAS_DATA_PATH", "/deprecated/path1:/deprecated/path2" );
-#endif
+        "AMPAS_DATA_PATH", to_os_path( "/deprecated/path1:/deprecated/path2" ) );
 
     std::vector<std::string> paths = database_paths();
 
     // RAWTOACES_DATA_PATH should take precedence
     OIIO_CHECK_EQUAL( paths.size(), 2 );
-#ifdef WIN32
-    OIIO_CHECK_EQUAL( paths[0], "C:\\preferred\\path1" );
-    OIIO_CHECK_EQUAL( paths[1], "C:\\preferred\\path2" );
-#else
-    OIIO_CHECK_EQUAL( paths[0], "/preferred/path1" );
-    OIIO_CHECK_EQUAL( paths[1], "/preferred/path2" );
-#endif
+    OIIO_CHECK_EQUAL( paths[0], to_os_path( "/preferred/path1" ) );
+    OIIO_CHECK_EQUAL( paths[1], to_os_path( "/preferred/path2" ) );
 
     // Clean up
     unset_env_var( "RAWTOACES_DATA_PATH" );
@@ -497,53 +495,45 @@ void test_database_paths_override_path()
 {
     std::cout << std::endl << "test_database_paths_override_path()" << std::endl;
     // Set environment variables to ensure they are overridden
-#ifdef WIN32
-    set_env_var(
-        "RAWTOACES_DATA_PATH", "C:\\env\\path1;C:\\env\\path2" );
-    set_env_var(
-        "AMPAS_DATA_PATH", "C:\\deprecated\\path1;C:\\deprecated\\path2" );
-#else
-    set_env_var( "RAWTOACES_DATA_PATH", "/env/path1:/env/path2" );
-    set_env_var( "AMPAS_DATA_PATH", "/deprecated/path1:/deprecated/path2" );
-#endif
+
+    set_env_var( "RAWTOACES_DATA_PATH", to_os_path( "/env/path1:/env/path2" ) );
+    set_env_var( "AMPAS_DATA_PATH", to_os_path( "/deprecated/path1:/deprecated/path2" ) );
 
     // Test with override path - should take precedence over environment variables
-#ifdef WIN32
-    std::string override_path = "C:\\override\\path1;C:\\override\\path2;C:\\override\\path3";
+    std::string override_path = to_os_path( "/override/path1:/override/path2:/override/path3" );
     std::vector<std::string> paths = database_paths( override_path );
     
     // Should have 3 paths from override
     OIIO_CHECK_EQUAL( paths.size(), 3 );
-    OIIO_CHECK_EQUAL( paths[0], "C:\\override\\path1" );
-    OIIO_CHECK_EQUAL( paths[1], "C:\\override\\path2" );
-    OIIO_CHECK_EQUAL( paths[2], "C:\\override\\path3" );
-#else
-    std::string override_path = "/override/path1:/override/path2:/override/path3";
-    std::vector<std::string> paths = database_paths( override_path );
-    
-    // Should have 3 paths from override
-    OIIO_CHECK_EQUAL( paths.size(), 3 );
-    OIIO_CHECK_EQUAL( paths[0], "/override/path1" );
-    OIIO_CHECK_EQUAL( paths[1], "/override/path2" );
-    OIIO_CHECK_EQUAL( paths[2], "/override/path3" );
-#endif
+    OIIO_CHECK_EQUAL( paths[0], to_os_path( "/override/path1" ) );
+    OIIO_CHECK_EQUAL( paths[1], to_os_path( "/override/path2" ) );
+    OIIO_CHECK_EQUAL( paths[2], to_os_path( "/override/path3" ) );
 
     // Test with empty override path - should fall back to environment variables
     paths = database_paths( "" );
     
     // Should have 2 paths from RAWTOACES_DATA_PATH environment variable
     OIIO_CHECK_EQUAL( paths.size(), 2 );
-#ifdef WIN32
-    OIIO_CHECK_EQUAL( paths[0], "C:\\env\\path1" );
-    OIIO_CHECK_EQUAL( paths[1], "C:\\env\\path2" );
-#else
-    OIIO_CHECK_EQUAL( paths[0], "/env/path1" );
-    OIIO_CHECK_EQUAL( paths[1], "/env/path2" );
-#endif
+    OIIO_CHECK_EQUAL( paths[0], to_os_path( "/env/path1" ) );
+    OIIO_CHECK_EQUAL( paths[1], to_os_path( "/env/path2" ) );
 
     // Clean up
     unset_env_var( "RAWTOACES_DATA_PATH" );
     unset_env_var( "AMPAS_DATA_PATH" );
+}
+
+/// Tests convert_linux_path_to_windows_path utility function
+void test_convert_linux_path_to_windows_path()
+{
+    std::cout << std::endl << "test_convert_linux_path_to_windows_path()" << std::endl;
+    
+    // Test single path with forward slashes
+    std::string result = convert_linux_path_to_windows_path( "/usr/local/share" );
+    OIIO_CHECK_EQUAL( result, "c:\\usr\\local\\share" );
+    
+    // Test multiple paths separated by ':'
+    result = convert_linux_path_to_windows_path( "/path1:/path2:/path3" );
+    OIIO_CHECK_EQUAL( result, "c:\\path1;c:\\path2;c:\\path3" );
 }
 
 /// Tests fix_metadata with both Make and Model attributes
@@ -830,6 +820,9 @@ int main( int, char ** )
         test_database_paths_ampas_env();
         test_database_paths_both_env();
         test_database_paths_override_path();
+
+        // Tests for utility functions
+        test_convert_linux_path_to_windows_path();
 
         // Tests for fix_metadata
         test_fix_metadata_both_attributes();

@@ -21,19 +21,55 @@
 
 using namespace rta::util;
 
-
-std::string convert_linux_path_to_windows_path( const std::string &path ){
+std::string convert_linux_path_to_windows_path( const std::string &path )
+{
     std::vector<std::string> segments;
-    OIIO::Strutil::split(path, segments, ":");
-    
-    for (auto& segment : segments) {
+    OIIO::Strutil::split( path, segments, ":" );
+
+    for ( auto &segment: segments )
+    {
         // Convert forward slashes to backslashes
-        std::replace(segment.begin(), segment.end(), '/', '\\');
+        std::replace( segment.begin(), segment.end(), '/', '\\' );
         // Add drive letter
         segment = "c:" + segment;
     }
-    
-    return OIIO::Strutil::join(segments, ";");
+
+    return OIIO::Strutil::join( segments, ";" );
+}
+
+/// Executes a rawtoaces command with the given arguments and captures its output.
+///
+/// @param args Vector of command-line arguments to pass to rawtoaces (excluding program name).
+///             For example, {"--list-cameras"} or {"--list-illuminants", "--verbose"}.
+///
+/// @return std::string containing the captured stdout output from the rawtoaces execution
+std::string run_rawtoaces_command( const std::vector<std::string> &args )
+{
+    // Build the command line - from build/tests/ to build/src/rawtoaces/
+    std::string command = "../src/rawtoaces/rawtoaces";
+    for ( const auto &arg: args )
+    {
+        command += " " + arg;
+    }
+
+    // Execute the command and capture output
+    FILE *pipe = popen( command.c_str(), "r" );
+    OIIO_CHECK_ASSERT(
+        pipe != nullptr && "Failed to execute rawtoaces command" );
+
+    // Read output
+    std::string output;
+    char        buffer[4096];
+    while ( fgets( buffer, sizeof( buffer ), pipe ) != nullptr )
+    {
+        output += buffer;
+    }
+
+    // Get exit status and validate
+    int exit_status = pclose( pipe );
+    OIIO_CHECK_EQUAL( WEXITSTATUS( exit_status ), 0 );
+
+    return output;
 }
 
 // Cross-platform environment variable helpers
@@ -48,9 +84,9 @@ void set_env_var( std::string name, std::string value )
     _putenv_s( name.c_str(), value.c_str() );
 }
 
-std::string to_os_path(std::string linux_path )
+std::string to_os_path( std::string linux_path )
 {
-    return convert_linux_path_to_windows_path(linux_path);
+    return convert_linux_path_to_windows_path( linux_path );
 }
 
 void unset_env_var( std::string name )
@@ -58,7 +94,7 @@ void unset_env_var( std::string name )
     _putenv_s( name.c_str(), "" );
 }
 #else
-std::string to_os_path(std::string linux_path )
+std::string to_os_path( std::string linux_path )
 {
     return linux_path;
 }
@@ -435,7 +471,8 @@ void test_database_paths_rawtoaces_env()
 {
     std::cout << std::endl
               << "test_database_paths_rawtoaces_env()" << std::endl;
-    set_env_var( "RAWTOACES_DATA_PATH", to_os_path( "/custom/path1:/custom/path2" ) );
+    set_env_var(
+        "RAWTOACES_DATA_PATH", to_os_path( "/custom/path1:/custom/path2" ) );
     unset_env_var( "AMPAS_DATA_PATH" );
 
     std::vector<std::string> paths = database_paths();
@@ -455,7 +492,8 @@ void test_database_paths_ampas_env()
     // Set AMPAS_DATA_PATH (deprecated)
     unset_env_var( "RAWTOACES_DATA_PATH" );
     set_env_var(
-        "AMPAS_DATA_PATH", to_os_path( "/deprecated/path1:/deprecated/path2" ) );
+        "AMPAS_DATA_PATH",
+        to_os_path( "/deprecated/path1:/deprecated/path2" ) );
 
     std::vector<std::string> paths = database_paths();
 
@@ -473,9 +511,11 @@ void test_database_paths_both_env()
     std::cout << std::endl << "test_database_paths_both_env()" << std::endl;
     // Set both environment variables
     set_env_var(
-        "RAWTOACES_DATA_PATH", to_os_path( "/preferred/path1:/preferred/path2" ) );
+        "RAWTOACES_DATA_PATH",
+        to_os_path( "/preferred/path1:/preferred/path2" ) );
     set_env_var(
-        "AMPAS_DATA_PATH", to_os_path( "/deprecated/path1:/deprecated/path2" ) );
+        "AMPAS_DATA_PATH",
+        to_os_path( "/deprecated/path1:/deprecated/path2" ) );
 
     std::vector<std::string> paths = database_paths();
 
@@ -493,16 +533,20 @@ void test_database_paths_both_env()
 /// Verifies that override_path takes precedence over environment variables
 void test_database_paths_override_path()
 {
-    std::cout << std::endl << "test_database_paths_override_path()" << std::endl;
+    std::cout << std::endl
+              << "test_database_paths_override_path()" << std::endl;
     // Set environment variables to ensure they are overridden
 
     set_env_var( "RAWTOACES_DATA_PATH", to_os_path( "/env/path1:/env/path2" ) );
-    set_env_var( "AMPAS_DATA_PATH", to_os_path( "/deprecated/path1:/deprecated/path2" ) );
+    set_env_var(
+        "AMPAS_DATA_PATH",
+        to_os_path( "/deprecated/path1:/deprecated/path2" ) );
 
     // Test with override path - should take precedence over environment variables
-    std::string override_path = to_os_path( "/override/path1:/override/path2:/override/path3" );
+    std::string override_path =
+        to_os_path( "/override/path1:/override/path2:/override/path3" );
     std::vector<std::string> paths = database_paths( override_path );
-    
+
     // Should have 3 paths from override
     OIIO_CHECK_EQUAL( paths.size(), 3 );
     OIIO_CHECK_EQUAL( paths[0], to_os_path( "/override/path1" ) );
@@ -511,7 +555,7 @@ void test_database_paths_override_path()
 
     // Test with empty override path - should fall back to environment variables
     paths = database_paths( "" );
-    
+
     // Should have 2 paths from RAWTOACES_DATA_PATH environment variable
     OIIO_CHECK_EQUAL( paths.size(), 2 );
     OIIO_CHECK_EQUAL( paths[0], to_os_path( "/env/path1" ) );
@@ -525,12 +569,14 @@ void test_database_paths_override_path()
 /// Tests convert_linux_path_to_windows_path utility function
 void test_convert_linux_path_to_windows_path()
 {
-    std::cout << std::endl << "test_convert_linux_path_to_windows_path()" << std::endl;
-    
+    std::cout << std::endl
+              << "test_convert_linux_path_to_windows_path()" << std::endl;
+
     // Test single path with forward slashes
-    std::string result = convert_linux_path_to_windows_path( "/usr/local/share" );
+    std::string result =
+        convert_linux_path_to_windows_path( "/usr/local/share" );
     OIIO_CHECK_EQUAL( result, "c:\\usr\\local\\share" );
-    
+
     // Test multiple paths separated by ':'
     result = convert_linux_path_to_windows_path( "/path1:/path2:/path3" );
     OIIO_CHECK_EQUAL( result, "c:\\path1;c:\\path2;c:\\path3" );
@@ -616,79 +662,43 @@ void test_fix_metadata_unsupported_type()
     OIIO_CHECK_EQUAL( spec.find_attribute( "Make" ), nullptr );
 }
 
-/// Helper function to set up test environment and capture output for parse_parameters tests
-struct ParseParametersTestResult
+std::string run_rawtoaces_with_data_dir(
+    std::vector<std::string> &args,
+    const std::string        &datab_path,
+    bool                      use_dir_path_arg = false )
 {
-    bool        success;
-    std::string output;
-};
-
-/// Executes a parse_parameters test with the given command-line arguments and captures its output.
-///
-/// This helper function encapsulates all the common setup required for testing ImageConverter::parse_parameters,
-/// including environment configuration, argument parsing, stdout capture, and cleanup.
-///
-/// @param args Vector of command-line arguments to pass to parse_parameters (excluding program name).
-///             For example, {"--list-cameras"} or {"--list-illuminants", "--verbose"}.
-/// @param database_path Path to the test database directory (optional, uses default if not provided)
-///
-/// @return ParseParametersTestResult containing:
-///         - success: true if parse_parameters executed successfully, false if argument parsing failed
-///         - output:  captured stdout output from the parse_parameters execution
-ParseParametersTestResult run_parse_parameters_test(
-    const std::vector<std::string> &args,
-    const std::string              &database_path = "" )
-{
-    // Set up test data path to use the provided database path or default
-    set_env_var( "RAWTOACES_DATA_PATH", database_path.c_str() );
-
-    // Create ImageConverter instance
-    rta::util::ImageConverter converter;
-
-    // Create argument parser and initialize it
-    OIIO::ArgParse arg_parser;
-    converter.init_parser( arg_parser );
-
-    // Convert args to char* array for parsing
-    std::vector<const char *> argv;
-    argv.push_back( "rawtoaces" ); // Program name
-    for ( const auto &arg: args )
+    if ( use_dir_path_arg )
     {
-        argv.push_back( arg.c_str() );
-    }
-
-    // Parse the arguments
-    int parse_result =
-        arg_parser.parse_args( static_cast<int>( argv.size() ), argv.data() );
-    if ( parse_result != 0 )
-    {
+        args.push_back( "--data-dir" );
+        args.push_back( datab_path );
         unset_env_var( "RAWTOACES_DATA_PATH" );
-        return { false, "" };
+    }
+    else
+    {
+        set_env_var( "RAWTOACES_DATA_PATH", datab_path );
     }
 
-    // Capture stdout to verify the output
-    std::ostringstream captured_output;
-    std::streambuf    *original_cout = std::cout.rdbuf();
-    std::cout.rdbuf( captured_output.rdbuf() );
+    std::string       output      = run_rawtoaces_command( args );
+    OIIO::string_view output_view = output;
+    OIIO::Strutil::trim_whitespace( output_view );
 
-    // Call parse_parameters
-    bool result = converter.parse_parameters( arg_parser );
+    if ( !use_dir_path_arg )
+    {
+        // Clean up environment variable
+        unset_env_var( "RAWTOACES_DATA_PATH" );
+    }
 
-    // Restore original cout
-    std::cout.rdbuf( original_cout );
-
-    // Clean up environment variable
-    unset_env_var( "RAWTOACES_DATA_PATH" );
-
-    return { result, captured_output.str() };
+    return output_view;
 }
 
 /// This test verifies that when --list-cameras is provided, the method
 /// calls supported_cameras() and outputs the camera list, then exits
-void test_parse_parameters_list_cameras()
+void test_parse_parameters_list_cameras( bool use_dir_path_arg = false )
 {
     std::cout << std::endl
-              << "test_parse_parameters_list_cameras()" << std::endl;
+              << "test_parse_parameters_list_cameras("
+              << ( use_dir_path_arg ? "with data dir" : "without data dir" )
+              << ")" << std::endl;
 
     // Create test directory with dynamic database
     TestDirectory test_dir;
@@ -699,41 +709,24 @@ void test_parse_parameters_list_cameras()
     test_dir.create_test_data_file(
         "camera", { { "manufacturer", "Mamiya" }, { "model", "Mamiya 7" } } );
 
-    // Run the test with --list-cameras argument using the dynamic database
-    auto result = run_parse_parameters_test(
-        { "--list-cameras" }, test_dir.get_database_path() );
+    std::vector<std::string> args   = { "--list-cameras" };
+    auto                     output = run_rawtoaces_with_data_dir(
+        args, test_dir.get_database_path(), use_dir_path_arg );
 
-    // The method should return true (though it calls exit in real usage)
-    OIIO_CHECK_EQUAL( result.success, true );
+    std::vector<std::string> lines;
+    OIIO::Strutil::split( output, lines, "\n" );
 
-    // Verify the output contains expected camera list information
+    OIIO_CHECK_EQUAL( lines.size(), 3 );
     OIIO_CHECK_EQUAL(
-        result.output.find(
-            "Spectral sensitivity data is available for the following cameras:" ) !=
-            std::string::npos,
-        true );
-
-    // Verify that actual camera names from test data are present
-    // The format is "manufacturer / model" as defined in supported_cameras()
-    OIIO_CHECK_EQUAL(
-        result.output.find( "Canon / EOS R6" ) != std::string::npos, true );
-    OIIO_CHECK_EQUAL(
-        result.output.find( "Mamiya / Mamiya 7" ) != std::string::npos, true );
-
-    // Count occurrences of " / " to verify we have 2 camera entries
-    size_t camera_count = 0;
-    size_t pos          = 0;
-    while ( ( pos = result.output.find( " / ", pos ) ) != std::string::npos )
-    {
-        camera_count++;
-        pos += 3; // Move past " / "
-    }
-    OIIO_CHECK_EQUAL( camera_count, 2 );
+        lines[0],
+        "Spectral sensitivity data is available for the following cameras:" );
+    OIIO_CHECK_EQUAL( lines[1], "Mamiya / Mamiya 7" );
+    OIIO_CHECK_EQUAL( lines[2], "Canon / EOS R6" );
 }
 
 /// This test verifies that when --list-illuminants is provided, the method
 /// calls supported_illuminants() and outputs the illuminant list, then exits
-void test_parse_parameters_list_illuminants()
+void test_parse_parameters_list_illuminants( bool use_dir_path_arg = false )
 {
     std::cout << std::endl
               << "test_parse_parameters_list_illuminants()" << std::endl;
@@ -745,60 +738,20 @@ void test_parse_parameters_list_illuminants()
     test_dir.create_test_data_file(
         "illuminant", { { "illuminant", "my-illuminant" } } );
 
+    std::vector<std::string> args = { "--list-illuminants" };
+
     // Run the test with --list-illuminants argument using the dynamic database
-    auto result = run_parse_parameters_test(
-        { "--list-illuminants" }, test_dir.get_database_path() );
+    auto output = run_rawtoaces_with_data_dir(
+        args, test_dir.get_database_path(), use_dir_path_arg );
 
-    // The method should return true (though it calls exit in real usage)
-    OIIO_CHECK_EQUAL( result.success, true );
+    std::vector<std::string> lines;
+    OIIO::Strutil::split( output, lines, "\n" );
 
-    // Verify the output contains expected illuminant list information
-    OIIO_CHECK_EQUAL(
-        result.output.find( "The following illuminants are supported:" ) !=
-            std::string::npos,
-        true );
-
-    // Verify that actual illuminant names from test data are present
-    // The hardcoded illuminant types should be present
-    OIIO_CHECK_EQUAL(
-        result.output.find( "Day-light (e.g., D60, D6025)" ) !=
-            std::string::npos,
-        true );
-    OIIO_CHECK_EQUAL(
-        result.output.find( "Blackbody (e.g., 3200K)" ) != std::string::npos,
-        true );
-
-    // Verify that the specific illuminant from our test data is present
-    OIIO_CHECK_EQUAL(
-        result.output.find( "my-illuminant" ) != std::string::npos, true );
-
-    // Verify we have exactly 3 illuminants total (2 hardcoded + 1 from test data)
-    // Count newlines in the illuminant list section to verify count
-    size_t illuminant_count = 0;
-    size_t start_pos =
-        result.output.find( "The following illuminants are supported:" );
-    if ( start_pos != std::string::npos )
-    {
-        size_t end_pos = result.output.find(
-            "\n\n", start_pos ); // Look for double newline (end of list)
-        if ( end_pos == std::string::npos )
-        {
-            end_pos = result.output.length(); // If no double newline, go to end
-        }
-
-        std::string illuminant_section =
-            result.output.substr( start_pos, end_pos - start_pos );
-        size_t pos = 0;
-        while ( ( pos = illuminant_section.find( "\n", pos ) ) !=
-                std::string::npos )
-        {
-            illuminant_count++;
-            pos += 1;
-        }
-        // Subtract 1 for the header line
-        illuminant_count = ( illuminant_count > 0 ) ? illuminant_count - 1 : 0;
-    }
-    OIIO_CHECK_EQUAL( illuminant_count, 3 );
+    OIIO_CHECK_EQUAL( lines.size(), 4 );
+    OIIO_CHECK_EQUAL( lines[0], "The following illuminants are supported:" );
+    OIIO_CHECK_EQUAL( lines[1], "Day-light (e.g., D60, D6025)" );
+    OIIO_CHECK_EQUAL( lines[2], "Blackbody (e.g., 3200K)" );
+    OIIO_CHECK_EQUAL( lines[3], "my-illuminant" );
 }
 
 int main( int, char ** )
@@ -833,7 +786,9 @@ int main( int, char ** )
 
         // Tests for parse_parameters
         test_parse_parameters_list_cameras();
+        test_parse_parameters_list_cameras( true );
         test_parse_parameters_list_illuminants();
+        test_parse_parameters_list_illuminants( true );
     }
     catch ( const std::exception &e )
     {

@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
+// must be before <OpenImageIO/unittest.h>
+#include <rawtoaces/image_converter.h>
+
 #include <filesystem>
 #include <OpenImageIO/unittest.h>
-#include <rawtoaces/image_converter.h>
 
 // This file contains some usage examples of the util library.
 // It has only very little unit test functionality to keep the code clean.

@@ -7,6 +7,11 @@
 #    undef RGB
 #endif
 
+#include "../src/rawtoaces_util/rawtoaces_util_priv.h"
+
+// must be before <OpenImageIO/unittest.h>
+#include <rawtoaces/image_converter.h>
+
 #include <OpenImageIO/unittest.h>
 #include <filesystem>
 #include <fstream>

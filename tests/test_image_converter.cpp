@@ -16,12 +16,12 @@
 #include <ctime>
 
 #ifdef WIN32
-#include <io.h>
-#include <process.h>
-#include <direct.h> // for _getcwd
+#    include <io.h>
+#    include <process.h>
+#    include <direct.h> // for _getcwd
 #else
-#include <sys/stat.h> // for mkfifo
-#include <unistd.h>   // for getcwd
+#    include <sys/stat.h> // for mkfifo
+#    include <unistd.h>   // for getcwd
 #endif
 
 #include "../src/rawtoaces_util/rawtoaces_util_priv.h"
@@ -60,7 +60,8 @@ std::string run_rawtoaces_command( const std::vector<std::string> &args )
     char current_dir[1024];
     if ( _getcwd( current_dir, sizeof( current_dir ) ) != nullptr )
     {
-        command = std::string( current_dir ) + "\\src\\rawtoaces\\Release\\rawtoaces.exe";
+        command = std::string( current_dir ) +
+                  "\\src\\rawtoaces\\Release\\rawtoaces.exe";
     }
     else
     {
@@ -69,7 +70,7 @@ std::string run_rawtoaces_command( const std::vector<std::string> &args )
 #else
     command = "../src/rawtoaces/rawtoaces";
 #endif
-    
+
     for ( const auto &arg: args )
     {
         command += " " + arg;
@@ -762,8 +763,18 @@ void test_parse_parameters_list_cameras( bool use_dir_path_arg = false )
     OIIO_CHECK_EQUAL(
         lines[0],
         "Spectral sensitivity data is available for the following cameras:" );
-    OIIO_CHECK_EQUAL( lines[1], "Mamiya / Mamiya 7" );
-    OIIO_CHECK_EQUAL( lines[2], "Canon / EOS R6" );
+
+    // Check that both cameras are present (order doesn't matter)
+    bool found_canon = false, found_mamiya = false;
+    for ( size_t i = 1; i < lines.size(); ++i )
+    {
+        if ( lines[i] == "Canon / EOS R6" )
+            found_canon = true;
+        if ( lines[i] == "Mamiya / Mamiya 7" )
+            found_mamiya = true;
+    }
+    OIIO_CHECK_EQUAL( found_canon, true );
+    OIIO_CHECK_EQUAL( found_mamiya, true );
 }
 
 /// This test verifies that when --list-illuminants is provided, the method

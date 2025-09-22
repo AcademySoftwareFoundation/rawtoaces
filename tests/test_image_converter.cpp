@@ -13,8 +13,16 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <vector>
-#include <sys/stat.h> // for mkfifo
 #include <ctime>
+
+#ifdef WIN32
+#include <io.h>
+#include <process.h>
+#include <direct.h> // for _getcwd
+#else
+#include <sys/stat.h> // for mkfifo
+#include <unistd.h>   // for getcwd
+#endif
 
 #include "../src/rawtoaces_util/rawtoaces_util_priv.h"
 #include <rawtoaces/image_converter.h>
@@ -45,14 +53,47 @@ std::string convert_linux_path_to_windows_path( const std::string &path )
 /// @return std::string containing the captured stdout output from the rawtoaces execution
 std::string run_rawtoaces_command( const std::vector<std::string> &args )
 {
-    // Build the command line - from build/tests/ to build/src/rawtoaces/
-    std::string command = "../src/rawtoaces/rawtoaces";
+    // Build the command line - use absolute path to avoid working directory issues
+    std::string command;
+#ifdef WIN32
+    // Get current working directory and build absolute path
+    char current_dir[1024];
+    if ( _getcwd( current_dir, sizeof( current_dir ) ) != nullptr )
+    {
+        command = std::string( current_dir ) + "\\src\\rawtoaces\\Release\\rawtoaces.exe";
+    }
+    else
+    {
+        command = "..\\..\\src\\rawtoaces\\Release\\rawtoaces.exe";
+    }
+#else
+    command = "../src/rawtoaces/rawtoaces";
+#endif
+    
     for ( const auto &arg: args )
     {
         command += " " + arg;
     }
 
-    // Execute the command and capture output
+#ifdef WIN32
+    // Windows implementation using _popen
+    FILE *pipe = _popen( command.c_str(), "r" );
+    OIIO_CHECK_ASSERT(
+        pipe != nullptr && "Failed to execute rawtoaces command" );
+
+    // Read output
+    std::string output;
+    char        buffer[4096];
+    while ( fgets( buffer, sizeof( buffer ), pipe ) != nullptr )
+    {
+        output += buffer;
+    }
+
+    // Get exit status and validate
+    int exit_status = _pclose( pipe );
+    OIIO_CHECK_EQUAL( exit_status, 0 );
+#else
+    // Unix implementation using popen
     FILE *pipe = popen( command.c_str(), "r" );
     OIIO_CHECK_ASSERT(
         pipe != nullptr && "Failed to execute rawtoaces command" );
@@ -68,6 +109,7 @@ std::string run_rawtoaces_command( const std::vector<std::string> &args )
     // Get exit status and validate
     int exit_status = pclose( pipe );
     OIIO_CHECK_EQUAL( WEXITSTATUS( exit_status ), 0 );
+#endif
 
     return output;
 }

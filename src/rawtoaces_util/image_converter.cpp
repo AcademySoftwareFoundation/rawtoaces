@@ -47,8 +47,6 @@ struct CameraIdentifier
  *
  * @param path The filesystem path to check
  * @param batch Reference to a vector of strings to add valid file paths to
- * @return true if the file was processed (either added to batch or filtered out),
- *         false if the file should be ignored
  */
 void check_and_add_file(
     const std::filesystem::path &path, std::vector<std::string> &batch )

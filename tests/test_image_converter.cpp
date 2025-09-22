@@ -491,6 +491,61 @@ void test_database_paths_both_env()
     unset_env_var( "AMPAS_DATA_PATH" );
 }
 
+/// Tests database_paths with override_path parameter (--data-dir functionality)
+/// Verifies that override_path takes precedence over environment variables
+void test_database_paths_override_path()
+{
+    std::cout << std::endl << "test_database_paths_override_path()" << std::endl;
+    // Set environment variables to ensure they are overridden
+#ifdef WIN32
+    set_env_var(
+        "RAWTOACES_DATA_PATH", "C:\\env\\path1;C:\\env\\path2" );
+    set_env_var(
+        "AMPAS_DATA_PATH", "C:\\deprecated\\path1;C:\\deprecated\\path2" );
+#else
+    set_env_var( "RAWTOACES_DATA_PATH", "/env/path1:/env/path2" );
+    set_env_var( "AMPAS_DATA_PATH", "/deprecated/path1:/deprecated/path2" );
+#endif
+
+    // Test with override path - should take precedence over environment variables
+#ifdef WIN32
+    std::string override_path = "C:\\override\\path1;C:\\override\\path2;C:\\override\\path3";
+    std::vector<std::string> paths = database_paths( override_path );
+    
+    // Should have 3 paths from override
+    OIIO_CHECK_EQUAL( paths.size(), 3 );
+    OIIO_CHECK_EQUAL( paths[0], "C:\\override\\path1" );
+    OIIO_CHECK_EQUAL( paths[1], "C:\\override\\path2" );
+    OIIO_CHECK_EQUAL( paths[2], "C:\\override\\path3" );
+#else
+    std::string override_path = "/override/path1:/override/path2:/override/path3";
+    std::vector<std::string> paths = database_paths( override_path );
+    
+    // Should have 3 paths from override
+    OIIO_CHECK_EQUAL( paths.size(), 3 );
+    OIIO_CHECK_EQUAL( paths[0], "/override/path1" );
+    OIIO_CHECK_EQUAL( paths[1], "/override/path2" );
+    OIIO_CHECK_EQUAL( paths[2], "/override/path3" );
+#endif
+
+    // Test with empty override path - should fall back to environment variables
+    paths = database_paths( "" );
+    
+    // Should have 2 paths from RAWTOACES_DATA_PATH environment variable
+    OIIO_CHECK_EQUAL( paths.size(), 2 );
+#ifdef WIN32
+    OIIO_CHECK_EQUAL( paths[0], "C:\\env\\path1" );
+    OIIO_CHECK_EQUAL( paths[1], "C:\\env\\path2" );
+#else
+    OIIO_CHECK_EQUAL( paths[0], "/env/path1" );
+    OIIO_CHECK_EQUAL( paths[1], "/env/path2" );
+#endif
+
+    // Clean up
+    unset_env_var( "RAWTOACES_DATA_PATH" );
+    unset_env_var( "AMPAS_DATA_PATH" );
+}
+
 /// Tests fix_metadata with both Make and Model attributes
 void test_fix_metadata_both_attributes()
 {
@@ -774,6 +829,7 @@ int main( int, char ** )
         test_database_paths_rawtoaces_env();
         test_database_paths_ampas_env();
         test_database_paths_both_env();
+        test_database_paths_override_path();
 
         // Tests for fix_metadata
         test_fix_metadata_both_attributes();

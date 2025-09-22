@@ -61,39 +61,8 @@ std::string run_rawtoaces_command( const std::vector<std::string> &args )
     // Build the command line - try multiple possible paths for different environments
     std::string command;
 #ifdef WIN32
-    // Try multiple possible paths in order of likelihood
-    std::vector<std::string> possible_paths = {
-        "src\\rawtoaces\\Release\\rawtoaces.exe",           // From project root
-        "build\\src\\rawtoaces\\Release\\rawtoaces.exe",    // From project root with build dir
-        "..\\..\\src\\rawtoaces\\Release\\rawtoaces.exe",   // From build/tests/Release
-        "..\\src\\rawtoaces\\Release\\rawtoaces.exe",       // From build/tests
-        "..\\..\\..\\src\\rawtoaces\\Release\\rawtoaces.exe" // From deeper nested dirs
-    };
-    
-    // Check if any of the possible paths exist
-    bool found = false;
-    for ( const auto &path : possible_paths )
-    {
-        std::ifstream file( path );
-        if ( file.good() )
-        {
-            command = path;
-            found = true;
-            std::cout << "DEBUG: Found rawtoaces executable at: " << path << std::endl;
-            break;
-        }
-        else
-        {
-            std::cout << "DEBUG: Path not found: " << path << std::endl;
-        }
-    }
-    
-    // If no path found, use the first one as fallback
-    if ( !found )
-    {
-        command = possible_paths[0];
-        std::cout << "DEBUG: No path found, using fallback: " << command << std::endl;
-    }
+    // Use the standard path from build directory
+    command = "src\\rawtoaces\\Release\\rawtoaces.exe";
 #else
     command = "../src/rawtoaces/rawtoaces";
 #endif

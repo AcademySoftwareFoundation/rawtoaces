@@ -3,7 +3,7 @@
 
 #include "py_core.h"
 
-void core_bindings( nanobind::module_ & /*m - unused*/)
+void core_bindings( nanobind::module_ & /*m - unused*/ )
 {
     // TODO: add the core lib bindings here
 }

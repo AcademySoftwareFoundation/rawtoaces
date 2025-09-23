@@ -47,6 +47,7 @@ To build `rawtoaces` you would need to satisfy these dependencies:
 | `ceres`          | `1.12.0`   | Ceres Solver is an open source library for solving Non-linear Least Squares problems with bounds constraints and unconstrained optimization problems. It processes non-linear regression for rawtoaces.  | [Ceres Solver installation](http://ceres-solver.org/installation.html)|
 | `boost`          | `1.76.0`   | Boost has multiple C++ libraries that support tasks related to linear algebra, multithreading, image processing, unit testing, etc. It unit testing for rawtoaces. | [Boost download](http://www.boost.org/) |
 | `OpenImageIO`    | `3.0`      | OpenImageIO is an open source library providing vast functionality for image processing. rawtoaces relies on OpenImageIO for reading raw files, saving AcesContainer files, and also all pixel operations.  | [OpenImageIO installation](https://github.com/AcademySoftwareFoundation/OpenImageIO/blob/main/INSTALL.md) |
+| `nanobind`       | `1.9`      | nanobind is a small binding library that exposes C++ types in Python and vice versa. | [nanobind installation](https://nanobind.readthedocs.io/en/latest/installing.html) |
 
 
 ### MacOS

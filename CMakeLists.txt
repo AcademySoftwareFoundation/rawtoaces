@@ -22,7 +22,11 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX /EHsc")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4 /WX")
     add_compile_definitions( NOMINMAX )
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+elseif (
+    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
+    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
+    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang"
+)
     # GCC/Clang strict flags
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra -pedantic")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -Wextra -pedantic")
@@ -69,6 +73,7 @@ endforeach()
 
 option( ENABLE_SHARED "Enable Shared Libraries" ON )
 option( RTA_CENTOS7_CERES_HACK "Work around broken config in ceres-solver 1.12" OFF )
+option( RTA_BUILD_PYTHON_BINDINGS "Build python bindings" ON )
 option( ENABLE_COVERAGE "Enable code coverage reporting" OFF )
 
 if ( ENABLE_SHARED )
@@ -92,6 +97,10 @@ add_definitions( -DPACKAGE="RAWTOACES" -DVERSION="${RAWTOACES_VERSION}" )
 add_subdirectory("src/${RAWTOACES_CORE_LIB}")
 add_subdirectory("src/${RAWTOACES_UTIL_LIB}")
 add_subdirectory("src/rawtoaces")
+
+if ( RTA_BUILD_PYTHON_BINDINGS )
+    add_subdirectory(src/bindings)
+endif ( RTA_BUILD_PYTHON_BINDINGS )
 
 enable_testing()
 add_subdirectory(tests)

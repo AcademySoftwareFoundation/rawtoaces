@@ -2,4 +2,4 @@
 
 set -ex
 
-brew install ceres-solver nlohmann-json openimageio
+brew install ceres-solver nlohmann-json openimageio nanobind robin-map

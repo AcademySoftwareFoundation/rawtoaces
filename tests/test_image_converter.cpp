@@ -29,9 +29,6 @@
 #    include <unistd.h>   // for getcwd
 #endif
 
-#include "../src/rawtoaces_util/rawtoaces_util_priv.h"
-#include <rawtoaces/image_converter.h>
-
 using namespace rta::util;
 
 std::string convert_linux_path_to_windows_path( const std::string &path )
@@ -48,6 +45,25 @@ std::string convert_linux_path_to_windows_path( const std::string &path )
     }
 
     return OIIO::Strutil::join( segments, ";" );
+}
+
+FILE *platform_popen( const char *command, const char *mode )
+{
+#ifdef WIN32
+    return _popen( command, mode );
+#else
+    return popen( command, mode );
+#endif
+}
+
+int platform_pclose( FILE *pipe )
+{
+#ifdef WIN32
+    return _pclose( pipe );
+#else
+    int status = pclose( pipe );
+    return WEXITSTATUS( status );
+#endif
 }
 
 /// Executes a rawtoaces command with the given arguments and captures its output.
@@ -72,9 +88,8 @@ std::string run_rawtoaces_command( const std::vector<std::string> &args )
         command += " " + arg;
     }
 
-#ifdef WIN32
-    // Windows implementation using _popen
-    FILE *pipe = _popen( command.c_str(), "r" );
+    // Execute command using platform-specific functions
+    FILE *pipe = platform_popen( command.c_str(), "r" );
     OIIO_CHECK_ASSERT(
         pipe != nullptr && "Failed to execute rawtoaces command" );
 
@@ -87,26 +102,8 @@ std::string run_rawtoaces_command( const std::vector<std::string> &args )
     }
 
     // Get exit status and validate
-    int exit_status = _pclose( pipe );
+    int exit_status = platform_pclose( pipe );
     OIIO_CHECK_EQUAL( exit_status, 0 );
-#else
-    // Unix implementation using popen
-    FILE *pipe = popen( command.c_str(), "r" );
-    OIIO_CHECK_ASSERT(
-        pipe != nullptr && "Failed to execute rawtoaces command" );
-
-    // Read output
-    std::string output;
-    char        buffer[4096];
-    while ( fgets( buffer, sizeof( buffer ), pipe ) != nullptr )
-    {
-        output += buffer;
-    }
-
-    // Get exit status and validate
-    int exit_status = pclose( pipe );
-    OIIO_CHECK_EQUAL( WEXITSTATUS( exit_status ), 0 );
-#endif
 
     return output;
 }
@@ -118,7 +115,7 @@ getenv() - Part of standard C library (C89/C99) - available everywhere
 setenv()/unsetenv() - Part of POSIX standard - only on Unix-like systems
 */
 #ifdef WIN32
-void set_env_var( std::string name, std::string value )
+void set_env_var( const std::string &name, const std::string &value )
 {
     _putenv_s( name.c_str(), value.c_str() );
 }
@@ -128,7 +125,7 @@ std::string to_os_path( std::string linux_path )
     return convert_linux_path_to_windows_path( linux_path );
 }
 
-void unset_env_var( std::string name )
+void unset_env_var( const std::string &name )
 {
     _putenv_s( name.c_str(), "" );
 }
@@ -138,12 +135,12 @@ std::string to_os_path( std::string linux_path )
     return linux_path;
 }
 
-void set_env_var( std::string name, std::string value )
+void set_env_var( const std::string &name, const std::string &value )
 {
     setenv( name.c_str(), value.c_str(), 1 );
 }
 
-void unset_env_var( std::string name )
+void unset_env_var( const std::string &name )
 {
     unsetenv( name.c_str() );
 }

@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
-#ifndef _MATHOPS_h__
-#define _MATHOPS_h__
+#pragma once
 
 #include "define.h"
 
@@ -491,5 +490,3 @@ getCalcXYZt( const vector<vector<T>> &RGB, const T beta_params[6] )
 
 } // namespace core
 } // namespace rta
-
-#endif

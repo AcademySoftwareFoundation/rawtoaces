@@ -317,7 +317,8 @@ bool prepare_transform_spectral(
             if ( attr )
             {
                 for ( int i = 0; i < 4; i++ )
-                    tmp_wb_multipliers[i] = attr->get_float_indexed( i );
+                    tmp_wb_multipliers[i] =
+                        static_cast<double>( attr->get_float_indexed( i ) );
             }
         }
 
@@ -428,8 +429,8 @@ bool prepare_transform_DNG(
     // Step 1: Extract basic DNG metadata
     core::Metadata metadata;
 
-    metadata.baseline_exposure =
-        image_spec.get_float_attribute( "raw:dng:baseline_exposure" );
+    metadata.baseline_exposure = static_cast<double>(
+        image_spec.get_float_attribute( "raw:dng:baseline_exposure" ) );
 
     // Step 2: Extract neutral RGB values from camera multipliers
     metadata.neutral_RGB.resize( 3 );
@@ -439,7 +440,8 @@ bool prepare_transform_DNG(
     if ( attr )
     {
         for ( int i = 0; i < 3; i++ )
-            metadata.neutral_RGB[i] = 1.0 / attr->get_float_indexed( i );
+            metadata.neutral_RGB[i] =
+                1.0 / static_cast<double>( attr->get_float_indexed( i ) );
     }
 
     // Step 3: Extract calibration data for two illuminants
@@ -467,7 +469,8 @@ bool prepare_transform_DNG(
                 for ( int j = 0; j < 3; j++ )
                 {
                     calibration.XYZ_to_RGB_matrix[i * 3 + j] =
-                        matrix1_attr->get_float_indexed( i * 3 + j );
+                        static_cast<double>(
+                            matrix1_attr->get_float_indexed( i * 3 + j ) );
                 }
             }
         }
@@ -483,7 +486,8 @@ bool prepare_transform_DNG(
                 for ( int j = 0; j < 3; j++ )
                 {
                     calibration.camera_calibration_matrix[i * 3 + j] =
-                        matrix2_attr->get_float_indexed( i * 4 + j );
+                        static_cast<double>(
+                            matrix2_attr->get_float_indexed( i * 4 + j ) );
                 }
             }
         }
@@ -1296,8 +1300,8 @@ bool ImageConverter::configure(
             settings.crop_box );
     }
 
-    if ( settings.chromatic_aberration[0] != 1.0 &&
-         settings.chromatic_aberration[1] != 1.0 )
+    if ( settings.chromatic_aberration[0] != 1.0f &&
+         settings.chromatic_aberration[1] != 1.0f )
     {
         options.attribute(
             "raw:aber",
@@ -1328,9 +1332,9 @@ bool ImageConverter::configure(
                     OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
                     custom_WB );
 
-                _WB_multipliers.resize( 4 );
+                _wb_multipliers.resize( 4 );
                 for ( size_t i = 0; i < 4; i++ )
-                    _WB_multipliers[i] = custom_WB[i];
+                    _wb_multipliers[i] = static_cast<double>( custom_WB[i] );
             }
             break;
         }
@@ -1366,9 +1370,10 @@ bool ImageConverter::configure(
                 OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
                 settings.custom_WB );
 
-            _WB_multipliers.resize( 4 );
+            _wb_multipliers.resize( 4 );
             for ( size_t i = 0; i < 4; i++ )
-                _WB_multipliers[i] = settings.custom_WB[i];
+                _wb_multipliers[i] =
+                    static_cast<double>( settings.custom_WB[i] );
             break;
 
         default:
@@ -1422,13 +1427,14 @@ bool ImageConverter::configure(
             options["raw:ColorSpace"]        = "raw";
             options["raw:use_camera_matrix"] = 0;
 
-            _IDT_matrix.resize( 3 );
+            _idt_matrix.resize( 3 );
             for ( int i = 0; i < 3; i++ )
             {
-                _IDT_matrix[i].resize( 3 );
+                _idt_matrix[i].resize( 3 );
                 for ( int j = 0; j < 3; j++ )
                 {
-                    _IDT_matrix[i][j] = settings.custom_matrix[i][j];
+                    _idt_matrix[i][j] =
+                        static_cast<double>( settings.custom_matrix[i][j] );
                 }
             }
             break;
@@ -1448,9 +1454,9 @@ bool ImageConverter::configure(
         if ( !prepare_transform_spectral(
                  image_spec,
                  settings,
-                 _WB_multipliers,
-                 _IDT_matrix,
-                 _CAT_matrix ) )
+                 _wb_multipliers,
+                 _idt_matrix,
+                 _cat_matrix ) )
         {
             std::cerr << "ERROR: the colour space transform has not been "
                       << "configured properly (spectral mode)." << std::endl;
@@ -1461,12 +1467,12 @@ bool ImageConverter::configure(
         {
             float custom_WB[4];
 
-            for ( size_t i = 0; i < _WB_multipliers.size(); i++ )
+            for ( size_t i = 0; i < _wb_multipliers.size(); i++ )
             {
-                custom_WB[i] = static_cast<float>( _WB_multipliers[i] );
+                custom_WB[i] = static_cast<float>( _wb_multipliers[i] );
             }
-            if ( _WB_multipliers.size() == 3 )
-                custom_WB[3] = static_cast<float>( _WB_multipliers[1] );
+            if ( _wb_multipliers.size() == 3 )
+                custom_WB[3] = static_cast<float>( _wb_multipliers[1] );
 
             options.attribute(
                 "raw:user_mul",
@@ -1483,7 +1489,7 @@ bool ImageConverter::configure(
             options["raw:use_camera_wb"]     = 1;
 
             if ( !prepare_transform_DNG(
-                     image_spec, settings, _IDT_matrix, _CAT_matrix ) )
+                     image_spec, settings, _idt_matrix, _cat_matrix ) )
             {
                 std::cerr << "ERROR: the colour space transform has not been "
                           << "configured properly (metadata mode)."
@@ -1493,12 +1499,12 @@ bool ImageConverter::configure(
         }
         else
         {
-            prepare_transform_nonDNG( _IDT_matrix, _CAT_matrix );
+            prepare_transform_nonDNG( _idt_matrix, _cat_matrix );
         }
     }
     else if ( matrix_method == Settings::MatrixMethod::Adobe )
     {
-        prepare_transform_nonDNG( _IDT_matrix, _CAT_matrix );
+        prepare_transform_nonDNG( _idt_matrix, _cat_matrix );
     }
 
     if ( settings.verbosity > 1 )
@@ -1660,16 +1666,16 @@ bool ImageConverter::apply_matrix(
     if ( !roi.defined() )
         roi = dst.roi();
 
-    if ( _IDT_matrix.size() )
+    if ( _idt_matrix.size() )
     {
-        success = rta::util::apply_matrix( _IDT_matrix, dst, src, roi );
+        success = rta::util::apply_matrix( _idt_matrix, dst, src, roi );
         if ( !success )
             return false;
     }
 
-    if ( _CAT_matrix.size() )
+    if ( _cat_matrix.size() )
     {
-        success = rta::util::apply_matrix( _CAT_matrix, dst, dst, roi );
+        success = rta::util::apply_matrix( _cat_matrix, dst, dst, roi );
         if ( !success )
             return false;
 
@@ -1917,17 +1923,17 @@ bool ImageConverter::process_image( const std::string &input_filename )
 
 const std::vector<double> &ImageConverter::get_WB_multipliers()
 {
-    return _WB_multipliers;
+    return _wb_multipliers;
 }
 
 const std::vector<std::vector<double>> &ImageConverter::get_IDT_matrix()
 {
-    return _IDT_matrix;
+    return _idt_matrix;
 }
 
 const std::vector<std::vector<double>> &ImageConverter::get_CAT_matrix()
 {
-    return _CAT_matrix;
+    return _cat_matrix;
 }
 
 } //namespace util

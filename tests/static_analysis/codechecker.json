@@ -1,0 +1,8 @@
+{
+    "parse": [
+        "--skip=/home/runner/work/rawtoaces/rawtoaces/tests/static_analysis/codechecker_skipfile.txt"
+    ],
+    "store": [
+        "--skip=/home/runner/work/rawtoaces/rawtoaces/tests/static_analysis/codechecker_skipfile.txt"
+    ]
+}

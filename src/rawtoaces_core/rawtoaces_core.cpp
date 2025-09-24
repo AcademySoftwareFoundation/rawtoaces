@@ -55,10 +55,8 @@ void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
         cct = cct_input * 1.0;
     else
     {
-        fprintf(
-            stderr,
-            "The range of Correlated Color Temperature for "
-            "Day Light should be from 4000 to 25000. \n" );
+        std::cerr << "The range of Correlated Color Temperature for "
+                  << "Day Light should be from 4000 to 25000." << std::endl;
         exit( 1 );
     }
 
@@ -104,10 +102,8 @@ void calculate_blackbody_SPD( const int &cct, Spectrum &spectrum )
 {
     if ( cct < 1500 || cct >= 4000 )
     {
-        fprintf(
-            stderr,
-            "The range of Color Temperature for BlackBody "
-            "should be from 1500 to 3999. \n" );
+        std::cerr << "The range of Color Temperature for BlackBody "
+                  << "should be from 1500 to 3999." << std::endl;
         exit( 1 );
     }
 
@@ -147,10 +143,9 @@ void generate_illuminant(
     auto &main_spectral_set = main_iter->second;
 
     // Add the power channel and get a reference to it
-    auto &power_spectrum = main_spectral_set
-                               .emplace_back( SpectralData::SpectralChannel(
-                                   "power", Spectrum( 0 ) ) )
-                               .second;
+    auto &power_data = main_spectral_set.emplace_back(
+        SpectralData::SpectralChannel( "power", Spectrum( 0 ) ) );
+    auto &power_spectrum = power_data.second;
 
     illuminant.illuminant = type;
     if ( is_daylight )
@@ -168,15 +163,15 @@ SpectralSolver::SpectralSolver(
     : _search_directories( search_directories )
 {
     verbosity = 0;
-    _IDT_matrix.resize( 3 );
-    _WB_multipliers.resize( 3 );
+    _idt_matrix.resize( 3 );
+    _wb_multipliers.resize( 3 );
     for ( int i = 0; i < 3; i++ )
     {
-        _IDT_matrix[i].resize( 3 );
-        _WB_multipliers[i] = 1.0;
+        _idt_matrix[i].resize( 3 );
+        _wb_multipliers[i] = 1.0;
         for ( size_t j = 0; j < 3; j++ )
         {
-            _IDT_matrix[i][j] = neutral3[i][j];
+            _idt_matrix[i][j] = neutral3[i][j];
         }
     }
 }
@@ -402,7 +397,7 @@ bool SpectralSolver::find_illuminant( const vector<double> &wb )
         {
             sse             = sse_tmp;
             illuminant      = current_illuminant;
-            _WB_multipliers = wb_tmp;
+            _wb_multipliers = wb_tmp;
         }
     }
 
@@ -431,7 +426,7 @@ bool SpectralSolver::calculate_WB()
         return false;
     }
 
-    _WB_multipliers = _calculate_WB( camera, illuminant );
+    _wb_multipliers = _calculate_WB( camera, illuminant );
     return true;
 }
 
@@ -455,7 +450,7 @@ calculate_CM( const SpectralData &camera, const SpectralData &illuminant )
     double g = ( camera_g * illuminant_spectrum ).integrate();
     double b = ( camera_b * illuminant_spectrum ).integrate();
 
-    double max = std::max( r, std::max( g, b ) );
+    double max = std::max( { r, g, b } );
 
     std::vector<double> result( 3 );
     result[0] = max / r;
@@ -613,14 +608,14 @@ struct IDTOptimizationCost
     IDTOptimizationCost(
         const std::vector<std::vector<double>> &RGB,
         const std::vector<std::vector<double>> &out_LAB )
-        : _RGB( RGB ), _outLAB( out_LAB )
+        : _in_RGB( RGB ), _out_LAB( out_LAB )
     {}
 
     template <typename T>
     bool operator()( const T *beta_params, T *residuals ) const;
 
-    const std::vector<std::vector<double>> _RGB;
-    const std::vector<std::vector<double>> _outLAB;
+    const std::vector<std::vector<double>> _in_RGB;
+    const std::vector<std::vector<double>> _out_LAB;
 };
 
 /// Perform curve fitting optimization to find optimal IDT matrix parameters.
@@ -746,10 +741,10 @@ bool SpectralSolver::calculate_IDT_matrix()
     double beta_params_start[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
 
     auto TI  = calculate_TI( illuminant, training_data );
-    auto RGB = calculate_RGB( camera, _WB_multipliers, TI );
+    auto RGB = calculate_RGB( camera, _wb_multipliers, TI );
     auto XYZ = calculate_XYZ( observer, illuminant, TI );
 
-    return curveFit( RGB, XYZ, beta_params_start, verbosity, _IDT_matrix );
+    return curveFit( RGB, XYZ, beta_params_start, verbosity, _idt_matrix );
 }
 
 //	=====================================================================
@@ -763,12 +758,12 @@ bool SpectralSolver::calculate_IDT_matrix()
 
 const vector<vector<double>> &SpectralSolver::get_IDT_matrix() const
 {
-    return _IDT_matrix;
+    return _idt_matrix;
 }
 
 const vector<double> &SpectralSolver::get_WB_multipliers() const
 {
-    return _WB_multipliers;
+    return _wb_multipliers;
 }
 
 MetadataSolver::MetadataSolver( const core::Metadata &metadata )
@@ -953,13 +948,13 @@ vector<double> find_XYZ_to_camera_matrix(
 
     if ( metadata.calibration[0].illuminant == 0 )
     {
-        fprintf( stderr, " No calibration illuminants were found. \n " );
+        std::cerr << "No calibration illuminants were found." << std::endl;
         return metadata.calibration[0].XYZ_to_RGB_matrix;
     }
 
     if ( neutral_RGB.size() == 0 )
     {
-        fprintf( stderr, " no neutral RGB values were found. \n " );
+        std::cerr << "No neutral RGB values were found." << std::endl;
         return metadata.calibration[0].XYZ_to_RGB_matrix;
     }
 
@@ -980,16 +975,16 @@ vector<double> find_XYZ_to_camera_matrix(
         metadata.calibration[1].XYZ_to_RGB_matrix;
 
     double low_mired =
-        std::max( min_mired, std::min( max_mired, std::min( mir1, mir2 ) ) );
+        std::clamp( std::min( mir1, mir2 ), min_mired, max_mired );
     double high_mired =
-        std::max( min_mired, std::min( max_mired, std::max( mir1, mir2 ) ) );
-    double mirStep = std::max( 5.0, ( high_mired - low_mired ) / 50.0 );
+        std::clamp( std::max( mir1, mir2 ), min_mired, max_mired );
+    double mired_step = std::max( 5.0, ( high_mired - low_mired ) / 50.0 );
 
-    double current_mired = 0.0, last_mired = 0.0, estimated_mired = 0.0,
-           current_error = 0.0, last_error = 0.0, smallest_error = 0.0;
+    double last_mired = 0.0, estimated_mired = 0.0, current_error = 0.0,
+           last_error = 0.0, smallest_error = 0.0;
 
-    for ( current_mired = low_mired; current_mired < high_mired;
-          current_mired += mirStep )
+    double current_mired = low_mired;
+    while ( current_mired < high_mired )
     {
         current_error =
             current_mired -
@@ -1020,6 +1015,8 @@ vector<double> find_XYZ_to_camera_matrix(
 
         last_error = current_error;
         last_mired = current_mired;
+
+        current_mired += mired_step;
     }
 
     return XYZ_to_camera_weighted_matrix(
@@ -1232,16 +1229,16 @@ vector<vector<double>> MetadataSolver::calculate_IDT_matrix()
 template <typename T>
 bool IDTOptimizationCost::operator()( const T *beta_params, T *residuals ) const
 {
-    vector<vector<T>> RGB_copy( _RGB.size(), vector<T>( 3 ) );
-    for ( size_t i = 0; i < _RGB.size(); i++ )
+    vector<vector<T>> RGB_copy( _in_RGB.size(), vector<T>( 3 ) );
+    for ( size_t i = 0; i < _in_RGB.size(); i++ )
         for ( size_t j = 0; j < 3; j++ )
-            RGB_copy[i][j] = T( _RGB[i][j] );
+            RGB_copy[i][j] = T( _in_RGB[i][j] );
 
     vector<vector<T>> out_calc_LAB =
         XYZ_to_LAB( getCalcXYZt( RGB_copy, beta_params ) );
-    for ( size_t i = 0; i < _RGB.size(); i++ )
+    for ( size_t i = 0; i < _in_RGB.size(); i++ )
         for ( size_t j = 0; j < 3; j++ )
-            residuals[i * 3 + j] = _outLAB[i][j] - out_calc_LAB[i][j];
+            residuals[i * 3 + j] = _out_LAB[i][j] - out_calc_LAB[i][j];
 
     return true;
 }

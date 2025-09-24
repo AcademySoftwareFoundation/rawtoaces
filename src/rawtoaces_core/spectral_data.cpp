@@ -87,17 +87,25 @@ void Spectrum::reshape()
         return;
 
     std::vector<double> temp;
-    size_t              src    = 0;
-    float               wl_src = shape.first;
-    float               wl_dst = ReferenceShape.first;
+    size_t              src = 0;
 
-    while ( wl_dst <= ReferenceShape.last )
+    double wl_src_first = static_cast<double>( shape.first );
+    double wl_src_step  = static_cast<double>( shape.step );
+
+    double wl_dst_first = static_cast<double>( ReferenceShape.first );
+    double wl_dst_last  = static_cast<double>( ReferenceShape.last );
+    double wl_dst_step  = static_cast<double>( ReferenceShape.step );
+
+    double wl_src = wl_src_first;
+    double wl_dst = wl_dst_first;
+
+    while ( wl_dst <= wl_dst_last )
     {
         if ( wl_src < wl_dst )
         {
             if ( src < values.size() - 1 )
             {
-                float next_wl_src = shape.first + shape.step * ( src + 1 );
+                double next_wl_src = wl_src_first + wl_src_step * ( src + 1 );
                 if ( next_wl_src <= wl_dst )
                 {
                     // The next source wavelength is still not big enough,
@@ -114,8 +122,7 @@ void Spectrum::reshape()
                     double vv =
                         values[src] * ( 1.0 - ratio ) + values[src + 1] * ratio;
                     temp.push_back( vv );
-                    wl_dst = ReferenceShape.first +
-                             ReferenceShape.step * temp.size();
+                    wl_dst = wl_dst_first + wl_dst_step * temp.size();
                 }
             }
             else
@@ -123,21 +130,20 @@ void Spectrum::reshape()
                 // We have passed all available source samples,
                 // copying the last sample.
                 temp.push_back( values[src] );
-                wl_dst =
-                    ReferenceShape.first + ReferenceShape.step * temp.size();
+                wl_dst = wl_dst_first + wl_dst_step * temp.size();
             }
         }
         else if ( wl_src == wl_dst )
         {
             // Found an exact match, just copy it over.
             temp.push_back( values[src] );
-            wl_dst = ReferenceShape.first + ReferenceShape.step * temp.size();
+            wl_dst = wl_dst_first + wl_dst_step * temp.size();
         }
         else
         {
             // Haven't reached the available source range yet, advancing.
             temp.push_back( values[src] );
-            wl_dst = ReferenceShape.first + ReferenceShape.step * temp.size();
+            wl_dst = wl_dst_first + wl_dst_step * temp.size();
         }
     }
 

@@ -169,8 +169,8 @@ private:
     std::vector<std::string>  _search_directories;
     std::vector<SpectralData> _all_illuminants;
 
-    std::vector<double>              _WB_multipliers;
-    std::vector<std::vector<double>> _IDT_matrix;
+    std::vector<double>              _wb_multipliers;
+    std::vector<std::vector<double>> _idt_matrix;
 };
 
 /// DNG metadata required to calculate an input transform.

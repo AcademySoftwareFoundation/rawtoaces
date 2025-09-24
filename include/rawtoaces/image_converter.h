@@ -277,9 +277,9 @@ public:
 
 private:
     // Solved transform of the current image.
-    std::vector<std::vector<double>> _IDT_matrix;
-    std::vector<std::vector<double>> _CAT_matrix;
-    std::vector<double>              _WB_multipliers;
+    std::vector<std::vector<double>> _idt_matrix;
+    std::vector<std::vector<double>> _cat_matrix;
+    std::vector<double>              _wb_multipliers;
 };
 
 } //namespace util

@@ -1,0 +1,84 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright Contributors to the rawtoaces project.
+
+name: Analysis
+permissions:
+  contents: read
+
+on:
+  schedule:
+    # Run nightly
+    - cron: "0 8 * * *"
+    # Run weekly
+    # - cron: "0 0 * * 0"
+  push:
+    # Run on pushes only to main or if the branch name contains "analysis"
+    branches:
+      - main
+      - '*analysis*'
+    paths:
+      - '**'
+      - '!**.md'
+      - '!**.rst'
+      - '!**/ci.yml'
+      - '!**/docs.yml'
+      - '!**/scorecard.yml'
+      - '!**/wheel.yml'
+      - '!**.properties'
+      - '!docs/**'
+  pull_request:
+    branches:
+      - '*analysis*'
+
+# Allow subsequent pushes to the same PR or REF to cancel any previous jobs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analysis:
+    name: "Static analysis"
+    # Exclude runs on forks, since only the main org has the SonarCloud
+    # account credentials.
+    if: github.repository == 'AcademySoftwareFoundation/rawtoaces'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    env:
+      CC:  clang
+      CXX: clang++
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Dependencies
+        shell: bash
+        run: |
+          build_scripts/install_deps_linux.bash
+      
+      - name: Configure CMake
+        run: >
+          cmake 
+          -B build 
+          -S .
+          -D CMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
+          -D CMAKE_CXX_STANDARD=17
+          -D CMAKE_BUILD_TYPE=Debug
+          -D ENABLE_COVERAGE=ON
+          -D CMAKE_CXX_FLAGS="-g -O0"
+          -D CMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+      - uses: whisperity/codechecker-analysis-action@v1
+        id: codechecker
+        with:
+          logfile: ${{ github.workspace }}/build/compile_commands.json
+          config: '/home/runner/work/rawtoaces/rawtoaces/tests/static_analysis/codechecker.json'
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ steps.codechecker.outputs.warnings == 'true' }}
+        with:
+          name: "CodeChecker Bug Reports"
+          path: ${{ steps.codechecker.outputs.result-html-dir }}
+          
+      - name: "Break build if CodeChecker reported any findings"
+        if: ${{ steps.codechecker.outputs.warnings == 'true' }}
+        run: exit 1

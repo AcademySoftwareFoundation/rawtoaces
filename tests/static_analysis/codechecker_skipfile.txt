@@ -1,0 +1,3 @@
+# The paths are based on Ubuntu builds
+-/usr/include/OpenImageIO/detail/fmt/format.h
+-/usr/lib/llvm-22/lib/clang/22/include/cetintrin.h

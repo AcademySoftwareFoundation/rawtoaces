@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
-#ifndef _DEFINE_h__
-#define _DEFINE_h__
+#pragma once
 
 #include <string>
 #include <algorithm>
@@ -343,5 +342,3 @@ inline bool isValidCT( std::string str )
 
 } // namespace core
 } // namespace rta
-
-#endif

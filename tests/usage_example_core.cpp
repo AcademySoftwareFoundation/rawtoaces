@@ -2,9 +2,7 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include <filesystem>
-
 #include <OpenImageIO/unittest.h>
-
 #include <rawtoaces/rawtoaces_core.h>
 
 // This file contains some usage examples of the core library.

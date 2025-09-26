@@ -13,7 +13,6 @@
 #include <rawtoaces/image_converter.h>
 
 #include <OpenImageIO/unittest.h>
-
 #include <filesystem>
 #include <fstream>
 #include <iostream>

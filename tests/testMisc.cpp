@@ -2,7 +2,6 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include <OpenImageIO/unittest.h>
-
 #include <filesystem>
 
 #include "../src/rawtoaces_core/define.h"

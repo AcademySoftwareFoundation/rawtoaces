@@ -38,8 +38,6 @@ concurrency:
 jobs:
   analysis:
     name: "Static analysis"
-    # Exclude runs on forks, since only the main org has the SonarCloud
-    # account credentials.
     if: github.repository == 'AcademySoftwareFoundation/rawtoaces'
     runs-on: ubuntu-latest
     strategy:

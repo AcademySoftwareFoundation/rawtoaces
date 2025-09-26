@@ -10,3 +10,5 @@ time sudo apt-get -q -f install -y \
     libopencv-dev \
     openimageio-tools libopenimageio-dev \
     nanobind-dev
+
+pip3 install pytest

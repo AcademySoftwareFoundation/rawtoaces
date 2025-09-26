@@ -1743,53 +1743,67 @@ bool ImageConverter::apply_crop(
 bool ImageConverter::make_output_path(
     std::string &path, const std::string &suffix )
 {
-    std::filesystem::path temp_path( path );
-
-    temp_path.replace_extension();
-    temp_path += suffix + ".exr";
-
-    if ( !settings.output_dir.empty() )
+    // Validate input path
+    if ( path.empty() )
     {
-        auto new_directory = std::filesystem::path( settings.output_dir );
+        std::cerr << "ERROR: Empty input path provided." << std::endl;
+        return false;
+    }
+    try
+    {
+        std::filesystem::path temp_path( path );
 
-        auto filename      = temp_path.filename();
-        auto old_directory = temp_path.remove_filename();
+        temp_path.replace_extension();
+        temp_path += suffix + ".exr";
 
-        new_directory = old_directory / new_directory;
-
-        if ( !std::filesystem::exists( new_directory ) )
+        if ( !settings.output_dir.empty() )
         {
-            if ( settings.create_dirs )
+            auto new_directory = std::filesystem::path( settings.output_dir );
+
+            auto filename      = temp_path.filename();
+            auto old_directory = temp_path.remove_filename();
+
+            new_directory = old_directory / new_directory;
+
+            if ( !std::filesystem::exists( new_directory ) )
             {
-                if ( !std::filesystem::create_directory( new_directory ) )
+                if ( settings.create_dirs )
                 {
-                    std::cerr << "ERROR: Failed to create directory "
-                              << new_directory << "." << std::endl;
+                    if ( !std::filesystem::create_directory( new_directory ) )
+                    {
+                        std::cerr << "ERROR: Failed to create directory "
+                                  << new_directory << "." << std::endl;
+                        return false;
+                    }
+                }
+                else
+                {
+                    std::cerr << "ERROR: The output directory " << new_directory
+                              << " does not exist." << std::endl;
                     return false;
                 }
             }
-            else
-            {
-                std::cerr << "ERROR: The output directory " << new_directory
-                          << " does not exist." << std::endl;
-                return false;
-            }
+            temp_path = std::filesystem::absolute( new_directory / filename );
         }
 
-        temp_path = std::filesystem::absolute( new_directory / filename );
-    }
+        if ( !settings.overwrite && std::filesystem::exists( temp_path ) )
+        {
+            std::cerr
+                << "ERROR: file " << temp_path << " already exists. Use "
+                << "--overwrite to allow overwriting existing files. Skipping "
+                << "this file." << std::endl;
+            return false;
+        }
 
-    if ( !settings.overwrite && std::filesystem::exists( temp_path ) )
+        path = temp_path.string();
+        return true;
+    }
+    catch ( const std::exception &e )
     {
-        std::cerr
-            << "ERROR: file " << temp_path << " already exists. Use "
-            << "--overwrite to allow overwriting existing files. Skipping "
-            << "this file." << std::endl;
+        std::cerr << "ERROR: Invalid path format '" << path << "': " << e.what()
+                  << std::endl;
         return false;
     }
-
-    path = temp_path.string();
-    return true;
 }
 
 bool ImageConverter::save_image(
@@ -1823,6 +1837,40 @@ bool ImageConverter::save_image(
 
 bool ImageConverter::process_image( const std::string &input_filename )
 {
+    // Early validation: check if input file exists and is valid
+    if ( input_filename.empty() )
+    {
+        if ( settings.verbosity > 0 )
+        {
+            std::cerr << "ERROR: Empty input filename provided." << std::endl;
+        }
+        return false;
+    }
+
+    // Validate input file exists
+    // Wrap in try-catch to handle filesystem exceptions on Windows
+    try
+    {
+        if ( !std::filesystem::exists( input_filename ) )
+        {
+            if ( settings.verbosity > 0 )
+            {
+                std::cerr << "ERROR: Input file does not exist: "
+                          << input_filename << std::endl;
+            }
+            return false;
+        }
+    }
+    catch ( const std::filesystem::filesystem_error &e )
+    {
+        if ( settings.verbosity > 0 )
+        {
+            std::cerr << "ERROR: Filesystem error while checking input file '"
+                      << input_filename << "': " << e.what() << std::endl;
+        }
+        return false;
+    }
+
     std::string output_filename = input_filename;
     if ( !make_output_path( output_filename ) )
     {

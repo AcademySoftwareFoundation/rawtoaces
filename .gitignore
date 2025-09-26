@@ -2,3 +2,4 @@
 build/
 build-coverage/
 tests/materials/*.exr
+__pycache__/

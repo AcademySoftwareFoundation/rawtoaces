@@ -201,6 +201,30 @@ setup_test_coverage(Test_ImageConverter)
 add_test ( NAME Test_ImageConverter COMMAND Test_ImageConverter )
 
 ################################################################################
+# Python tests
+if(RTA_BUILD_PYTHON_BINDINGS)
+    if(Python_EXECUTABLE)
+        add_test(
+            NAME Test_Python_ImageConverter
+            COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/python/test_image_converter.py -v
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        )
+
+        # Set environment for Python test to find the compiled module
+        # Handle both single-config (Linux/macOS) and multi-config (Windows) generators
+        if(WIN32)
+            set_tests_properties(Test_Python_ImageConverter PROPERTIES
+                ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}/src/bindings/Release;${CMAKE_BINARY_DIR}/src/bindings;$ENV{PYTHONPATH}"
+            )
+        else()
+            set_tests_properties(Test_Python_ImageConverter PROPERTIES
+                ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}/src/bindings:$ENV{PYTHONPATH}"
+            )
+        endif()
+    endif()
+endif()
+
+################################################################################
 # Coverage report generation
 if( ENABLE_COVERAGE AND COVERAGE_SUPPORTED )
     # Include config_tests subdirectories

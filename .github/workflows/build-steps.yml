@@ -1,0 +1,126 @@
+name: CI Steps
+
+on:
+  workflow_call:
+    # This inputs receive values via the "with:" section in ci_workflow.yml
+    inputs:
+      runner:
+        type: string
+        default: 'ubuntu-latest'
+      container:
+        type: string
+      container_volumes:
+        type: string
+        default: '[]'
+      cc_compiler:
+        type: string
+      cxx_compiler:
+        type: string
+      build_type:
+        type: string
+        default: 'Release'
+      install_deps:
+        type: string
+        default: 'install_deps_yum'
+      toolchain_file:
+        type: string
+      build_shared_libs:
+        type: string
+        default: 'ON'
+      vfxyear:
+        type: string
+        default: '0'
+      ceres_hack:
+        type: string
+        default: 'OFF'
+      test_install:
+        type: string
+        default: 'ON'
+
+permissions: read-all
+
+jobs:
+  build_steps:
+
+    runs-on: ${{ inputs.runner }}
+    container:
+      image: ${{ inputs.container }}
+      volumes: ${{ fromJson( inputs.container_volumes ) }}
+
+    env:
+      CXX: ${{inputs.cxx_compiler}}
+      CC: ${{inputs.cc_compiler}}
+
+    steps:
+          
+      - name: Install nodejs20glibc2.17 - VFX2022 only
+        if: inputs.vfxyear == '2022'
+        run: |
+          curl --silent https://unofficial-builds.nodejs.org/download/release/v20.18.1/node-v20.18.1-linux-x64-glibc-217.tar.xz | tar -xJ --strip-components 1 -C /node20217 -f -
+          
+      - uses: 'actions/checkout@v4'
+        with:
+          fetch-depth: '0'
+
+      - name: Yum config - VFX2022 only
+        if: inputs.vfxyear == '2022'
+        shell: bash
+        run: |
+          yum-config-manager --disable centos-sclo-rh || true
+          sed -i 's,^mirrorlist=,#,; s,^#baseurl=http://mirror\.centos\.org/centos/$releasever,baseurl=https://vault.centos.org/7.9.2009,' /etc/yum.repos.d/CentOS-Base.repo
+          
+      - name: Dependencies
+        shell: bash
+        run: |
+          build_scripts/${{ inputs.install_deps }}.bash
+        
+      - name: Configure CMake
+        run: >
+          cmake 
+          -B build 
+          -S .
+          -D RTA_CENTOS7_CERES_HACK=${{ inputs.ceres_hack }}
+          -D CMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
+          -D CMAKE_CXX_STANDARD=17
+          -D CMAKE_TOOLCHAIN_FILE="${{ inputs.toolchain_file }}"
+          -D ENABLE_SHARED="${{ inputs.build_shared_libs }}"
+          
+      - name: Build
+        # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+        run: |
+          cmake --build build --config ${{ inputs.build_type }}
+          cmake --install build
+          
+      - name: Test
+        # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+        # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+        working-directory: build
+        run: >
+          ctest
+          --build-config ${{ inputs.build_type }}
+          --rerun-failed
+          --output-on-failure
+
+      - name: Configure config_tests
+        if: inputs.test_install == 'ON'
+        run: >
+          cmake
+          -B build_config_test
+          -S ./tests/config_tests
+          -D RAWTOACES_DIR=${{ github.workspace }}/install/lib/cmake/RAWTOACES
+          -D CMAKE_TOOLCHAIN_FILE="${{ inputs.toolchain_file }}"
+          -D CMAKE_CXX_STANDARD=17
+
+      - name: Build config_tests
+        if: inputs.test_install == 'ON'
+        run: >
+          cmake --build build_config_test --config ${{ inputs.build_type }}
+          
+      - name: Test config_tests
+        if: inputs.test_install == 'ON'
+        run: >
+          ctest
+          --build-config ${{ inputs.build_type }}
+          --rerun-failed 
+          --output-on-failure 
+          --test-dir build_config_test

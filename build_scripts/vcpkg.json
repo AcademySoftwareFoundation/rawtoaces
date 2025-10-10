@@ -1,0 +1,12 @@
+
+{
+    "dependencies": [
+        "ceres",
+        "nlohmann-json",
+        "openimageio",
+        "nanobind"
+    ],
+    "overrides": [
+        { "name": "eigen3", "version": "3.4.0" }
+    ]
+}

@@ -2,7 +2,9 @@
 
 set -ex
 
-cd ./build_scripts
-vcpkg x-update-baseline --add-initial-baseline
-vcpkg install
-cd ..
+vcpkg x-update-baseline \
+    --add-initial-baseline \
+    --x-manifest-root="./build_scripts"
+vcpkg install \
+    --x-install-root="C:/vcpkg/installed" \
+    --x-manifest-root="./build_scripts"

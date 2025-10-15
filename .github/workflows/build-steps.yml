@@ -36,6 +36,9 @@ on:
       test_install:
         type: string
         default: 'ON'
+      sanitiser_mode:
+        type: string
+        default: 'none'
 
 permissions: read-all
 
@@ -103,17 +106,19 @@ jobs:
           -D CMAKE_CXX_STANDARD=17
           -D CMAKE_BUILD_TYPE=${{ inputs.build_type }}
           -D CMAKE_TOOLCHAIN_FILE="${{ inputs.toolchain_file }}"
+          -D CMAKE_BUILD_TYPE="${{ inputs.build_type }}"
           -D ENABLE_SHARED="${{ inputs.build_shared_libs }}"
+          -D RTA_SANITISER_MODE="${{ inputs.sanitiser_mode }}"
           
       - name: Build
         # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
         run: |
           cmake --build build --config ${{ inputs.build_type }}
-          cmake --install build
           
       - name: Test
         # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
         # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
+        if: inputs.sanitiser_mode == 'none'
         working-directory: build
         run: >
           ctest
@@ -121,6 +126,11 @@ jobs:
           --rerun-failed
           --output-on-failure
 
+      - name: Install
+        if: inputs.test_install == 'ON'
+        run: >
+          cmake --install build
+      
       - name: Configure config_tests
         if: inputs.test_install == 'ON'
         run: >
@@ -145,3 +155,9 @@ jobs:
           --rerun-failed 
           --output-on-failure 
           --test-dir build_config_test
+
+      - name: Run sanitiser checks
+        if: inputs.sanitiser_mode != 'none'
+        working-directory: build/src/rawtoaces
+        run: |
+          ../../../tests/run_valid.sh

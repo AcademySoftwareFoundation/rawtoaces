@@ -36,7 +36,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  analysis:
+  static_analysis:
     name: "Static analysis"
     if: github.repository == 'AcademySoftwareFoundation/rawtoaces'
     runs-on: ubuntu-latest
@@ -85,3 +85,22 @@ jobs:
       - name: "Break build if CodeChecker reported any findings"
         if: ${{ steps.codechecker.outputs.warnings == 'true' }}
         run: exit 1
+
+  dynamic_analysis:
+    name: "Dynamic analysis - ${{ matrix.mode }}"
+    if: github.repository == 'AcademySoftwareFoundation/rawtoaces'
+    permissions: read-all
+    uses: ./.github/workflows/build-steps.yml
+    with:
+      cc_compiler: clang
+      cxx_compiler: clang++
+      build_type: Debug
+      runner: macos-latest
+      install_deps: install_deps_mac
+      sanitiser_mode: "${{ matrix.mode }}"
+      test_install: 'OFF'
+    strategy:
+      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
+      fail-fast: false
+      matrix:
+        mode: ["address", "thread"] # memory analyser is not ready yet.

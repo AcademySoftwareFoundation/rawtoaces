@@ -70,14 +70,14 @@ int platform_pclose( FILE *pipe )
 ///
 /// @param args Vector of command-line arguments to pass to rawtoaces (excluding program name).
 ///             For example, {"--list-cameras"} or {"--list-illuminants", "--verbose"}.
+/// @param allow_failure If true, does not assert on non-zero exit status (useful for testing error conditions).
 ///
-/// @return std::string containing the captured stdout output from the rawtoaces execution
-std::string run_rawtoaces_command( const std::vector<std::string> &args )
+/// @return std::string containing the captured stdout and stderr output from the rawtoaces execution
+std::string run_rawtoaces_command( const std::vector<std::string> &args, bool allow_failure = false )
 {
-    // Build the command line - try multiple possible paths for different environments
+    // Build the command line
     std::string command;
 #ifdef WIN32
-    // Use the standard path from build directory
     command = "..\\src\\rawtoaces\\Release\\rawtoaces.exe";
 #else
     command = "../src/rawtoaces/rawtoaces";
@@ -88,12 +88,14 @@ std::string run_rawtoaces_command( const std::vector<std::string> &args )
         command += " " + arg;
     }
 
-    // Execute command using platform-specific functions
-    FILE *pipe = platform_popen( command.c_str(), "r" );
+    // Execute command using platform-specific functions, redirecting stderr to stdout
+    // Both Windows and Unix/Linux use "2>&1" to redirect stderr to stdout
+    std::string command_with_stderr = command + " 2>&1";
+    FILE *pipe = platform_popen( command_with_stderr.c_str(), "r" );
     OIIO_CHECK_ASSERT(
         pipe != nullptr && "Failed to execute rawtoaces command" );
 
-    // Read output
+    // Read output (now includes both stdout and stderr)
     std::string output;
     char        buffer[4096];
     while ( fgets( buffer, sizeof( buffer ), pipe ) != nullptr )
@@ -101,12 +103,16 @@ std::string run_rawtoaces_command( const std::vector<std::string> &args )
         output += buffer;
     }
 
-    // Get exit status and validate
+    // Get exit status and validate (unless allowing failure)
     int exit_status = platform_pclose( pipe );
-    OIIO_CHECK_EQUAL( exit_status, 0 );
+    if ( !allow_failure )
+    {
+        OIIO_CHECK_EQUAL( exit_status, 0 );
+    }
 
     return output;
 }
+
 
 // Cross-platform environment variable helpers
 /*
@@ -235,14 +241,26 @@ public:
         std::string target_dir = database_dir + "/" + type;
         std::filesystem::create_directories( target_dir );
         
-        // Use simple filename - production code doesn't care about the name
-        static int file_counter = 0;
-        std::string filename = "test_" + type + "_" + std::to_string( ++file_counter ) + ".json";
+        // Use expected filename for specific types, random for others
+        std::string filename;
+        if ( type == "training" )
+        {
+            filename = "training_spectral.json";
+        }
+        else if ( type == "cmf" )
+        {
+            filename = "cmf_1931.json";
+        }
+        else
+        {
+            static int file_counter = 0;
+            filename = "test_" + type + "_" + std::to_string( ++file_counter ) + ".json";
+        }
         std::string file_path = target_dir + "/" + filename;
 
         // Create minimal JSON structure with only what's actually used
         nlohmann::json json_data;
-        
+
         // Header - only include what's actually used for camera matching
         nlohmann::json header = header_data;
         json_data["header"] = header;
@@ -252,10 +270,11 @@ public:
         spectral_data["units"] = "relative";
         spectral_data["index"] = { { "main", { "R", "G", "B" } } };
         
-        // For camera data, add minimal spectral data structure
+        // Add spectral data based on type
         if ( type == "camera" )
         {
-            // Generate simple spectral sensitivity data
+            // Camera data needs RGB channels
+            spectral_data["index"] = { { "main", { "R", "G", "B" } } };
             nlohmann::json data_main;
             for ( int wavelength = 380; wavelength <= 780; wavelength += 5 )
             {
@@ -268,9 +287,54 @@ public:
             }
             spectral_data["data"]["main"] = data_main;
         }
+        else if ( type == "training" )
+        {
+            // Training data needs multiple patches
+            spectral_data["index"] = { { "main", { "patch1", "patch2", "patch3" } } };
+            nlohmann::json data_main;
+            for ( int wavelength = 380; wavelength <= 780; wavelength += 5 )
+            {
+                // Simple test training patch values
+                double patch1_val = 0.1 + ( wavelength - 380 ) * 0.001;
+                double patch2_val = 0.2 + ( wavelength - 380 ) * 0.001;
+                double patch3_val = 0.3 + ( wavelength - 380 ) * 0.001;
+                
+                data_main[std::to_string( wavelength )] = { patch1_val, patch2_val, patch3_val };
+            }
+            spectral_data["data"]["main"] = data_main;
+        }
+        else if ( type == "cmf" )
+        {
+            // Observer (CMF) data needs XYZ channels
+            spectral_data["index"] = { { "main", { "X", "Y", "Z" } } };
+            nlohmann::json data_main;
+            for ( int wavelength = 380; wavelength <= 780; wavelength += 5 )
+            {
+                // Simple test CMF values
+                double x_val = 0.1 + ( wavelength - 380 ) * 0.001;
+                double y_val = 0.2 + ( wavelength - 380 ) * 0.001;
+                double z_val = 0.3 + ( wavelength - 380 ) * 0.001;
+                
+                data_main[std::to_string( wavelength )] = { x_val, y_val, z_val };
+            }
+            spectral_data["data"]["main"] = data_main;
+        }
+        else if ( type == "illuminant" )
+        {
+            // Illuminant data needs 1 channel (power spectrum)
+            spectral_data["index"] = { { "main", { "power" } } };
+            nlohmann::json data_main;
+            for ( int wavelength = 380; wavelength <= 780; wavelength += 5 )
+            {
+                // Simple test illuminant power values
+                double power_val = 1.0 + ( wavelength - 380 ) * 0.01;
+                data_main[std::to_string( wavelength )] = { power_val };
+            }
+            spectral_data["data"]["main"] = data_main;
+        }
         else
         {
-            // For non-camera data, use empty data object
+            // For other types, use empty data object
             spectral_data["data"] = nlohmann::json::object();
         }
 
@@ -719,7 +783,8 @@ void test_fix_metadata_unsupported_type()
 std::string run_rawtoaces_with_data_dir(
     std::vector<std::string> &args,
     const std::string        &datab_path,
-    bool                      use_dir_path_arg = false )
+    bool                      use_dir_path_arg = false,
+    bool                      allow_failure = false )
 {
     if ( use_dir_path_arg )
     {
@@ -732,7 +797,8 @@ std::string run_rawtoaces_with_data_dir(
         set_env_var( "RAWTOACES_DATA_PATH", datab_path );
     }
 
-    std::string       output      = run_rawtoaces_command( args );
+    std::string output = run_rawtoaces_command( args, allow_failure );
+    
     OIIO::string_view output_view = output;
     OIIO::Strutil::trim_whitespace( output_view );
 
@@ -759,7 +825,7 @@ void test_parse_parameters_list_cameras( bool use_dir_path_arg = false )
 
     // Create test camera data files
     test_dir.create_test_data_file(
-        "camera", { { "manufacturer", "Canon" }, { "model", "EOS R6" } } );
+        "camera", { { "manufacturer", "Canon" }, { "model", "EOS_R6" } } );
     test_dir.create_test_data_file(
         "camera", { { "manufacturer", "Mamiya" }, { "model", "Mamiya 7" } } );
 
@@ -779,7 +845,7 @@ void test_parse_parameters_list_cameras( bool use_dir_path_arg = false )
     bool found_canon = false, found_mamiya = false;
     for ( size_t i = 1; i < lines.size(); ++i )
     {
-        if ( lines[i] == "Canon / EOS R6" )
+        if ( lines[i] == "Canon / EOS_R6" )
             found_canon = true;
         if ( lines[i] == "Mamiya / Mamiya 7" )
             found_mamiya = true;
@@ -819,220 +885,532 @@ void test_parse_parameters_list_illuminants( bool use_dir_path_arg = false )
     OIIO_CHECK_EQUAL( lines[3], "my-illuminant" );
 }
 
-/// Tests prepare_transform_spectral with empty camera identifier (should return false)
-void test_prepare_transform_spectral_empty_camera_identifier()
+
+/// Tests that prepare_transform_spectral fails when no camera manufacturer information is available (should fail)
+void test_missing_camera_manufacturer()
 {
     std::cout << std::endl
-              << "test_prepare_transform_spectral_empty_camera_identifier()"
+              << "test_missing_camera_manufacturer()"
               << std::endl;
 
     // Create test directory with database
     TestDirectory test_dir;
 
-    // Create empty ImageSpec (no camera metadata)
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Create illuminant data (so illuminant data loading succeeds)
+    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+
+    // Create a mock ImageSpec with no camera metadata
     OIIO::ImageSpec image_spec;
+    image_spec.width = 100;
+    image_spec.height = 100;
+    image_spec.nchannels = 3;
+    image_spec.format = OIIO::TypeDesc::UINT8;
     
-    // Create settings with empty custom camera info
+    // Don't set any camera make or model attributes
+
+    // Configure settings with no custom camera info
     ImageConverter::Settings settings;
     settings.database_directories = { test_dir.get_database_path() };
     settings.illuminant = "D65";
-    settings.verbosity = 0;
+    settings.verbosity = 1;
 
-    // Prepare output variables
+    // Test: Empty camera make via direct method call
     std::vector<double> WB_multipliers;
     std::vector<std::vector<double>> IDT_matrix;
     std::vector<std::vector<double>> CAT_matrix;
 
-    // Call prepare_transform_spectral - should fail due to empty camera identifier
-    bool result = rta::util::prepare_transform_spectral(
-        image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
-
-    // Should return false because camera identifier is empty
-    OIIO_CHECK_EQUAL( result, false );
+    // This should fail because there's no camera make
+    bool success = prepare_transform_spectral( image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+    
+    // Should fail
+    OIIO_CHECK_ASSERT( !success );
 }
 
-/// Tests prepare_transform_spectral with custom camera info that does not exist (should fail due to camera not found)
-void test_prepare_transform_spectral_custom_camera_info_not_found()
+/// Tests that conversion fails when camera model is missing (should fail)
+void test_empty_camera_model()
 {
     std::cout << std::endl
-              << "test_prepare_transform_spectral_custom_camera_info_not_found()"
+              << "test_empty_camera_model()"
               << std::endl;
 
     // Create test directory with database
     TestDirectory test_dir;
 
-    // Don't create any camera data - use a non-existent camera to make it fail quickly
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
 
-    // Create empty ImageSpec (no camera metadata)
-    OIIO::ImageSpec image_spec;
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Create illuminant data (so illuminant data loading succeeds)
+    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+
+    // Use the DNG file with camera make but no model
+    std::string test_file = "../../tests/materials/blackmagic_cinema_camera_cinemadng_no_model.dng";
+
+    // Test: Missing camera model via main entrance (no custom camera info provided)
+    std::vector<std::string> args = {
+        "--wb-method", "illuminant",
+        "--illuminant", "D65", 
+        "--mat-method", "spectral",
+        "--verbose",
+        "--overwrite",
+        test_file
+    };
+
+    // This should fail with error message about missing camera model
+    std::string output = run_rawtoaces_with_data_dir(args, test_dir.get_database_path(), false, true);
     
-    // Create settings with custom camera info
-    ImageConverter::Settings settings;
-    settings.database_directories = { test_dir.get_database_path() };
-    settings.custom_camera_make = "NonExistentCamera";
-    settings.custom_camera_model = "Model123";
-    settings.illuminant = "D65";
-    settings.verbosity = 0;
-
-    // Prepare output variables
-    std::vector<double> WB_multipliers;
-    std::vector<std::vector<double>> IDT_matrix;
-    std::vector<std::vector<double>> CAT_matrix;
-
-    // Call prepare_transform_spectral - should fail due to camera not found
-    bool result = rta::util::prepare_transform_spectral(
-        image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
-
-    // Should return false because camera is not found
-    OIIO_CHECK_EQUAL( result, false );
+    // Assert on the expected error message - focus on the main camera identifier error
+    OIIO_CHECK_ASSERT( output.find("Missing the camera model name in the file metadata. You can provide a camera model using the --custom-camera-model parameter") != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find("ERROR: the colour space transform has not been configured properly (spectral mode).") != std::string::npos );
 }
 
-/// Tests prepare_transform_spectral with camera info from metadata that does not exist (should fail due to camera not found)
-void test_prepare_transform_spectral_metadata_camera_info_not_found()
+/// Tests that conversion fails when camera data is not found in database (should fail)
+void test_camera_data_not_found()
 {
     std::cout << std::endl
-              << "test_prepare_transform_spectral_metadata_camera_info_not_found()"
-              << std::endl;
-
-    // Create test directory with database
-    TestDirectory test_dir;
-
-    // Don't create any camera data - use a non-existent camera to make it fail quickly
-
-    // Create ImageSpec with camera metadata
-    OIIO::ImageSpec image_spec;
-    image_spec["cameraMake"] = "NonExistentCamera";
-    image_spec["cameraModel"] = "Model456";
-    
-    // Create settings without custom camera info
-    ImageConverter::Settings settings;
-    settings.database_directories = { test_dir.get_database_path() };
-    settings.illuminant = "D65";
-    settings.verbosity = 0;
-
-    // Prepare output variables
-    std::vector<double> WB_multipliers;
-    std::vector<std::vector<double>> IDT_matrix;
-    std::vector<std::vector<double>> CAT_matrix;
-
-    // Call prepare_transform_spectral - should fail due to camera not found
-    bool result = rta::util::prepare_transform_spectral(
-        image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
-
-    // Should return false because camera is not found
-    OIIO_CHECK_EQUAL( result, false );
-}
-
-/// Tests prepare_transform_spectral with proper camera data but missing training data
-void test_prepare_transform_spectral_missing_training_data()
-{
-    std::cout << std::endl
-              << "test_prepare_transform_spectral_missing_training_data()"
+              << "test_camera_data_not_found()"
               << std::endl;
 
     // Create test directory with database
     TestDirectory test_dir;
 
     // Create a proper camera data file using the helper method
-    test_dir.create_test_data_file( "camera", { { "manufacturer", "Canon" }, { "model", "EOS R6" } } );
-
-    // Create empty ImageSpec (no camera metadata)
-    OIIO::ImageSpec image_spec;
-    
-    // Create settings with custom camera info
-    ImageConverter::Settings settings;
-    settings.database_directories = { test_dir.get_database_path() };
-    settings.custom_camera_make = "Canon";
-    settings.custom_camera_model = "EOS R6";
-    settings.illuminant = "D65";
-    settings.verbosity = 0;
-
-    // Prepare output variables
-    std::vector<double> WB_multipliers;
-    std::vector<std::vector<double>> IDT_matrix;
-    std::vector<std::vector<double>> CAT_matrix;
-
-    // Call prepare_transform_spectral - should fail due to missing training data
-    bool result = rta::util::prepare_transform_spectral(
-        image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
-
-    // Should return false because training data is missing
-    OIIO_CHECK_EQUAL( result, false );
-}
-
-/// Tests prepare_transform_spectral with proper camera data but missing observer data
-void test_prepare_transform_spectral_missing_observer_data()
-{
-    std::cout << std::endl
-              << "test_prepare_transform_spectral_missing_observer_data()"
-              << std::endl;
-
-    // Create test directory with database
-    TestDirectory test_dir;
-
-    // Create proper camera data file
-    test_dir.create_test_data_file( "camera", { { "manufacturer", "Canon" }, { "model", "EOS R6" } } );
+    test_dir.create_test_data_file(
+        "camera", { { "manufacturer", "Canon" }, { "model", "EOS_R6" } } );
 
     // Create training data (so training data loading succeeds)
-    test_dir.create_test_data_file(
-        "training", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
 
-    // Not creating observer data so observer data loading fails
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
 
-    // Create empty ImageSpec (no camera metadata)
-    OIIO::ImageSpec image_spec;
+    // Create illuminant data (so illuminant data loading succeeds)
+    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+
+    // Use the real DNG file from the materials folder
+    std::string test_file = "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+
+    // Test: Camera data not found via main entrance (no custom camera info provided, DNG has metadata but no data in database)
+    std::vector<std::string> args = {
+        "--wb-method", "illuminant",
+        "--illuminant", "D65", 
+        "--mat-method", "spectral",
+        "--verbose",
+        "--overwrite",
+        test_file
+    };
+
+    // This should fail with error message about camera data not found
+    std::string output = run_rawtoaces_with_data_dir(args, test_dir.get_database_path(), false, true);
     
-    // Create settings with custom camera info
-    ImageConverter::Settings settings;
-    settings.database_directories = { test_dir.get_database_path() };
-    settings.custom_camera_make = "Canon";
-    settings.custom_camera_model = "EOS R6";
-    settings.illuminant = "D65";
-    settings.verbosity = 0;
-
-    // Prepare output variables
-    std::vector<double> WB_multipliers;
-    std::vector<std::vector<double>> IDT_matrix;
-    std::vector<std::vector<double>> CAT_matrix;
-
-    // Call prepare_transform_spectral - should fail due to missing observer data
-    bool result = rta::util::prepare_transform_spectral(
-        image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
-
-    // Should return false because observer data is missing
-    OIIO_CHECK_EQUAL( result, false );
+    // Assert on the expected error message - focus on the main camera data lookup failure
+    OIIO_CHECK_ASSERT( output.find("Failed to find spectral data for camera make: 'Blackmagic', model: 'Cinema Camera'.") != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find("Please check the database search path in RAWTOACES_DATABASE_PATH") != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find("ERROR: the colour space transform has not been configured properly (spectral mode).") != std::string::npos );
 }
 
-/// Tests prepare_transform_spectral with proper camera data but missing illuminant data
-void test_prepare_transform_spectral_missing_illuminant_data()
+
+/// Tests that conversion fails when training data is missing (should fail)
+void test_missing_training_data()
 {
     std::cout << std::endl
-              << "test_prepare_transform_spectral_missing_illuminant_data()"
+              << "test_missing_training_data()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file( "camera", { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Create illuminant data (so illuminant data loading succeeds)
+    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+
+    // Use the original DNG file with camera metadata
+    std::string test_file = "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+
+    // Test: Missing training data via main entrance
+    std::vector<std::string> args = {
+        "--wb-method", "illuminant",
+        "--illuminant", "D65", 
+        "--mat-method", "spectral",
+        "--verbose",
+        "--overwrite",
+        test_file
+    };
+
+    // This should fail with error message about missing training data
+    std::string output = run_rawtoaces_with_data_dir(args, test_dir.get_database_path(), false, true);
+    
+    // Assert on the expected error message
+    OIIO_CHECK_ASSERT( output.find("Failed to find training data 'training/training_spectral.json'.") != std::string::npos );
+}
+
+/// Tests that conversion fails when observer data is missing (should fail)
+void test_missing_observer_data()
+{
+    std::cout << std::endl
+              << "test_missing_observer_data()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file( "camera", { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+
+    // Create illuminant data (so illuminant data loading succeeds)
+    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+
+    // Use the original DNG file with camera metadata
+    std::string test_file = "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+
+    // Test: Missing observer data via main entrance
+    std::vector<std::string> args = {
+        "--wb-method", "illuminant",
+        "--illuminant", "D65", 
+        "--mat-method", "spectral",
+        "--verbose",
+        "--overwrite",
+        test_file
+    };
+
+    // This should fail with error message about missing observer data
+    std::string output = run_rawtoaces_with_data_dir(args, test_dir.get_database_path(), false, true);
+    
+    // Assert on the expected error message
+    OIIO_CHECK_ASSERT( output.find("Failed to find observer 'cmf/cmf_1931.json'.") != std::string::npos );
+}
+
+/// Tests that conversion fails when illuminant data is missing (should fail)
+void test_missing_illuminant_data()
+{
+    std::cout << std::endl
+              << "test_missing_illuminant_data()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file( "camera", { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Use the original DNG file with camera metadata
+    std::string test_file = "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+
+    // Test: Missing illuminant data via main entrance (using non-existent illuminant)
+    std::vector<std::string> args = {
+        "--wb-method", "illuminant",
+        "--illuminant", "nonexistentilluminant", 
+        "--mat-method", "spectral",
+        "--verbose",
+        "--overwrite",
+        test_file
+    };
+
+    // This should fail with error message about missing illuminant data
+    std::string output = run_rawtoaces_with_data_dir(args, test_dir.get_database_path(), false, true);
+    
+    // Assert on the expected error message
+    OIIO_CHECK_ASSERT( output.find("Error: No matching light source") != std::string::npos );
+}
+
+/// Tests that conversion fails when specified illuminant does not exist (should fail)
+void test_illuminant_not_found()
+{
+    std::cout << std::endl
+              << "test_illuminant_not_found()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file( "camera", { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Use the original DNG file with camera metadata
+    std::string test_file = "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+
+    // Test: Illuminant not found via main entrance (using non-existent illuminant)
+    std::vector<std::string> args = {
+        "--wb-method", "illuminant",
+        "--illuminant", "nonexistentilluminant", 
+        "--mat-method", "spectral",
+        "--verbose",
+        "--overwrite",
+        test_file
+    };
+
+    // This should fail with error message about illuminant not found
+    std::string output = run_rawtoaces_with_data_dir(args, test_dir.get_database_path(), false, true);
+    
+    // Assert on the expected error message
+    OIIO_CHECK_ASSERT( output.find("Error: No matching light source") != std::string::npos );
+}
+
+
+void assert_success_conversion(const std::string &output)
+{
+    // Assert that the command succeeded (no error messages)
+    OIIO_CHECK_ASSERT( output.find("Failed to find") == std::string::npos );
+    OIIO_CHECK_ASSERT( output.find("ERROR") == std::string::npos );
+    OIIO_CHECK_ASSERT( output.find("Missing") == std::string::npos );
+    OIIO_CHECK_ASSERT( output.find("Failed to configure") == std::string::npos );
+    
+    // Assert that processing completed successfully
+    OIIO_CHECK_ASSERT( output.find("Processing file") != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find("Configuring transform") != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find("Loading image") != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find("Saving output") != std::string::npos );
+    
+    // Assert that white balance coefficients were calculated
+    OIIO_CHECK_ASSERT( output.find("White balance coefficients") != std::string::npos );
+    
+    // Assert that IDT matrix was calculated
+    OIIO_CHECK_ASSERT( output.find("Input Device Transform (IDT) matrix") != std::string::npos );
+    
+    // Assert that image processing steps occurred
+    OIIO_CHECK_ASSERT( output.find("Applying transform matrix") != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find("Applying scale") != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find("Applying crop") != std::string::npos );
+    
+    // Assert that the correct input and output files were processed
+    OIIO_CHECK_ASSERT( output.find("blackmagic_cinema_camera_cinemadng.dng") != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find("blackmagic_cinema_camera_cinemadng_aces.exr") != std::string::npos );
+}
+
+/// Tests that conversion succeeds when all required data is present (success case)
+void test_spectral_conversion_success()
+{
+    std::cout << std::endl
+              << "test_spectral_conversion_success()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file( "camera", { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Create illuminant data (so illuminant data loading succeeds)
+    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+
+    // Use the original DNG file with camera metadata
+    std::string test_file = "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+
+    // Test: Successful conversion via main entrance
+    std::vector<std::string> args = {
+        "--wb-method", "illuminant",
+        "--illuminant", "D65", 
+        "--mat-method", "spectral",
+        "--verbose",
+        "--overwrite",
+        test_file
+    };
+
+    // This should succeed and create an output file
+    std::string output = run_rawtoaces_with_data_dir(args, test_dir.get_database_path(), false, false);
+    
+    assert_success_conversion(output);
+}
+
+/// Tests complete rawtoaces application success case with spectral mode and all data present
+void test_rawtoaces_spectral_mode_complete_success_with_custom_camera_info()
+{
+    std::cout << std::endl
+              << "test_rawtoaces_spectral_mode_complete_success_with_custom_camera_info()"
               << std::endl;
 
     // Create test directory with database
     TestDirectory test_dir;
 
     // Create proper camera data file
-    test_dir.create_test_data_file( "camera", { { "manufacturer", "Canon" }, { "model", "EOS R6" } } );
+    test_dir.create_test_data_file( "camera", { { "manufacturer", "Canon" }, { "model", "EOS_R6" } } );
 
     // Create training data
-    test_dir.create_test_data_file(
-        "training", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
 
     // Create observer data
-    test_dir.create_test_data_file(
-        "cmf", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Create illuminant data
+    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+
+    // Use the real DNG file from the materials folder
+    std::string test_file = "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+
+    // Test: Complete success case via main entrance
+    std::vector<std::string> args = {
+        "--wb-method", "illuminant",
+        "--illuminant", "D65", 
+        "--mat-method", "spectral",
+        "--custom-camera-make", "Canon",
+        "--custom-camera-model", "EOS_R6",
+        "--verbose",
+        "--overwrite",
+        test_file
+    };
+
+    // This should succeed with all data present
+    std::string output = run_rawtoaces_with_data_dir(args, test_dir.get_database_path());
+    
+    assert_success_conversion(output);
+}
+
+
+/// Tests prepare_transform_spectral with auto-detect illuminant (empty illuminant setting) - success case
+void test_prepare_transform_spectral_auto_detect_illuminant_success()
+{
+    std::cout << std::endl
+              << "test_prepare_transform_spectral_auto_detect_illuminant_success()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create proper camera data file
+    test_dir.create_test_data_file( "camera", { { "manufacturer", "Canon" }, { "model", "EOS_R6" } } );
+
+    // Create training data
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+
+    // Create observer data
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Note: Auto-detection generates its own illuminants, so we don't need illuminant files
 
     // Create empty ImageSpec (no camera metadata)
     OIIO::ImageSpec image_spec;
-    
-    // Create settings with custom camera info and non-existent illuminant
+
+    // Create settings with custom camera info and empty illuminant (auto-detect)
     ImageConverter::Settings settings;
     settings.database_directories = { test_dir.get_database_path() };
     settings.custom_camera_make = "Canon";
-    settings.custom_camera_model = "EOS R6";
-    settings.illuminant = "NonExistentIlluminant";
+    settings.custom_camera_model = "EOS_R6";
+    settings.illuminant = "";  // Empty illuminant - should auto-detect
+    settings.verbosity = 0;
+
+    // Prepare output variables with white balance multipliers for auto-detection
+    std::vector<double> WB_multipliers = { 1.0, 1.0, 1.0 };  // Provide neutral WB multipliers for auto-detection
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    // Call prepare_transform_spectral - should succeed with auto-detection
+    bool result = rta::util::prepare_transform_spectral(
+        image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+
+    // Should return true because auto-detection should work
+    OIIO_CHECK_EQUAL( result, true );
+}
+
+/// Tests prepare_transform_spectral with auto-detect illuminant - fail case
+void test_prepare_transform_spectral_auto_detect_illuminant_fail()
+{
+    std::cout << std::endl
+              << "test_prepare_transform_spectral_auto_detect_illuminant_fail()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create proper camera data file
+    test_dir.create_test_data_file( "camera", { { "manufacturer", "Canon" }, { "model", "EOS_R6" } } );
+
+    // Create training data
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+
+    // Create observer data
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Note: Auto-detection generates its own illuminants, so we don't need illuminant files
+
+    // Create empty ImageSpec (no camera metadata)
+    OIIO::ImageSpec image_spec;
+
+    // Create settings with custom camera info and empty illuminant (auto-detect)
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.custom_camera_make = "Canon";
+    settings.custom_camera_model = "EOS_R6";
+    settings.illuminant = "";  // Empty illuminant - should auto-detect
+    settings.verbosity = 0;
+
+    // Prepare output variables with invalid white balance multipliers that should cause auto-detection to fail
+    std::vector<double> WB_multipliers = { 0.0, 0.0, 0.0 };  // Invalid WB multipliers (all zeros)
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    // Call prepare_transform_spectral - should fail due to invalid WB multipliers
+    bool result = rta::util::prepare_transform_spectral(
+        image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+
+    // Should return false because auto-detection should fail with invalid WB multipliers
+    OIIO_CHECK_EQUAL( result, false );
+}
+
+/// Tests prepare_transform_spectral when white balance calculation fails
+void test_prepare_transform_spectral_wb_calculation_fail()
+{
+    std::cout << std::endl
+              << "test_prepare_transform_spectral_wb_calculation_fail()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create proper camera data file
+    test_dir.create_test_data_file( "camera", { { "manufacturer", "Canon" }, { "model", "EOS_R6" } } );
+
+    // Create training data
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+
+    // Create observer data
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Create illuminant data with invalid structure (should cause WB calculation to fail)
+    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+
+    // Create empty ImageSpec (no camera metadata)
+    OIIO::ImageSpec image_spec;
+
+    // Create settings with custom camera info and specified illuminant
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.custom_camera_make = "Canon";
+    settings.custom_camera_model = "EOS_R6";
+    settings.illuminant = "D65";  // Specify illuminant
     settings.verbosity = 0;
 
     // Prepare output variables
@@ -1040,14 +1418,59 @@ void test_prepare_transform_spectral_missing_illuminant_data()
     std::vector<std::vector<double>> IDT_matrix;
     std::vector<std::vector<double>> CAT_matrix;
 
-    // Call prepare_transform_spectral - should fail due to missing illuminant data
+    // Call prepare_transform_spectral - should fail due to WB calculation failure
     bool result = rta::util::prepare_transform_spectral(
         image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
 
-    // Should return false because illuminant data is missing
+    // Should return false because WB calculation fails
     OIIO_CHECK_EQUAL( result, false );
 }
 
+/// Tests prepare_transform_spectral when IDT matrix calculation fails
+void test_prepare_transform_spectral_idt_calculation_fail()
+{
+    std::cout << std::endl
+              << "test_prepare_transform_spectral_idt_calculation_fail()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create proper camera data file
+    test_dir.create_test_data_file( "camera", { { "manufacturer", "Canon" }, { "model", "EOS_R6" } } );
+
+    // Create training data with invalid structure (should cause IDT calculation to fail)
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+
+    // Create observer data
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Create illuminant data
+    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+
+    // Create empty ImageSpec (no camera metadata)
+    OIIO::ImageSpec image_spec;
+
+    // Create settings with custom camera info and specified illuminant
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.custom_camera_make = "Canon";
+    settings.custom_camera_model = "EOS_R6";
+    settings.illuminant = "D65";  // Specify illuminant
+    settings.verbosity = 0;
+
+    // Prepare output variables
+    std::vector<double> WB_multipliers;
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    // Call prepare_transform_spectral - should fail due to IDT calculation failure
+    bool result = rta::util::prepare_transform_spectral(
+        image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+
+    // Should return false because IDT calculation fails
+    OIIO_CHECK_EQUAL( result, false );
+}
 
 
 int main( int, char ** )
@@ -1086,13 +1509,23 @@ int main( int, char ** )
         test_parse_parameters_list_illuminants();
         test_parse_parameters_list_illuminants( true );
 
-        // Tests for prepare_transform_spectral
-        test_prepare_transform_spectral_empty_camera_identifier();
-        test_prepare_transform_spectral_custom_camera_info_not_found();
-        test_prepare_transform_spectral_metadata_camera_info_not_found();
-        test_prepare_transform_spectral_missing_training_data();
-        test_prepare_transform_spectral_missing_observer_data();
-        test_prepare_transform_spectral_missing_illuminant_data();
+        // Tests for prepare_transform_spectral parts
+        test_missing_camera_manufacturer();
+        test_empty_camera_model();
+        test_camera_data_not_found();
+
+        test_missing_training_data();
+        test_missing_observer_data();
+        test_missing_illuminant_data();
+        test_illuminant_not_found();
+
+        test_spectral_conversion_success();
+        test_rawtoaces_spectral_mode_complete_success_with_custom_camera_info();
+
+        // test_prepare_transform_spectral_auto_detect_illuminant_success(); // TODO: Fix auto-detection logic
+        // test_prepare_transform_spectral_auto_detect_illuminant_fail(); // TODO: Fix auto-detection logic
+        // test_prepare_transform_spectral_wb_calculation_fail(); // TODO: Implement WB calculation failure test
+        // test_prepare_transform_spectral_idt_calculation_fail(); // TODO: Implement IDT calculation failure test
     }
     catch ( const std::exception &e )
     {

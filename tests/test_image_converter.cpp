@@ -231,31 +231,49 @@ public:
     std::string create_test_data_file(
         const std::string &type, const nlohmann::json &header_data )
     {
-        // Generate random filename
-        static int  file_counter = 0;
-        std::string filename = "test_data_" + std::to_string( ++file_counter ) +
-                               "_" + std::to_string( std::time( nullptr ) ) +
-                               ".json";
-
         // Create target directory dynamically based on type
         std::string target_dir = database_dir + "/" + type;
         std::filesystem::create_directories( target_dir );
+        
+        // Use simple filename - production code doesn't care about the name
+        static int file_counter = 0;
+        std::string filename = "test_" + type + "_" + std::to_string( ++file_counter ) + ".json";
         std::string file_path = target_dir + "/" + filename;
 
-        // Create JSON object using nlohmann/json
+        // Create minimal JSON structure with only what's actually used
         nlohmann::json json_data;
-
-        // Start with default header and merge user data
+        
+        // Header - only include what's actually used for camera matching
         nlohmann::json header = header_data;
+        json_data["header"] = header;
 
-        // Build spectral_data object
-        nlohmann::json spectral_data = { { "units", "relative" },
-                                         { "index",
-                                           { { "main", { "R", "G", "B" } } } },
-                                         { "data", nlohmann::json::object() } };
+        // Spectral data - only include what's actually used
+        nlohmann::json spectral_data;
+        spectral_data["units"] = "relative";
+        spectral_data["index"] = { { "main", { "R", "G", "B" } } };
+        
+        // For camera data, add minimal spectral data structure
+        if ( type == "camera" )
+        {
+            // Generate simple spectral sensitivity data
+            nlohmann::json data_main;
+            for ( int wavelength = 380; wavelength <= 780; wavelength += 5 )
+            {
+                // Simple test values - production code just needs the structure
+                double r_val = 0.1 + ( wavelength - 380 ) * 0.001;
+                double g_val = 0.2 + ( wavelength - 380 ) * 0.001;
+                double b_val = 0.3 + ( wavelength - 380 ) * 0.001;
+                
+                data_main[std::to_string( wavelength )] = { r_val, g_val, b_val };
+            }
+            spectral_data["data"]["main"] = data_main;
+        }
+        else
+        {
+            // For non-camera data, use empty data object
+            spectral_data["data"] = nlohmann::json::object();
+        }
 
-        // Assemble final JSON
-        json_data["header"]        = header;
         json_data["spectral_data"] = spectral_data;
 
         // Write to file with pretty formatting
@@ -801,6 +819,237 @@ void test_parse_parameters_list_illuminants( bool use_dir_path_arg = false )
     OIIO_CHECK_EQUAL( lines[3], "my-illuminant" );
 }
 
+/// Tests prepare_transform_spectral with empty camera identifier (should return false)
+void test_prepare_transform_spectral_empty_camera_identifier()
+{
+    std::cout << std::endl
+              << "test_prepare_transform_spectral_empty_camera_identifier()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create empty ImageSpec (no camera metadata)
+    OIIO::ImageSpec image_spec;
+    
+    // Create settings with empty custom camera info
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.illuminant = "D65";
+    settings.verbosity = 0;
+
+    // Prepare output variables
+    std::vector<double> WB_multipliers;
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    // Call prepare_transform_spectral - should fail due to empty camera identifier
+    bool result = rta::util::prepare_transform_spectral(
+        image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+
+    // Should return false because camera identifier is empty
+    OIIO_CHECK_EQUAL( result, false );
+}
+
+/// Tests prepare_transform_spectral with custom camera info that does not exist (should fail due to camera not found)
+void test_prepare_transform_spectral_custom_camera_info_not_found()
+{
+    std::cout << std::endl
+              << "test_prepare_transform_spectral_custom_camera_info_not_found()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Don't create any camera data - use a non-existent camera to make it fail quickly
+
+    // Create empty ImageSpec (no camera metadata)
+    OIIO::ImageSpec image_spec;
+    
+    // Create settings with custom camera info
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.custom_camera_make = "NonExistentCamera";
+    settings.custom_camera_model = "Model123";
+    settings.illuminant = "D65";
+    settings.verbosity = 0;
+
+    // Prepare output variables
+    std::vector<double> WB_multipliers;
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    // Call prepare_transform_spectral - should fail due to camera not found
+    bool result = rta::util::prepare_transform_spectral(
+        image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+
+    // Should return false because camera is not found
+    OIIO_CHECK_EQUAL( result, false );
+}
+
+/// Tests prepare_transform_spectral with camera info from metadata that does not exist (should fail due to camera not found)
+void test_prepare_transform_spectral_metadata_camera_info_not_found()
+{
+    std::cout << std::endl
+              << "test_prepare_transform_spectral_metadata_camera_info_not_found()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Don't create any camera data - use a non-existent camera to make it fail quickly
+
+    // Create ImageSpec with camera metadata
+    OIIO::ImageSpec image_spec;
+    image_spec["cameraMake"] = "NonExistentCamera";
+    image_spec["cameraModel"] = "Model456";
+    
+    // Create settings without custom camera info
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.illuminant = "D65";
+    settings.verbosity = 0;
+
+    // Prepare output variables
+    std::vector<double> WB_multipliers;
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    // Call prepare_transform_spectral - should fail due to camera not found
+    bool result = rta::util::prepare_transform_spectral(
+        image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+
+    // Should return false because camera is not found
+    OIIO_CHECK_EQUAL( result, false );
+}
+
+/// Tests prepare_transform_spectral with proper camera data but missing training data
+void test_prepare_transform_spectral_missing_training_data()
+{
+    std::cout << std::endl
+              << "test_prepare_transform_spectral_missing_training_data()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create a proper camera data file using the helper method
+    test_dir.create_test_data_file( "camera", { { "manufacturer", "Canon" }, { "model", "EOS R6" } } );
+
+    // Create empty ImageSpec (no camera metadata)
+    OIIO::ImageSpec image_spec;
+    
+    // Create settings with custom camera info
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.custom_camera_make = "Canon";
+    settings.custom_camera_model = "EOS R6";
+    settings.illuminant = "D65";
+    settings.verbosity = 0;
+
+    // Prepare output variables
+    std::vector<double> WB_multipliers;
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    // Call prepare_transform_spectral - should fail due to missing training data
+    bool result = rta::util::prepare_transform_spectral(
+        image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+
+    // Should return false because training data is missing
+    OIIO_CHECK_EQUAL( result, false );
+}
+
+/// Tests prepare_transform_spectral with proper camera data but missing observer data
+void test_prepare_transform_spectral_missing_observer_data()
+{
+    std::cout << std::endl
+              << "test_prepare_transform_spectral_missing_observer_data()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create proper camera data file
+    test_dir.create_test_data_file( "camera", { { "manufacturer", "Canon" }, { "model", "EOS R6" } } );
+
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file(
+        "training", { { "illuminant", "D65" } } );
+
+    // Not creating observer data so observer data loading fails
+
+    // Create empty ImageSpec (no camera metadata)
+    OIIO::ImageSpec image_spec;
+    
+    // Create settings with custom camera info
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.custom_camera_make = "Canon";
+    settings.custom_camera_model = "EOS R6";
+    settings.illuminant = "D65";
+    settings.verbosity = 0;
+
+    // Prepare output variables
+    std::vector<double> WB_multipliers;
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    // Call prepare_transform_spectral - should fail due to missing observer data
+    bool result = rta::util::prepare_transform_spectral(
+        image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+
+    // Should return false because observer data is missing
+    OIIO_CHECK_EQUAL( result, false );
+}
+
+/// Tests prepare_transform_spectral with proper camera data but missing illuminant data
+void test_prepare_transform_spectral_missing_illuminant_data()
+{
+    std::cout << std::endl
+              << "test_prepare_transform_spectral_missing_illuminant_data()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create proper camera data file
+    test_dir.create_test_data_file( "camera", { { "manufacturer", "Canon" }, { "model", "EOS R6" } } );
+
+    // Create training data
+    test_dir.create_test_data_file(
+        "training", { { "illuminant", "D65" } } );
+
+    // Create observer data
+    test_dir.create_test_data_file(
+        "cmf", { { "illuminant", "D65" } } );
+
+    // Create empty ImageSpec (no camera metadata)
+    OIIO::ImageSpec image_spec;
+    
+    // Create settings with custom camera info and non-existent illuminant
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.custom_camera_make = "Canon";
+    settings.custom_camera_model = "EOS R6";
+    settings.illuminant = "NonExistentIlluminant";
+    settings.verbosity = 0;
+
+    // Prepare output variables
+    std::vector<double> WB_multipliers;
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    // Call prepare_transform_spectral - should fail due to missing illuminant data
+    bool result = rta::util::prepare_transform_spectral(
+        image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+
+    // Should return false because illuminant data is missing
+    OIIO_CHECK_EQUAL( result, false );
+}
+
+
+
 int main( int, char ** )
 {
     try
@@ -836,6 +1085,14 @@ int main( int, char ** )
         test_parse_parameters_list_cameras( true );
         test_parse_parameters_list_illuminants();
         test_parse_parameters_list_illuminants( true );
+
+        // Tests for prepare_transform_spectral
+        test_prepare_transform_spectral_empty_camera_identifier();
+        test_prepare_transform_spectral_custom_camera_info_not_found();
+        test_prepare_transform_spectral_metadata_camera_info_not_found();
+        test_prepare_transform_spectral_missing_training_data();
+        test_prepare_transform_spectral_missing_observer_data();
+        test_prepare_transform_spectral_missing_illuminant_data();
     }
     catch ( const std::exception &e )
     {

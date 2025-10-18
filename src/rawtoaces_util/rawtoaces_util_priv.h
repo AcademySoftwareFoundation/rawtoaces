@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <OpenImageIO/imageio.h>
+#include "../include/rawtoaces/image_converter.h"
 
 // Contains the declarations of the private functions,
 // exposed here for unit-testing.
@@ -19,6 +20,13 @@ namespace util
 std::vector<std::string>
      database_paths( const std::string &override_path = "" );
 void fix_metadata( OIIO::ImageSpec &spec );
+
+bool prepare_transform_spectral(
+    const OIIO::ImageSpec            &image_spec,
+    const ImageConverter::Settings   &settings,
+    std::vector<double>              &WB_multipliers,
+    std::vector<std::vector<double>> &IDT_matrix,
+    std::vector<std::vector<double>> &CAT_matrix );
 
 } // namespace util
 } // namespace rta

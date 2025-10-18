@@ -20,8 +20,8 @@ if ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" )
         target_compile_options ( rawtoaces_bindings PRIVATE -Wno-error=zero-length-bounds )
     endif ()
 elseif ( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang" )
-    target_compile_options ( nanobind-static    PRIVATE -Wno-error=zero-length-array )
-    target_compile_options ( rawtoaces_bindings PRIVATE -Wno-error=zero-length-array )
+    target_compile_options ( nanobind-static    PRIVATE -Wno-error=zero-length-array -Wno-zero-length-array )
+    target_compile_options ( rawtoaces_bindings PRIVATE -Wno-error=zero-length-array -Wno-zero-length-array )
 endif()
 
 set_target_properties( rawtoaces_bindings PROPERTIES

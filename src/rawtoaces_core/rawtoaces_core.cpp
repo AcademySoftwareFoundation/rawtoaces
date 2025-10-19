@@ -416,6 +416,7 @@ bool SpectralSolver::calculate_WB()
     {
         std::cerr << "ERROR: camera needs to be initialised prior to calling "
                   << "SpectralSolver::calculate_WB()" << std::endl;
+        // TODO: Should here be return false?
     }
 
     if ( illuminant.data.count( "main" ) == 0 ||

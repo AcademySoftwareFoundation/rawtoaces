@@ -340,6 +340,7 @@ bool prepare_transform_spectral(
 
         if ( !success )
         {
+            // TODO: Potentially remove, since this code path is not reachable due to camera lookup success in the previous step.
             std::cerr << "ERROR: Failed to find a suitable illuminant."
                       << std::endl;
             return false;

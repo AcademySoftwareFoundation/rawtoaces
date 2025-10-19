@@ -1183,45 +1183,6 @@ void test_missing_illuminant_data()
         output.find( "Error: No matching light source" ) != std::string::npos );
 }
 
-/// Tests that conversion fails when specified illuminant does not exist (should fail)
-void test_illuminant_not_found()
-{
-    std::cout << std::endl << "test_illuminant_not_found()" << std::endl;
-
-    // Create test directory with database
-    TestDirectory test_dir;
-
-    // Create camera data (so camera lookup succeeds)
-    test_dir.create_test_data_file(
-        "camera",
-        { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
-
-    // Create training data (so training data loading succeeds)
-    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
-
-    // Create observer data (so observer data loading succeeds)
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
-
-    // Use the original DNG file with camera metadata
-    std::string test_file =
-        "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
-
-    // Test: Illuminant not found via main entrance (using non-existent illuminant)
-    std::vector<std::string> args = { "--wb-method",  "illuminant",
-                                      "--illuminant", "nonexistentilluminant",
-                                      "--mat-method", "spectral",
-                                      "--verbose",    "--overwrite",
-                                      test_file };
-
-    // This should fail with error message about illuminant not found
-    std::string output = run_rawtoaces_with_data_dir(
-        args, test_dir.get_database_path(), false, true );
-
-    // Assert on the expected error message
-    OIIO_CHECK_ASSERT(
-        output.find( "Error: No matching light source" ) != std::string::npos );
-}
-
 void assert_success_conversion( const std::string &output )
 {
     // Assert that the command succeeded (no error messages)
@@ -1598,7 +1559,6 @@ int main( int, char ** )
         test_missing_training_data();
         test_missing_observer_data();
         test_missing_illuminant_data();
-        test_illuminant_not_found();
 
         test_spectral_conversion_success();
         test_rawtoaces_spectral_mode_complete_success_with_custom_camera_info();

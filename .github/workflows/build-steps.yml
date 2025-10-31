@@ -28,8 +28,8 @@ on:
         type: string
         default: 'ON'
       vfxyear:
-        type: string
-        default: '0'
+        type: number
+        default: 0
       ceres_hack:
         type: string
         default: 'OFF'
@@ -54,7 +54,7 @@ jobs:
     steps:
           
       - name: Install nodejs20glibc2.17 - VFX2022 only
-        if: inputs.vfxyear == '2022'
+        if: inputs.vfxyear == 2022
         run: |
           curl --silent https://unofficial-builds.nodejs.org/download/release/v20.18.1/node-v20.18.1-linux-x64-glibc-217.tar.xz | tar -xJ --strip-components 1 -C /node20217 -f -
           
@@ -63,17 +63,25 @@ jobs:
           fetch-depth: '0'
 
       - name: Yum config - VFX2022 only
-        if: inputs.vfxyear == '2022'
+        if: inputs.vfxyear == 2022
         shell: bash
         run: |
           yum-config-manager --disable centos-sclo-rh || true
           sed -i 's,^mirrorlist=,#,; s,^#baseurl=http://mirror\.centos\.org/centos/$releasever,baseurl=https://vault.centos.org/7.9.2009,' /etc/yum.repos.d/CentOS-Base.repo
           
       - name: Dependencies
+        if: inputs.vfxyear < 2024
         shell: bash
         run: |
           build_scripts/${{ inputs.install_deps }}.bash
-        
+              
+      - name: Dependencies (aswf/ci-rawtoaces)
+        if: inputs.vfxyear > 2023
+        shell: bash
+        run: |
+          yum install -y json-devel
+          python -m pip install nanobind pytest
+    
       - name: Configure CMake
         run: >
           cmake 

@@ -79,8 +79,9 @@ jobs:
         if: inputs.vfxyear > 2023
         shell: bash
         run: |
-          yum install -y json-devel
-          python -m pip install nanobind pytest
+          conan profile detect --force
+          conan install . --output-folder=build_deps --build=missing
+          python -m pip install pytest
     
       - name: Configure CMake
         run: >
@@ -90,6 +91,7 @@ jobs:
           -D RTA_CENTOS7_CERES_HACK=${{ inputs.ceres_hack }}
           -D CMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
           -D CMAKE_CXX_STANDARD=17
+          -D CMAKE_BUILD_TYPE=${{ inputs.build_type }}
           -D CMAKE_TOOLCHAIN_FILE="${{ inputs.toolchain_file }}"
           -D ENABLE_SHARED="${{ inputs.build_shared_libs }}"
           
@@ -118,6 +120,7 @@ jobs:
           -D RAWTOACES_DIR=${{ github.workspace }}/install/lib/cmake/RAWTOACES
           -D CMAKE_TOOLCHAIN_FILE="${{ inputs.toolchain_file }}"
           -D CMAKE_CXX_STANDARD=17
+          -D CMAKE_BUILD_TYPE=${{ inputs.build_type }}
 
       - name: Build config_tests
         if: inputs.test_install == 'ON'

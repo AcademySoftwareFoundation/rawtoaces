@@ -1,0 +1,7 @@
+[requires]
+nlohmann_json/3.12.0
+nanobind/2.9.2
+
+[generators]
+CMakeDeps
+CMakeToolchain

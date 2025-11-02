@@ -23,6 +23,7 @@ jobs:
       vfxyear: ${{ matrix.vfxyear || 0 }}
       ceres_hack: ${{ matrix.ceres_hack || 'OFF' }}
       test_install: ${{ matrix.test_install || 'ON' }}
+      toolchain_file: ${{ matrix.toolchain_file }}
       
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
@@ -41,10 +42,13 @@ jobs:
             container: aswf/ci-osl:2023-clang15
           - vfxyear: 2024
             container: aswf/ci-rawtoaces:2024.4
+            toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
           - vfxyear: 2025
             container: aswf/ci-rawtoaces:2025.3
+            toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
           - vfxyear: 2026
             container: aswf/ci-rawtoaces:2026.1
+            toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
 
   build:
     name: "${{matrix.os}} ${{matrix.c_compiler}}"

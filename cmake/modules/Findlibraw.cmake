@@ -77,14 +77,15 @@ endif()
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set LibRaw_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(libraw
+find_package_handle_standard_args(LibRaw
                                   REQUIRED_VARS libraw_LIBRARY libraw_INCLUDE_DIR
                                   VERSION_VAR libraw_VERSION
                                   FAIL_MESSAGE "Unable to find libraw library" )
 
-# older versions of cmake don't support FOUND_VAR to find_package_handle
-# so just do it the hard way...
-if(LIBRAW_FOUND AND NOT libraw_FOUND)
+if(LibRaw_FOUND)
+  set(LibRaw_LIBRARIES ${libraw_LIBRARY})
+  set(LibRaw_INCLUDE_DIRS ${libraw_INCLUDE_DIR})
+  set(LibRaw_VERSION ${libraw_VERSION})
   set(libraw_FOUND 1)
 endif()
 

@@ -3,7 +3,7 @@
     "dependencies": [
         "ceres",
         "nlohmann-json",
-        "openimageio",
+        { "name": "openimageio", "features": [ "libraw" ] },
         "nanobind"
     ],
     "overrides": [

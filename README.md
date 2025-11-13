@@ -59,7 +59,11 @@ $ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/inst
 ```
 
 ```sh
-$ brew install cmake ceres-solver imath boost  
+$ brew install ceres-solver nlohmann-json openimageio nanobind robin-map
+```
+
+```sh
+$ python3 -m pip install --break-system-packages pytest
 ```
 
 ### Linux

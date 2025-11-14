@@ -1825,6 +1825,7 @@ bool ImageConverter::save_image(
         "chromaticities",
         OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 8 ),
         chromaticities );
+    image_spec["oiio:ColorSpace"] = "lin_ap0_scene";
 
     auto image_output = OIIO::ImageOutput::create( "exr" );
     bool result       = image_output->open( output_filename, image_spec );

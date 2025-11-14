@@ -1835,7 +1835,7 @@ bool ImageConverter::save_image(
     }
     else
     {
-        std::cerr << "ERROR: Failed to open the file: " << output_filename
+        std::cerr << "ERROR: Failed to write file: " << output_filename
                   << std::endl
                   << "Error: " << image_output->geterror() << std::endl;
     }

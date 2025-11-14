@@ -23,8 +23,16 @@ void test_ImageConverter_arguments()
         std::filesystem::absolute( image_path ).string();
 
     // Input parameters.
-    const char *argv[] = { "DUMMY PROGRAM PATH", "--wb-method", "metadata",
-                           "--mat-method",       "metadata",    "--overwrite" };
+    std::filesystem::path temp_output_dir =
+        std::filesystem::temp_directory_path() /
+        "rawtoaces_usage_example_output";
+    std::cout << "temp_output_dir: " << temp_output_dir << std::endl;
+    std::filesystem::create_directories( temp_output_dir );
+    std::string temp_output_dir_str = temp_output_dir.string();
+    const char *argv[]              = { "DUMMY PROGRAM PATH", "--wb-method",
+                                        "metadata",           "--mat-method",
+                                        "metadata",           "--overwrite",
+                                        "--output-dir",       temp_output_dir_str.c_str() };
 
     const size_t argc = sizeof( argv ) / sizeof( argv[0] );
 

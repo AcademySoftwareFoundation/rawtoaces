@@ -78,7 +78,7 @@ function(generate_coverage_report)
         COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure || true
         COMMAND ${CMAKE_COMMAND} -E echo "Generating coverage report..."
         COMMAND ${LCOV_PATH} --ignore-errors inconsistent,unsupported,format,unused,corrupt --directory ${CMAKE_BINARY_DIR} --capture --output-file ${CMAKE_BINARY_DIR}/coverage/coverage.info
-        COMMAND ${LCOV_PATH} --ignore-errors inconsistent,unsupported,format,unused,corrupt --extract ${CMAKE_BINARY_DIR}/coverage/coverage.info '*/src/rawtoaces_*' '*/include/rawtoaces/*' --output-file ${CMAKE_BINARY_DIR}/coverage/coverage_temp.info
+        COMMAND ${LCOV_PATH} --ignore-errors inconsistent,unsupported,format,unused,corrupt --extract ${CMAKE_BINARY_DIR}/coverage/coverage.info '*/src/rawtoaces_*' '*/src/rawtoaces/*' '*/include/rawtoaces/*' --output-file ${CMAKE_BINARY_DIR}/coverage/coverage_temp.info
         COMMAND ${LCOV_PATH} --ignore-errors inconsistent,unsupported,format,unused,corrupt --remove ${CMAKE_BINARY_DIR}/coverage/coverage_temp.info '*/tests/*' --output-file ${CMAKE_BINARY_DIR}/coverage/coverage_filtered.info
         COMMAND ${GENHTML_PATH} --ignore-errors inconsistent,unsupported,corrupt,category ${CMAKE_BINARY_DIR}/coverage/coverage_filtered.info --output-directory ${CMAKE_BINARY_DIR}/coverage/html
         COMMAND ${CMAKE_COMMAND} -E echo "Coverage report generated in ${CMAKE_BINARY_DIR}/coverage/html/index.html"

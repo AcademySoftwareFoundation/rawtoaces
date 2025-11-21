@@ -24,7 +24,7 @@ public:
     /// passed since the last invocation of `reset()`.
     /// @param path The file math to print.
     /// @param message The message to print.
-    void print( const std::string &path, const std::string &message );
+    void print( const std::string &path, const std::string &message ) const;
 
 private:
     double _start_time  = 0.0;

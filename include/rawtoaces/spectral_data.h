@@ -86,7 +86,7 @@ struct Spectrum
 
     /// Integrate the spectral curve.
     /// @result the sum of all elements in `values`.
-    double integrate();
+    double integrate() const;
 
     /// Find the maximum element in `values`
     /// @result the maximum element in `values`.

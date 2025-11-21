@@ -910,7 +910,7 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
 
     if ( arg_parser["list-cameras"].get<int>() )
     {
-        auto cameras = supported_cameras();
+        auto cameras = get_supported_cameras();
         std::cout
             << std::endl
             << "Spectral sensitivity data is available for the following cameras:"
@@ -921,7 +921,7 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
 
     if ( arg_parser["list-illuminants"].get<int>() )
     {
-        auto illuminants = supported_illuminants();
+        auto illuminants = get_supported_illuminants();
         std::cout << std::endl
                   << "The following illuminants are supported:" << std::endl
                   << OIIO::Strutil::join( illuminants, "\n" ) << std::endl;
@@ -1169,7 +1169,7 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     return true;
 }
 
-std::vector<std::string> ImageConverter::supported_illuminants()
+std::vector<std::string> ImageConverter::get_supported_illuminants() const
 {
     std::vector<std::string> result;
 
@@ -1190,7 +1190,7 @@ std::vector<std::string> ImageConverter::supported_illuminants()
     return result;
 }
 
-std::vector<std::string> ImageConverter::supported_cameras()
+std::vector<std::string> ImageConverter::get_supported_cameras() const
 {
     std::vector<std::string> result;
 
@@ -1242,8 +1242,9 @@ void fix_metadata( OIIO::ImageSpec &spec )
 }
 
 bool ImageConverter::configure(
-    const std::string &input_filename, OIIO::ParamValueList &options )
+    const std::string &input_filename, const OIIO::ParamValueList &hints = {} )
 {
+    OIIO::ParamValueList options = hints;
     options["raw:ColorSpace"]    = "XYZ";
     options["raw:use_camera_wb"] = 0;
     options["raw:use_auto_wb"]   = 0;
@@ -1277,8 +1278,9 @@ bool ImageConverter::configure(
 // -G - green_matching() filter
 
 bool ImageConverter::configure(
-    const OIIO::ImageSpec &image_spec, OIIO::ParamValueList &options )
+    const OIIO::ImageSpec &image_spec, const OIIO::ParamValueList &hints = {} )
 {
+    OIIO::ParamValueList options = hints;
     options["raw:use_camera_wb"] = 0;
     options["raw:use_auto_wb"]   = 0;
 
@@ -1977,17 +1979,17 @@ bool ImageConverter::process_image( const std::string &input_filename )
     return ( true );
 }
 
-const std::vector<double> &ImageConverter::get_WB_multipliers()
+const std::vector<double> &ImageConverter::get_WB_multipliers() const
 {
     return _wb_multipliers;
 }
 
-const std::vector<std::vector<double>> &ImageConverter::get_IDT_matrix()
+const std::vector<std::vector<double>> &ImageConverter::get_IDT_matrix() const
 {
     return _idt_matrix;
 }
 
-const std::vector<std::vector<double>> &ImageConverter::get_CAT_matrix()
+const std::vector<std::vector<double>> &ImageConverter::get_CAT_matrix() const
 {
     return _cat_matrix;
 }

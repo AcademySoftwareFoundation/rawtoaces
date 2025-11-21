@@ -38,7 +38,8 @@ void UsageTimer::reset()
     }
 }
 
-void UsageTimer::print( const std::string &path, const std::string &message )
+void UsageTimer::print(
+    const std::string &path, const std::string &message ) const
 {
     if ( enabled && _initialized )
     {

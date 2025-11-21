@@ -147,11 +147,11 @@ public:
     bool parse_parameters( const OIIO::ArgParse &arg_parser );
 
     /// Collects all illuminants supported by this version.
-    std::vector<std::string> supported_illuminants();
+    std::vector<std::string> get_supported_illuminants() const;
 
     /// Collects all camera models for which spectral sensitivity data is
     /// available in the database.
-    std::vector<std::string> supported_cameras();
+    std::vector<std::string> get_supported_cameras() const;
 
     /// Configures the converter using the requested white balance and colour
     /// matrix method, and the metadata of the file provided in `input_file`.
@@ -160,14 +160,14 @@ public:
     /// decode the pixels.
     /// @param input_filename
     ///    A file name of the raw image file to read the metadata from.
-    /// @param options
+    /// @param hints
     ///    Conversion hints to be passed to OIIO when reading an image file.
     ///    The list can be pre- or post- updated with other hints, unrelated to
     ///    the rawtoaces conversion.
     /// @result
     ///    `true` if configured successfully.
     bool configure(
-        const std::string &input_filename, OIIO::ParamValueList &options );
+        const std::string &input_filename, const OIIO::ParamValueList &hints );
 
     /// Configures the converter using the requested white balance and colour
     /// matrix method, and the metadata of the given OIIO::ImageSpec object.
@@ -181,8 +181,8 @@ public:
     ///    the rawtoaces conversion.
     /// @result
     ///    `true` if configured successfully.
-    bool
-    configure( const OIIO::ImageSpec &imageSpec, OIIO::ParamValueList &hints );
+    bool configure(
+        const OIIO::ImageSpec &imageSpec, const OIIO::ParamValueList &hints );
 
     /// Load an image from a given `path` into a `buffer` using the `hints`
     /// calculated by the `configure` method. The hints can be manually
@@ -261,19 +261,19 @@ public:
     /// image. The multipliers become available after calling either of the
     /// two `configure` methods.
     /// @result a reference to the multipliers vector.
-    const std::vector<double> &get_WB_multipliers();
+    const std::vector<double> &get_WB_multipliers() const;
 
     /// Get the solved input transform matrix of the currently processed image.
     /// The multipliers become available after calling either of the two
     /// `configure` methods.
     /// @result a reference to the matrix.
-    const std::vector<std::vector<double>> &get_IDT_matrix();
+    const std::vector<std::vector<double>> &get_IDT_matrix() const;
 
     /// Get the solved chromatic adaptation transform matrix of the currently
     /// processed image. The multipliers become available after calling either
     /// of the two `configure` methods.
     /// @result a reference to the matrix.
-    const std::vector<std::vector<double>> &get_CAT_matrix();
+    const std::vector<std::vector<double>> &get_CAT_matrix() const;
 
 private:
     // Solved transform of the current image.

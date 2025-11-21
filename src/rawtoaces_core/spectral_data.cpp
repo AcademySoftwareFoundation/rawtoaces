@@ -151,7 +151,7 @@ void Spectrum::reshape()
     shape  = ReferenceShape;
 }
 
-double Spectrum::integrate()
+double Spectrum::integrate() const
 {
     double result = 0;
     for ( auto &v: values )

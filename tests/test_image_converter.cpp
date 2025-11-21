@@ -728,7 +728,7 @@ std::string run_rawtoaces_with_data_dir(
 }
 
 /// This test verifies that when --list-cameras is provided, the method
-/// calls supported_cameras() and outputs the camera list, then exits
+/// calls get_supported_cameras() and outputs the camera list, then exits
 void test_parse_parameters_list_cameras( bool use_dir_path_arg = false )
 {
     std::cout << std::endl
@@ -771,7 +771,8 @@ void test_parse_parameters_list_cameras( bool use_dir_path_arg = false )
 }
 
 /// This test verifies that when --list-illuminants is provided, the method
-/// calls supported_illuminants() and outputs the illuminant list, then exits
+/// calls get_supported_illuminants() and outputs the illuminant list,
+/// then exits
 void test_parse_parameters_list_illuminants( bool use_dir_path_arg = false )
 {
     std::cout << std::endl

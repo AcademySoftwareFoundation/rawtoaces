@@ -11,6 +11,8 @@
 #include <string>
 #include <thread>
 
+#include "test_utils.h"
+
 using namespace rta::util;
 
 // Helper function to extract time value from output
@@ -111,13 +113,8 @@ void testTimingOutput()
     std::this_thread::sleep_for( std::chrono::milliseconds( 50 ) );
 
     // Capture output to verify timing
-    std::stringstream buffer;
-    std::streambuf   *old = std::cerr.rdbuf( buffer.rdbuf() );
-
-    timer.print( "test_path", "test_message" );
-
-    std::cerr.rdbuf( old );
-    std::string output = buffer.str();
+    std::string output =
+        capture_stderr( [&]() { timer.print( "test_path", "test_message" ); } );
 
     // Should contain timing information
     OIIO_CHECK_ASSERT( output.find( "Timing:" ) != std::string::npos );
@@ -172,17 +169,11 @@ void testMultipleIndependentInstances()
     std::this_thread::sleep_for( std::chrono::milliseconds( 5 ) );
 
     // Capture outputs to verify different timing
-    std::stringstream buffer1, buffer2;
-    std::streambuf   *old = std::cerr.rdbuf( buffer1.rdbuf() );
+    std::string output1 =
+        capture_stderr( [&]() { timer1.print( "path1", "message1" ); } );
 
-    timer1.print( "path1", "message1" );
-    std::cerr.rdbuf( buffer2.rdbuf() );
-    timer2.print( "path2", "message2" );
-
-    std::cerr.rdbuf( old );
-
-    std::string output1 = buffer1.str();
-    std::string output2 = buffer2.str();
+    std::string output2 =
+        capture_stderr( [&]() { timer2.print( "path2", "message2" ); } );
 
     // Both should contain timing information
     OIIO_CHECK_ASSERT( output1.find( "Timing:" ) != std::string::npos );
@@ -212,13 +203,8 @@ void testTimingAccuracy()
     std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
 
     // Capture output to verify timing
-    std::stringstream buffer;
-    std::streambuf   *old = std::cerr.rdbuf( buffer.rdbuf() );
-
-    timer.print( "test_path", "test_message" );
-
-    std::cerr.rdbuf( old );
-    std::string output = buffer.str();
+    std::string output =
+        capture_stderr( [&]() { timer.print( "test_path", "test_message" ); } );
 
     // Should contain timing information
     OIIO_CHECK_ASSERT( output.find( "Timing:" ) != std::string::npos );

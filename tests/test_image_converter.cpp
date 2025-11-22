@@ -17,8 +17,11 @@
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <sstream>
 #include <vector>
 #include <ctime>
+
+#include "test_utils.h"
 
 #ifdef WIN32
 #    include <io.h>
@@ -965,12 +968,22 @@ void test_missing_camera_manufacturer()
     std::vector<std::vector<double>> IDT_matrix;
     std::vector<std::vector<double>> CAT_matrix;
 
-    // This should fail because there's no camera make
-    bool success = prepare_transform_spectral(
-        image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+    // Capture stderr output to verify error messages
+    bool        success;
+    std::string output = capture_stderr( [&]() {
+        // This should fail because there's no camera make
+        success = prepare_transform_spectral(
+            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+    } );
 
     // Should fail
     OIIO_CHECK_ASSERT( !success );
+
+    // Assert on the expected error message
+    OIIO_CHECK_ASSERT(
+        output.find(
+            "Missing the camera manufacturer name in the file metadata. You can provide a camera make using the --custom-camera-make parameter" ) !=
+        std::string::npos );
 }
 
 /// Tests that conversion fails when camera model is missing (should fail)
@@ -990,19 +1003,34 @@ void test_empty_camera_model()
     // Create illuminant data (so illuminant data loading succeeds)
     test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
 
-    // Use the DNG file with camera make but no model
-    std::string test_file =
-        "../../tests/materials/blackmagic_cinema_camera_cinemadng_no_model.dng";
+    // Create ImageSpec with camera make but no model
+    OIIO::ImageSpec image_spec;
+    image_spec["cameraMake"] = "Blackmagic";
+    // Do not set cameraModel - this is what we're testing
 
-    // Test: Missing camera model via main entrance (no custom camera info provided)
-    std::vector<std::string> args = {
-        "--wb-method", "illuminant", "--illuminant", "D65",    "--mat-method",
-        "spectral",    "--verbose",  "--overwrite",  test_file
-    };
+    // Set up ImageConverter with spectral mode settings
+    ImageConverter converter;
+    converter.settings.WB_method =
+        ImageConverter::Settings::WBMethod::Illuminant;
+    converter.settings.matrix_method =
+        ImageConverter::Settings::MatrixMethod::Spectral;
+    converter.settings.illuminant = "D65";
+    converter.settings.verbosity  = 1;
+    converter.settings.database_directories.push_back(
+        test_dir.get_database_path() );
 
-    // This should fail with error message about missing camera model
-    std::string output = run_rawtoaces_with_data_dir(
-        args, test_dir.get_database_path(), false, true );
+    // Create empty options list
+    OIIO::ParamValueList options;
+
+    // Capture stderr output to verify error messages
+    bool        success;
+    std::string output = capture_stderr( [&]() {
+        // This should fail with error message about missing camera model
+        success = converter.configure( image_spec, options );
+    } );
+
+    // Should fail
+    OIIO_CHECK_ASSERT( !success );
 
     // Assert on the expected error message - focus on the main camera identifier error
     OIIO_CHECK_ASSERT(

@@ -171,6 +171,7 @@ add_test ( NAME Test_Misc COMMAND Test_Misc )
 add_executable (
 	Test_UsageTimer
 	testUsageTimer.cpp
+	test_utils.cpp
 )
 
 target_link_libraries(
@@ -188,6 +189,7 @@ add_test ( NAME Test_UsageTimer COMMAND Test_UsageTimer )
 add_executable (
 	Test_ImageConverter
 	test_image_converter.cpp
+	test_utils.cpp
 )
 
 target_link_libraries(

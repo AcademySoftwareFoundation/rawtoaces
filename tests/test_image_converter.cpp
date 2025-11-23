@@ -1211,6 +1211,350 @@ void test_missing_illuminant_data()
         output.find( "Error: No matching light source" ) != std::string::npos );
 }
 
+/// Tests that conversion fails when specified illuminant type is not found in illuminant data (should fail)
+void test_illuminant_type_not_found()
+{
+    std::cout << std::endl << "test_illuminant_type_not_found()" << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file(
+        "camera",
+        { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Create illuminant data with a specific illuminant type (e.g., "D65")
+    // but we'll request a different type that doesn't exist
+    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+
+    // Create a mock ImageSpec with camera metadata
+    OIIO::ImageSpec image_spec;
+    image_spec.width          = 100;
+    image_spec.height         = 100;
+    image_spec.nchannels      = 3;
+    image_spec.format         = OIIO::TypeDesc::UINT8;
+    image_spec["cameraMake"]  = "Blackmagic";
+    image_spec["cameraModel"] = "Cinema Camera";
+
+    // Configure settings with illuminant that doesn't exist in the database
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.illuminant = "A"; // Request illuminant "A" which doesn't exist
+    settings.verbosity  = 1;
+
+    // Test: Request an illuminant type that doesn't exist in the illuminant data
+    std::vector<double>              WB_multipliers;
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    // Capture stderr output to verify error messages
+    bool        success;
+    std::string output = capture_stderr( [&]() {
+        // This should fail because illuminant "A" is not found
+        success = prepare_transform_spectral(
+            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+    } );
+
+    // Should fail
+    OIIO_CHECK_ASSERT( !success );
+
+    // Assert on the expected error message
+    OIIO_CHECK_ASSERT(
+        output.find( "Failed to find illuminant type = 'a'." ) !=
+        std::string::npos );
+}
+
+/// Tests that auto-detection of illuminant works with 4-channel WB_multipliers and verbosity output
+void test_auto_detect_illuminant_with_wb_multipliers()
+{
+    std::cout << std::endl
+              << "test_auto_detect_illuminant_with_wb_multipliers()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file(
+        "camera",
+        { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Create illuminant data (so illuminant data loading succeeds)
+    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+
+    // Create a mock ImageSpec with camera metadata
+    OIIO::ImageSpec image_spec;
+    image_spec.width          = 100;
+    image_spec.height         = 100;
+    image_spec.nchannels      = 3;
+    image_spec.format         = OIIO::TypeDesc::UINT8;
+    image_spec["cameraMake"]  = "Blackmagic";
+    image_spec["cameraModel"] = "Cinema Camera";
+
+    // Configure settings with empty illuminant (to trigger auto-detection)
+    // and verbosity > 0 (to trigger the "Found illuminant:" message)
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.illuminant           = ""; // Empty to trigger auto-detection
+    settings.verbosity            = 1;  // > 0 to trigger the output message
+
+    // Provide WB_multipliers with size 4 to exercise the 4-channel path
+    std::vector<double> WB_multipliers = { 1.5, 1.0, 1.2, 1.0 }; // 4 channels
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    bool        success;
+    std::string output = capture_stderr( [&]() {
+        // This should succeed and auto-detect the illuminant
+        // This will exercise the 4-channel WB_multipliers path (when WB_multipliers.size() == 4)
+        // and the verbosity output path (when verbosity > 0 and illuminant is found)
+        success = prepare_transform_spectral(
+            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+    } );
+
+    // Should succeed
+    OIIO_CHECK_ASSERT( success );
+
+    // With the current mocked input (WB_multipliers = {1.5, 1.0, 1.2, 1.0}),
+    OIIO_CHECK_ASSERT(
+        output.find( "Found illuminant: '2000k'." ) != std::string::npos );
+}
+
+/// Tests that auto-detection extracts white balance from RAW metadata when WB_multipliers is not provided
+void test_auto_detect_illuminant_from_raw_metadata()
+{
+    std::cout << std::endl
+              << "test_auto_detect_illuminant_from_raw_metadata()" << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file(
+        "camera",
+        { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Create illuminant data (so illuminant data loading succeeds)
+    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+
+    // Use direct library method to control WB_multipliers and force the else path
+    // The exec method populates WB_multipliers from metadata, so it takes the if branch.
+    // To test the else branch (extract from raw:pre_mul), we need WB_multipliers.size() != 4.
+
+    // Create a mock ImageSpec with camera metadata and raw:pre_mul attribute
+    OIIO::ImageSpec image_spec;
+    image_spec.width          = 100;
+    image_spec.height         = 100;
+    image_spec.nchannels      = 3;
+    image_spec.format         = OIIO::TypeDesc::UINT8;
+    image_spec["cameraMake"]  = "Blackmagic";
+    image_spec["cameraModel"] = "Cinema Camera";
+
+    // Add raw:pre_mul attribute to simulate RAW metadata extraction path
+    float pre_mul[4] = { 1.5f, 1.0f, 1.2f, 1.0f };
+    image_spec.attribute(
+        "raw:pre_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ), pre_mul );
+
+    // Configure settings with empty illuminant (to trigger auto-detection)
+    // and verbosity > 0 (to trigger the "Found illuminant:" message)
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.illuminant           = ""; // Empty to trigger auto-detection
+    settings.verbosity            = 1;  // > 0 to trigger the output message
+
+    // Provide empty WB_multipliers to trigger extraction from raw:pre_mul
+    // This exercises the path where WB_multipliers.size() != 4
+    std::vector<double>
+        WB_multipliers; // Empty - will trigger raw:pre_mul extraction
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    bool        success;
+    std::string output = capture_stderr( [&]() {
+        // This should succeed and auto-detect the illuminant from raw:pre_mul
+        // This exercises the extraction path when WB_multipliers is not provided
+        success = prepare_transform_spectral(
+            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+    } );
+
+    // Should succeed
+    OIIO_CHECK_ASSERT( success );
+
+    // Verify the "Found illuminant:" message appears
+    OIIO_CHECK_ASSERT(
+        output.find( "Found illuminant: '2000k'." ) != std::string::npos );
+}
+
+/// Tests that auto-detection normalizes white balance multipliers when min_val > 0 and != 1
+void test_auto_detect_illuminant_with_normalization()
+{
+    std::cout << std::endl
+              << "test_auto_detect_illuminant_with_normalization()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file(
+        "camera",
+        { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Create illuminant data (so illuminant data loading succeeds)
+    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+
+    // Create a mock ImageSpec with camera metadata and raw:pre_mul attribute
+    OIIO::ImageSpec image_spec;
+    image_spec.width          = 100;
+    image_spec.height         = 100;
+    image_spec.nchannels      = 3;
+    image_spec.format         = OIIO::TypeDesc::UINT8;
+    image_spec["cameraMake"]  = "Blackmagic";
+    image_spec["cameraModel"] = "Cinema Camera";
+
+    // Add raw:pre_mul attribute with values where min_val > 0 and != 1
+    // Using values like {2.0, 1.5, 1.8, 1.5} where min=1.5, which is > 0 and != 1
+    // This will trigger the normalization path
+    float pre_mul[4] = { 2.0f, 1.5f, 1.8f, 1.5f };
+    image_spec.attribute(
+        "raw:pre_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ), pre_mul );
+
+    // Configure settings with empty illuminant (to trigger auto-detection)
+    // and verbosity > 0 (to trigger the "Found illuminant:" message)
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.illuminant           = ""; // Empty to trigger auto-detection
+    settings.verbosity            = 1;  // > 0 to trigger the output message
+
+    // Provide empty WB_multipliers to trigger extraction from raw:pre_mul
+    // This exercises the path where WB_multipliers.size() != 4
+    std::vector<double>
+        WB_multipliers; // Empty - will trigger raw:pre_mul extraction
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    bool        success;
+    std::string output = capture_stderr( [&]() {
+        // This should succeed and auto-detect the illuminant from raw:pre_mul
+        // The normalization path will be exercised when min_val > 0 and != 1
+        success = prepare_transform_spectral(
+            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+    } );
+
+    // Should succeed
+    OIIO_CHECK_ASSERT( success );
+
+    // Verify the "Found illuminant:" message appears
+    OIIO_CHECK_ASSERT(
+        output.find( "Found illuminant: '1500k'." ) != std::string::npos );
+}
+
+/// Tests that prepare_transform_spectral fails when IDT matrix calculation fails
+void test_prepare_transform_spectral_idt_calculation_fail()
+{
+    std::cout << std::endl
+              << "test_prepare_transform_spectral_idt_calculation_fail()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file(
+        "camera",
+        { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+
+    // Create illuminant data (so illuminant data loading succeeds)
+    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+
+    // Create training data with minimal structure that causes curve fitting to fail
+    // We need to create a file that loads but causes optimization to fail
+    std::string training_dir = test_dir.get_database_path() + "/training";
+    std::filesystem::create_directories( training_dir );
+    std::string training_file = training_dir + "/training_spectral.json";
+
+    // Create training data with only one patch and minimal wavelengths
+    // This should pass initial validation but cause curve fitting to fail
+    nlohmann::json training_json;
+    training_json["header"]["illuminant"] = "D65";
+    training_json["units"]                = "relative";
+    training_json["index"]                = { { "main", { "patch1" } } };
+
+    nlohmann::json data_main;
+    // Add only a few wavelengths - insufficient for proper curve fitting
+    data_main["380"]              = { 0.1 };
+    data_main["385"]              = { 0.1 };
+    data_main["390"]              = { 0.1 };
+    training_json["data"]["main"] = data_main;
+
+    std::ofstream training_out( training_file );
+    training_out << training_json.dump( 4 );
+    training_out.close();
+
+    // Create a mock ImageSpec with camera metadata
+    OIIO::ImageSpec image_spec;
+    image_spec.width          = 100;
+    image_spec.height         = 100;
+    image_spec.nchannels      = 3;
+    image_spec.format         = OIIO::TypeDesc::UINT8;
+    image_spec["cameraMake"]  = "Blackmagic";
+    image_spec["cameraModel"] = "Cinema Camera";
+
+    // Configure settings with illuminant specified
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.illuminant           = "D65";
+    settings.verbosity            = 1;
+
+    // Provide WB_multipliers
+    std::vector<double>              WB_multipliers = { 1.5, 1.0, 1.2 };
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    bool        success;
+    std::string output = capture_stderr( [&]() {
+        // This should fail when trying to calculate IDT matrix
+        success = prepare_transform_spectral(
+            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+    } );
+
+    // Should fail
+    OIIO_CHECK_ASSERT( !success );
+
+    // Verify the error message about failed IDT matrix calculation
+    OIIO_CHECK_ASSERT(
+        output.find( "Failed to calculate the input transform matrix." ) !=
+        std::string::npos );
+}
+
 void assert_success_conversion( const std::string &output )
 {
     // Assert that the command succeeded (no error messages)
@@ -1587,12 +1931,17 @@ int main( int, char ** )
         test_missing_training_data();
         test_missing_observer_data();
         test_missing_illuminant_data();
+        test_illuminant_type_not_found();
+        test_auto_detect_illuminant_with_wb_multipliers();
+        test_auto_detect_illuminant_from_raw_metadata();
+        test_auto_detect_illuminant_with_normalization();
 
         test_spectral_conversion_success();
         test_rawtoaces_spectral_mode_complete_success_with_custom_camera_info();
 
         test_prepare_transform_spectral_wb_calculation_fail_due_to_invalid_illuminant_data();
         test_prepare_transform_spectral_wb_calculation_fail_due_to_invalid_camera_data();
+        test_prepare_transform_spectral_idt_calculation_fail();
 
         test_rawtoaces_spectral_mode_complete_success_with_default_illuminant_warning();
         test_illuminant_ignored_with_metadata_wb();

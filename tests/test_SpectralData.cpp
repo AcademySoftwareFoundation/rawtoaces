@@ -11,6 +11,7 @@
 
 #include "../src/rawtoaces_core/mathOps.h"
 #include <rawtoaces/rawtoaces_core.h>
+#include "test_utils.h"
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 
@@ -516,6 +517,58 @@ void testSpectralData_ReshapeBeforeSourceRange()
         spectrum.values[8], 300.0, 1e-10 ); /// 420 nm - exact match
 }
 
+void testSpectralData_Max()
+{
+    /// Test max() function with empty spectrum
+    /// Create an empty spectrum using EmptyShape
+    rta::core::Spectrum empty_spectrum( 0.0, rta::core::Spectrum::EmptyShape );
+
+    /// Verify it's empty
+    OIIO_CHECK_EQUAL( empty_spectrum.values.size(), 0 );
+    OIIO_CHECK_EQUAL( empty_spectrum.shape.first, 0 );
+    OIIO_CHECK_EQUAL( empty_spectrum.shape.last, 0 );
+    OIIO_CHECK_EQUAL( empty_spectrum.shape.step, 0 );
+
+    /// Test that max() returns 0 for empty spectrum
+    double max_value = empty_spectrum.max();
+    OIIO_CHECK_EQUAL( max_value, 0.0 );
+
+    /// Also test with a non-empty spectrum to ensure max() works correctly
+    rta::core::Spectrum non_empty( 0.0 );
+    non_empty.values[0] = 5.0;
+    non_empty.values[1] = 10.0;
+    non_empty.values[2] = 3.0;
+    non_empty.values[3] = 15.0;
+    non_empty.values[4] = 7.0;
+
+    double max_value_non_empty = non_empty.max();
+    OIIO_CHECK_EQUAL( max_value_non_empty, 15.0 );
+}
+
+void testSpectralData_LoadFileNotFound()
+{
+    /// Test load() function with a non-existent file
+    rta::core::SpectralData data;
+    std::string non_existent_path = "/nonexistent/path/to/file.json";
+
+    /// Capture stderr output
+    std::string stderr_output = capture_stderr( [&]() {
+        bool result = data.load( non_existent_path );
+        OIIO_CHECK_EQUAL(
+            result, false ); /// Should return false for non-existent file
+    } );
+
+    /// Verify error message was printed
+    std::string expected_error =
+        "Error: Failed to open file " + non_existent_path + ".\n";
+    OIIO_CHECK_EQUAL( stderr_output, expected_error );
+
+    /// Verify data was reset (all fields should be empty)
+    OIIO_CHECK_EQUAL( data.manufacturer, "" );
+    OIIO_CHECK_EQUAL( data.model, "" );
+    OIIO_CHECK_EQUAL( data.data.size(), 0 );
+}
+
 int main( int, char ** )
 {
     testSpectralData_Spectrum();
@@ -524,6 +577,8 @@ int main( int, char ** )
     testSpectralData_Operators();
     testSpectralData_ReshapeInterpolation();
     testSpectralData_ReshapeBeforeSourceRange();
+    testSpectralData_Max();
+    testSpectralData_LoadFileNotFound();
 
     return unit_test_failures;
 }

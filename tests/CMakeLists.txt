@@ -52,6 +52,7 @@ add_test ( NAME Test_usage_example_util COMMAND Test_usage_example_util )
 add_executable (
 	Test_SpectralData
 	test_SpectralData.cpp
+	test_utils.cpp
 )
 
 target_link_libraries(

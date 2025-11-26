@@ -344,8 +344,8 @@ bool prepare_transform_spectral(
 
         if ( settings.verbosity > 0 )
         {
-            std::cerr << "Found illuminant: '" << solver.illuminant.illuminant
-                      << "'." << std::endl;
+            std::cerr << "Found illuminant: '" << solver.illuminant.type << "'."
+                      << std::endl;
         }
     }
     else
@@ -1180,7 +1180,7 @@ std::vector<std::string> ImageConverter::get_supported_illuminants() const
         core::SpectralData data;
         if ( data.load( file, false ) )
         {
-            result.push_back( data.illuminant );
+            result.push_back( data.type );
         }
     }
 

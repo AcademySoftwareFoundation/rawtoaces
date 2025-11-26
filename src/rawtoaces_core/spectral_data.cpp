@@ -183,8 +183,7 @@ bool SpectralData::load( const std::string &path, bool reshape )
     // Reset all in case the object has been initialised before.
     manufacturer.erase();
     model.erase();
-    illuminant.erase();
-    catalog_number.erase();
+    type.erase();
     description.erase();
     document_creator.erase();
     unique_identifier.erase();
@@ -216,8 +215,7 @@ bool SpectralData::load( const std::string &path, bool reshape )
         nlohmann::json &h = file_data["header"];
         parse_string( h, manufacturer, "manufacturer" );
         parse_string( h, model, "model" );
-        parse_string( h, illuminant, "illuminant" );
-        parse_string( h, catalog_number, "catalog_number" );
+        parse_string( h, type, "type" );
         parse_string( h, description, "description" );
         parse_string( h, document_creator, "document_creator" );
         parse_string( h, unique_identifier, "unique_identifier" );
@@ -226,6 +224,19 @@ bool SpectralData::load( const std::string &path, bool reshape )
         parse_string( h, creation_date, "document_creation_date" );
         parse_string( h, comments, "comments" );
         parse_string( h, license, "license" );
+
+        // The schema version 1.0.0 replaces 'header/illuminant' with
+        // 'header/type' in the illuminant files. If both are present, the type
+        // takes precedence.
+        if ( type.empty() )
+        {
+            std::string schema_version;
+            parse_string( h, schema_version, "schema_version" );
+            if ( schema_version == "0.1.0" )
+            {
+                parse_string( h, type, "illuminant" );
+            }
+        }
 
         nlohmann::json &d = file_data["spectral_data"];
         parse_string( d, units, "units" );

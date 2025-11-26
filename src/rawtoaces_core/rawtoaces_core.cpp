@@ -147,7 +147,7 @@ void generate_illuminant(
         SpectralData::SpectralChannel( "power", Spectrum( 0 ) ) );
     auto &power_spectrum = power_data.second;
 
-    illuminant.illuminant = type;
+    illuminant.type = type;
     if ( is_daylight )
     {
         calculate_daylight_SPD( cct, power_spectrum );
@@ -335,7 +335,7 @@ bool SpectralSolver::find_illuminant( const std::string &type )
         {
             if ( !illuminant.load( illuminant_file ) )
                 continue;
-            if ( is_not_equal_insensitive( illuminant.illuminant, type ) )
+            if ( is_not_equal_insensitive( illuminant.type, type ) )
                 continue;
             return true;
         }
@@ -403,7 +403,7 @@ bool SpectralSolver::find_illuminant( const vector<double> &wb )
 
     if ( verbosity > 1 )
         std::cerr << "The illuminant calculated to be the best match to the "
-                  << "camera metadata is '" << illuminant.illuminant << "'."
+                  << "camera metadata is '" << illuminant.type << "'."
                   << std::endl;
 
     return true;

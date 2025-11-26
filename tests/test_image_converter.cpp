@@ -34,6 +34,9 @@
 
 using namespace rta::util;
 
+const std::string dng_test_file =
+    "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+
 std::string convert_linux_path_to_windows_path( const std::string &path )
 {
     std::vector<std::string> segments;
@@ -240,7 +243,7 @@ public:
     /// @return The full path to the created file
     std::string create_test_data_file(
         const std::string    &type,
-        const nlohmann::json &header_data,
+        const nlohmann::json &header_data = { { "schema_version", "1.0.0" } },
         const bool            is_incorrect_data = false )
     {
         // Create target directory dynamically based on type
@@ -913,7 +916,7 @@ void test_parse_parameters_list_illuminants( bool use_dir_path_arg = false )
 
     // Create test illuminant data file
     test_dir.create_test_data_file(
-        "illuminant", { { "illuminant", "my-illuminant" } } );
+        "illuminant", { { "type", "my-illuminant" } } );
 
     std::vector<std::string> args = { "--list-illuminants" };
 
@@ -940,13 +943,10 @@ void test_missing_camera_manufacturer()
     TestDirectory test_dir;
 
     // Create training data (so training data loading succeeds)
-    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "training" );
 
     // Create observer data (so observer data loading succeeds)
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
-
-    // Create illuminant data (so illuminant data loading succeeds)
-    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "cmf" );
 
     // Create a mock ImageSpec with no camera metadata
     OIIO::ImageSpec image_spec;
@@ -995,13 +995,10 @@ void test_empty_camera_model()
     TestDirectory test_dir;
 
     // Create training data (so training data loading succeeds)
-    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "training" );
 
     // Create observer data (so observer data loading succeeds)
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
-
-    // Create illuminant data (so illuminant data loading succeeds)
-    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "cmf" );
 
     // Create ImageSpec with camera make but no model
     OIIO::ImageSpec image_spec;
@@ -1056,23 +1053,17 @@ void test_camera_data_not_found()
         "camera", { { "manufacturer", "Canon" }, { "model", "EOS_R6" } } );
 
     // Create training data (so training data loading succeeds)
-    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "training" );
 
     // Create observer data (so observer data loading succeeds)
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
-
-    // Create illuminant data (so illuminant data loading succeeds)
-    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
-
-    // Use the real DNG file from the materials folder
-    std::string test_file =
-        "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+    test_dir.create_test_data_file( "cmf" );
 
     // Test: Camera data not found via main entrance (no custom camera info provided, DNG has metadata but no data in database)
-    std::vector<std::string> args = {
-        "--wb-method", "illuminant", "--illuminant", "D65",    "--mat-method",
-        "spectral",    "--verbose",  "--overwrite",  test_file
-    };
+    std::vector<std::string> args = { "--wb-method",  "illuminant",
+                                      "--illuminant", "D65",
+                                      "--mat-method", "spectral",
+                                      "--verbose",    "--overwrite",
+                                      dng_test_file };
 
     // This should fail with error message about camera data not found
     std::string output = run_rawtoaces_with_data_dir(
@@ -1107,20 +1098,14 @@ void test_missing_training_data()
         { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
 
     // Create observer data (so observer data loading succeeds)
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
-
-    // Create illuminant data (so illuminant data loading succeeds)
-    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
-
-    // Use the original DNG file with camera metadata
-    std::string test_file =
-        "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+    test_dir.create_test_data_file( "cmf" );
 
     // Test: Missing training data via main entrance
-    std::vector<std::string> args = {
-        "--wb-method", "illuminant", "--illuminant", "D65",    "--mat-method",
-        "spectral",    "--verbose",  "--overwrite",  test_file
-    };
+    std::vector<std::string> args = { "--wb-method",  "illuminant",
+                                      "--illuminant", "D65",
+                                      "--mat-method", "spectral",
+                                      "--verbose",    "--overwrite",
+                                      dng_test_file };
 
     // This should fail with error message about missing training data
     std::string output = run_rawtoaces_with_data_dir(
@@ -1147,20 +1132,14 @@ void test_missing_observer_data()
         { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
 
     // Create training data (so training data loading succeeds)
-    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
-
-    // Create illuminant data (so illuminant data loading succeeds)
-    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
-
-    // Use the original DNG file with camera metadata
-    std::string test_file =
-        "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+    test_dir.create_test_data_file( "training" );
 
     // Test: Missing observer data via main entrance
-    std::vector<std::string> args = {
-        "--wb-method", "illuminant", "--illuminant", "D65",    "--mat-method",
-        "spectral",    "--verbose",  "--overwrite",  test_file
-    };
+    std::vector<std::string> args = { "--wb-method",  "illuminant",
+                                      "--illuminant", "D65",
+                                      "--mat-method", "spectral",
+                                      "--verbose",    "--overwrite",
+                                      dng_test_file };
 
     // This should fail with error message about missing observer data
     std::string output = run_rawtoaces_with_data_dir(
@@ -1186,21 +1165,17 @@ void test_missing_illuminant_data()
         { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
 
     // Create training data (so training data loading succeeds)
-    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "training" );
 
     // Create observer data (so observer data loading succeeds)
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
-
-    // Use the original DNG file with camera metadata
-    std::string test_file =
-        "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+    test_dir.create_test_data_file( "cmf" );
 
     // Test: Missing illuminant data via main entrance (using non-existent illuminant)
     std::vector<std::string> args = { "--wb-method",  "illuminant",
                                       "--illuminant", "nonexistentilluminant",
                                       "--mat-method", "spectral",
                                       "--verbose",    "--overwrite",
-                                      test_file };
+                                      dng_test_file };
 
     // This should fail with error message about missing illuminant data
     std::string output = run_rawtoaces_with_data_dir(
@@ -1225,14 +1200,10 @@ void test_illuminant_type_not_found()
         { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
 
     // Create training data (so training data loading succeeds)
-    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "training" );
 
     // Create observer data (so observer data loading succeeds)
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
-
-    // Create illuminant data with a specific illuminant type (e.g., "D65")
-    // but we'll request a different type that doesn't exist
-    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "cmf" );
 
     // Create a mock ImageSpec with camera metadata
     OIIO::ImageSpec image_spec;
@@ -1287,13 +1258,10 @@ void test_auto_detect_illuminant_with_wb_multipliers()
         { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
 
     // Create training data (so training data loading succeeds)
-    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "training" );
 
     // Create observer data (so observer data loading succeeds)
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
-
-    // Create illuminant data (so illuminant data loading succeeds)
-    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "cmf" );
 
     // Create a mock ImageSpec with camera metadata
     OIIO::ImageSpec image_spec;
@@ -1348,13 +1316,10 @@ void test_auto_detect_illuminant_from_raw_metadata()
         { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
 
     // Create training data (so training data loading succeeds)
-    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "training" );
 
     // Create observer data (so observer data loading succeeds)
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
-
-    // Create illuminant data (so illuminant data loading succeeds)
-    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "cmf" );
 
     // Use direct library method to control WB_multipliers and force the else path
     // The exec method populates WB_multipliers from metadata, so it takes the if branch.
@@ -1420,13 +1385,10 @@ void test_auto_detect_illuminant_with_normalization()
         { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
 
     // Create training data (so training data loading succeeds)
-    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "training" );
 
     // Create observer data (so observer data loading succeeds)
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
-
-    // Create illuminant data (so illuminant data loading succeeds)
-    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "cmf" );
 
     // Create a mock ImageSpec with camera metadata and raw:pre_mul attribute
     OIIO::ImageSpec image_spec;
@@ -1490,10 +1452,10 @@ void test_prepare_transform_spectral_idt_calculation_fail()
         { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
 
     // Create observer data (so observer data loading succeeds)
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "cmf" );
 
     // Create illuminant data (so illuminant data loading succeeds)
-    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
+    // test_dir.create_test_data_file( "illuminant", { { "type", "D65" } } );
 
     // Create training data with minimal structure that causes curve fitting to fail
     // We need to create a file that loads but causes optimization to fail
@@ -1504,9 +1466,8 @@ void test_prepare_transform_spectral_idt_calculation_fail()
     // Create training data with only one patch and minimal wavelengths
     // This should pass initial validation but cause curve fitting to fail
     nlohmann::json training_json;
-    training_json["header"]["illuminant"] = "D65";
-    training_json["units"]                = "relative";
-    training_json["index"]                = { { "main", { "patch1" } } };
+    training_json["units"] = "relative";
+    training_json["index"] = { { "main", { "patch1" } } };
 
     nlohmann::json data_main;
     // Add only a few wavelengths - insufficient for proper curve fitting
@@ -1595,10 +1556,13 @@ void assert_success_conversion( const std::string &output )
         std::string::npos );
 }
 
-/// Tests that conversion succeeds when all required data is present (success case)
-void test_spectral_conversion_success()
+/// Tests that conversion succeeds when all required data is present
+/// using a built-in illuminant (success case)
+void test_spectral_conversion_builtin_illuminant_success()
 {
-    std::cout << std::endl << "test_spectral_conversion_success()" << std::endl;
+    std::cout << std::endl
+              << "test_spectral_conversion_builtin_illuminant_success()"
+              << std::endl;
 
     // Create test directory with database
     TestDirectory test_dir;
@@ -1609,23 +1573,100 @@ void test_spectral_conversion_success()
         { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
 
     // Create training data (so training data loading succeeds)
-    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "training" );
 
     // Create observer data (so observer data loading succeeds)
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
-
-    // Create illuminant data (so illuminant data loading succeeds)
-    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
-
-    // Use the original DNG file with camera metadata
-    std::string test_file =
-        "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+    test_dir.create_test_data_file( "cmf" );
 
     // Test: Successful conversion via main entrance
-    std::vector<std::string> args = {
-        "--wb-method", "illuminant", "--illuminant", "D65",    "--mat-method",
-        "spectral",    "--verbose",  "--overwrite",  test_file
-    };
+    std::vector<std::string> args = { "--wb-method",  "illuminant",
+                                      "--illuminant", "D65",
+                                      "--mat-method", "spectral",
+                                      "--verbose",    "--overwrite",
+                                      dng_test_file };
+
+    // This should succeed and create an output file
+    std::string output = run_rawtoaces_with_data_dir(
+        args, test_dir.get_database_path(), false, false );
+
+    assert_success_conversion( output );
+}
+
+/// Tests that conversion succeeds when all required data is present
+/// using an illuminant file (success case)
+void test_spectral_conversion_external_illuminant_success()
+{
+    std::cout << std::endl
+              << "test_spectral_conversion_external_illuminant_success()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file(
+        "camera",
+        { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training" );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf" );
+
+    //     Create illuminant data (so illuminant data loading succeeds)
+    test_dir.create_test_data_file(
+        "illuminant", { { "type", "test_illuminant" } } );
+
+    // Test: Successful conversion via main entrance
+    std::vector<std::string> args = { "--wb-method",  "illuminant",
+                                      "--illuminant", "test_illuminant",
+                                      "--mat-method", "spectral",
+                                      "--verbose",    "--overwrite",
+                                      dng_test_file };
+
+    // This should succeed and create an output file
+    std::string output = run_rawtoaces_with_data_dir(
+        args, test_dir.get_database_path(), false, false );
+
+    assert_success_conversion( output );
+}
+
+/// Tests that conversion succeeds when all required data is present,
+/// using a legacy illuminant file using "header/illuminant" instead of
+/// "header/type" (success case)
+void test_spectral_conversion_external_legacy_illuminant_success()
+{
+    std::cout << std::endl
+              << "test_spectral_conversion_external_legacy_illuminant_success()"
+              << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file(
+        "camera",
+        { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training" );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf" );
+
+    // Create illuminant data (so illuminant data loading succeeds)
+    test_dir.create_test_data_file(
+        "illuminant",
+        { { "schema_version", "0.1.0" },
+          { "illuminant", "test_illuminant" } } );
+
+    // Test: Successful conversion via main entrance
+    std::vector<std::string> args = { "--wb-method",  "illuminant",
+                                      "--illuminant", "test_illuminant",
+                                      "--mat-method", "spectral",
+                                      "--verbose",    "--overwrite",
+                                      dng_test_file };
 
     // This should succeed and create an output file
     std::string output = run_rawtoaces_with_data_dir(
@@ -1650,17 +1691,13 @@ void test_rawtoaces_spectral_mode_complete_success_with_custom_camera_info()
         "camera", { { "manufacturer", "Canon" }, { "model", "EOS_R6" } } );
 
     // Create training data
-    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "training" );
 
     // Create observer data
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "cmf", { { "type", "observer" } } );
 
     // Create illuminant data
-    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
-
-    // Use the real DNG file from the materials folder
-    std::string test_file =
-        "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+    // test_dir.create_test_data_file( "illuminant", { { "type", "D65" } } );
 
     // Test: Complete success case via main entrance
     std::vector<std::string> args = { "--wb-method",
@@ -1675,7 +1712,7 @@ void test_rawtoaces_spectral_mode_complete_success_with_custom_camera_info()
                                       "EOS_R6",
                                       "--verbose",
                                       "--overwrite",
-                                      test_file };
+                                      dng_test_file };
 
     // This should succeed with all data present
     std::string output =
@@ -1701,23 +1738,19 @@ void test_rawtoaces_spectral_mode_complete_success_with_default_illuminant_warni
         { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
 
     // Create training data (so training data loading succeeds)
-    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "training" );
 
     // Create observer data (so observer data loading succeeds)
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "cmf" );
 
     // Create illuminant data for D55 (the default illuminant)
-    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D55" } } );
-
-    // Use the original DNG file with camera metadata
-    std::string test_file =
-        "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+    // test_dir.create_test_data_file( "illuminant", { { "type", "D55" } } );
 
     // Test: Default illuminant via main entrance (no --illuminant parameter)
     std::vector<std::string> args = { "--wb-method",  "illuminant",
                                       "--mat-method", "spectral",
                                       "--verbose",    "--overwrite",
-                                      test_file };
+                                      dng_test_file };
 
     // This should succeed with default illuminant (D55)
     std::string output = run_rawtoaces_with_data_dir(
@@ -1746,23 +1779,19 @@ void test_illuminant_ignored_with_metadata_wb()
         { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
 
     // Create training data (so training data loading succeeds)
-    test_dir.create_test_data_file( "training", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "training" );
 
     // Create observer data (so observer data loading succeeds)
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "D65" } } );
+    test_dir.create_test_data_file( "cmf", { { "type", "observer" } } );
 
     // Create illuminant data for D65 (the specified illuminant that should be ignored)
-    test_dir.create_test_data_file( "illuminant", { { "illuminant", "D65" } } );
-
-    // Use the original DNG file with camera metadata
-    std::string test_file =
-        "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+    // test_dir.create_test_data_file( "illuminant", { { "type", "D65" } } );
 
     // Test: Illuminant ignored when using metadata white balance method
     std::vector<std::string> args = {
         "--wb-method",  "metadata", // Different from illuminant
         "--illuminant", "D65",      // This should be ignored
-        "--mat-method", "spectral", "--verbose", "--overwrite", test_file
+        "--mat-method", "spectral", "--verbose", "--overwrite", dng_test_file
     };
 
     // This should succeed with metadata white balance (ignoring illuminant)
@@ -1795,24 +1824,21 @@ void test_prepare_transform_spectral_wb_calculation_fail_due_to_invalid_illumina
         { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
 
     // Create training data
-    test_dir.create_test_data_file( "training", { { "illuminant", "4200" } } );
+    test_dir.create_test_data_file( "training" );
 
     // Create observer data
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "4200" } } );
+    test_dir.create_test_data_file( "cmf", { { "type", "observer" } } );
 
     // Create illuminant data with invalid structure (should cause WB calculation to fail)
     test_dir.create_test_data_file(
-        "illuminant", { { "illuminant", "4200" } }, true );
-
-    // Use the original DNG file with camera metadata
-    std::string test_file =
-        "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+        "illuminant", { { "type", "4200" } }, true );
 
     // Test: WB calculation fails due to invalid illuminant data
-    std::vector<std::string> args = {
-        "--wb-method", "illuminant", "--illuminant", "4200",   "--mat-method",
-        "spectral",    "--verbose",  "--overwrite",  test_file
-    };
+    std::vector<std::string> args = { "--wb-method",  "illuminant",
+                                      "--illuminant", "4200",
+                                      "--mat-method", "spectral",
+                                      "--verbose",    "--overwrite",
+                                      dng_test_file };
 
     // This should fail with error message about invalid illuminant data
     std::string output = run_rawtoaces_with_data_dir(
@@ -1851,24 +1877,20 @@ void test_prepare_transform_spectral_wb_calculation_fail_due_to_invalid_camera_d
         true );
 
     // Create training data
-    test_dir.create_test_data_file( "training", { { "illuminant", "4200" } } );
+    test_dir.create_test_data_file( "training" );
 
     // Create observer data
-    test_dir.create_test_data_file( "cmf", { { "illuminant", "4200" } } );
+    test_dir.create_test_data_file( "cmf", { { "type", "observer" } } );
 
     // Create illuminant data with invalid structure (should cause WB calculation to fail)
-    test_dir.create_test_data_file(
-        "illuminant", { { "illuminant", "4200" } } );
-
-    // Use the original DNG file with camera metadata
-    std::string test_file =
-        "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
+    test_dir.create_test_data_file( "illuminant", { { "type", "4200" } } );
 
     // Test: WB calculation fails due to invalid illuminant data
-    std::vector<std::string> args = {
-        "--wb-method", "illuminant", "--illuminant", "4200",   "--mat-method",
-        "spectral",    "--verbose",  "--overwrite",  test_file
-    };
+    std::vector<std::string> args = { "--wb-method",  "illuminant",
+                                      "--illuminant", "4200",
+                                      "--mat-method", "spectral",
+                                      "--verbose",    "--overwrite",
+                                      dng_test_file };
 
     // This should fail with error message about invalid illuminant data
     std::string output = run_rawtoaces_with_data_dir(
@@ -1936,7 +1958,10 @@ int main( int, char ** )
         test_auto_detect_illuminant_from_raw_metadata();
         test_auto_detect_illuminant_with_normalization();
 
-        test_spectral_conversion_success();
+        test_spectral_conversion_builtin_illuminant_success();
+        test_spectral_conversion_external_illuminant_success();
+        test_spectral_conversion_external_legacy_illuminant_success();
+
         test_rawtoaces_spectral_mode_complete_success_with_custom_camera_info();
 
         test_prepare_transform_spectral_wb_calculation_fail_due_to_invalid_illuminant_data();

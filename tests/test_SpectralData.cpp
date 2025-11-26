@@ -55,8 +55,7 @@ void init_SpectralData( rta::core::SpectralData &data )
 {
     data.manufacturer          = "manufacturer";
     data.model                 = "model";
-    data.illuminant            = "illuminant";
-    data.catalog_number        = "catalog_number";
+    data.type                  = "type";
     data.description           = "description";
     data.document_creator      = "document_creator";
     data.unique_identifier     = "unique_identifier";
@@ -84,8 +83,7 @@ void check_SpectralData( const rta::core::SpectralData &data )
 {
     OIIO_CHECK_EQUAL( data.manufacturer, "manufacturer" );
     OIIO_CHECK_EQUAL( data.model, "model" );
-    OIIO_CHECK_EQUAL( data.illuminant, "illuminant" );
-    OIIO_CHECK_EQUAL( data.catalog_number, "catalog_number" );
+    OIIO_CHECK_EQUAL( data.type, "type" );
     OIIO_CHECK_EQUAL( data.description, "description" );
     OIIO_CHECK_EQUAL( data.document_creator, "document_creator" );
     OIIO_CHECK_EQUAL( data.unique_identifier, "unique_identifier" );
@@ -126,15 +124,15 @@ void testSpectralData_Properties()
 void testSpectralData_LoadSpst()
 {
     std::filesystem::path absolutePath =
-        std::filesystem::absolute( DATA_PATH "camera/arri_d21_380_780_5.json" );
+        std::filesystem::absolute( DATA_PATH "camera/ARRI_D21_380_780_5.json" );
 
     rta::core::SpectralData camera;
     bool                    result;
 
     result = camera.load( absolutePath.string() );
     OIIO_CHECK_ASSERT( result );
-    OIIO_CHECK_EQUAL( camera.manufacturer, "arri" );
-    OIIO_CHECK_EQUAL( camera.model, "d21" );
+    OIIO_CHECK_EQUAL( camera.manufacturer, "ARRI" );
+    OIIO_CHECK_EQUAL( camera.model, "D21" );
     OIIO_CHECK_EQUAL( camera.data.size(), 1 );
     OIIO_CHECK_EQUAL( camera.data.count( "main" ), 1 );
     OIIO_CHECK_EQUAL( camera.data.at( "main" ).size(), 3 );

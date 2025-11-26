@@ -55,7 +55,7 @@ void testIllum_readSPD()
         1.0000000000000
     };
 
-    OIIO_CHECK_EQUAL( illuminant.illuminant, "iso7589" );
+    OIIO_CHECK_EQUAL( illuminant.type, "ISO7589" );
     OIIO_CHECK_EQUAL( illuminant["power"].shape.step, 5 );
 
     vector<double> &illumTestData = illuminant["power"].values;

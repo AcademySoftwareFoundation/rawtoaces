@@ -127,7 +127,7 @@ include(FetchContent)
 FetchContent_Declare(
   rawtoaces_data
   GIT_REPOSITORY https://github.com/AcademySoftwareFoundation/rawtoaces-data
-  GIT_TAG 4db0acc872965ecdbbf578664be20abf17c18e8c # v0.1.0
+  GIT_TAG 265e0038826572439d23934120f4bc69c19933e3 # v1.0.0
 )
 
 FetchContent_MakeAvailable(rawtoaces_data)

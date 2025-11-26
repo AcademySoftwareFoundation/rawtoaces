@@ -100,8 +100,7 @@ struct SpectralData
     /// Header data
     std::string manufacturer;
     std::string model;
-    std::string illuminant;
-    std::string catalog_number;
+    std::string type;
     std::string description;
     std::string document_creator;
     std::string unique_identifier;

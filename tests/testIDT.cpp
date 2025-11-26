@@ -18,15 +18,15 @@
 void testIDT_LoadCameraSpst()
 {
     std::filesystem::path absolutePath =
-        std::filesystem::absolute( DATA_PATH "camera/arri_d21_380_780_5.json" );
+        std::filesystem::absolute( DATA_PATH "camera/ARRI_D21_380_780_5.json" );
 
     rta::core::SpectralData camera;
     bool                    result;
 
     result = camera.load( absolutePath.string() );
     OIIO_CHECK_ASSERT( result );
-    OIIO_CHECK_EQUAL( camera.manufacturer, "arri" );
-    OIIO_CHECK_EQUAL( camera.model, "d21" );
+    OIIO_CHECK_EQUAL( camera.manufacturer, "ARRI" );
+    OIIO_CHECK_EQUAL( camera.model, "D21" );
     OIIO_CHECK_EQUAL( camera.data.size(), 1 );
     OIIO_CHECK_EQUAL( camera.data.count( "main" ), 1 );
     OIIO_CHECK_EQUAL( camera.data.at( "main" ).size(), 3 );
@@ -163,7 +163,7 @@ void testIDT_LoadIlluminant()
         1.0000000000000
     };
 
-    OIIO_CHECK_EQUAL( illuminant.illuminant, "iso7589" );
+    OIIO_CHECK_EQUAL( illuminant.type, "ISO7589" );
     OIIO_CHECK_EQUAL( illuminant["power"].shape.step, 5 );
 
     vector<double> &illumTestData = illuminant["power"].values;
@@ -746,7 +746,7 @@ void testIDT_scaleLSC()
     load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
 
     rta::core::SpectralData camera;
-    load_file( "camera/nikon_d200_380_780_5.json", camera );
+    load_file( "camera/Nikon_D200_380_780_5.json", camera );
 
     scale_illuminant( camera, illuminant );
 
@@ -777,7 +777,7 @@ void testIDT_scaleLSC()
     const vector<double> illumDataScaled = illuminant["power"].values;
 
     OIIO_CHECK_EQUAL( illumDataScaled.size(), 81 );
-    OIIO_CHECK_EQUAL( illuminant.illuminant, "iso7589" );
+    OIIO_CHECK_EQUAL( illuminant.type, "ISO7589" );
     OIIO_CHECK_EQUAL( illuminant["power"].shape.step, 5 );
     for ( int i = 0; i < 81; i++ )
         OIIO_CHECK_EQUAL_THRESH( illumDataScaled[i], scaledIllum[i], 1e-5 );
@@ -789,7 +789,7 @@ void testIDT_CalCM()
     load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
 
     rta::core::SpectralData camera;
-    load_file( "camera/arri_d21_380_780_5.json", camera );
+    load_file( "camera/ARRI_D21_380_780_5.json", camera );
 
     vector<double> CM_test = calculate_CM( camera, illuminant );
 
@@ -805,7 +805,7 @@ void testIDT_CalWB()
     load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
 
     rta::core::SpectralData camera;
-    load_file( "camera/nikon_d200_380_780_5.json", camera );
+    load_file( "camera/Nikon_D200_380_780_5.json", camera );
 
     vector<double> WB_test = _calculate_WB( camera, illuminant );
 
@@ -826,7 +826,7 @@ void testIDT_ChooseIllumSrc()
     solver.find_illuminant( wbv );
 
     const auto    &best_illuminant = solver.illuminant;
-    string         illumType_Test  = best_illuminant.illuminant;
+    string         illumType_Test  = best_illuminant.type;
     vector<double> illumData_Test  = best_illuminant["power"].values;
 
     double illumData[81] = {
@@ -864,7 +864,7 @@ void testIDT_ChooseIllumType()
     solver.calculate_WB();
 
     const auto    &best_illuminant = solver.illuminant;
-    string         illumType_Test  = best_illuminant.illuminant;
+    string         illumType_Test  = best_illuminant.type;
     vector<double> illumData_Test  = best_illuminant["power"].values;
 
     double illumData[81] = {
@@ -887,7 +887,7 @@ void testIDT_ChooseIllumType()
         0.1365548815
     };
 
-    OIIO_CHECK_EQUAL( illumType_Test, "iso7589" );
+    OIIO_CHECK_EQUAL( illumType_Test, "ISO7589" );
     for ( size_t i = 0; i < illumData_Test.size(); i++ )
         OIIO_CHECK_EQUAL_THRESH( illumData[i], illumData_Test[i], 1e-5 );
 }
@@ -895,7 +895,7 @@ void testIDT_ChooseIllumType()
 void testIDT_CalTI()
 {
     rta::core::SpectralData camera;
-    load_file( "camera/nikon_d200_380_780_5.json", camera );
+    load_file( "camera/Nikon_D200_380_780_5.json", camera );
 
     rta::core::SpectralData illuminant;
     load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
@@ -4809,7 +4809,7 @@ void testIDT_CalTI()
 void testIDT_CalXYZ()
 {
     rta::core::SpectralData camera;
-    load_file( "camera/nikon_d200_380_780_5.json", camera );
+    load_file( "camera/Nikon_D200_380_780_5.json", camera );
 
     rta::core::SpectralData illuminant;
     load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
@@ -5024,7 +5024,7 @@ void testIDT_CalXYZ()
 void testIDT_CalRGB()
 {
     rta::core::SpectralData camera;
-    load_file( "camera/nikon_d200_380_780_5.json", camera );
+    load_file( "camera/Nikon_D200_380_780_5.json", camera );
 
     rta::core::SpectralData illuminant;
     load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
@@ -5239,7 +5239,7 @@ void testIDT_CalRGB()
 void testIDT_CurveFit()
 {
     rta::core::SpectralData camera;
-    load_file( "camera/nikon_d200_380_780_5.json", camera );
+    load_file( "camera/Nikon_D200_380_780_5.json", camera );
 
     rta::core::SpectralData illuminant;
     load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );

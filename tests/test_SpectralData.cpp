@@ -457,6 +457,65 @@ void testSpectralData_ReshapeInterpolation()
         spectrum2.values[2], expected_390, 1e-10 ); /// Index 2 = 390 nm
 }
 
+void testSpectralData_ReshapeBeforeSourceRange()
+{
+    /// Test the case where source spectrum starts after ReferenceShape first wavelength
+    /// Source: 400-450 nm with step 10 (so samples at 400, 410, 420, 430, 440, 450)
+    /// Target: ReferenceShape 380-780 nm with step 5
+    /// For wavelengths 380, 385, 390, 395 nm, we haven't reached source range yet,
+    /// so we copy the first source value (values[0])
+    rta::core::Spectrum::Shape source_shape = { 400, 450, 10 };
+    rta::core::Spectrum        spectrum( 0.0, source_shape );
+
+    /// Set known values
+    spectrum.values[0] = 100.0; /// Value at 400 nm
+    spectrum.values[1] = 200.0; /// Value at 410 nm
+    spectrum.values[2] = 300.0; /// Value at 420 nm
+    spectrum.values[3] = 400.0; /// Value at 430 nm
+    spectrum.values[4] = 500.0; /// Value at 440 nm
+    spectrum.values[5] = 600.0; /// Value at 450 nm
+
+    /// Verify initial shape
+    OIIO_CHECK_EQUAL( spectrum.shape.first, 400 );
+    OIIO_CHECK_EQUAL( spectrum.shape.last, 450 );
+    OIIO_CHECK_EQUAL( spectrum.shape.step, 10 );
+    OIIO_CHECK_EQUAL( spectrum.values.size(), 6 );
+
+    /// Reshape to ReferenceShape (380-780, step 5)
+    spectrum.reshape();
+
+    /// Verify shape changed to ReferenceShape
+    OIIO_CHECK_EQUAL( spectrum.shape.first, 380 );
+    OIIO_CHECK_EQUAL( spectrum.shape.last, 780 );
+    OIIO_CHECK_EQUAL( spectrum.shape.step, 5 );
+    OIIO_CHECK_EQUAL(
+        spectrum.values.size(),
+        ( 780 - 380 + 5 ) / 5 ); /// Should be 81 samples
+
+    /// Test that wavelengths before source range (380, 385, 390, 395) get first source value
+    /// These should all copy values[0] = 100.0 because wl_src (400) > wl_dst
+    OIIO_CHECK_EQUAL_THRESH(
+        spectrum.values[0], 100.0, 1e-10 ); /// 380 nm - before source range
+    OIIO_CHECK_EQUAL_THRESH(
+        spectrum.values[1], 100.0, 1e-10 ); /// 385 nm - before source range
+    OIIO_CHECK_EQUAL_THRESH(
+        spectrum.values[2], 100.0, 1e-10 ); /// 390 nm - before source range
+    OIIO_CHECK_EQUAL_THRESH(
+        spectrum.values[3], 100.0, 1e-10 ); /// 395 nm - before source range
+
+    /// Test exact match at 400 nm (first source wavelength)
+    OIIO_CHECK_EQUAL_THRESH(
+        spectrum.values[4], 100.0, 1e-10 ); /// 400 nm - exact match
+
+    /// Test exact match at 410 nm
+    OIIO_CHECK_EQUAL_THRESH(
+        spectrum.values[6], 200.0, 1e-10 ); /// 410 nm - exact match
+
+    /// Test exact match at 420 nm
+    OIIO_CHECK_EQUAL_THRESH(
+        spectrum.values[8], 300.0, 1e-10 ); /// 420 nm - exact match
+}
+
 int main( int, char ** )
 {
     testSpectralData_Spectrum();
@@ -464,6 +523,7 @@ int main( int, char ** )
     testSpectralData_LoadSpst();
     testSpectralData_Operators();
     testSpectralData_ReshapeInterpolation();
+    testSpectralData_ReshapeBeforeSourceRange();
 
     return unit_test_failures;
 }

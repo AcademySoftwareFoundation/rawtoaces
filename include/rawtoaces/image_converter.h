@@ -160,14 +160,14 @@ public:
     /// decode the pixels.
     /// @param input_filename
     ///    A file name of the raw image file to read the metadata from.
-    /// @param hints
+    /// @param options
     ///    Conversion hints to be passed to OIIO when reading an image file.
     ///    The list can be pre- or post- updated with other hints, unrelated to
     ///    the rawtoaces conversion.
     /// @result
     ///    `true` if configured successfully.
     bool configure(
-        const std::string &input_filename, const OIIO::ParamValueList &hints );
+        const std::string &input_filename, OIIO::ParamValueList &options );
 
     /// Configures the converter using the requested white balance and colour
     /// matrix method, and the metadata of the given OIIO::ImageSpec object.
@@ -175,14 +175,14 @@ public:
     /// on disk operations.
     /// @param imageSpec
     ///    An image spec obtained from OIIO::ImageInput or OIIO::ImageBuf.
-    /// @param hints
+    /// @param options
     ///    Conversion hints to be passed to OIIO when reading an image file.
     ///    The list can be pre- or post- updated with other hints, unrelated to
     ///    the rawtoaces conversion.
     /// @result
     ///    `true` if configured successfully.
     bool configure(
-        const OIIO::ImageSpec &imageSpec, const OIIO::ParamValueList &hints );
+        const OIIO::ImageSpec &imageSpec, OIIO::ParamValueList &options );
 
     /// Load an image from a given `path` into a `buffer` using the `hints`
     /// calculated by the `configure` method. The hints can be manually

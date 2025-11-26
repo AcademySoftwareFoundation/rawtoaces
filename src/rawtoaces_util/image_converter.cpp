@@ -1239,9 +1239,8 @@ void fix_metadata( OIIO::ImageSpec &spec )
 }
 
 bool ImageConverter::configure(
-    const std::string &input_filename, const OIIO::ParamValueList &hints = {} )
+    const std::string &input_filename, OIIO::ParamValueList &options )
 {
-    OIIO::ParamValueList options = hints;
     options["raw:ColorSpace"]    = "XYZ";
     options["raw:use_camera_wb"] = 0;
     options["raw:use_auto_wb"]   = 0;
@@ -1275,9 +1274,8 @@ bool ImageConverter::configure(
 // -G - green_matching() filter
 
 bool ImageConverter::configure(
-    const OIIO::ImageSpec &image_spec, const OIIO::ParamValueList &hints = {} )
+    const OIIO::ImageSpec &image_spec, OIIO::ParamValueList &options )
 {
-    OIIO::ParamValueList options = hints;
     options["raw:use_camera_wb"] = 0;
     options["raw:use_auto_wb"]   = 0;
 

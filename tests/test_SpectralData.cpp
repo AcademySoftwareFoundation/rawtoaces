@@ -384,12 +384,86 @@ void testSpectralData_Operators()
     }
 }
 
+void testSpectralData_ReshapeInterpolation()
+{
+    /// Create a spectrum with a different shape that will require interpolation
+    /// Source: 380-400 nm with step 10 (so samples at 380, 390, 400)
+    /// Target: ReferenceShape 380-780 nm with step 5 (so samples at 380, 385, 390, 395, 400, ...)
+    /// This will trigger interpolation at 385 (between 380 and 390) and 395 (between 390 and 400)
+    rta::core::Spectrum::Shape source_shape = { 380, 400, 10 };
+    rta::core::Spectrum        spectrum( 0.0, source_shape );
+
+    /// Set known values
+    spectrum.values[0] = 10.0; /// Value at 380 nm
+    spectrum.values[1] = 20.0; /// Value at 390 nm
+    spectrum.values[2] = 30.0; /// Value at 400 nm
+
+    /// Verify initial shape
+    OIIO_CHECK_EQUAL( spectrum.shape.first, 380 );
+    OIIO_CHECK_EQUAL( spectrum.shape.last, 400 );
+    OIIO_CHECK_EQUAL( spectrum.shape.step, 10 );
+    OIIO_CHECK_EQUAL( spectrum.values.size(), 3 );
+
+    /// Reshape to ReferenceShape (380-780, step 5)
+    spectrum.reshape();
+
+    /// Verify shape changed to ReferenceShape
+    OIIO_CHECK_EQUAL( spectrum.shape.first, 380 );
+    OIIO_CHECK_EQUAL( spectrum.shape.last, 780 );
+    OIIO_CHECK_EQUAL( spectrum.shape.step, 5 );
+    OIIO_CHECK_EQUAL(
+        spectrum.values.size(),
+        ( 780 - 380 + 5 ) / 5 ); /// Should be 81 samples
+
+    /// Test exact matches (no interpolation needed)
+    OIIO_CHECK_EQUAL_THRESH(
+        spectrum.values[0], 10.0, 1e-10 ); /// 380 nm - exact match
+    OIIO_CHECK_EQUAL_THRESH(
+        spectrum.values[2], 20.0, 1e-10 ); /// 390 nm - exact match
+    OIIO_CHECK_EQUAL_THRESH(
+        spectrum.values[4], 30.0, 1e-10 ); /// 400 nm - exact match
+
+    /// Test interpolation at 385 nm (between 380 and 390)
+    /// ratio = (385 - 380) / (390 - 380) = 5 / 10 = 0.5
+    /// expected = 10.0 * (1.0 - 0.5) + 20.0 * 0.5 = 15.0
+    double expected_385 = 10.0 * ( 1.0 - 0.5 ) + 20.0 * 0.5;
+    OIIO_CHECK_EQUAL_THRESH( spectrum.values[1], expected_385, 1e-10 );
+
+    /// Test interpolation at 395 nm (between 390 and 400)
+    /// ratio = (395 - 390) / (400 - 390) = 5 / 10 = 0.5
+    /// expected = 20.0 * (1.0 - 0.5) + 30.0 * 0.5 = 25.0
+    double expected_395 = 20.0 * ( 1.0 - 0.5 ) + 30.0 * 0.5;
+    OIIO_CHECK_EQUAL_THRESH( spectrum.values[3], expected_395, 1e-10 );
+
+    /// Test a more complex interpolation case with non-0.5 ratio
+    /// Create another spectrum with step 15 to get more interesting ratios
+    rta::core::Spectrum::Shape source_shape2 = { 380, 410, 15 };
+    rta::core::Spectrum        spectrum2( 0.0, source_shape2 );
+
+    /// Set values: [100.0, 200.0, 300.0] at wavelengths 380, 395, 410
+    spectrum2.values[0] = 100.0; /// Value at 380 nm
+    spectrum2.values[1] = 200.0; /// Value at 395 nm
+    spectrum2.values[2] = 300.0; /// Value at 410 nm
+
+    spectrum2.reshape();
+
+    /// Test interpolation at 390 nm (between 380 and 395)
+    /// ratio = (390 - 380) / (395 - 380) = 10 / 15 = 2/3 ≈ 0.6667
+    /// expected = 100.0 * (1/3) + 200.0 * (2/3)
+    ///          = 100/3 + 400/3 = 500/3 ≈ 166.6667
+    double ratio_390    = ( 390.0 - 380.0 ) / ( 395.0 - 380.0 );
+    double expected_390 = 100.0 * ( 1.0 - ratio_390 ) + 200.0 * ratio_390;
+    OIIO_CHECK_EQUAL_THRESH(
+        spectrum2.values[2], expected_390, 1e-10 ); /// Index 2 = 390 nm
+}
+
 int main( int, char ** )
 {
     testSpectralData_Spectrum();
     testSpectralData_Properties();
     testSpectralData_LoadSpst();
     testSpectralData_Operators();
+    testSpectralData_ReshapeInterpolation();
 
     return unit_test_failures;
 }

@@ -239,11 +239,157 @@ void testSpectralData_LoadSpst()
     }
 }
 
+/// Helper template function to test binary operators
+/// @param a First input spectrum
+/// @param b Second input spectrum
+/// @param spectrum_op Function that performs the Spectrum operator
+/// @param check_op Function that calculates expected value
+template <typename SpectrumOp, typename CheckOp>
+void check_binary_operator_result(
+    const rta::core::Spectrum &a,
+    const rta::core::Spectrum &b,
+    SpectrumOp                 spectrum_op,
+    CheckOp                    check_op )
+{
+    rta::core::Spectrum result = spectrum_op( a, b );
+    OIIO_CHECK_EQUAL( result.shape.first, a.shape.first );
+    OIIO_CHECK_EQUAL( result.shape.last, a.shape.last );
+    OIIO_CHECK_EQUAL( result.shape.step, a.shape.step );
+    OIIO_CHECK_EQUAL( result.values.size(), a.values.size() );
+    for ( size_t i = 0; i < result.values.size(); i++ )
+    {
+        double expected = check_op( a.values[i], b.values[i] );
+        OIIO_CHECK_EQUAL_THRESH( result.values[i], expected, 1e-10 );
+    }
+}
+
+/// Helper template function to test compound assignment operators
+/// @param original The original spectrum before modification
+/// @param b Second input spectrum
+/// @param spectrum_op Function that performs the Spectrum compound assignment
+/// @param check_op Function that calculates expected value
+template <typename SpectrumOp, typename CheckOp>
+void check_compound_assignment_operator_result(
+    const rta::core::Spectrum &original,
+    const rta::core::Spectrum &b,
+    SpectrumOp                 spectrum_op,
+    CheckOp                    check_op )
+{
+    rta::core::Spectrum  modified   = original;
+    rta::core::Spectrum &result_ref = spectrum_op( modified, b );
+    OIIO_CHECK_EQUAL(
+        &result_ref, &modified ); /// Should return reference to self
+    for ( size_t i = 0; i < modified.values.size(); i++ )
+    {
+        double expected = check_op( original.values[i], b.values[i] );
+        OIIO_CHECK_EQUAL_THRESH( modified.values[i], expected, 1e-10 );
+    }
+}
+
+void testSpectralData_Operators()
+{
+    /// Create two spectra with known values for testing
+    rta::core::Spectrum a( 2.0 );
+    rta::core::Spectrum b( 3.0 );
+
+    /// Initialize with specific values for easier verification
+    for ( size_t i = 0; i < a.values.size(); i++ )
+    {
+        a.values[i] = 2.0 + static_cast<double>( i );
+        b.values[i] = 3.0 + static_cast<double>( i ) * 2.0;
+    }
+
+    /// Test binary operator+ (addition)
+    {
+        check_binary_operator_result(
+            a,
+            b,
+            []( const rta::core::Spectrum &x, const rta::core::Spectrum &y ) {
+                return x + y;
+            },
+            []( double x, double y ) { return x + y; } );
+    }
+
+    /// Test binary operator- (subtraction)
+    {
+        check_binary_operator_result(
+            a,
+            b,
+            []( const rta::core::Spectrum &x, const rta::core::Spectrum &y ) {
+                return x - y;
+            },
+            []( double x, double y ) { return x - y; } );
+    }
+
+    /// Test binary operator* (multiplication)
+    {
+        check_binary_operator_result(
+            a,
+            b,
+            []( const rta::core::Spectrum &x, const rta::core::Spectrum &y ) {
+                return x * y;
+            },
+            []( double x, double y ) { return x * y; } );
+    }
+
+    /// Test binary operator/ (division)
+    {
+        check_binary_operator_result(
+            a,
+            b,
+            []( const rta::core::Spectrum &x, const rta::core::Spectrum &y ) {
+                return x / y;
+            },
+            []( double x, double y ) { return x / y; } );
+    }
+
+    /// Test compound assignment operator+= (addition)
+    {
+        check_compound_assignment_operator_result(
+            a,
+            b,
+            []( rta::core::Spectrum &x, const rta::core::Spectrum &y )
+                -> rta::core::Spectrum & { return x += y; },
+            []( double x, double y ) { return x + y; } );
+    }
+
+    /// Test compound assignment operator-= (subtraction)
+    {
+        check_compound_assignment_operator_result(
+            a,
+            b,
+            []( rta::core::Spectrum &x, const rta::core::Spectrum &y )
+                -> rta::core::Spectrum & { return x -= y; },
+            []( double x, double y ) { return x - y; } );
+    }
+
+    /// Test compound assignment operator*= (multiplication)
+    {
+        check_compound_assignment_operator_result(
+            a,
+            b,
+            []( rta::core::Spectrum &x, const rta::core::Spectrum &y )
+                -> rta::core::Spectrum & { return x *= y; },
+            []( double x, double y ) { return x * y; } );
+    }
+
+    /// Test compound assignment operator/= (division)
+    {
+        check_compound_assignment_operator_result(
+            a,
+            b,
+            []( rta::core::Spectrum &x, const rta::core::Spectrum &y )
+                -> rta::core::Spectrum & { return x /= y; },
+            []( double x, double y ) { return x / y; } );
+    }
+}
+
 int main( int, char ** )
 {
     testSpectralData_Spectrum();
     testSpectralData_Properties();
     testSpectralData_LoadSpst();
+    testSpectralData_Operators();
 
     return unit_test_failures;
 }

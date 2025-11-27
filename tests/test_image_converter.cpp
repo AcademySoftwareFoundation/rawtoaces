@@ -1454,9 +1454,6 @@ void test_prepare_transform_spectral_idt_calculation_fail()
     // Create observer data (so observer data loading succeeds)
     test_dir.create_test_data_file( "cmf" );
 
-    // Create illuminant data (so illuminant data loading succeeds)
-    // test_dir.create_test_data_file( "illuminant", { { "type", "D65" } } );
-
     // Create training data with minimal structure that causes curve fitting to fail
     // We need to create a file that loads but causes optimization to fail
     std::string training_dir = test_dir.get_database_path() + "/training";
@@ -1777,9 +1774,6 @@ void test_illuminant_ignored_with_metadata_wb()
 
     // Create observer data (so observer data loading succeeds)
     test_dir.create_test_data_file( "cmf", { { "type", "observer" } } );
-
-    // Create illuminant data for D65 (the specified illuminant that should be ignored)
-    // test_dir.create_test_data_file( "illuminant", { { "type", "D65" } } );
 
     // Test: Illuminant ignored when using metadata white balance method
     std::vector<std::string> args = {

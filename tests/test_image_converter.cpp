@@ -1696,9 +1696,6 @@ void test_rawtoaces_spectral_mode_complete_success_with_custom_camera_info()
     // Create observer data
     test_dir.create_test_data_file( "cmf", { { "type", "observer" } } );
 
-    // Create illuminant data
-    // test_dir.create_test_data_file( "illuminant", { { "type", "D65" } } );
-
     // Test: Complete success case via main entrance
     std::vector<std::string> args = { "--wb-method",
                                       "illuminant",
@@ -1742,9 +1739,6 @@ void test_rawtoaces_spectral_mode_complete_success_with_default_illuminant_warni
 
     // Create observer data (so observer data loading succeeds)
     test_dir.create_test_data_file( "cmf" );
-
-    // Create illuminant data for D55 (the default illuminant)
-    // test_dir.create_test_data_file( "illuminant", { { "type", "D55" } } );
 
     // Test: Default illuminant via main entrance (no --illuminant parameter)
     std::vector<std::string> args = { "--wb-method",  "illuminant",

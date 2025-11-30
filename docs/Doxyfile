@@ -1,0 +1,65 @@
+# Doxyfile for RAWtoACES - standalone version for ReadTheDocs
+# This file is used when building documentation without CMake
+
+# Project information
+PROJECT_NAME           = "RAWtoACES"
+PROJECT_NUMBER         = "2.0.0"
+PROJECT_BRIEF          = "RAW to ACES Utility"
+PROJECT_LOGO           =
+
+# Input/Output
+INPUT                  = ../include/rawtoaces
+OUTPUT_DIRECTORY       = doxygen
+RECURSIVE              = YES
+FILE_PATTERNS          = *.h *.hpp
+
+# What to extract
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_CLASSES  = YES
+
+# XML output for Breathe
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+XML_PROGRAMLISTING     = YES
+
+# Disable other outputs (Sphinx/Breathe will handle HTML)
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_MAN           = NO
+GENERATE_RTF           = NO
+
+# Preprocessing
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+PREDEFINED             =
+
+# Source browsing
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+STRIP_CODE_COMMENTS    = YES
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+
+# Warnings
+QUIET                  = NO
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = YES
+
+# Graphs (disabled for faster builds)
+HAVE_DOT               = NO
+CLASS_DIAGRAMS         = NO
+
+# Sorting
+SORT_MEMBER_DOCS       = YES
+SORT_BRIEF_DOCS        = YES
+SORT_MEMBERS_CTORS_1ST = YES
+
+# Namespaces
+HIDE_UNDOC_RELATIONS   = NO
+SHOW_INCLUDE_FILES     = YES
+SHOW_GROUPED_MEMB_INC  = NO

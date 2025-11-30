@@ -105,6 +105,12 @@ endif ( RTA_BUILD_PYTHON_BINDINGS )
 enable_testing()
 add_subdirectory(tests)
 
+# Documentation (optional)
+option( BUILD_DOCS "Build documentation" OFF )
+if( BUILD_DOCS )
+    add_subdirectory(docs)
+endif()
+
 #################################################
 ##
 ##   Install RAWTOACES.pc

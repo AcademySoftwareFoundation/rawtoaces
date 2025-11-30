@@ -3,3 +3,8 @@ build/
 build-coverage/
 tests/materials/*.exr
 __pycache__/
+
+# Documentation build artifacts
+docs/_build/
+docs/doxygen/
+docs/html/

@@ -1,0 +1,7 @@
+# Documentation build requirements for RAWtoACES
+# Used by Read the Docs and local documentation builds
+
+sphinx>=7.0
+sphinx-rtd-theme>=2.0
+breathe>=4.35
+myst-parser>=2.0

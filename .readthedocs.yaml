@@ -1,0 +1,22 @@
+# Read the Docs configuration file for RAWtoACES
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
+version: 2
+
+# Set the OS, Python version, and other tools
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.11"
+  apt_packages:
+    - doxygen
+
+# Build documentation in the "docs/" directory with Sphinx
+sphinx:
+  configuration: docs/conf.py
+  fail_on_warning: false
+
+# Python requirements for documentation
+python:
+  install:
+    - requirements: docs/requirements.txt

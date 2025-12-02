@@ -27,27 +27,23 @@ Build steps:
    make
    make install
 
-Python Bindings
-^^^^^^^^^^^^^^^
-
-If you want to use the Python bindings, ensure Python development headers are installed
-and enable the bindings during configuration:
-
-.. code-block:: bash
-
-   cmake -DRTA_BUILD_PYTHON_BINDINGS=ON ..
-
 Environment Setup
 -----------------
 
 RAWtoACES needs access to camera spectral sensitivity data and other reference data.
 The data is automatically fetched during the build process and installed to
-``share/rawtoaces/data``.
+``<CMAKE_INSTALL_PREFIX>/share/rawtoaces/data`` on macOS and Linux.
 
-You can override the data location using environment variables:
+.. note::
 
-- ``RAWTOACES_DATA_PATH``: Primary path to search for data files
-- ``AMPAS_DATA_PATH``: Alternative path (for compatibility)
+   On Windows, the data files are not installed automatically. You will need to
+   manually specify the data location.
+
+You can override the data location using:
+
+- The ``--data-dir`` command line parameter
+- ``RAWTOACES_DATA_PATH`` environment variable: Primary path to search for data files
+- ``AMPAS_DATA_PATH`` environment variable: Alternative path (for compatibility)
 
 Basic Usage
 -----------

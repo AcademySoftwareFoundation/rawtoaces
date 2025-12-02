@@ -14,8 +14,8 @@ Overview
 The core library (``rawtoaces_core``) contains:
 
 - Spectral solver for calculating IDT matrices from camera spectral sensitivities
-- Database management for camera data, illuminants, and training spectra
-- Color science utilities
+- Functions for calculating illuminant spectral power distributions
+- Color science utilities and matrices
 
 SpectralSolver Class
 --------------------
@@ -25,24 +25,9 @@ SpectralSolver Class
    :protected-members:
    :undoc-members:
 
-Database Classes
-----------------
-
-CameraDatabase
-^^^^^^^^^^^^^^
-
-.. doxygenclass:: rta::core::CameraDatabase
-   :members:
-   :undoc-members:
-
-IlluminantDatabase
-^^^^^^^^^^^^^^^^^^
-
-.. doxygenclass:: rta::core::IlluminantDatabase
-   :members:
-   :undoc-members:
-
 Utility Functions
 -----------------
 
-.. doxygenfunction:: rta::core::database_paths
+.. doxygenfunction:: rta::core::calculate_daylight_SPD
+
+.. doxygenfunction:: rta::core::calculate_blackbody_SPD

@@ -28,7 +28,7 @@ White Balance Options
 ``--illuminant <name>``
    Specify the illuminant for white balancing. Can be:
 
-   - A color temperature (e.g., ``3200K``, ``5600K``)
+   - A blackbody color temperature below 4000K (e.g., ``2800K``, ``3200K``)
    - A D-series illuminant (e.g., ``D50``, ``D55``, ``D65``)
    - Any illuminant name present in the data folder
 

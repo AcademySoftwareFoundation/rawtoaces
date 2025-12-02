@@ -2,7 +2,7 @@ RAWtoACES Documentation
 =======================
 
 RAWtoACES is a tool for converting RAW camera images to ACES (Academy Color Encoding System) format.
-It provides both a command-line utility and C++/Python libraries for integration into other applications.
+It provides both a command-line utility and a C++ library for integration into other applications.
 
 .. toctree::
    :maxdepth: 2
@@ -20,7 +20,6 @@ Features
 - Multiple white balance methods: metadata, illuminant, box averaging, or custom
 - Multiple matrix methods: spectral (using camera sensitivity data), metadata, Adobe, or custom
 - Flexible cropping options
-- Python bindings for scripting and integration
 - Batch processing support
 
 Quick Start
@@ -52,19 +51,6 @@ Library Usage (C++)
    converter.settings.matrix_method = rta::util::ImageConverter::Settings::MatrixMethod::Auto;
 
    bool success = converter.process_image("input.dng");
-
-Library Usage (Python)
-^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: python
-
-   import rawtoaces
-
-   converter = rawtoaces.ImageConverter()
-   converter.settings.WB_method = rawtoaces.WBMethod.Metadata
-   converter.settings.matrix_method = rawtoaces.MatrixMethod.Auto
-
-   success = converter.process_image("input.dng")
 
 Indices and tables
 ==================

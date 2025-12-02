@@ -11,10 +11,10 @@ RAWtoACES requires the following dependencies:
 
 - CMake 3.12 or later
 - C++17 compatible compiler
-- OpenImageIO
-- LibRaw
+- OpenImageIO (with RAW support via LibRaw)
 - Ceres Solver
 - Eigen3
+- nlohmann-json
 
 Build steps:
 

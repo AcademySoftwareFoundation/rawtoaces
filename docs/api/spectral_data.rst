@@ -17,8 +17,20 @@ The spectral data module provides structures for representing:
 - Color matching functions (CMFs)
 - Training spectral data
 
-Data Structures
----------------
+Spectrum
+--------
 
-.. doxygenfile:: spectral_data.h
-   :sections: briefdescription detaileddescription innerclass innernamespace typedef enum func var define
+.. doxygenstruct:: rta::core::Spectrum
+   :members:
+   :undoc-members:
+
+.. doxygenstruct:: rta::core::Spectrum::Shape
+   :members:
+   :undoc-members:
+
+SpectralData
+------------
+
+.. doxygenstruct:: rta::core::SpectralData
+   :members:
+   :undoc-members:

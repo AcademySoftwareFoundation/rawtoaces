@@ -16,8 +16,8 @@ The ``ImageConverter`` class encapsulates the complete RAW-to-ACES conversion wo
 1. Configure white balance and color matrix methods
 2. Load the RAW image
 3. Apply color transformations
-4. Apply scaling and cropping
-5. Save the ACES EXR output
+4. Apply exposure scaling and cropping
+5. Save the ACES container output
 
 Basic Usage
 -----------

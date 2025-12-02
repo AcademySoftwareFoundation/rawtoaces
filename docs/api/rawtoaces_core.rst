@@ -13,7 +13,7 @@ Overview
 
 The core library (``rawtoaces_core``) contains:
 
-- Spectral solver for calculating IDT matrices from camera spectral sensitivities
+- Spectral solver for calculating white balancing multipliers and input transform matrices from camera spectral sensitivities
 - Functions for calculating illuminant spectral power distributions
 - Color science utilities and matrices
 

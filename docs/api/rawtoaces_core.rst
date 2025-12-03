@@ -25,6 +25,14 @@ SpectralSolver Class
    :protected-members:
    :undoc-members:
 
+MetadataSolver Class
+--------------------
+
+.. doxygenclass:: rta::core::MetadataSolver
+   :members:
+   :protected-members:
+   :undoc-members:
+
 Utility Functions
 -----------------
 

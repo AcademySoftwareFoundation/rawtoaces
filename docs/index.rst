@@ -1,7 +1,7 @@
-RAWtoACES Documentation
+rawtoaces Documentation
 =======================
 
-RAWtoACES is a tool for converting RAW camera images to ACES (Academy Color Encoding System) format.
+rawtoaces is a tool for converting RAW camera images to ACES (Academy Color Encoding System) format.
 It provides both a command-line utility and a C++ library for integration into other applications.
 
 .. toctree::

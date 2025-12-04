@@ -1,7 +1,7 @@
 API Reference
 =============
 
-This section contains the API documentation for the RAWtoACES C++ libraries,
+This section contains the API documentation for the rawtoaces C++ libraries,
 automatically generated from the source code using Doxygen and Breathe.
 
 .. toctree::
@@ -14,7 +14,7 @@ automatically generated from the source code using Doxygen and Breathe.
 Namespaces
 ----------
 
-RAWtoACES organizes its code into the following namespaces:
+rawtoaces organizes its code into the following namespaces:
 
 ``rta::util``
    The utility library containing the high-level :cpp:class:`ImageConverter` class

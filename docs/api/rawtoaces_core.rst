@@ -1,4 +1,4 @@
-RAWtoACES Core
+rawtoaces Core
 ==============
 
 The core library provides low-level functionality for spectral calculations,

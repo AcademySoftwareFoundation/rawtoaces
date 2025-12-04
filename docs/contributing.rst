@@ -1,7 +1,7 @@
 Contributing
 ============
 
-We welcome contributions to RAWtoACES! This page provides guidelines for contributing
+We welcome contributions to rawtoaces! This page provides guidelines for contributing
 to the project.
 
 For detailed contribution guidelines, please see the

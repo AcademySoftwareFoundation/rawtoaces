@@ -9,7 +9,7 @@ import os
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'RAWtoACES'
+project = 'rawtoaces'
 copyright = '2024, Contributors to the rawtoaces Project'
 author = 'Contributors to the rawtoaces Project'
 

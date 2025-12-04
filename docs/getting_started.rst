@@ -7,7 +7,7 @@ Installation
 From Source
 ^^^^^^^^^^^
 
-RAWtoACES requires the following dependencies:
+rawtoaces requires the following dependencies:
 
 - CMake 3.12 or later
 - C++17 compatible compiler
@@ -30,7 +30,7 @@ Build steps:
 Environment Setup
 -----------------
 
-RAWtoACES needs access to camera spectral sensitivity data and other reference data.
+rawtoaces needs access to camera spectral sensitivity data and other reference data.
 The data is automatically fetched during the build process and installed to
 ``<CMAKE_INSTALL_PREFIX>/share/rawtoaces/data`` on macOS and Linux.
 

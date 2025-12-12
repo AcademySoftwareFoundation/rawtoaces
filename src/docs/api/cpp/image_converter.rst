@@ -1,3 +1,7 @@
+..
+  Copyright Contributors to the rawtoaces Project.
+  SPDX-License-Identifier: CC-BY-4.0
+
 ImageConverter
 ==============
 

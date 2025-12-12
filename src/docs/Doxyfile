@@ -1,8 +1,8 @@
-# Doxyfile for RAWtoACES - standalone version for ReadTheDocs
+# Doxyfile for rawtoaces - standalone version for ReadTheDocs
 # This file is used when building documentation without CMake
 
 # Project information
-PROJECT_NAME           = "RAWtoACES"
+PROJECT_NAME           = "rawtoaces"
 PROJECT_NUMBER         = "2.0.0"
 PROJECT_BRIEF          = "RAW to ACES Utility"
 PROJECT_LOGO           =
@@ -52,7 +52,6 @@ WARN_NO_PARAMDOC       = YES
 
 # Graphs (disabled for faster builds)
 HAVE_DOT               = NO
-CLASS_DIAGRAMS         = NO
 
 # Sorting
 SORT_MEMBER_DOCS       = YES

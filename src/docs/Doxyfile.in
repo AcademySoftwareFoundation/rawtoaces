@@ -1,15 +1,15 @@
-# Doxyfile for RAWtoACES
+# Doxyfile for rawtoaces
 # This file is configured by CMake to set project-specific paths
 
 # Project information
-PROJECT_NAME           = "RAWtoACES"
+PROJECT_NAME           = "rawtoaces"
 PROJECT_NUMBER         = @RAWTOACES_VERSION@
 PROJECT_BRIEF          = "RAW to ACES Utility"
 PROJECT_LOGO           =
 
 # Input/Output
 INPUT                  = @CMAKE_SOURCE_DIR@/include/rawtoaces
-OUTPUT_DIRECTORY       = @CMAKE_BINARY_DIR@/docs/doxygen
+OUTPUT_DIRECTORY       = @CMAKE_BINARY_DIR@/src/docs/doxygen
 RECURSIVE              = YES
 FILE_PATTERNS          = *.h *.hpp
 
@@ -52,7 +52,6 @@ WARN_NO_PARAMDOC       = YES
 
 # Graphs (disabled for faster builds, enable if needed)
 HAVE_DOT               = NO
-CLASS_DIAGRAMS         = NO
 
 # Sorting
 SORT_MEMBER_DOCS       = YES

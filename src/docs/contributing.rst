@@ -1,3 +1,7 @@
+..
+  Copyright Contributors to the rawtoaces Project.
+  SPDX-License-Identifier: CC-BY-4.0
+
 Contributing
 ============
 
@@ -8,5 +12,5 @@ For detailed contribution guidelines, please see the
 `CONTRIBUTING.md <https://github.com/AcademySoftwareFoundation/rawtoaces/blob/main/docs/CONTRIBUTING.md>`_
 file in the repository.
 
-.. include:: CONTRIBUTING.md
+.. include:: ../../docs/CONTRIBUTING.md
    :parser: myst_parser.sphinx_

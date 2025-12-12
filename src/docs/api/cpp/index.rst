@@ -1,4 +1,8 @@
-API Reference
+..
+  Copyright Contributors to the rawtoaces Project.
+  SPDX-License-Identifier: CC-BY-4.0
+
+C++ API Reference
 =============
 
 This section contains the API documentation for the rawtoaces C++ libraries,

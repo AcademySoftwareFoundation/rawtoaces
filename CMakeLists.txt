@@ -108,7 +108,7 @@ add_subdirectory(tests)
 # Documentation (optional)
 option( BUILD_DOCS "Build documentation" OFF )
 if( BUILD_DOCS )
-    add_subdirectory(docs)
+    add_subdirectory(src/docs)
 endif()
 
 #################################################

@@ -30,7 +30,7 @@ if(DOXYGEN_FOUND AND SPHINX_EXECUTABLE)
         COMMAND ${SPHINX_EXECUTABLE}
             -b html
             -c ${CMAKE_CURRENT_SOURCE_DIR}
-            -D breathe_projects.rawtoaces=${CMAKE_BINARY_DIR}/docs/doxygen/xml
+            -D breathe_projects.rawtoaces=${CMAKE_BINARY_DIR}/src/docs/doxygen/xml
             ${CMAKE_CURRENT_SOURCE_DIR}
             ${CMAKE_CURRENT_BINARY_DIR}/html
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

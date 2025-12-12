@@ -19,4 +19,4 @@ sphinx:
 # Python requirements for documentation
 python:
   install:
-    - requirements: docs/requirements.txt
+    - requirements: src/docs/requirements.txt

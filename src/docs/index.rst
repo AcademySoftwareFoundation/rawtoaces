@@ -1,3 +1,7 @@
+..
+  Copyright Contributors to the rawtoaces Project.
+  SPDX-License-Identifier: CC-BY-4.0
+
 rawtoaces Documentation
 =======================
 
@@ -10,7 +14,7 @@ It provides both a command-line utility and a C++ library for integration into o
 
    getting_started
    user_guide
-   api/index
+   api/cpp/index
    contributing
 
 Features

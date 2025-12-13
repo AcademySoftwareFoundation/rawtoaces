@@ -1914,7 +1914,7 @@ void test_main_parse_args_failure()
     // Should contain the error message from OIIO::ArgParse
     OIIO_CHECK_ASSERT(
         output.find(
-            "rawtoaces error: Invalid option \"--invalid-flag-that-does-not-exist\"" ) !=
+            "error: Invalid option \"--invalid-flag-that-does-not-exist\"" ) !=
         std::string::npos );
     OIIO_CHECK_ASSERT(
         output.find( HELP_MESSAGE_SNIPPET ) != std::string::npos );

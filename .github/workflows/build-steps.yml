@@ -69,15 +69,15 @@ jobs:
           yum-config-manager --disable centos-sclo-rh || true
           sed -i 's,^mirrorlist=,#,; s,^#baseurl=http://mirror\.centos\.org/centos/$releasever,baseurl=https://vault.centos.org/7.9.2009,' /etc/yum.repos.d/CentOS-Base.repo
           
-      - name: Cache vcpkg installed directory
+      - name: Cache vcpkg binary cache
         if: inputs.runner == 'windows-latest'
         uses: actions/cache@v4
         with:
-          path: C:/vcpkg/installed
+          path: C:/vcpkg/binary-cache
           key: |
-            vcpkg-${{ runner.os }}-${{ hashFiles('build_scripts/vcpkg.json') }}-${{ hashFiles('build_scripts/vcpkg.json.lock') }}
+            vcpkg-binary-cache-${{ runner.os }}-${{ hashFiles('build_scripts/vcpkg.json') }}-${{ hashFiles('build_scripts/vcpkg.json.lock') }}
           restore-keys: |
-            vcpkg-${{ runner.os }}-
+            vcpkg-binary-cache-${{ runner.os }}-
             
       - name: Dependencies
         if: inputs.vfxyear < 2024

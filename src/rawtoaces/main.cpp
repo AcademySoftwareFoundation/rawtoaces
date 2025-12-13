@@ -18,11 +18,8 @@ int main( int argc, const char *argv[] )
     OIIO::ArgParse arg_parser;
     arg_parser.arg( "filename" ).action( OIIO::ArgParse::append() ).hidden();
     converter.init_parser( arg_parser );
-
-    if ( arg_parser.parse_args( argc, argv ) < 0 )
-    {
-        return 1;
-    }
+    
+    arg_parser.parse_args( argc, argv );
 
     if ( !converter.parse_parameters( arg_parser ) )
     {
@@ -37,8 +34,8 @@ int main( int argc, const char *argv[] )
     }
 
     // Gather all the raw images from arg list
-    std::vector<std::vector<std::string>> batches =
-        rta::util::collect_image_files( files );
+    std::vector<std::vector<std::string>> batches;
+    batches = rta::util::collect_image_files( files ); 
 
     // Process raw files
     bool empty  = true;

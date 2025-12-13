@@ -1897,6 +1897,78 @@ void test_prepare_transform_spectral_wb_calculation_fail_due_to_invalid_camera_d
         std::string::npos );
 }
 
+const std::string HELP_MESSAGE_SNIPPET = "Rawtoaces converts raw image files from a digital camera";
+
+/// Tests that main returns 1 when invalid command-line arguments are provided
+void test_main_parse_args_failure()
+{
+    std::cout << std::endl << "test_main_parse_args_failure()" << std::endl;
+
+    // Test with invalid argument flag
+    std::vector<std::string> args = { "--invalid-flag-that-does-not-exist" };
+
+    // This should fail with exit code 1
+    std::string output = run_rawtoaces_command( args, true );
+
+    // Should contain the error message from OIIO::ArgParse
+    OIIO_CHECK_ASSERT(
+        output.find( "rawtoaces error: Invalid option \"--invalid-flag-that-does-not-exist\"" ) !=
+        std::string::npos );
+    OIIO_CHECK_ASSERT(output.find( HELP_MESSAGE_SNIPPET ) != std::string::npos );
+}
+
+/// Tests that main returns 1 when valid arguments are provided but parameters are invalid
+void test_main_parse_parameters_failure()
+{
+    std::cout << std::endl << "test_main_parse_parameters_failure()" << std::endl;
+
+    // Test with invalid white balance method (valid argument format, but invalid value)
+    std::vector<std::string> args = { "--wb-method", "invalid_method" };
+
+    // This should fail with exit code 1 due to parse_parameters failure
+    std::string output = run_rawtoaces_command( args, true );
+
+    // Should contain the exact error message from parse_parameters
+    OIIO_CHECK_ASSERT(
+        output.find( "Unsupported white balancing method: 'invalid_method'. The following methods are supported: metadata, illuminant, box, custom." ) !=
+        std::string::npos );
+}
+
+/// Tests that main prints help and returns 1 when no files are provided
+void test_main_no_files_provided()
+{
+    std::cout << std::endl << "test_main_no_files_provided()" << std::endl;
+
+    // Test with no files provided (only flags, no filename arguments)
+    std::vector<std::string> args = { "--wb-method", "metadata" };
+
+    // This should fail with exit code 1 and print help
+    std::string output = run_rawtoaces_command( args, true );
+
+    OIIO_CHECK_ASSERT(output.find( HELP_MESSAGE_SNIPPET ) != std::string::npos );
+}
+
+/// Tests that main prints help when no files are processed
+void test_main_no_files_processed()
+{
+    std::cout << std::endl << "test_main_no_files_processed()" << std::endl;
+
+    // Create test directory with only filtered files (no valid RAW files)
+    TestDirectory test_dir;
+    test_dir.create_filtered_files_only();
+
+    // Test with directory containing only filtered files (no valid RAW files)
+    std::vector<std::string> args = { "--wb-method", "metadata", "--overwrite",
+                                      test_dir.path() };
+
+    // This should print help when no files are processed
+    std::string output = run_rawtoaces_command( args, true );
+
+    OIIO_CHECK_ASSERT(output.find( HELP_MESSAGE_SNIPPET ) != std::string::npos );
+    // Verify no files were actually processed
+    OIIO_CHECK_ASSERT( output.find( "Processing file" ) == std::string::npos );
+}
+
 int main( int, char ** )
 {
     try
@@ -1958,6 +2030,12 @@ int main( int, char ** )
 
         test_rawtoaces_spectral_mode_complete_success_with_default_illuminant_warning();
         test_illuminant_ignored_with_metadata_wb();
+
+        // Tests for main.cpp error paths
+        test_main_parse_args_failure();
+        test_main_parse_parameters_failure();
+        test_main_no_files_provided();
+        test_main_no_files_processed();
     }
     catch ( const std::exception &e )
     {

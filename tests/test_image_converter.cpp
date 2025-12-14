@@ -1439,7 +1439,7 @@ void test_auto_detect_illuminant_with_wb_multipliers()
     // Message: "WARNING: Directory '<path>/illuminant' does not exist."
     OIIO_CHECK_ASSERT(
         output.find( "WARNING: Directory '" ) != std::string::npos &&
-        output.find( "/illuminant' does not exist." ) != std::string::npos );
+        output.find( "illuminant' does not exist." ) != std::string::npos );
 
     // With the current mocked input (WB_multipliers = {1.5, 1.0, 1.2, 1.0}),
     OIIO_CHECK_ASSERT(

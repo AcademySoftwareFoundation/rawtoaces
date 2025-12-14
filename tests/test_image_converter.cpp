@@ -1543,6 +1543,252 @@ void test_load_spectral_data_absolute_path()
         spectral_data.data.find( "main" ) != spectral_data.data.end() );
 }
 
+/// Tests that external illuminant files that fail to load are skipped
+void test_illuminant_file_load_failure()
+{
+    std::cout << std::endl
+              << "test_illuminant_file_load_failure()" << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file(
+        "camera",
+        { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training" );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf" );
+
+    // Create invalid illuminant files (invalid JSON that will fail to load)
+    std::string illuminant_dir = test_dir.get_database_path() + "/illuminant";
+    std::filesystem::create_directories( illuminant_dir );
+
+    std::string   invalid_file = illuminant_dir + "/invalid_illuminant.json";
+    std::ofstream file( invalid_file );
+    file << "invalid json content { broken }" << std::endl;
+    file.close();
+
+    // Create a valid illuminant file with a different type
+    test_dir.create_test_data_file(
+        "illuminant", { { "type", "other_type" } } );
+
+    // Create a mock ImageSpec with camera metadata
+    OIIO::ImageSpec image_spec;
+    image_spec.width          = 100;
+    image_spec.height         = 100;
+    image_spec.nchannels      = 3;
+    image_spec.format         = OIIO::TypeDesc::UINT8;
+    image_spec["cameraMake"]  = "Blackmagic";
+    image_spec["cameraModel"] = "Cinema Camera";
+
+    // Configure settings to request a type that doesn't match any file
+    // This ensures all files (including invalid ones) are processed
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.illuminant           = "nonexistent_type";
+    settings.verbosity            = 1;
+
+    std::vector<double>              WB_multipliers;
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    bool        success;
+    std::string output = capture_stderr( [&]() {
+        // This should fail because the requested type doesn't exist
+        // But it should process all files including invalid ones (which will be skipped)
+        success = prepare_transform_spectral(
+            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+    } );
+
+    // Should fail (no matching type found), but invalid file should have been processed and skipped
+    OIIO_CHECK_ASSERT( !success );
+    OIIO_CHECK_ASSERT(
+        output.find( "Failed to find illuminant type = 'nonexistent_type'." ) !=
+        std::string::npos );
+}
+
+/// Tests that invalid illuminant files are skipped when populating all illuminants for auto-detection
+void test_all_illuminants_skips_invalid_files()
+{
+    std::cout << std::endl
+              << "test_all_illuminants_skips_invalid_files()" << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file(
+        "camera",
+        { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training" );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf" );
+
+    // Create invalid illuminant files (invalid JSON that will fail to load)
+    // Use a filename that sorts first to ensure it's processed
+    std::string illuminant_dir = test_dir.get_database_path() + "/illuminant";
+    std::filesystem::create_directories( illuminant_dir );
+
+    std::string   invalid_file = illuminant_dir + "/00_invalid_illuminant.json";
+    std::ofstream file( invalid_file );
+    file << "invalid json content { broken }" << std::endl;
+    file.close();
+
+    // Create a valid illuminant file with a name that sorts later
+    test_dir.create_test_data_file(
+        "illuminant", { { "type", "test_illuminant" } } );
+
+    // Use direct API to ensure we hit the code path
+    std::vector<std::string>  database_path = { test_dir.get_database_path() };
+    rta::core::SpectralSolver solver( database_path );
+    solver.verbosity = 2; // Set verbosity > 1 to trigger the message
+
+    // Find camera (required for find_illuminant(wb))
+    bool found = solver.find_camera( "Blackmagic", "Cinema Camera" );
+    OIIO_CHECK_ASSERT( found );
+
+    // Call find_illuminant with WB to trigger _all_illuminants population
+    std::vector<double> wb = { 1.5, 1.0, 1.2 };
+
+    bool        success;
+    std::string output = capture_stderr( [&]() {
+        // This should succeed - auto-detection should skip invalid files and use built-in illuminants
+        success = solver.find_illuminant( wb );
+    } );
+
+    // Should succeed (invalid file should be skipped during _all_illuminants population)
+    OIIO_CHECK_ASSERT( success );
+
+    // Check that the verbosity message was printed
+    OIIO_CHECK_ASSERT(
+        output.find( "The illuminant calculated to be the best match to the "
+                     "camera metadata is '" ) != std::string::npos &&
+        output.find( "'." ) != std::string::npos );
+}
+
+/// Tests that find_illuminant fails when camera data doesn't have "main" key
+void test_find_illuminant_camera_no_main_key()
+{
+    std::cout << std::endl
+              << "test_find_illuminant_camera_no_main_key()" << std::endl;
+
+    // Create solver without initializing camera
+    std::vector<std::string>  database_path = {};
+    rta::core::SpectralSolver solver( database_path );
+
+    // Try to find illuminant with white balance vector without initializing camera
+    std::vector<double> wb = { 1.0, 1.0, 1.0 };
+
+    bool        success;
+    std::string output =
+        capture_stderr( [&]() { success = solver.find_illuminant( wb ); } );
+
+    // Should fail because camera is not initialized (no "main" key)
+    OIIO_CHECK_ASSERT( !success );
+    OIIO_CHECK_ASSERT(
+        output.find( "ERROR: camera needs to be initialised prior to calling "
+                     "SpectralSolver::find_illuminant()" ) !=
+        std::string::npos );
+}
+
+/// Tests that find_illuminant fails when camera data has "main" but with wrong size
+void test_find_illuminant_camera_wrong_size()
+{
+    std::cout << std::endl
+              << "test_find_illuminant_camera_wrong_size()" << std::endl;
+
+    TestDirectory test_dir;
+
+    // Create camera data with incorrect number of channels (4 instead of 3)
+    test_dir.create_test_data_file(
+        "camera",
+        { { "manufacturer", "Test" }, { "model", "Camera" } },
+        true ); // is_incorrect_data = true creates 4 channels
+
+    std::vector<std::string>  database_path = { test_dir.get_database_path() };
+    rta::core::SpectralSolver solver( database_path );
+
+    // Find camera (this will load the camera with 4 channels)
+    bool found = solver.find_camera( "Test", "Camera" );
+    OIIO_CHECK_ASSERT( found );
+
+    std::vector<double> wb = { 1.0, 1.0, 1.0 };
+
+    bool        success;
+    std::string output =
+        capture_stderr( [&]() { success = solver.find_illuminant( wb ); } );
+
+    // Should fail because camera has wrong size (4 channels instead of 3)
+    OIIO_CHECK_ASSERT( !success );
+    OIIO_CHECK_ASSERT(
+        output.find( "ERROR: camera needs to be initialised prior to calling "
+                     "SpectralSolver::find_illuminant()" ) !=
+        std::string::npos );
+}
+
+/// Tests that external illuminant files with non-matching types are skipped
+void test_illuminant_type_mismatch()
+{
+    std::cout << std::endl << "test_illuminant_type_mismatch()" << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file(
+        "camera",
+        { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training" );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf" );
+
+    // Create illuminant files with different types than requested
+    test_dir.create_test_data_file( "illuminant", { { "type", "typeA" } } );
+    test_dir.create_test_data_file( "illuminant", { { "type", "typeB" } } );
+
+    // Create a mock ImageSpec with camera metadata
+    OIIO::ImageSpec image_spec;
+    image_spec.width          = 100;
+    image_spec.height         = 100;
+    image_spec.nchannels      = 3;
+    image_spec.format         = OIIO::TypeDesc::UINT8;
+    image_spec["cameraMake"]  = "Blackmagic";
+    image_spec["cameraModel"] = "Cinema Camera";
+
+    // Configure settings to request an illuminant type that doesn't match any files
+    ImageConverter::Settings settings;
+    settings.database_directories = { test_dir.get_database_path() };
+    settings.illuminant           = "typeC"; // Different from typeA and typeB
+    settings.verbosity            = 1;
+
+    std::vector<double>              WB_multipliers;
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    bool        success;
+    std::string output = capture_stderr( [&]() {
+        // This should fail because no matching illuminant type is found
+        success = prepare_transform_spectral(
+            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+    } );
+
+    // Should fail (no matching type found)
+    OIIO_CHECK_ASSERT( !success );
+    OIIO_CHECK_ASSERT(
+        output.find( "Failed to find illuminant type = 'typec'." ) !=
+        std::string::npos );
+}
+
 /// Tests that blackbody illuminant strings (e.g., "3200K") are correctly processed
 void test_blackbody_illuminant_string()
 {
@@ -2280,7 +2526,11 @@ int main( int, char ** )
         test_auto_detect_illuminant_with_wb_multipliers();
         test_database_location_not_directory_warning();
         test_load_spectral_data_absolute_path();
-
+        test_illuminant_file_load_failure();
+        test_illuminant_type_mismatch();
+        test_all_illuminants_skips_invalid_files();
+        test_find_illuminant_camera_no_main_key();
+        test_find_illuminant_camera_wrong_size();
         test_blackbody_illuminant_string();
         test_auto_detect_illuminant_from_raw_metadata();
         test_auto_detect_illuminant_with_normalization();

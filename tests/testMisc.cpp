@@ -90,6 +90,25 @@ void test_IsValidCT()
 
     std::string val9 = "d65k";
     OIIO_CHECK_EQUAL( false, isValidCT( val9 ) );
+
+    // Test empty string edge case
+    std::string val10 = "";
+    OIIO_CHECK_EQUAL( false, isValidCT( val10 ) );
+
+    // Test invalid character in "other light sources" branch
+    // Using a character that isCTLetterDigit returns false for (e.g., space, period, etc.)
+    std::string val11 = " iso3200"; // space at start - invalid character
+    OIIO_CHECK_EQUAL( false, isValidCT( val11 ) );
+
+    std::string val12 = "iso.3200"; // period in middle - invalid character
+    OIIO_CHECK_EQUAL( false, isValidCT( val12 ) );
+
+    // Test invalid character after 'D' in daylight format (non-digit after D)
+    std::string val13 = "D65A0"; // letter after D - invalid
+    OIIO_CHECK_EQUAL( false, isValidCT( val13 ) );
+
+    std::string val14 = "D65.0"; // period after D - invalid
+    OIIO_CHECK_EQUAL( false, isValidCT( val14 ) );
 }
 
 int main( int, char ** )

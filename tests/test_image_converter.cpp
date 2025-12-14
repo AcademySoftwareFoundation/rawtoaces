@@ -11,6 +11,7 @@
 
 // must be before <OpenImageIO/unittest.h>
 #include <rawtoaces/image_converter.h>
+#include <rawtoaces/rawtoaces_core.h>
 
 #include <OpenImageIO/unittest.h>
 #include <filesystem>
@@ -401,6 +402,46 @@ private:
     std::string test_dir;
     std::string database_dir;
 };
+
+void assert_success_conversion( const std::string &output )
+{
+    // Assert that the command succeeded (no error messages)
+    OIIO_CHECK_ASSERT( output.find( "Failed to find" ) == std::string::npos );
+    OIIO_CHECK_ASSERT( output.find( "ERROR" ) == std::string::npos );
+    OIIO_CHECK_ASSERT( output.find( "Missing" ) == std::string::npos );
+    OIIO_CHECK_ASSERT(
+        output.find( "Failed to configure" ) == std::string::npos );
+
+    // Assert that processing completed successfully
+    OIIO_CHECK_ASSERT( output.find( "Processing file" ) != std::string::npos );
+    OIIO_CHECK_ASSERT(
+        output.find( "Configuring transform" ) != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find( "Loading image" ) != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find( "Saving output" ) != std::string::npos );
+
+    // Assert that white balance coefficients were calculated
+    OIIO_CHECK_ASSERT(
+        output.find( "White balance coefficients" ) != std::string::npos );
+
+    // Assert that IDT matrix was calculated
+    OIIO_CHECK_ASSERT(
+        output.find( "Input Device Transform (IDT) matrix" ) !=
+        std::string::npos );
+
+    // Assert that image processing steps occurred
+    OIIO_CHECK_ASSERT(
+        output.find( "Applying transform matrix" ) != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find( "Applying scale" ) != std::string::npos );
+    OIIO_CHECK_ASSERT( output.find( "Applying crop" ) != std::string::npos );
+
+    // Assert that the correct input and output files were processed
+    OIIO_CHECK_ASSERT(
+        output.find( "blackmagic_cinema_camera_cinemadng.dng" ) !=
+        std::string::npos );
+    OIIO_CHECK_ASSERT(
+        output.find( "blackmagic_cinema_camera_cinemadng_aces.exr" ) !=
+        std::string::npos );
+}
 
 /// Verifies that collect_image_files can traverse a directory, identify valid RAW image files,
 /// filter out unwanted file types, and organize them into batches for processing
@@ -1242,6 +1283,104 @@ void test_illuminant_type_not_found()
         std::string::npos );
 }
 
+/// Tests that invalid daylight color temperature values cause the application to exit with an error
+void test_invalid_daylight_cct_exits()
+{
+    std::cout << std::endl << "test_invalid_daylight_cct_exits()" << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file(
+        "camera",
+        { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data
+    test_dir.create_test_data_file( "training" );
+
+    // Create observer data
+    test_dir.create_test_data_file( "cmf" );
+
+    // Test invalid CCT values that should cause exit(1) when passed as daylight illuminant
+    int test_cases[] = { 39, 251, 3999, 25001, 0, -1, 30000 };
+
+    // Create temporary output file path
+    std::filesystem::path output_path =
+        std::filesystem::temp_directory_path() / "test_invalid_cct_output.exr";
+
+    for ( int test_case: test_cases )
+    {
+        // Build command with invalid CCT as daylight illuminant
+        std::vector<std::string> args = {
+            "--illuminant",      "d" + std::to_string( test_case ),
+            "--wb-method",       "illuminant",
+            "--mat-method",      "spectral",
+            "--overwrite",       dng_test_file,
+            output_path.string()
+        };
+
+        // This should fail with exit(1) and error message about CCT range
+        std::string output = run_rawtoaces_with_data_dir(
+            args, test_dir.get_database_path(), false, true );
+
+        // Assert on the expected error message
+        OIIO_CHECK_ASSERT(
+            output.find( "The range of Correlated Color Temperature for "
+                         "Day Light should be from 4000 to 25000" ) !=
+            std::string::npos );
+    }
+}
+
+/// Tests that invalid blackbody color temperature values cause the application to exit with an error
+void test_invalid_blackbody_cct_exits()
+{
+    std::cout << std::endl << "test_invalid_blackbody_cct_exits()" << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file(
+        "camera",
+        { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data
+    test_dir.create_test_data_file( "training" );
+
+    // Create observer data
+    test_dir.create_test_data_file( "cmf" );
+
+    // Test invalid CCT values that should cause exit(1) when passed as blackbody illuminant
+    // Testing both too low (< 1500) and too high (>= 4000) cases
+    int test_cases[] = { 1000, 500, 5000, 10000 };
+
+    // Create temporary output file path
+    std::filesystem::path output_path =
+        std::filesystem::temp_directory_path() / "test_invalid_cct_output.exr";
+
+    for ( int test_case: test_cases )
+    {
+        // Build command with invalid CCT as blackbody illuminant
+        std::vector<std::string> args = {
+            "--illuminant",      std::to_string( test_case ) + "K",
+            "--wb-method",       "illuminant",
+            "--mat-method",      "spectral",
+            "--overwrite",       dng_test_file,
+            output_path.string()
+        };
+
+        // This should fail with exit(1) and error message about CCT range
+        std::string output = run_rawtoaces_with_data_dir(
+            args, test_dir.get_database_path(), false, true );
+
+        // Assert on the expected error message
+        OIIO_CHECK_ASSERT(
+            output.find( "The range of Color Temperature for BlackBody "
+                         "should be from 1500 to 3999" ) != std::string::npos );
+    }
+}
+
 /// Tests that auto-detection of illuminant works with 4-channel WB_multipliers and verbosity output
 void test_auto_detect_illuminant_with_wb_multipliers()
 {
@@ -1296,9 +1435,165 @@ void test_auto_detect_illuminant_with_wb_multipliers()
     // Should succeed
     OIIO_CHECK_ASSERT( success );
 
+    // Should contain warning about missing illuminant directory (when verbosity > 0)
+    // Message: "WARNING: Directory '<path>/illuminant' does not exist."
+    OIIO_CHECK_ASSERT(
+        output.find( "WARNING: Directory '" ) != std::string::npos &&
+        output.find( "/illuminant' does not exist." ) != std::string::npos );
+
     // With the current mocked input (WB_multipliers = {1.5, 1.0, 1.2, 1.0}),
     OIIO_CHECK_ASSERT(
         output.find( "Found illuminant: '2000k'." ) != std::string::npos );
+}
+
+/// Tests that a warning is issued when a database location path points to a file instead of a directory
+void test_database_location_not_directory_warning()
+{
+    std::cout << std::endl
+              << "test_database_location_not_directory_warning()" << std::endl;
+
+    // Create test directory
+    TestDirectory test_dir;
+
+    // Create a file (not a directory) to use as database path
+    std::filesystem::path file_path =
+        std::filesystem::temp_directory_path() / "test_not_a_directory.txt";
+    std::ofstream( file_path ).close();
+
+    // Create camera data in the actual database directory (so camera lookup can succeed from valid path)
+    test_dir.create_test_data_file(
+        "camera",
+        { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data
+    test_dir.create_test_data_file( "training" );
+
+    // Create observer data
+    test_dir.create_test_data_file( "cmf" );
+
+    // Create a mock ImageSpec with camera metadata
+    OIIO::ImageSpec image_spec;
+    image_spec.width          = 100;
+    image_spec.height         = 100;
+    image_spec.nchannels      = 3;
+    image_spec.format         = OIIO::TypeDesc::UINT8;
+    image_spec["cameraMake"]  = "Blackmagic";
+    image_spec["cameraModel"] = "Cinema Camera";
+
+    // Configure settings with file path (not directory) as database location
+    // and verbosity > 0 to trigger the warning
+    ImageConverter::Settings settings;
+    settings.database_directories = { file_path.string(),
+                                      test_dir.get_database_path() };
+    settings.illuminant           = ""; // Empty to trigger auto-detection
+    settings.verbosity            = 1;  // > 0 to trigger the warning
+
+    // Provide WB_multipliers
+    std::vector<double>              WB_multipliers = { 1.5, 1.0, 1.2, 1.0 };
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    bool        success;
+    std::string output = capture_stderr( [&]() {
+        // This should succeed (using the valid database path)
+        // but should warn about the file path not being a directory
+        success = prepare_transform_spectral(
+            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix );
+    } );
+
+    // Should succeed (using the valid database path)
+    OIIO_CHECK_ASSERT( success );
+
+    // Should contain warning about database location not being a directory
+    OIIO_CHECK_ASSERT(
+        output.find( "WARNING: Database location '" ) != std::string::npos &&
+        output.find( "' is not a directory." ) != std::string::npos );
+
+    // Clean up the test file
+    std::filesystem::remove( file_path );
+}
+
+/// Tests that spectral data can be loaded using an absolute file path
+void test_load_spectral_data_absolute_path()
+{
+    std::cout << std::endl
+              << "test_load_spectral_data_absolute_path()" << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create training data file
+    std::string training_file = test_dir.create_test_data_file( "training" );
+
+    // Get absolute path to the file
+    std::filesystem::path abs_path = std::filesystem::absolute( training_file );
+
+    // Initialize solver with empty database directories (using absolute path)
+    std::vector<std::string>  database_path = {};
+    rta::core::SpectralSolver solver( database_path );
+
+    // Load spectral data using absolute path - this should trigger the absolute path branch
+    rta::core::SpectralData spectral_data;
+    bool                    success =
+        solver.load_spectral_data( abs_path.string(), spectral_data );
+
+    // Should succeed
+    OIIO_CHECK_ASSERT( success );
+    OIIO_CHECK_ASSERT(
+        spectral_data.data.find( "main" ) != spectral_data.data.end() );
+}
+
+/// Tests that blackbody illuminant strings (e.g., "3200K") are correctly processed
+void test_blackbody_illuminant_string()
+{
+    std::cout << std::endl << "test_blackbody_illuminant_string()" << std::endl;
+
+    // Create test directory with database
+    TestDirectory test_dir;
+
+    // Create camera data (so camera lookup succeeds)
+    test_dir.create_test_data_file(
+        "camera",
+        { { "manufacturer", "Blackmagic" }, { "model", "Cinema Camera" } } );
+
+    // Create training data (so training data loading succeeds)
+    test_dir.create_test_data_file( "training" );
+
+    // Create observer data (so observer data loading succeeds)
+    test_dir.create_test_data_file( "cmf" );
+
+    // Test with valid blackbody CCT values that should trigger the blackbody branch
+    int test_cases[] = { 2000, 2500, 3200, 3500 };
+
+    for ( int test_case: test_cases )
+    {
+        std::filesystem::path output_path =
+            std::filesystem::temp_directory_path() /
+            ( "test_blackbody_" + std::to_string( test_case ) + ".exr" );
+
+        std::vector<std::string> args = {
+            "--illuminant", std::to_string( test_case ) + "K",
+            "--wb-method",  "illuminant",
+            "--mat-method", "spectral",
+            "--verbose",    "--overwrite",
+            dng_test_file,  output_path.string()
+        };
+
+        // This should succeed and use the blackbody branch in find_illuminant
+        std::string output = run_rawtoaces_with_data_dir(
+            args, test_dir.get_database_path(), false, false );
+
+        // Verify no errors occurred (blackbody branch should work for valid CCT values)
+        OIIO_CHECK_ASSERT(
+            output.find( "Failed to find" ) == std::string::npos );
+        OIIO_CHECK_ASSERT( output.find( "ERROR" ) == std::string::npos );
+        OIIO_CHECK_ASSERT(
+            output.find( "Failed to configure" ) == std::string::npos );
+
+        // Verify processing occurred
+        OIIO_CHECK_ASSERT(
+            output.find( "Processing file" ) != std::string::npos );
+    }
 }
 
 /// Tests that auto-detection extracts white balance from RAW metadata when WB_multipliers is not provided
@@ -1510,46 +1805,6 @@ void test_prepare_transform_spectral_idt_calculation_fail()
     // Verify the error message about failed IDT matrix calculation
     OIIO_CHECK_ASSERT(
         output.find( "Failed to calculate the input transform matrix." ) !=
-        std::string::npos );
-}
-
-void assert_success_conversion( const std::string &output )
-{
-    // Assert that the command succeeded (no error messages)
-    OIIO_CHECK_ASSERT( output.find( "Failed to find" ) == std::string::npos );
-    OIIO_CHECK_ASSERT( output.find( "ERROR" ) == std::string::npos );
-    OIIO_CHECK_ASSERT( output.find( "Missing" ) == std::string::npos );
-    OIIO_CHECK_ASSERT(
-        output.find( "Failed to configure" ) == std::string::npos );
-
-    // Assert that processing completed successfully
-    OIIO_CHECK_ASSERT( output.find( "Processing file" ) != std::string::npos );
-    OIIO_CHECK_ASSERT(
-        output.find( "Configuring transform" ) != std::string::npos );
-    OIIO_CHECK_ASSERT( output.find( "Loading image" ) != std::string::npos );
-    OIIO_CHECK_ASSERT( output.find( "Saving output" ) != std::string::npos );
-
-    // Assert that white balance coefficients were calculated
-    OIIO_CHECK_ASSERT(
-        output.find( "White balance coefficients" ) != std::string::npos );
-
-    // Assert that IDT matrix was calculated
-    OIIO_CHECK_ASSERT(
-        output.find( "Input Device Transform (IDT) matrix" ) !=
-        std::string::npos );
-
-    // Assert that image processing steps occurred
-    OIIO_CHECK_ASSERT(
-        output.find( "Applying transform matrix" ) != std::string::npos );
-    OIIO_CHECK_ASSERT( output.find( "Applying scale" ) != std::string::npos );
-    OIIO_CHECK_ASSERT( output.find( "Applying crop" ) != std::string::npos );
-
-    // Assert that the correct input and output files were processed
-    OIIO_CHECK_ASSERT(
-        output.find( "blackmagic_cinema_camera_cinemadng.dng" ) !=
-        std::string::npos );
-    OIIO_CHECK_ASSERT(
-        output.find( "blackmagic_cinema_camera_cinemadng_aces.exr" ) !=
         std::string::npos );
 }
 
@@ -1884,8 +2139,6 @@ void test_prepare_transform_spectral_wb_calculation_fail_due_to_invalid_camera_d
     std::string output = run_rawtoaces_with_data_dir(
         args, test_dir.get_database_path(), false, true );
 
-    std::cout << "output: $$$<" << output << ">$$$" << std::endl;
-
     // Assert on the expected error message
     OIIO_CHECK_ASSERT(
         output.find(
@@ -2022,7 +2275,13 @@ int main( int, char ** )
         test_missing_observer_data();
         test_missing_illuminant_data();
         test_illuminant_type_not_found();
+        test_invalid_daylight_cct_exits();
+        test_invalid_blackbody_cct_exits();
         test_auto_detect_illuminant_with_wb_multipliers();
+        test_database_location_not_directory_warning();
+        test_load_spectral_data_absolute_path();
+
+        test_blackbody_illuminant_string();
         test_auto_detect_illuminant_from_raw_metadata();
         test_auto_detect_illuminant_with_normalization();
 

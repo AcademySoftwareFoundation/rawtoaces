@@ -395,7 +395,7 @@ template <typename T> vector<T> uv_to_xy( const vector<T> &uv )
 template <typename T> vector<T> uv_to_XYZ( const vector<T> &uv )
 {
     return xy_to_XYZ( uv_to_xy( uv ) );
-}
+} // LCOV_EXCL_LINE - bug in coverage tool
 
 template <typename T> vector<T> XYZ_to_uv( const vector<T> &XYZ )
 {

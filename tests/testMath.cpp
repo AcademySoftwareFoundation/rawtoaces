@@ -293,6 +293,22 @@ void test_Interp1DLinear()
 
     for ( size_t i = 0; i < YV1.size(); i++ )
         OIIO_CHECK_EQUAL_THRESH( YV1[i], Y1[i], 1e-5 );
+
+    // Test extrapolation when X1 value is less than minimum X0 value
+    {
+        vector<int>    X0_edge = { 10, 20, 30, 40 };
+        vector<int>    X1_edge = { 5 }; // Less than min(X0)
+        vector<double> Y0_edge = { 1.0, 2.0, 3.0, 4.0 };
+
+        vector<double> Y1_edge = interp1DLinear( X0_edge, X1_edge, Y0_edge );
+
+        // Expected result: extrapolation using first segment
+        // slope[0] = (Y0[1] - Y0[0]) / (X0[1] - X0[0]) = (2.0 - 1.0) / (20 - 10) = 0.1
+        // intercept[0] = Y0[0] - X0[0] * slope[0] = 1.0 - 10 * 0.1 = 0.0
+        // Y1[0] = slope[0] * X1[0] + intercept[0] = 0.1 * 5 + 0.0 = 0.5
+        OIIO_CHECK_EQUAL_THRESH( Y1_edge[0], 0.5, 1e-5 );
+        OIIO_CHECK_EQUAL( Y1_edge.size(), 1 );
+    }
 }
 
 void testIDT_XytoXYZ()

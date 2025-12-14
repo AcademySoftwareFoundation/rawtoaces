@@ -34,8 +34,8 @@ int main( int argc, const char *argv[] )
     }
 
     // Gather all the raw images from arg list
-    std::vector<std::vector<std::string>> batches;
-    batches = rta::util::collect_image_files( files );
+    std::vector<std::vector<std::string>> batches =
+        rta::util::collect_image_files( files ); // LCOV_EXCL_LINE
 
     // Process raw files
     bool empty  = true;

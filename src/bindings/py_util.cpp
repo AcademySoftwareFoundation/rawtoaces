@@ -90,6 +90,11 @@ void util_bindings( nanobind::module_ &m )
                 settings.WB_box[2] = box[2];
                 settings.WB_box[3] = box[3];
             }
+            else
+            {
+                throw std::invalid_argument(
+                    "The array must contain 4 elements." );
+            }
         } );
 
     settings.def_prop_rw(
@@ -108,6 +113,11 @@ void util_bindings( nanobind::module_ &m )
                 settings.custom_WB[1] = custom_WB[1];
                 settings.custom_WB[2] = custom_WB[2];
                 settings.custom_WB[3] = custom_WB[3];
+            }
+            else
+            {
+                throw std::invalid_argument(
+                    "The array must contain 4 elements." );
             }
         } );
 
@@ -132,7 +142,17 @@ void util_bindings( nanobind::module_ &m )
                         for ( size_t j = 0; j < 3; j++ )
                             settings.custom_matrix[i][j] = matrix[i][j];
                     }
+                    else
+                    {
+                        throw std::invalid_argument(
+                            "Each row of the matrix must contain 3 elements." );
+                    }
                 }
+            }
+            else
+            {
+                throw std::invalid_argument(
+                    "The matrix must contain 3 rows." );
             }
         } );
 
@@ -152,6 +172,11 @@ void util_bindings( nanobind::module_ &m )
                 settings.crop_box[2] = box[2];
                 settings.crop_box[3] = box[3];
             }
+            else
+            {
+                throw std::invalid_argument(
+                    "The array must contain 4 elements." );
+            }
         } );
 
     settings.def_prop_rw(
@@ -168,6 +193,11 @@ void util_bindings( nanobind::module_ &m )
             {
                 settings.chromatic_aberration[0] = value[0];
                 settings.chromatic_aberration[1] = value[1];
+            }
+            else
+            {
+                throw std::invalid_argument(
+                    "The array must contain 2 elements." );
             }
         } );
 

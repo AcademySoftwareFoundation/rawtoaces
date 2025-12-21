@@ -118,9 +118,6 @@ class TestImageConverter:
         assert abs(wb[2] - 1.2651821374893188) < 0.0001
         assert abs(wb[3] - 0) < 0.0001
 
-        print("get_IDT_matrix", converter.get_IDT_matrix())
-        print("get_CAT_matrix", converter.get_CAT_matrix())
-
         idt = converter.get_IDT_matrix()
         cat = converter.get_CAT_matrix()
 
@@ -173,8 +170,8 @@ class TestImageConverter:
         try:
             wb = converter.get_WB_multipliers()
             assert len(wb) == 0
-        except Exception:
-            pytest.fail(Exception)
+        except Exception as e:
+            pytest.fail(f"Unexpected exception: {e}")
 
     def test_converter_get_IDT_matrix(self):
         """Test uninitialised ImageConverter returns empty IDT matrix"""
@@ -183,8 +180,8 @@ class TestImageConverter:
         try:
             idt = converter.get_IDT_matrix()
             assert len(idt) == 0
-        except Exception:
-            pytest.fail(Exception)
+        except Exception as e:
+            pytest.fail(f"Unexpected exception: {e}")
 
     def test_converter_get_CAT_matrix(self):
         """Test uninitialised ImageConverter returns empty CAT matrix"""
@@ -193,8 +190,8 @@ class TestImageConverter:
         try:
             cat = converter.get_CAT_matrix()
             assert len(cat) == 0
-        except Exception:
-            pytest.fail(Exception)
+        except Exception as e:
+            pytest.fail(f"Unexpected exception: {e}")
 
     def test_converter_get_supported_illuminants(self):
         """Test uninitialised ImageConverter returns built-in illuminants"""
@@ -205,8 +202,8 @@ class TestImageConverter:
             assert len(illuminants) == 2
             assert illuminants[0] == 'Day-light (e.g., D60, D6025)'
             assert illuminants[1] == 'Blackbody (e.g., 3200K)'
-        except Exception:
-            pytest.fail(Exception)
+        except Exception as e:
+            pytest.fail(f"Unexpected exception: {e}")
         
     def test_converter_get_supported_cameras(self):
         """Test uninitialised ImageConverter returns empty camera list"""
@@ -215,8 +212,8 @@ class TestImageConverter:
         try:
             cameras = converter.get_supported_cameras()
             assert len(cameras) == 0
-        except Exception:
-            pytest.fail(Exception)
+        except Exception as e:
+            pytest.fail(f"Unexpected exception: {e}")
 
 class TestSettings:
     """Test cases for the ImageConverter.Settings class"""
@@ -360,6 +357,33 @@ class TestSettings:
         assert abs(converter.settings.chromatic_aberration[0] - 1.2) < 0.001
         assert abs(converter.settings.chromatic_aberration[1] - 2.3) < 0.001
         
+    def test_settings_invalid_size(self):
+        """Test that Settings has all attributes"""
+        converter = rawtoaces.ImageConverter()
+        
+        with pytest.raises(ValueError) as err:
+            converter.settings.WB_box = [1, 2, 3]
+            assert str(err.value) == "The array must contain 4 values."
+
+        with pytest.raises(ValueError) as err:
+            converter.settings.custom_WB = [1, 2, 3]
+            assert str(err.value) == "The array must contain 4 values."
+        
+        with pytest.raises(ValueError) as err:
+            converter.settings.crop_box = [1, 2, 3]
+            assert str(err.value) == "The array must contain 4 values."
+                    
+        with pytest.raises(ValueError) as err:
+            converter.settings.chromatic_aberration = [1, 2, 3]
+            assert str(err.value) == "The array must contain 2 values."
+  
+        with pytest.raises(ValueError) as err:
+            converter.settings.custom_matrix = [[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]]
+            assert str(err.value) == "The matrix must contain 3 rows."
+              
+        with pytest.raises(ValueError) as err:
+            converter.settings.custom_matrix = [[1.0, 2.0, 3.0], [1.0, 2.0, 3.0], [1.0, 2.0]]
+            assert str(err.value) == "Each row of the matrix must contain 3 elements."
 
 if __name__ == "__main__":
     pytest.main([__file__])

@@ -15,6 +15,7 @@ It provides both a command-line utility and a C++ library for integration into o
    getting_started
    user_guide
    api/cpp/index
+   api/python/index
    contributing
 
 Features

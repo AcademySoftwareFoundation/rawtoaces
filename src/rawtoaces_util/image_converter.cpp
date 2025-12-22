@@ -2,6 +2,7 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include <rawtoaces/image_converter.h>
+#include <rawtoaces/log.h>
 #include <rawtoaces/rawtoaces_core.h>
 #include <rawtoaces/usage_timer.h>
 
@@ -344,8 +345,8 @@ bool prepare_transform_spectral(
 
         if ( settings.verbosity > 0 )
         {
-            std::cerr << "Found illuminant: '" << solver.illuminant.type << "'."
-                      << std::endl;
+            std::cerr << "[INFO] Found illuminant: '" << solver.illuminant.type
+                      << "'." << std::endl;
         }
     }
     else
@@ -364,7 +365,7 @@ bool prepare_transform_spectral(
 
         if ( settings.verbosity > 0 )
         {
-            std::cerr << "White balance coefficients:" << std::endl;
+            std::cerr << "[INFO] White balance coefficients: ";
             for ( auto &wb_multiplier: WB_multipliers )
             {
                 std::cerr << wb_multiplier << " ";
@@ -384,9 +385,10 @@ bool prepare_transform_spectral(
 
     IDT_matrix = solver.get_IDT_matrix();
 
-    if ( settings.verbosity > 0 )
+    if ( settings.verbosity > 1 )
     {
-        std::cerr << "Input Device Transform (IDT) matrix:" << std::endl;
+        std::cerr << "[DEBUG] Input Device Transform (IDT) matrix:"
+                  << std::endl;
         for ( auto &row: IDT_matrix )
         {
             std::cerr << "  ";
@@ -494,11 +496,12 @@ bool prepare_transform_DNG(
     core::MetadataSolver solver( metadata );
     IDT_matrix = solver.calculate_IDT_matrix();
 
-    if ( settings.verbosity > 0 )
+    if ( settings.verbosity > 1 )
     {
-        std::cerr << "Input transform matrix:" << std::endl;
+        std::cerr << "[DEBUG] Input transform matrix (DNG):" << std::endl;
         for ( auto &IDT_matrix_row: IDT_matrix )
         {
+            std::cerr << "  ";
             for ( auto &IDT_matrix_row_element: IDT_matrix_row )
             {
                 std::cerr << IDT_matrix_row_element << " ";
@@ -884,7 +887,8 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
     arg_parser.arg( "--verbose" )
         .help(
             "(-v) Print progress messages. "
-            "Repeat -v to increase verbosity (e.g. -v -v, -v -v -v)." )
+            "Use -v for basic progress, -v -v for detailed config, "
+            "-v -v -v for trace output including matrices." )
         .action( [&]( OIIO::cspan<const char *> /* argv */ ) {
             settings.verbosity++;
         } );
@@ -1398,7 +1402,7 @@ bool ImageConverter::configure(
             matrix_method = Settings::MatrixMethod::Metadata;
             if ( settings.verbosity > 0 )
             {
-                std::cerr << "Info: Falling back to metadata matrix method "
+                std::cerr << "[INFO] Falling back to metadata matrix method "
                           << "because no spectral data was found for camera "
                           << static_cast<std::string>( camera_identifier )
                           << std::endl;
@@ -1506,7 +1510,7 @@ bool ImageConverter::configure(
 
     if ( settings.verbosity > 1 )
     {
-        std::cerr << "Configuration:" << std::endl;
+        std::cerr << "[DEBUG] Configuration:" << std::endl;
 
         std::cerr << "  WB method: ";
         switch ( settings.WB_method )
@@ -1888,7 +1892,7 @@ bool ImageConverter::process_image( const std::string &input_filename )
     // ___ Configure transform ___
     if ( settings.verbosity > 0 )
     {
-        std::cerr << "Configuring transform for: " << input_filename
+        std::cerr << "[INFO] Configuring transform for: " << input_filename
                   << std::endl;
     }
     usage_timer.reset();
@@ -1904,7 +1908,7 @@ bool ImageConverter::process_image( const std::string &input_filename )
     // ___ Load image ___
     if ( settings.verbosity > 0 )
     {
-        std::cerr << "Loading image: " << input_filename << std::endl;
+        std::cerr << "[INFO] Loading image: " << input_filename << std::endl;
     }
     usage_timer.reset();
     OIIO::ImageBuf buffer;
@@ -1918,7 +1922,7 @@ bool ImageConverter::process_image( const std::string &input_filename )
     // ___ Apply matrix/matrices ___
     if ( settings.verbosity > 0 )
     {
-        std::cerr << "Applying transform matrix" << std::endl;
+        std::cerr << "[INFO] Applying transform matrix" << std::endl;
     }
     usage_timer.reset();
     if ( !apply_matrix( buffer, buffer ) )
@@ -1932,7 +1936,7 @@ bool ImageConverter::process_image( const std::string &input_filename )
     // ___ Apply scale ___
     if ( settings.verbosity > 0 )
     {
-        std::cerr << "Applying scale" << std::endl;
+        std::cerr << "[INFO] Applying scale" << std::endl;
     }
     usage_timer.reset();
     if ( !apply_scale( buffer, buffer ) )
@@ -1946,7 +1950,7 @@ bool ImageConverter::process_image( const std::string &input_filename )
     // ___ Apply crop ___
     if ( settings.verbosity > 0 )
     {
-        std::cerr << "Applying crop" << std::endl;
+        std::cerr << "[INFO] Applying crop" << std::endl;
     }
     usage_timer.reset();
     if ( !apply_crop( buffer, buffer ) )
@@ -1960,7 +1964,7 @@ bool ImageConverter::process_image( const std::string &input_filename )
     // ___ Save image ___
     if ( settings.verbosity > 0 )
     {
-        std::cerr << "Saving output: " << output_filename << std::endl;
+        std::cerr << "[INFO] Saving output: " << output_filename << std::endl;
     }
     usage_timer.reset();
     if ( !save_image( output_filename, buffer ) )

@@ -2,6 +2,7 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include <rawtoaces/image_converter.h>
+#include <rawtoaces/log.h>
 
 #include <set>
 
@@ -25,6 +26,9 @@ int main( int argc, const char *argv[] )
     {
         return 1;
     }
+
+    // Sync logger verbosity with converter settings
+    RTA_LOG.set_verbosity( converter.settings.verbosity );
 
     auto files = arg_parser["filename"].as_vec<std::string>();
     if ( files.empty() || ( files.size() == 1 && files[0] == "" ) )
@@ -52,14 +56,20 @@ int main( int argc, const char *argv[] )
         for ( auto const &input_filename: batch )
         {
             ++file_index;
-            std::cout << "[" << file_index << "/" << total_files
-                      << "] Processing file: " << input_filename << std::endl;
+
+            // Progress output respects verbosity - shown at info level (1+)
+            if ( converter.settings.verbosity > 0 )
+            {
+                std::cout << "[" << file_index << "/" << total_files
+                          << "] Processing file: " << input_filename
+                          << std::endl;
+            }
 
             empty  = false;
             result = converter.process_image( input_filename );
             if ( !result )
             {
-                std::cerr << "Failed on file [" << file_index << "/"
+                std::cerr << "[ERROR] Failed on file [" << file_index << "/"
                           << total_files << "]: " << input_filename
                           << std::endl;
                 break;

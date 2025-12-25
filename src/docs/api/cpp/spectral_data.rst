@@ -28,10 +28,6 @@ Spectrum
    :members:
    :undoc-members:
 
-.. doxygenstruct:: rta::core::Spectrum::Shape
-   :members:
-   :undoc-members:
-
 SpectralData
 ------------
 

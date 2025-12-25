@@ -25,10 +25,10 @@ collect_image_files( const std::vector<std::string> &paths );
 class ImageConverter
 {
 public:
+    /// The structure containing all parameters needed to configure image conversion.
     struct Settings
     {
-        /// The  white balancing method to use for conversion can be specified
-        ///
+        /// The enumerator containing all supported white-balancing methods.
         enum class WBMethod
         {
             /// Use the metadata provided in the image file. This mode is mostly
@@ -48,8 +48,12 @@ public:
             /// the white balancing coefficients are calculated by an external
             /// tool.
             Custom
-        } WB_method = WBMethod::Metadata;
+        };
 
+        /// The selected white-balancing method to use for conversion.
+        WBMethod WB_method = WBMethod::Metadata;
+
+        /// The enumerator containing all supported colour transform matrix calculation methods.
         enum class MatrixMethod
         {
             /// Automatically choose the best available matrix method.
@@ -72,9 +76,12 @@ public:
             /// Specify a custom matrix in `colourMatrix`. This mode is useful if
             /// the matrix is calculated by an external tool.
             Custom
-        } matrix_method = MatrixMethod::Auto;
+        };
 
-        /// Cropping mode.
+        /// The selected colour transform matrix calculation method to use for conversion.
+        MatrixMethod matrix_method = MatrixMethod::Auto;
+
+        /// The enumerator containing all supported cropping modes.
         enum class CropMode
         {
             /// Write out full sensor area.
@@ -83,7 +90,10 @@ public:
             Soft,
             /// Write out only the crop area.
             Hard
-        } crop_mode = CropMode::Hard;
+        };
+
+        /// The selected cropping mode to use for conversion.
+        CropMode crop_mode = CropMode::Hard;
 
         /// An illuminant to use for white balancing and/or colour matrix
         /// calculation. Only used when `WB_method` ==
@@ -94,39 +104,106 @@ public:
         /// folder.
         std::string illuminant;
 
-        float headroom            = 6.0;
-        int   WB_box[4]           = { 0 };
-        float custom_WB[4]        = { 1.0, 1.0, 1.0, 1.0 };
+        /// Highlight headroom factor.
+        float headroom = 6.0;
+
+        /// Box to use for white balancing when `WB_method` == `WBMethod::Box`.
+        /// (default = (0,0,0,0) - full image)
+        int WB_box[4] = { 0, 0, 0, 0 };
+
+        /// Custom white balance multipliers to be used when
+        /// `WB_method` == `WBMethod::Custom`.
+        float custom_WB[4] = { 1.0, 1.0, 1.0, 1.0 };
+
+        /// Custom camera RGB to XYZ matrix to be used when
+        /// `matrix_method` == `MatrixMethod::Custom`.
         float custom_matrix[3][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
 
+        /// Camera manufacturer name to be used for spectral sensitivity
+        /// curves lookup.
         std::string custom_camera_make;
+
+        /// Camera model name to be used for spectral sensitivity
+        /// curves lookup.
         std::string custom_camera_model;
 
+        ///////////////////////////
         // Libraw-specific options:
-        bool        auto_bright              = false;
-        float       adjust_maximum_threshold = 0.75;
-        int         black_level              = -1;
-        int         saturation_level         = -1;
-        bool        half_size                = false;
-        int         highlight_mode           = 0;
-        int         flip                     = 0;
-        int         crop_box[4]              = { 0, 0, 0, 0 };
-        float       chromatic_aberration[2]  = { 1.0f, 1.0f };
-        float       denoise_threshold        = 0;
-        float       scale                    = 1.0f;
-        std::string demosaic_algorithm       = "AHD";
 
+        /// Enable automatic exposure adjustment.
+        bool auto_bright = false;
+
+        /// Automatically lower the linearity threshold provided in the
+        /// metadata by this scaling factor.
+        float adjust_maximum_threshold = 0.75;
+
+        /// If >= 0, override the black level specified in the file metadata.
+        int black_level = -1;
+
+        /// If >= 0, override the saturation level specified in the file
+        ///  metadata.
+        int saturation_level = -1;
+
+        /// Decode the image at half size resolution.
+        bool half_size = false;
+
+        /// Highlight recovery mode, as supported by OpenImageIO/Libraw
+        /// 0 = clip, 1 = unclip, 2 = blend, 3..9 = rebuild.
+        int highlight_mode = 0;
+
+        /// If not 0, override the orientation specified in the metadata.
+        /// 1..8 correspond to EXIF orientation codes
+        /// (3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.)
+        int flip = 0;
+
+        /// Apply custom crop. If not specified (all values are zeroes),
+        /// the default crop is applied, which should match the crop of the
+        /// in-camera JPEG.
+        int crop_box[4] = { 0, 0, 0, 0 };
+
+        /// Red and blue scale factors for chromatic aberration correction.
+        float chromatic_aberration[2] = { 1.0f, 1.0f };
+
+        /// Wavelet denoising threshold.
+        float denoise_threshold = 0;
+
+        /// Additional scaling factor to apply to the pixel values.
+        float scale = 1.0f;
+
+        /// Demosaicing algorithm. Supported options: 'linear', 'VNG', 'PPG',
+        /// 'AHD', 'DCB', 'AHD-Mod', 'AFD', 'VCD', 'Mixed', 'LMMSE', 'AMaZE',
+        /// 'DHT', 'AAHD', 'AHD'.
+        std::string demosaic_algorithm = "AHD";
+
+        /////////////////
         // Global config:
+
+        /// Directory containing rawtoaces spectral sensitivity and illuminant
+        /// data files. Overrides the default search path and the
+        /// RAWTOACES_DATA_PATH environment variable.
         std::vector<std::string> database_directories;
-        bool                     overwrite   = false;
-        bool                     create_dirs = false;
-        std::string              output_dir;
 
+        /// Allows overwriting existing files.
+        bool overwrite = false;
+
+        /// Create output directories if they don't exist.
+        bool create_dirs = false;
+
+        /// The directory to write the output files to.
+        std::string output_dir;
+
+        //////////////
         // Diagnostic:
-        bool use_timing = false;
-        int  verbosity  = 0;
 
-    } settings;
+        /// Log the execution time of each step of image processing.
+        bool use_timing = false;
+
+        /// Verbosity level.
+        int verbosity = 0;
+    };
+
+    /// The conversion settings.
+    Settings settings;
 
     /// Initialise the parser object with all the command line parameters
     /// used by this tool. The method also sets the help and usage strings.

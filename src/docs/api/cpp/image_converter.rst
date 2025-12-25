@@ -51,22 +51,6 @@ ImageConverter Class
    :protected-members:
    :undoc-members:
 
-Settings Structure
-^^^^^^^^^^^^^^^^^^
-
-.. doxygenstruct:: rta::util::ImageConverter::Settings
-   :members:
-   :undoc-members:
-
-Enumerations
-^^^^^^^^^^^^
-
-.. doxygenenum:: rta::util::ImageConverter::Settings::WBMethod
-
-.. doxygenenum:: rta::util::ImageConverter::Settings::MatrixMethod
-
-.. doxygenenum:: rta::util::ImageConverter::Settings::CropMode
-
 Utility Functions
 -----------------
 

@@ -8,9 +8,9 @@ permissions:
 on:
   schedule:
     # Run nightly
-    - cron: "0 8 * * *"
+#    - cron: "0 8 * * *"
     # Run weekly
-    # - cron: "0 0 * * 0"
+     - cron: "0 0 * * 0"
   push:
     # Run on pushes only to main or if the branch name contains "analysis"
     branches:
@@ -52,6 +52,11 @@ jobs:
         shell: bash
         run: |
           build_scripts/install_deps_linux.bash
+          
+      - name: Install cppcheck
+        shell: bash
+        run: |
+          sudo apt-get -q -f install -y cppcheck
       
       - name: Configure CMake
         run: >

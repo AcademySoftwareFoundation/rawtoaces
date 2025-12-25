@@ -12,18 +12,24 @@ namespace core
 
 // clang-format off
 
+// NOLINTBEGIN
+/// Deprecated, not currently used and will be removed in v3.0.
 static const std::vector<std::vector<double>> XYZ_to_ACES = {
     {  1.0498110175, 0.0000000000, -0.0000974845 },
     { -0.4959030231, 1.3733130458,  0.0982400361 },
     {  0.0000000000, 0.0000000000,  0.9912520182 }
 };
+// NOLINTEND
 
+// NOLINTBEGIN
 /// Colour adaptation from D65 to the ACES white point
+/// Deprecated, not currently used and will be removed in v3.0.
 static const std::vector<std::vector<double> > CAT_D65_to_ACES = {
     {  1.0097583639200136,      0.0050178093846550455, -0.015058389092388141  },
     {  0.0036602813378778347,   1.0030138169214682,    -0.0059802329456399824 },
     { -0.00029980928869024906, -0.0010516909063249997,  0.92820279627476576   }
 };
+// NOLINTEND
 
 // clang-format on
 

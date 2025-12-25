@@ -520,7 +520,16 @@ void prepare_transform_nonDNG(
     // Do not apply IDT for non-DNG
     IDT_matrix.resize( 0 );
 
-    CAT_matrix = rta::core::CAT_D65_to_ACES;
+    // clang-format off
+    // Colour adaptation from D65 to the ACES white point
+    static const std::vector<std::vector<double> > CAT_D65_to_ACES = {
+        {  1.0097583639200136,      0.0050178093846550455, -0.015058389092388141  },
+        {  0.0036602813378778347,   1.0030138169214682,    -0.0059802329456399824 },
+        { -0.00029980928869024906, -0.0010516909063249997,  0.92820279627476576   }
+    };
+    // clang-format on
+
+    CAT_matrix = CAT_D65_to_ACES;
 }
 
 const char *HelpString =
@@ -1676,7 +1685,15 @@ bool ImageConverter::apply_matrix(
         if ( !success )
             return false;
 
-        success = rta::util::apply_matrix( core::XYZ_to_ACES, dst, dst, roi );
+        // clang-format off
+        static const std::vector<std::vector<double>> XYZ_to_ACES = {
+            {  1.0498110175, 0.0000000000, -0.0000974845 },
+            { -0.4959030231, 1.3733130458,  0.0982400361 },
+            {  0.0000000000, 0.0000000000,  0.9912520182 }
+        };
+        // clang-format on
+
+        success = rta::util::apply_matrix( XYZ_to_ACES, dst, dst, roi );
         if ( !success )
             return false;
     }

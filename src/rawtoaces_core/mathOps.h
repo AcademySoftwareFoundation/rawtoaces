@@ -419,6 +419,21 @@ std::vector<std::vector<T>> calculate_CAT(
     assert( src_white_XYZ.size() == 3 );
     assert( dst_white_XYZ.size() == 3 );
 
+    // clang-format off
+    // Color Adaptation Matrices - CAT02 (default)
+    static const std::vector<std::vector<double>> CAT02 = {
+        {  0.7328, 0.4296, -0.1624 },
+        { -0.7036, 1.6975,  0.0061 },
+        {  0.0030, 0.0136,  0.9834 }
+    };
+    
+    static const std::vector<std::vector<double>> CAT02_inv = {
+        {  1.0961238208355142,    -0.27886900021828726,   0.18274517938277304 },
+        {  0.45436904197535921,    0.47353315430741177,   0.072097803717229125 },
+        { -0.0096276087384293551, -0.0056980312161134198, 1.0153256399545427 }
+    };
+    // clang-format on
+
     std::vector<double> src_white_LMS = mulVector( src_white_XYZ, CAT02 );
     std::vector<double> dst_white_LMS = mulVector( dst_white_XYZ, CAT02 );
 

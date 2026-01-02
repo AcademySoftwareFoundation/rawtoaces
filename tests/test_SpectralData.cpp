@@ -7,11 +7,12 @@
 #endif
 
 #include <filesystem>
-#include <OpenImageIO/unittest.h>
+
+#include "test_utils.h"
 
 #include "../src/rawtoaces_core/mathOps.h"
 #include <rawtoaces/rawtoaces_core.h>
-#include "test_utils.h"
+#include <OpenImageIO/unittest.h>
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 

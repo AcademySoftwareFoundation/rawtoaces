@@ -901,6 +901,35 @@ std::string run_rawtoaces_with_data_dir(
     return output_view;
 }
 
+/// This test verifies that when --list-formats is provided, the method
+/// outputs the list of supported RAW input formats and then exits
+void test_parse_parameters_list_formats()
+{
+    std::cout << std::endl
+              << "test_parse_parameters_list_formats()" << std::endl;
+
+    std::vector<std::string> args   = { "--list-formats" };
+    std::string              output = run_rawtoaces_command( args );
+
+    std::vector<std::string> lines;
+    OIIO::Strutil::split( output, lines, "\n" );
+
+    // Check for a few well-known RAW formats
+    bool found_cr2 = false;
+    bool found_dng = false;
+
+    for ( const auto &line: lines )
+    {
+        if ( line == ".cr2" )
+            found_cr2 = true;
+        if ( line == ".dng" )
+            found_dng = true;
+    }
+
+    OIIO_CHECK_EQUAL( found_cr2, true );
+    OIIO_CHECK_EQUAL( found_dng, true );
+}
+
 /// This test verifies that when --list-cameras is provided, the method
 /// calls get_supported_cameras() and outputs the camera list, then exits
 void test_parse_parameters_list_cameras( bool use_dir_path_arg = false )
@@ -2507,6 +2536,7 @@ int main( int, char ** )
         test_fix_metadata_unsupported_type();
 
         // Tests for parse_parameters
+        test_parse_parameters_list_formats();
         test_parse_parameters_list_cameras();
         test_parse_parameters_list_cameras( true );
         test_parse_parameters_list_illuminants();

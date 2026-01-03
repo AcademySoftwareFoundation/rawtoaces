@@ -30,6 +30,9 @@ void util_bindings( nanobind::module_ &m )
             return converter.configure( input_filename, options );
         } );
     image_converter.def(
+        "get_supported_formats",
+        &ImageConverter::get_supported_formats );
+    image_converter.def(
         "get_supported_illuminants",
         &ImageConverter::get_supported_illuminants );
     image_converter.def(

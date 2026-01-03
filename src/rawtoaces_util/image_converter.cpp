@@ -39,11 +39,64 @@ struct CameraIdentifier
 };
 
 /**
+ * Returns the set of file extensions supported for RAW image processing.
+ *
+ * The extensions are discovered from OpenImageIO at runtime, filtered to the
+ * "raw" format group, normalized to lowercase, and prefixed with a dot.
+ * The result is initialized once and reused.
+ *
+ * This function is the single source of truth for RAW format support and is
+ * used both for input file filtering and for the "--list-formats" option.
+ *
+ * @return A constant reference to the set of supported RAW file extensions.
+ */
+const std::set<std::string> &supported_raw_extensions()
+{
+    static const std::set<std::string> extensions =
+        [] { // build the extensions set once
+            std::set<std::string> result;
+
+            std::string extensionlist;
+            if ( !OIIO::getattribute( "extension_list", extensionlist ) )
+                return result;
+
+            // OIIO Formats: "raw:cr2,nef,...;jpeg:jpg,..."
+            std::vector<std::string> groups;
+            OIIO::Strutil::split( extensionlist, groups, ";" );
+
+            for ( const auto &group: groups )
+            {
+                auto colon = group.find( ':' );
+                if ( colon == std::string::npos )
+                    continue;
+
+                std::string format = group.substr( 0, colon );
+                if ( format !=
+                     "raw" ) // limit to OIIO's "raw" format plugin for now
+                    continue;
+
+                std::string              extlist = group.substr( colon + 1 );
+                std::vector<std::string> extvec;
+                OIIO::Strutil::split( extlist, extvec, "," );
+
+                for ( const auto &e: extvec )
+                {
+                    result.insert( "." + OIIO::Strutil::lower( e ) );
+                }
+            }
+
+            return result;
+        }();
+
+    return extensions;
+}
+
+/**
  * Checks if a file path is valid for processing and adds it to a batch list if appropriate.
  *
  * This function validates that the given path points to a regular file or symbolic link,
- * filters out unwanted files (system files like .DS_Store and certain image formats like EXR and JPG),
- * and adds valid file paths to the provided batch vector for further processing.
+ * filters out unwanted files (system files like .DS_Store), and adds valid file paths to
+ * the provided batch vector for further processing.
  *
  * @param path The filesystem path to check
  * @param batch Reference to a vector of strings to add valid file paths to
@@ -61,18 +114,17 @@ void check_and_add_file(
 
     static const std::set<std::string> ignore_filenames = { ".DS_Store" };
     std::string                        filename = path.filename().string();
-    if ( ignore_filenames.count( filename ) > 0 )
+    if ( ignore_filenames.count( filename ) )
         return;
 
-    static const std::set<std::string> ignore_extensions = { ".exr",
-                                                             ".jpg",
-                                                             ".jpeg" };
     std::string extension = OIIO::Strutil::lower( path.extension().string() );
-    if ( ignore_extensions.count( extension ) > 0 )
+
+    // skip files that are not supported RAW formats
+    const auto &raw_extensions = supported_raw_extensions();
+    if ( raw_extensions.empty() || !raw_extensions.count( extension ) )
         return;
 
     batch.push_back( path.string() );
-    return;
 }
 
 std::vector<std::vector<std::string>>
@@ -878,6 +930,10 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
 
     arg_parser.separator( "Benchmarking and debugging:" );
 
+    arg_parser.arg( "--list-formats" )
+        .help( "Shows the list of formats supported for RAW processing." )
+        .action( OIIO::ArgParse::store_true() );
+
     arg_parser.arg( "--list-cameras" )
         .help( "Shows the list of cameras supported in spectral mode." )
         .action( OIIO::ArgParse::store_true() );
@@ -912,6 +968,17 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     else
     {
         settings.database_directories = database_paths();
+    }
+
+    if ( arg_parser["list-formats"].get<int>() )
+    {
+        auto formats = get_supported_formats();
+        std::cout
+            << std::endl
+            << "RAW processing is available for the following input formats:"
+            << std::endl
+            << OIIO::Strutil::join( formats, "\n" ) << std::endl;
+        exit( 0 );
     }
 
     if ( arg_parser["list-cameras"].get<int>() )
@@ -1173,6 +1240,12 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     }
 
     return true;
+}
+
+std::vector<std::string> ImageConverter::get_supported_formats() const
+{
+    const auto &result = supported_raw_extensions();
+    return std::vector<std::string>( result.begin(), result.end() );
 }
 
 std::vector<std::string> ImageConverter::get_supported_illuminants() const

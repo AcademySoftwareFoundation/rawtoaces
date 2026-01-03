@@ -212,6 +212,7 @@ A help message with a description of all command line options can be obtained by
         --denoise-threshold VAL         Wavelet denoising threshold (default: 0)
         --demosaic STR                  Demosaicing algorithm. Supported options: 'linear', 'VNG', 'PPG', 'AHD', 'DCB', 'AHD-Mod', 'AFD', 'VCD', 'Mixed', 'LMMSE', 'AMaZE', 'DHT', 'AAHD', 'AHD'. (default: AHD)
     Benchmarking and debugging:
+        --list-formats                  Shows the list of formats supported for RAW processing.
         --list-cameras                  Shows the list of cameras supported in spectral mode.
         --list-illuminants              Shows the list of illuminants supported in spectral mode.
         --use-timing                    Log the execution time of each step of image processing.

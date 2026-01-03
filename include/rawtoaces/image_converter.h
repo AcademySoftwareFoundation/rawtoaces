@@ -223,6 +223,9 @@ public:
     /// @result `true` if parsed successfully
     bool parse_parameters( const OIIO::ArgParse &arg_parser );
 
+    /// Collects all camera raw formats supported by this version.
+    std::vector<std::string> get_supported_formats() const;
+
     /// Collects all illuminants supported by this version.
     std::vector<std::string> get_supported_illuminants() const;
 

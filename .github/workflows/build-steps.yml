@@ -75,7 +75,7 @@ jobs:
         with:
           path: C:/vcpkg/binary-cache
           key: |
-            vcpkg-binary-cache-${{ runner.os }}-${{ hashFiles('build_scripts/vcpkg.json') }}-${{ hashFiles('build_scripts/vcpkg.json.lock') }}
+            vcpkg-binary-cache-${{ runner.os }}-${{ hashFiles('build_scripts/vcpkg.json') }}
           restore-keys: |
             vcpkg-binary-cache-${{ runner.os }}-
             

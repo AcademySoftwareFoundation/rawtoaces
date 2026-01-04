@@ -417,7 +417,9 @@ ImageSpecBuilder &
 ImageSpecBuilder::raw_pre_mul( const float *values, size_t count )
 {
     spec_.attribute(
-        "raw:pre_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, count ), values );
+        "raw:pre_mul",
+        OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, static_cast<int>( count ) ),
+        values );
     return *this;
 }
 

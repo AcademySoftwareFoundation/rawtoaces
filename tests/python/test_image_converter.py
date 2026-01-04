@@ -193,6 +193,18 @@ class TestImageConverter:
         except Exception as e:
             pytest.fail(f"Unexpected exception: {e}")
 
+    def test_converter_get_supported_formats(self):
+        """Test ImageConverter returns a list of supported RAW input formats"""
+        import os
+        converter = rawtoaces.ImageConverter()
+        try:
+            formats = converter.get_supported_formats()
+            assert len(formats) > 0
+            assert ".cr2" in formats
+            assert ".dng" in formats
+        except Exception as e:
+            pytest.fail(f"Unexpected exception: {e}")
+
     def test_converter_get_supported_illuminants(self):
         """Test uninitialised ImageConverter returns built-in illuminants"""
         import os

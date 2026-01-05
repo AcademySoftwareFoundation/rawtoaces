@@ -104,7 +104,6 @@ jobs:
           -D RTA_CENTOS7_CERES_HACK=${{ inputs.ceres_hack }}
           -D CMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
           -D CMAKE_CXX_STANDARD=17
-          -D CMAKE_BUILD_TYPE=${{ inputs.build_type }}
           -D CMAKE_TOOLCHAIN_FILE="${{ inputs.toolchain_file }}"
           -D CMAKE_BUILD_TYPE="${{ inputs.build_type }}"
           -D ENABLE_SHARED="${{ inputs.build_shared_libs }}"

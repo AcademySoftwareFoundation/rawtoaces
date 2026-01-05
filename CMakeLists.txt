@@ -128,6 +128,8 @@ if ( NOT "${RTA_SANITISER_MODE}" STREQUAL "none" )
     elseif ( "${RTA_SANITISER_MODE}" STREQUAL "thread" )
         set ( RTA_SANITISER_COMPILE_OPTIONS "-fsanitize=thread" "-g" "-O1" )
         set ( RTA_SANITISER_LINK_OPTIONS "-fsanitize=thread" "-g" )
+    else ()
+        message ( FATAL_ERROR "Invalid RTA_SANITISER_MODE: ${RTA_SANITISER_MODE}" )
     endif ()
     
     target_compile_options( ${RAWTOACES_CORE_LIB} PUBLIC

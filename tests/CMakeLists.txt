@@ -70,6 +70,7 @@ add_test ( NAME Test_SpectralData COMMAND Test_SpectralData )
 add_executable (
 	Test_IDT
 	testIDT.cpp
+	test_utils.cpp
 )
 
 target_link_libraries(

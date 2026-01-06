@@ -90,17 +90,11 @@ parse_raw_extensions( const std::string &extensionlist )
  *
  * @return A constant reference to the set of supported RAW file extensions.
  */
-const std::set<std::string> &supported_raw_extensions()
+const std::set<std::string> supported_raw_extensions()
 {
-    static const std::set<std::string> extensions = [] {
-        std::string extensionlist;
-        if ( !OIIO::getattribute( "extension_list", extensionlist ) )
-            return std::set<std::string>{};
-
-        return parse_raw_extensions( extensionlist );
-    }();
-
-    return extensions;
+    std::string extensionlist;
+    OIIO::getattribute( "extension_list", extensionlist );
+    return parse_raw_extensions( extensionlist );
 }
 
 /**

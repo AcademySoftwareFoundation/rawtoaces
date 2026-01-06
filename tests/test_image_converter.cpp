@@ -699,6 +699,7 @@ void test_parse_parameters_list_formats()
     // Check for a few well-known RAW formats
     bool found_cr2 = false;
     bool found_dng = false;
+    bool found_png = false;
 
     for ( const auto &line: lines )
     {
@@ -706,10 +707,13 @@ void test_parse_parameters_list_formats()
             found_cr2 = true;
         if ( line == ".dng" )
             found_dng = true;
+        if ( line == ".png" )
+            found_png = true;
     }
 
     OIIO_CHECK_EQUAL( found_cr2, true );
     OIIO_CHECK_EQUAL( found_dng, true );
+    OIIO_CHECK_EQUAL( found_png, false );
 }
 
 /// This test verifies that when --list-cameras is provided, the method

@@ -665,10 +665,10 @@ bool curveFit(
     ceres::Solver::Summary summary;
     ceres::Solve( options, &problem, &summary );
 
-    if ( verbosity > 1 )
-        std::cout << summary.BriefReport() << std::endl;
-    else if ( verbosity >= 2 )
+    if ( verbosity >= 2 )
         std::cout << summary.FullReport() << std::endl;
+    else if ( verbosity == 1 )
+        std::cout << summary.BriefReport() << std::endl;
 
     if ( summary.num_successful_steps )
     {
@@ -697,8 +697,6 @@ bool curveFit(
 
         return true;
     }
-
-    delete cost_function;
 
     return false;
 }

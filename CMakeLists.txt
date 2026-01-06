@@ -75,6 +75,7 @@ option( ENABLE_SHARED "Enable Shared Libraries" ON )
 option( RTA_CENTOS7_CERES_HACK "Work around broken config in ceres-solver 1.12" OFF )
 option( RTA_BUILD_PYTHON_BINDINGS "Build python bindings" ON )
 option( ENABLE_COVERAGE "Enable code coverage reporting" OFF )
+set ( RTA_SANITISER_MODE "none" CACHE STRING "Dynamic analysis sanitiser mode ('none', 'address', 'memory', or 'thread')" )
 
 if ( ENABLE_SHARED )
   set ( DO_SHARED SHARED )
@@ -110,6 +111,34 @@ option( BUILD_DOCS "Build documentation" OFF )
 if( BUILD_DOCS )
     add_subdirectory(src/docs)
 endif()
+
+
+#################################################
+##
+##   Dynamic analysis 
+
+if ( NOT "${RTA_SANITISER_MODE}" STREQUAL "none" )
+
+    if ( "${RTA_SANITISER_MODE}" STREQUAL "address" )
+        set ( RTA_SANITISER_COMPILE_OPTIONS "-fsanitize=address" "-fno-omit-frame-pointer" "-g" "-O1" )
+        set ( RTA_SANITISER_LINK_OPTIONS "-fsanitize=address" "-g" )
+    elseif ( "${RTA_SANITISER_MODE}" STREQUAL "memory" )
+        set ( RTA_SANITISER_COMPILE_OPTIONS "-fsanitize=memory" "-fno-omit-frame-pointer" "-g" "-O2" "-fsanitize-memory-track-origins" )
+        set ( RTA_SANITISER_LINK_OPTIONS "-fsanitize=memory" "-g" "-fsanitize-memory-track-origins" )
+    elseif ( "${RTA_SANITISER_MODE}" STREQUAL "thread" )
+        set ( RTA_SANITISER_COMPILE_OPTIONS "-fsanitize=thread" "-g" "-O1" )
+        set ( RTA_SANITISER_LINK_OPTIONS "-fsanitize=thread" "-g" )
+    else ()
+        message ( FATAL_ERROR "Invalid RTA_SANITISER_MODE: ${RTA_SANITISER_MODE}" )
+    endif ()
+    
+    target_compile_options( ${RAWTOACES_CORE_LIB} PUBLIC
+        $<$<CONFIG:Debug>: ${RTA_SANITISER_COMPILE_OPTIONS}>
+    )
+    target_link_options( ${RAWTOACES_CORE_LIB} PUBLIC
+        $<$<CONFIG:Debug>: ${RTA_SANITISER_LINK_OPTIONS}>
+    )
+endif () 
 
 #################################################
 ##

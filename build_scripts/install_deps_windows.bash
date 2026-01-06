@@ -6,10 +6,8 @@ set -ex
 # This allows vcpkg to automatically reuse pre-built packages from cache
 export VCPKG_BINARY_SOURCES="clear;files,C:/vcpkg/binary-cache,readwrite"
 
-# Add/update baseline in vcpkg.json
-vcpkg x-update-baseline \
-    --add-initial-baseline \
-    --x-manifest-root="./build_scripts"
+# Baseline is pinned in vcpkg.json. The latest hash can be found with:
+#   git ls-remote https://github.com/microsoft/vcpkg HEAD | cut -f1
 
 # Install dependencies - vcpkg will automatically use binary cache if available
 vcpkg install \

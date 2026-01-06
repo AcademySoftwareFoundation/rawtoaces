@@ -649,6 +649,41 @@ void test_collect_image_files_mixed_valid_invalid_paths()
     OIIO_CHECK_EQUAL( batches[1].size(), 1 );
 }
 
+/// Tests supported_raw_extensions() under normal OIIO runtime conditions
+void test_supported_raw_extensions()
+{
+    std::cout << std::endl << "test_supported_raw_extensions()" << std::endl;
+
+    const auto &exts = rta::util::supported_raw_extensions();
+    OIIO_CHECK_EQUAL( exts.empty(), false );
+}
+
+/// Tests parsing of RAW extensions from a mixed OIIO extension list
+void test_parse_raw_extensions()
+{
+    std::cout << std::endl << "test_parse_raw_extensions()" << std::endl;
+
+    // Mixed valid and invalid entries
+    const std::string extensionlist =
+        "raw:cr2,NEF,dng;"
+        "jpeg:jpg,jpeg;"
+        "invalidentry;"
+        "raw:RAF";
+
+    const std::set<std::string> exts =
+        rta::util::parse_raw_extensions( extensionlist );
+
+    // Should include only RAW extensions, normalized
+    OIIO_CHECK_EQUAL( exts.count( ".cr2" ), 1 );
+    OIIO_CHECK_EQUAL( exts.count( ".nef" ), 1 );
+    OIIO_CHECK_EQUAL( exts.count( ".dng" ), 1 );
+    OIIO_CHECK_EQUAL( exts.count( ".raf" ), 1 );
+
+    // Should exclude non-RAW formats
+    OIIO_CHECK_EQUAL( exts.count( ".jpg" ), 0 );
+    OIIO_CHECK_EQUAL( exts.count( ".jpeg" ), 0 );
+}
+
 /// Tests database_paths with no environment variables set (uses default paths)
 void test_database_paths_default()
 {
@@ -1355,8 +1390,9 @@ void test_invalid_daylight_cct_exits()
 
         // Assert on the expected error message
         OIIO_CHECK_ASSERT(
-            output.find( "The range of Correlated Color Temperature for "
-                         "Day Light should be from 4000 to 25000" ) !=
+            output.find(
+                "The range of Correlated Color Temperature for "
+                "Day Light should be from 4000 to 25000" ) !=
             std::string::npos );
     }
 }
@@ -1405,8 +1441,9 @@ void test_invalid_blackbody_cct_exits()
 
         // Assert on the expected error message
         OIIO_CHECK_ASSERT(
-            output.find( "The range of Color Temperature for BlackBody "
-                         "should be from 1500 to 3999" ) != std::string::npos );
+            output.find(
+                "The range of Color Temperature for BlackBody "
+                "should be from 1500 to 3999" ) != std::string::npos );
     }
 }
 
@@ -1697,8 +1734,9 @@ void test_all_illuminants_skips_invalid_files()
 
     // Check that the verbosity message was printed
     OIIO_CHECK_ASSERT(
-        output.find( "The illuminant calculated to be the best match to the "
-                     "camera metadata is '" ) != std::string::npos &&
+        output.find(
+            "The illuminant calculated to be the best match to the "
+            "camera metadata is '" ) != std::string::npos &&
         output.find( "'." ) != std::string::npos );
 }
 
@@ -1722,9 +1760,9 @@ void test_find_illuminant_camera_no_main_key()
     // Should fail because camera is not initialized (no "main" key)
     OIIO_CHECK_ASSERT( !success );
     OIIO_CHECK_ASSERT(
-        output.find( "ERROR: camera needs to be initialised prior to calling "
-                     "SpectralSolver::find_illuminant()" ) !=
-        std::string::npos );
+        output.find(
+            "ERROR: camera needs to be initialised prior to calling "
+            "SpectralSolver::find_illuminant()" ) != std::string::npos );
 }
 
 /// Tests that find_illuminant fails when camera data has "main" but with wrong size
@@ -1757,9 +1795,9 @@ void test_find_illuminant_camera_wrong_size()
     // Should fail because camera has wrong size (4 channels instead of 3)
     OIIO_CHECK_ASSERT( !success );
     OIIO_CHECK_ASSERT(
-        output.find( "ERROR: camera needs to be initialised prior to calling "
-                     "SpectralSolver::find_illuminant()" ) !=
-        std::string::npos );
+        output.find(
+            "ERROR: camera needs to be initialised prior to calling "
+            "SpectralSolver::find_illuminant()" ) != std::string::npos );
 }
 
 /// Tests that external illuminant files with non-matching types are skipped
@@ -2517,6 +2555,10 @@ int main( int, char ** )
         test_collect_image_files_directory_with_only_filtered_files();
         test_collect_image_files_multiple_paths();
         test_collect_image_files_mixed_valid_invalid_paths();
+
+        // Tests for raw extensions
+        test_supported_raw_extensions();
+        test_parse_raw_extensions();
 
         // Tests for database_paths
         test_database_paths_default();

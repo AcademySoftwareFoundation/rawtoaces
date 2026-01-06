@@ -39,6 +39,46 @@ struct CameraIdentifier
 };
 
 /**
+ * Parse RAW file extensions from an OpenImageIO extension list string.
+ *
+ * This function contains the string-parsing logic for OIIO's global
+ * "extension_list" attribute. It defensively ignores malformed entries
+ * and non-RAW formats, returning only lowercase extensions prefixed
+ * with a dot.
+ *
+ * It is intentionally split out to allow direct unit testing of the
+ * parsing behavior without depending on OIIO runtime state.
+ */
+const std::set<std::string>
+parse_raw_extensions( const std::string &extensionlist )
+{
+    std::set<std::string> result;
+
+    std::vector<std::string> groups;
+    OIIO::Strutil::split( extensionlist, groups, ";" );
+
+    for ( const auto &group: groups )
+    {
+        auto colon = group.find( ':' );
+        if ( colon == std::string::npos )
+            continue;
+
+        std::string format = group.substr( 0, colon );
+        if ( format != "raw" )
+            continue;
+
+        std::string              extlist = group.substr( colon + 1 );
+        std::vector<std::string> extvec;
+        OIIO::Strutil::split( extlist, extvec, "," );
+
+        for ( const auto &e: extvec )
+            result.insert( "." + OIIO::Strutil::lower( e ) );
+    }
+
+    return result;
+}
+
+/**
  * Returns the set of file extensions supported for RAW image processing.
  *
  * The extensions are discovered from OpenImageIO at runtime, filtered to the
@@ -52,41 +92,13 @@ struct CameraIdentifier
  */
 const std::set<std::string> &supported_raw_extensions()
 {
-    static const std::set<std::string> extensions =
-        [] { // build the extensions set once
-            std::set<std::string> result;
+    static const std::set<std::string> extensions = [] {
+        std::string extensionlist;
+        if ( !OIIO::getattribute( "extension_list", extensionlist ) )
+            return std::set<std::string>{};
 
-            std::string extensionlist;
-            if ( !OIIO::getattribute( "extension_list", extensionlist ) )
-                return result;
-
-            // OIIO Formats: "raw:cr2,nef,...;jpeg:jpg,..."
-            std::vector<std::string> groups;
-            OIIO::Strutil::split( extensionlist, groups, ";" );
-
-            for ( const auto &group: groups )
-            {
-                auto colon = group.find( ':' );
-                if ( colon == std::string::npos )
-                    continue;
-
-                std::string format = group.substr( 0, colon );
-                if ( format !=
-                     "raw" ) // limit to OIIO's "raw" format plugin for now
-                    continue;
-
-                std::string              extlist = group.substr( colon + 1 );
-                std::vector<std::string> extvec;
-                OIIO::Strutil::split( extlist, extvec, "," );
-
-                for ( const auto &e: extvec )
-                {
-                    result.insert( "." + OIIO::Strutil::lower( e ) );
-                }
-            }
-
-            return result;
-        }();
+        return parse_raw_extensions( extensionlist );
+    }();
 
     return extensions;
 }

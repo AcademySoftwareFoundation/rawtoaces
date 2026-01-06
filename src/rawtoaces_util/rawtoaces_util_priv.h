@@ -4,6 +4,7 @@
 #pragma once
 
 #include <filesystem>
+#include <set>
 #include <string>
 #include <vector>
 #include <OpenImageIO/imageio.h>
@@ -16,7 +17,9 @@ namespace rta
 {
 namespace util
 {
-
+const std::set<std::string>
+parse_raw_extensions( const std::string &extensionlist );
+const std::set<std::string> &supported_raw_extensions();
 std::vector<std::string>
      database_paths( const std::string &override_path = "" );
 void fix_metadata( OIIO::ImageSpec &spec );

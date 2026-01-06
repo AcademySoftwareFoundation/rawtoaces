@@ -1887,11 +1887,11 @@ void test_spectral_conversion_external_legacy_illuminant_success()
 
     // Create test directory with database
     TestFixture fixture;
-    auto       &test_dir =
-        fixture.with_camera( "Blackmagic", "Cinema Camera" )
-            .with_illuminant_custom( { { "schema_version", "0.1.0" },
-                                       { "illuminant", "test_illuminant" } } )
-            .build();
+    auto       &test_dir = fixture.with_camera( "Blackmagic", "Cinema Camera" )
+                         .with_illuminant_custom(
+                             { { "schema_version", "0.1.0" },
+                               { "illuminant", "test_illuminant" } } )
+                         .build();
 
     // Build command
     auto args = CommandBuilder()

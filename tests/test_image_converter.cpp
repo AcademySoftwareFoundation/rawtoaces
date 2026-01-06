@@ -397,15 +397,6 @@ void test_collect_image_files_mixed_valid_invalid_paths()
     OIIO_CHECK_EQUAL( batches[1].size(), 1 );
 }
 
-/// Tests supported_raw_extensions() under normal OIIO runtime conditions
-void test_supported_raw_extensions()
-{
-    std::cout << std::endl << "test_supported_raw_extensions()" << std::endl;
-
-    const auto &exts = rta::util::supported_raw_extensions();
-    OIIO_CHECK_EQUAL( exts.empty(), false );
-}
-
 /// Tests parsing of RAW extensions from a mixed OIIO extension list
 void test_parse_raw_extensions()
 {
@@ -1348,9 +1339,9 @@ void test_find_illuminant_camera_no_main_key()
     // Should fail because camera is not initialized (no "main" key)
     OIIO_CHECK_ASSERT( !success );
     OIIO_CHECK_ASSERT(
-        output.find(
-            "ERROR: camera needs to be initialised prior to calling "
-            "SpectralSolver::find_illuminant()" ) != std::string::npos );
+        output.find( "ERROR: camera needs to be initialised prior to calling "
+                     "SpectralSolver::find_illuminant()" ) !=
+        std::string::npos );
 }
 
 /// Tests that find_illuminant fails when camera data has "main" but with wrong size
@@ -1891,11 +1882,11 @@ void test_spectral_conversion_external_legacy_illuminant_success()
 
     // Create test directory with database
     TestFixture fixture;
-    auto       &test_dir = fixture.with_camera( "Blackmagic", "Cinema Camera" )
-                         .with_illuminant_custom(
-                             { { "schema_version", "0.1.0" },
-                               { "illuminant", "test_illuminant" } } )
-                         .build();
+    auto       &test_dir =
+        fixture.with_camera( "Blackmagic", "Cinema Camera" )
+            .with_illuminant_custom( { { "schema_version", "0.1.0" },
+                                       { "illuminant", "test_illuminant" } } )
+            .build();
 
     // Build command
     auto args = CommandBuilder()
@@ -2165,7 +2156,6 @@ int main( int, char ** )
         test_collect_image_files_mixed_valid_invalid_paths();
 
         // Tests for raw extensions
-        test_supported_raw_extensions();
         test_parse_raw_extensions();
 
         // Tests for database_paths

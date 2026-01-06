@@ -81,9 +81,7 @@ parse_raw_extensions( const std::string &extensionlist )
 /**
  * Returns the set of file extensions supported for RAW image processing.
  *
- * The extensions are discovered from OpenImageIO at runtime, filtered to the
- * "raw" format group, normalized to lowercase, and prefixed with a dot.
- * The result is initialized once and reused.
+ * The extensions are discovered from OpenImageIO at runtime.
  *
  * This function is the single source of truth for RAW format support and is
  * used both for input file filtering and for the "--list-formats" option.
@@ -93,7 +91,9 @@ parse_raw_extensions( const std::string &extensionlist )
 const std::set<std::string> supported_raw_extensions()
 {
     std::string extensionlist;
-    OIIO::getattribute( "extension_list", extensionlist );
+    bool        ok = OIIO::getattribute( "extension_list", extensionlist );
+    OIIO_ASSERT( ok && "OIIO did not provide extension_list" );
+
     return parse_raw_extensions( extensionlist );
 }
 

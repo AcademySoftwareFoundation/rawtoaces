@@ -44,22 +44,22 @@ static Val_or_Ref op( Val_or_Ref lhs, const Spectrum &rhs, F func )
 Spectrum operator+( Spectrum lhs, const Spectrum &rhs )
 {
     return op<Spectrum>( lhs, rhs, std::plus<double>() );
-}
+} // LCOV_EXCL_LINE - bug in coverage tool
 
 Spectrum operator-( Spectrum lhs, const Spectrum &rhs )
 {
     return op<Spectrum>( lhs, rhs, std::minus<double>() );
-}
+} // LCOV_EXCL_LINE - bug in coverage tool
 
 Spectrum operator*( Spectrum lhs, const Spectrum &rhs )
 {
     return op<Spectrum>( lhs, rhs, std::multiplies<double>() );
-}
+} // LCOV_EXCL_LINE - bug in coverage tool
 
 Spectrum operator/( Spectrum lhs, const Spectrum &rhs )
 {
     return op<Spectrum>( lhs, rhs, std::divides<double>() );
-}
+} // LCOV_EXCL_LINE - bug in coverage tool
 
 Spectrum &Spectrum::operator+=( const Spectrum &rhs )
 {
@@ -359,7 +359,7 @@ Spectrum &SpectralData::get( std::string set_name, std::string channel_name )
             "' of spectral data." );
     }
     return it->second;
-}
+} // LCOV_EXCL_LINE - bug in coverage tool
 
 const Spectrum &
 SpectralData::get( std::string set_name, std::string channel_name ) const
@@ -379,12 +379,12 @@ SpectralData::get( std::string set_name, std::string channel_name ) const
 Spectrum &SpectralData::operator[]( std::string name )
 {
     return get( "main", name );
-}
+} // LCOV_EXCL_LINE - bug in coverage tool
 
 const Spectrum &SpectralData::operator[]( std::string name ) const
 {
     return get( "main", name );
-}
+} // LCOV_EXCL_LINE - bug in coverage tool
 
 } // namespace core
 } // namespace rta

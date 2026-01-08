@@ -7,6 +7,7 @@
 #include <fstream>
 #include <functional>
 #include <string>
+#include <optional>
 #include <vector>
 #include <ctime>
 #include <nlohmann/json.hpp>
@@ -38,16 +39,37 @@ public:
     /// Creates a test data file (camera or illuminant) with the specified header data
     /// @param type The type of test data to create (e.g. camera or illuminant)
     /// @param header_data JSON object containing the header data to include
-    /// @param is_incorrect_data Whether to create incorrect data (for testing error cases)
+    /// @param index_main_override Optional override for spectral_data.index.main
+    /// @param data_main_override Optional override for spectral_data.data.main
     /// @return The full path to the created file
     std::string create_test_data_file(
         const std::string    &type,
         const nlohmann::json &header_data = { { "schema_version", "1.0.0" } },
-        const bool            is_incorrect_data = false );
+        const std::optional<nlohmann::json> &index_main_override = std::nullopt,
+        const std::optional<nlohmann::json> &data_main_override =
+            std::nullopt );
 
 private:
     std::string test_dir;
     std::string database_dir;
+};
+
+/// RAII helper for creating and cleaning up a test file.
+class TestFile
+{
+public:
+    TestFile( const std::string &dir, const std::string &filename );
+    ~TestFile();
+
+    // Disable copy
+    TestFile( const TestFile & )            = delete;
+    TestFile &operator=( const TestFile & ) = delete;
+
+    const std::string &path() const;
+    void               write( const std::string &contents ) const;
+
+private:
+    std::string file_path;
 };
 
 /// Wrapper function that captures stderr output from a callable action
@@ -82,9 +104,11 @@ public:
 
     /// Add a camera data file
     TestFixture &with_camera(
-        const std::string &make,
-        const std::string &model,
-        bool               is_incorrect = false );
+        const std::string                   &make,
+        const std::string                   &model,
+        const std::optional<nlohmann::json> &index_main_override = std::nullopt,
+        const std::optional<nlohmann::json> &data_main_override =
+            std::nullopt );
 
     /// Remove training data file (training is included by default)
     TestFixture &without_training();
@@ -93,12 +117,18 @@ public:
     TestFixture &without_observer();
 
     /// Add illuminant data file
-    TestFixture &
-    with_illuminant( const std::string &type, bool is_incorrect = false );
+    TestFixture &with_illuminant(
+        const std::string                   &type,
+        const std::optional<nlohmann::json> &index_main_override = std::nullopt,
+        const std::optional<nlohmann::json> &data_main_override =
+            std::nullopt );
 
     /// Add illuminant data file with custom header data
     TestFixture &with_illuminant_custom(
-        const nlohmann::json &header_data, bool is_incorrect = false );
+        const nlohmann::json                &header_data,
+        const std::optional<nlohmann::json> &index_main_override = std::nullopt,
+        const std::optional<nlohmann::json> &data_main_override =
+            std::nullopt );
 
     /// Build and return the TestDirectory
     TestDirectory &build();

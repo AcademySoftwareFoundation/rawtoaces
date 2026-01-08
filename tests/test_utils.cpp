@@ -141,6 +141,27 @@ void TestDirectory::create_filtered_files_only()
     std::ofstream( test_dir + "/test.jpeg" ).close();
 }
 
+TestFile::TestFile( const std::string &dir, const std::string &filename )
+{
+    file_path = ( std::filesystem::path( dir ) / filename ).string();
+}
+
+TestFile::~TestFile()
+{
+    std::filesystem::remove( file_path );
+}
+
+const std::string &TestFile::path() const
+{
+    return file_path;
+}
+
+void TestFile::write( const std::string &contents ) const
+{
+    std::ofstream out( file_path );
+    out << contents;
+}
+
 void TestDirectory::create_valid_files(
     const std::vector<std::string> &filenames )
 {
@@ -151,9 +172,10 @@ void TestDirectory::create_valid_files(
 }
 
 std::string TestDirectory::create_test_data_file(
-    const std::string    &type,
-    const nlohmann::json &header_data,
-    const bool            is_incorrect_data )
+    const std::string                   &type,
+    const nlohmann::json                &header_data,
+    const std::optional<nlohmann::json> &index_main_override,
+    const std::optional<nlohmann::json> &data_main_override )
 {
     // Create target directory dynamically based on type
     std::string target_dir = database_dir + "/" + type;
@@ -187,105 +209,68 @@ std::string TestDirectory::create_test_data_file(
     // Spectral data - only include what's actually used
     nlohmann::json spectral_data;
     spectral_data["units"] = "relative";
-    spectral_data["index"] = { { "main", { "R", "G", "B" } } };
 
-    // Add spectral data based on type
-    if ( type == "camera" )
+    nlohmann::json index_main;
+    if ( index_main_override.has_value() )
     {
-        // Camera data needs RGB channels
-        if ( is_incorrect_data )
-        {
-            spectral_data["index"] = { { "main", { "R", "G", "B", "D" } } };
-        }
-        else
-        {
-            spectral_data["index"] = { { "main", { "R", "G", "B" } } };
-        }
-        nlohmann::json data_main;
-        for ( int wavelength = 380; wavelength <= 780; wavelength += 5 )
-        {
-            // Simple test values - production code just needs the structure
-            double r_val = 0.1 + ( wavelength - 380 ) * 0.001;
-            double g_val = 0.2 + ( wavelength - 380 ) * 0.001;
-            double b_val = 0.3 + ( wavelength - 380 ) * 0.001;
-            if ( is_incorrect_data )
-            {
-                data_main[std::to_string( wavelength )] = {
-                    r_val, g_val, b_val, 1
-                };
-            }
-            else
-            {
-                data_main[std::to_string( wavelength )] = { r_val,
-                                                            g_val,
-                                                            b_val };
-            }
-        }
-        spectral_data["data"]["main"] = data_main;
+        index_main = index_main_override.value();
+    }
+    else if ( type == "camera" )
+    {
+        index_main = { "R", "G", "B" };
     }
     else if ( type == "training" )
     {
-        // Training data needs multiple patches
-        spectral_data["index"] = { { "main",
-                                     { "patch1", "patch2", "patch3" } } };
-        nlohmann::json data_main;
-        for ( int wavelength = 380; wavelength <= 780; wavelength += 5 )
-        {
-            // Simple test training patch values
-            double patch1_val = 0.1 + ( wavelength - 380 ) * 0.001;
-            double patch2_val = 0.2 + ( wavelength - 380 ) * 0.001;
-            double patch3_val = 0.3 + ( wavelength - 380 ) * 0.001;
-
-            data_main[std::to_string( wavelength )] = { patch1_val,
-                                                        patch2_val,
-                                                        patch3_val };
-        }
-        spectral_data["data"]["main"] = data_main;
+        index_main = { "patch1", "patch2", "patch3" };
     }
     else if ( type == "cmf" )
     {
-        // Observer (CMF) data needs XYZ channels
-        spectral_data["index"] = { { "main", { "X", "Y", "Z" } } };
-        nlohmann::json data_main;
-        for ( int wavelength = 380; wavelength <= 780; wavelength += 5 )
-        {
-            // Simple test CMF values
-            double x_val = 0.1 + ( wavelength - 380 ) * 0.001;
-            double y_val = 0.2 + ( wavelength - 380 ) * 0.001;
-            double z_val = 0.3 + ( wavelength - 380 ) * 0.001;
-
-            data_main[std::to_string( wavelength )] = { x_val, y_val, z_val };
-        }
-        spectral_data["data"]["main"] = data_main;
+        index_main = { "X", "Y", "Z" };
     }
     else if ( type == "illuminant" )
     {
-        // Illuminant data needs 1 channel (power spectrum)
-        if ( is_incorrect_data )
-        {
-            spectral_data["index"] = { { "main", { "power", "power2" } } };
-        }
-        else
-        {
-            spectral_data["index"] = { { "main", { "power" } } };
-        };
+        index_main = { "power" };
+    }
+    else
+    {
+        index_main = nlohmann::json::array();
+    }
+    spectral_data["index"] = { { "main", index_main } };
 
+    if ( data_main_override.has_value() )
+    {
+        spectral_data["data"]["main"] = data_main_override.value();
+    }
+    else if ( !index_main.empty() )
+    {
         nlohmann::json data_main;
+        const size_t   channels = index_main.size();
         for ( int wavelength = 380; wavelength <= 780; wavelength += 5 )
         {
-            // Simple test illuminant power values
-            double power_val = 1.0 + ( wavelength - 380 ) * 0.01;
-            if ( is_incorrect_data )
+            nlohmann::json values = nlohmann::json::array();
+            if ( type == "illuminant" )
             {
-                data_main[std::to_string( wavelength )] = { power_val,
-                                                            power_val };
+                double power_val = 1.0 + ( wavelength - 380 ) * 0.01;
+                for ( size_t c = 0; c < channels; c++ )
+                    values.push_back( power_val );
             }
             else
             {
-                data_main[std::to_string( wavelength )] = { power_val };
+                double v1 = 0.1 + ( wavelength - 380 ) * 0.001;
+                double v2 = 0.2 + ( wavelength - 380 ) * 0.001;
+                double v3 = 0.3 + ( wavelength - 380 ) * 0.001;
+                if ( channels > 0 )
+                    values.push_back( v1 );
+                if ( channels > 1 )
+                    values.push_back( v2 );
+                if ( channels > 2 )
+                    values.push_back( v3 );
+                for ( size_t c = 3; c < channels; c++ )
+                    values.push_back( 1.0 );
             }
-        }
 
+            data_main[std::to_string( wavelength )] = values;
+        }
         spectral_data["data"]["main"] = data_main;
     }
     else
@@ -321,12 +306,16 @@ TestFixture::~TestFixture()
 }
 
 TestFixture &TestFixture::with_camera(
-    const std::string &make, const std::string &model, bool is_incorrect )
+    const std::string                   &make,
+    const std::string                   &model,
+    const std::optional<nlohmann::json> &index_main_override,
+    const std::optional<nlohmann::json> &data_main_override )
 {
     test_dir_->create_test_data_file(
         "camera",
         { { "manufacturer", make }, { "model", model } },
-        is_incorrect );
+        index_main_override,
+        data_main_override );
     return *this;
 }
 
@@ -344,18 +333,26 @@ TestFixture &TestFixture::without_observer()
     return *this;
 }
 
-TestFixture &
-TestFixture::with_illuminant( const std::string &type, bool is_incorrect )
+TestFixture &TestFixture::with_illuminant(
+    const std::string                   &type,
+    const std::optional<nlohmann::json> &index_main_override,
+    const std::optional<nlohmann::json> &data_main_override )
 {
     test_dir_->create_test_data_file(
-        "illuminant", { { "type", type } }, is_incorrect );
+        "illuminant",
+        { { "type", type } },
+        index_main_override,
+        data_main_override );
     return *this;
 }
 
 TestFixture &TestFixture::with_illuminant_custom(
-    const nlohmann::json &header_data, bool is_incorrect )
+    const nlohmann::json                &header_data,
+    const std::optional<nlohmann::json> &index_main_override,
+    const std::optional<nlohmann::json> &data_main_override )
 {
-    test_dir_->create_test_data_file( "illuminant", header_data, is_incorrect );
+    test_dir_->create_test_data_file(
+        "illuminant", header_data, index_main_override, data_main_override );
     return *this;
 }
 

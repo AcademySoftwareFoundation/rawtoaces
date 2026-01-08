@@ -7,7 +7,8 @@
 #endif
 
 #include <filesystem>
-
+#include <fstream>
+#include <nlohmann/json.hpp>
 #include "test_utils.h"
 
 #include "../src/rawtoaces_core/mathOps.h"
@@ -570,6 +571,101 @@ void testSpectralData_LoadFileNotFound()
     OIIO_CHECK_EQUAL( data.data.size(), 0 );
 }
 
+void testSpectralData_LoadInconsistentWavelengthStep()
+{
+    rta::core::SpectralData data;
+    TestDirectory           test_dir;
+    nlohmann::json          data_main_override = { { "400", { 0.1 } },
+                                                   { "405", { 0.2 } },
+                                                   { "411", { 0.3 } } };
+    std::string             temp_path          = test_dir.create_test_data_file(
+        "camera",
+        { { "schema_version", "1.0.0" } },
+        nlohmann::json::array( { "R" } ),
+        data_main_override );
+
+    std::string stderr_output = capture_stderr( [&]() {
+        bool result = data.load( temp_path );
+        OIIO_CHECK_EQUAL( result, false );
+    } );
+
+    std::string expected_error =
+        "Error: Inconsistent wavelength step detected in " + temp_path +
+        ". Expected: 5, got: 6.\n";
+    OIIO_CHECK_EQUAL( stderr_output, expected_error );
+}
+
+void testSpectralData_LoadInvalidJson()
+{
+    rta::core::SpectralData data;
+    TestDirectory           test_dir;
+    TestFile temp_file( test_dir.path(), "invalid_spectral.json" );
+    temp_file.write( "{ invalid json" );
+
+    std::string stderr_output = capture_stderr( [&]() {
+        bool result = data.load( temp_file.path() );
+        OIIO_CHECK_EQUAL( result, false );
+    } );
+
+    ASSERT_CONTAINS(
+        stderr_output,
+        "Error: JSON parsing of " + temp_file.path() + " failed with error:" );
+}
+
+void testSpectralData_LoadJsonTypeError()
+{
+    rta::core::SpectralData data;
+    TestDirectory           test_dir;
+
+    std::string temp_path = test_dir.create_test_data_file(
+        "camera",
+        true // Should be an object, but here boolean to cause type error
+    );
+
+    std::string stderr_output = capture_stderr( [&]() {
+        bool result = data.load( temp_path );
+        OIIO_CHECK_EQUAL( result, false );
+    } );
+
+    ASSERT_CONTAINS( stderr_output, "type_error" );
+}
+
+void testSpectralData_GetUnknownSetThrows()
+{
+    rta::core::SpectralData data;
+    init_SpectralData( data );
+
+    try
+    {
+        data.get( "unknown_set", "R" );
+        OIIO_CHECK_ASSERT( false );
+    }
+    catch ( const std::invalid_argument &e )
+    {
+        OIIO_CHECK_EQUAL(
+            std::string( e.what() ),
+            "The requested data set 'unknown_set' not found in spectral data." );
+    }
+}
+
+void testSpectralData_GetUnknownChannelThrows()
+{
+    rta::core::SpectralData data;
+    init_SpectralData( data );
+
+    try
+    {
+        data.get( "main", "unknown_channel" );
+        OIIO_CHECK_ASSERT( false );
+    }
+    catch ( const std::invalid_argument &e )
+    {
+        OIIO_CHECK_EQUAL(
+            std::string( e.what() ),
+            "The requested channel 'unknown_channel' not found in the data set 'main' of spectral data." );
+    }
+}
+
 int main( int, char ** )
 {
     testSpectralData_Spectrum();
@@ -580,6 +676,11 @@ int main( int, char ** )
     testSpectralData_ReshapeBeforeSourceRange();
     testSpectralData_Max();
     testSpectralData_LoadFileNotFound();
+    testSpectralData_LoadInconsistentWavelengthStep();
+    testSpectralData_LoadInvalidJson();
+    testSpectralData_LoadJsonTypeError();
+    testSpectralData_GetUnknownSetThrows();
+    testSpectralData_GetUnknownChannelThrows();
 
     return unit_test_failures;
 }

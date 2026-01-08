@@ -877,7 +877,7 @@ double XYZ_to_color_temperature( const vector<double> &XYZ )
         distance_prev = distance_this;
     }
 
-    if ( i <= 0 )
+    if ( i == 0 )
         mired = robertson_mired_table[0];
     else if ( i >= num_robertson_table )
         mired = robertson_mired_table[num_robertson_table - 1];
@@ -1161,7 +1161,7 @@ void get_camera_XYZ_matrix_and_white_point(
     assert( sumVector( out_camera_XYZ_white_point ) != 0 );
 
     return;
-}
+} // LCOV_EXCL_LINE - bug in coverage tool
 
 vector<vector<double>> MetadataSolver::calculate_CAT_matrix()
 {

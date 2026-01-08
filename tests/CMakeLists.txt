@@ -105,6 +105,7 @@ add_test ( NAME Test_Illum COMMAND Test_Illum )
 add_executable (
 	Test_DNGIdt
 	testDNGIdt.cpp
+	test_utils.cpp
 )
 
 target_link_libraries(

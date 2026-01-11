@@ -1344,9 +1344,9 @@ void test_find_illuminant_camera_no_main_key()
     // Should fail because camera is not initialized (no "main" key)
     OIIO_CHECK_ASSERT( !success );
     OIIO_CHECK_ASSERT(
-        output.find(
-            "ERROR: camera needs to be initialised prior to calling "
-            "SpectralSolver::find_illuminant()" ) != std::string::npos );
+        output.find( "ERROR: camera needs to be initialised prior to calling "
+                     "SpectralSolver::find_illuminant()" ) !=
+        std::string::npos );
 }
 
 /// Tests that find_illuminant fails when camera data has "main" but with wrong size
@@ -1891,11 +1891,11 @@ void test_spectral_conversion_external_legacy_illuminant_success()
 
     // Create test directory with database
     TestFixture fixture;
-    auto       &test_dir = fixture.with_camera( "Blackmagic", "Cinema Camera" )
-                         .with_illuminant_custom(
-                             { { "schema_version", "0.1.0" },
-                               { "illuminant", "test_illuminant" } } )
-                         .build();
+    auto       &test_dir =
+        fixture.with_camera( "Blackmagic", "Cinema Camera" )
+            .with_illuminant_custom( { { "schema_version", "0.1.0" },
+                                       { "illuminant", "test_illuminant" } } )
+            .build();
 
     // Build command
     auto args = CommandBuilder()

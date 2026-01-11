@@ -12,13 +12,11 @@
 #include "../src/rawtoaces_util/colour_transforms.h"
 
 void test_configure_spectral_solver()
-{
-
-}
+{}
 
 int main( int, char ** )
 {
     test_configure_spectral_solver();
-    
+
     return unit_test_failures;
 }

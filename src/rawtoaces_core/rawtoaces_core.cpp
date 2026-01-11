@@ -1159,9 +1159,7 @@ void get_camera_XYZ_matrix_and_white_point(
     scaleVector(
         out_camera_XYZ_white_point, 1.0 / out_camera_XYZ_white_point[1] );
     assert( sumVector( out_camera_XYZ_white_point ) != 0 );
-
-    return;
-} // LCOV_EXCL_LINE - bug in coverage tool
+}
 
 vector<vector<double>> MetadataSolver::calculate_CAT_matrix()
 {

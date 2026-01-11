@@ -198,6 +198,9 @@ public:
         /// Log the execution time of each step of image processing.
         bool use_timing = false;
 
+        /// Disable caching.
+        bool disable_cache = false;
+
         /// Verbosity level.
         int verbosity = 0;
     };

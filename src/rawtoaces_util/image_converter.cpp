@@ -5,6 +5,9 @@
 #include <rawtoaces/rawtoaces_core.h>
 #include <rawtoaces/usage_timer.h>
 
+#include "transform_cache.h"
+#include "colour_transforms.h"
+
 #include <set>
 #include <filesystem>
 
@@ -270,13 +273,6 @@ CameraIdentifier get_camera_identifier(
     return { camera_make, camera_model };
 }
 
-void print_data_error( const std::string &data_type )
-{
-    std::cerr << "Failed to find " << data_type << "." << std::endl
-              << "Please check the database search path "
-              << "in RAWTOACES_DATABASE_PATH" << std::endl;
-}
-
 /// Prepares spectral transformation matrices for RAW to ACES conversion
 ///
 /// This method initializes a spectral solver to find the appropriate camera data,
@@ -298,7 +294,7 @@ bool prepare_transform_spectral(
     std::vector<std::vector<double>> &IDT_matrix,
     std::vector<std::vector<double>> &CAT_matrix )
 {
-    // Step 1: Initialize and validate camera identification
+    // Initialize and validate camera identification
     std::string lower_illuminant = OIIO::Strutil::lower( settings.illuminant );
 
     CameraIdentifier camera_identifier =
@@ -308,54 +304,11 @@ bool prepare_transform_spectral(
 
     bool success = false;
 
-    // Step 2: Initialize spectral solver and find camera data
+    // Initialize spectral solver
     core::SpectralSolver solver( settings.database_directories );
     solver.verbosity = settings.verbosity;
 
-    success =
-        solver.find_camera( camera_identifier.make, camera_identifier.model );
-    if ( !success )
-    {
-        const std::string data_type =
-            "spectral data for camera " + camera_identifier;
-        print_data_error( data_type );
-        return false;
-    }
-
-    // Step 3: Load training spectral data
-    const std::string training_path = "training/training_spectral.json";
-    success = solver.load_spectral_data( training_path, solver.training_data );
-    if ( !success )
-    {
-        const std::string data_type = "training data '" + training_path + "'.";
-        print_data_error( data_type );
-        return false;
-    }
-
-    // Step 4: Load observer (CMF) spectral data
-    const std::string observer_path = "cmf/cmf_1931.json";
-    success = solver.load_spectral_data( observer_path, solver.observer );
-    if ( !success )
-    {
-        const std::string data_type = "observer '" + observer_path + "'";
-        print_data_error( data_type );
-        return false;
-    }
-
-    // Step 5: Determine illuminant and calculate white balance
-    if ( !lower_illuminant.empty() )
-    {
-        // Use specified illuminant from settings
-        success = solver.find_illuminant( lower_illuminant );
-
-        if ( !success )
-        {
-            const std::string data_type =
-                "illuminant type = '" + lower_illuminant + "'";
-            print_data_error( data_type );
-            return false;
-        }
-    }
+    std::string found_illuminant = "";
 
     if ( lower_illuminant.empty() )
     {
@@ -394,67 +347,49 @@ bool prepare_transform_spectral(
             for ( int i = 0; i < 3; i++ )
                 tmp_wb_multipliers[i] /= min_val;
 
-        success = solver.find_illuminant( tmp_wb_multipliers );
+        success = fetch_illuminant_from_multipliers(
+            camera_identifier.make,
+            camera_identifier.model,
+            tmp_wb_multipliers,
+            solver,
+            settings.verbosity,
+            settings.disable_cache,
+            found_illuminant );
 
         // Expected to be true due to camera lookup success in the previous step,
         // since lack of camera is the only way for find_illuminant to return false;
         assert( success );
-
-        if ( settings.verbosity > 0 )
-        {
-            std::cerr << "Found illuminant: '" << solver.illuminant.type << "'."
-                      << std::endl;
-        }
     }
     else
     {
         // Calculate white balance for specified illuminant
-        success = solver.calculate_WB();
+
+        success = fetch_multipliers_from_illuminant(
+            camera_identifier.make,
+            camera_identifier.model,
+            lower_illuminant,
+            solver,
+            settings.verbosity,
+            settings.disable_cache,
+            WB_multipliers );
 
         if ( !success )
         {
-            std::cerr << "ERROR: Failed to calculate the white balancing "
-                      << "weights." << std::endl;
             return false;
         }
 
-        WB_multipliers = solver.get_WB_multipliers();
-
-        if ( settings.verbosity > 0 )
-        {
-            std::cerr << "White balance coefficients:" << std::endl;
-            for ( auto &wb_multiplier: WB_multipliers )
-            {
-                std::cerr << wb_multiplier << " ";
-            }
-            std::cerr << std::endl;
-        }
+        found_illuminant = lower_illuminant;
     }
 
-    // Step 6: Calculate Input Device Transform (IDT) matrix
-    success = solver.calculate_IDT_matrix();
-    if ( !success )
-    {
-        std::cerr << "Failed to calculate the input transform matrix."
-                  << std::endl;
-        return false;
-    }
-
-    IDT_matrix = solver.get_IDT_matrix();
-
-    if ( settings.verbosity > 0 )
-    {
-        std::cerr << "Input Device Transform (IDT) matrix:" << std::endl;
-        for ( auto &row: IDT_matrix )
-        {
-            std::cerr << "  ";
-            for ( auto &col: row )
-            {
-                std::cerr << col << " ";
-            }
-            std::cerr << std::endl;
-        }
-    }
+    // Calculate Input Device Transform (IDT) matrix.
+    success = fetch_matrix_from_illuminant(
+        camera_identifier.make,
+        camera_identifier.model,
+        found_illuminant,
+        solver,
+        settings.verbosity,
+        settings.disable_cache,
+        IDT_matrix );
 
     // Step 7: Clear CAT matrix (not used in spectral mode)
     // CAT is embedded in IDT in spectral mode

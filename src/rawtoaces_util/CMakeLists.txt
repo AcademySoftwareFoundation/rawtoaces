@@ -14,6 +14,11 @@ set( UTIL_PUBLIC_HEADER
 add_library ( ${RAWTOACES_UTIL_LIB} ${DO_SHARED}
     image_converter.cpp
     usage_timer.cpp
+    cache_base.h
+    transform_cache.cpp
+    transform_cache.h
+    colour_transforms.cpp
+    colour_transforms.h
 
     # Make the headers visible in IDEs. This should not affect the builds.
     ${UTIL_PUBLIC_HEADER}

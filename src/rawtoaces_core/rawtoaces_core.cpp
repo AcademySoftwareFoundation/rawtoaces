@@ -286,6 +286,12 @@ bool SpectralSolver::find_camera(
     assert( !make.empty() );
     assert( !model.empty() );
 
+    if ( !is_not_equal_insensitive( camera.manufacturer, make ) &&
+         !is_not_equal_insensitive( camera.model, model ) )
+    {
+        return true;
+    }
+
     auto camera_files = collect_data_files( "camera" );
 
     for ( const auto &camera_file: camera_files )
@@ -304,6 +310,11 @@ bool SpectralSolver::find_camera(
 bool SpectralSolver::find_illuminant( const std::string &type )
 {
     assert( !type.empty() );
+
+    if ( !is_not_equal_insensitive( illuminant.type, type ) )
+    {
+        return true;
+    }
 
     bool starts_with_d = std::tolower( type.front() ) == 'd';
     bool ends_with_k   = std::tolower( type.back() ) == 'k';

@@ -190,6 +190,42 @@ add_test ( NAME Test_UsageTimer COMMAND Test_UsageTimer )
 ################################################################################
 
 add_executable (
+    Test_Cache
+    testCache.cpp
+    test_utils.cpp
+)
+
+target_link_libraries(
+        Test_Cache
+    PUBLIC
+        ${RAWTOACES_UTIL_LIB}
+        OpenImageIO::OpenImageIO
+)
+
+setup_test_coverage(Test_Cache)
+add_test ( NAME Test_Cache COMMAND Test_Cache )
+
+################################################################################
+
+add_executable (
+    Test_ColourTransforms
+    testColourTransforms.cpp
+    test_utils.cpp
+)
+
+target_link_libraries(
+        Test_ColourTransforms
+    PUBLIC
+        ${RAWTOACES_UTIL_LIB}
+        OpenImageIO::OpenImageIO
+)
+
+setup_test_coverage(Test_ColourTransforms)
+add_test ( NAME Test_ColourTransforms COMMAND Test_ColourTransforms )
+
+################################################################################
+
+add_executable (
 	Test_ImageConverter
 	test_image_converter.cpp
 	test_utils.cpp

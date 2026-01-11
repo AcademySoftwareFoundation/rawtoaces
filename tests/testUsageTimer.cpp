@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
+#include "test_utils.h"
+
 #include <OpenImageIO/unittest.h>
 
 #include <rawtoaces/usage_timer.h>
@@ -10,8 +12,6 @@
 #include <sstream>
 #include <string>
 #include <thread>
-
-#include "test_utils.h"
 
 using namespace rta::util;
 

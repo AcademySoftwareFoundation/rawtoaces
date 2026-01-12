@@ -879,6 +879,10 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
         .help( "Log the execution time of each step of image processing." )
         .action( OIIO::ArgParse::store_true() );
 
+    arg_parser.arg( "--disable-cache" )
+        .help( "Disable the colour transform cache." )
+        .action( OIIO::ArgParse::store_true() );
+
     arg_parser.arg( "--verbose" )
         .help(
             "(-v) Print progress messages. "
@@ -1152,10 +1156,11 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     settings.scale             = arg_parser["scale"].get<float>();
     settings.denoise_threshold = arg_parser["denoise-threshold"].get<float>();
 
-    settings.overwrite   = arg_parser["overwrite"].get<int>();
-    settings.create_dirs = arg_parser["create-dirs"].get<int>();
-    settings.output_dir  = arg_parser["output-dir"].get();
-    settings.use_timing  = arg_parser["use-timing"].get<int>();
+    settings.overwrite     = arg_parser["overwrite"].get<int>();
+    settings.create_dirs   = arg_parser["create-dirs"].get<int>();
+    settings.output_dir    = arg_parser["output-dir"].get();
+    settings.use_timing    = arg_parser["use-timing"].get<int>();
+    settings.disable_cache = arg_parser["disable-cache"].get<int>();
 
     // If an illuminant was requested, confirm that we have it in the database
     // an error out early, before we start loading any images.

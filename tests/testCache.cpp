@@ -184,6 +184,29 @@ void testCache_print_helpers()
     } );
     ASSERT_CONTAINS( output, "a, b, (1.1, 2.2, 3.3)" );
 
+    rta::core::Metadata metadata;
+    output = capture_stderr( [&]() { std::cerr << metadata << std::endl; } );
+    ASSERT_CONTAINS( output, "<Metadata>" );
+}
+
+void testCache_metadata_comparison()
+{
+    std::string output = capture_stderr( [&]() {
+        std::tuple<std::string, std::string, std::string> tuple = { "a",
+                                                                    "b",
+                                                                    "c" };
+        std::cerr << tuple << std::endl;
+    } );
+    ASSERT_CONTAINS( output, "a, b, c" );
+
+    output = capture_stderr( [&]() {
+        std::tuple<std::string, std::string, std::array<double, 3>> tuple = {
+            "a", "b", { 1.1, 2.2, 3.3 }
+        };
+        std::cerr << tuple << std::endl;
+    } );
+    ASSERT_CONTAINS( output, "a, b, (1.1, 2.2, 3.3)" );
+
     rta::core::Metadata metadata1 = {
         {
             { 11,
@@ -202,7 +225,25 @@ void testCache_print_helpers()
 
     rta::core::Metadata metadata2 = metadata1;
     OIIO_CHECK_EQUAL( metadata1, metadata2 );
+
+    metadata2 = metadata1;
+    metadata2.baseline_exposure = 5.0;
+    OIIO_CHECK_FALSE( metadata1 == metadata2 );
+
+    metadata2 = metadata1;
+    metadata2.neutral_RGB[1] = 11.0;
+    OIIO_CHECK_FALSE( metadata1 == metadata2 );
+
+    metadata2 = metadata1;
+    metadata2.calibration[1].illuminant = 31;
+    OIIO_CHECK_FALSE( metadata1 == metadata2 );
+
+    metadata2 = metadata1;
     metadata2.calibration[1].camera_calibration_matrix[3] = 55.0;
+    OIIO_CHECK_FALSE( metadata1 == metadata2 );
+
+    metadata2 = metadata1;
+    metadata2.calibration[1].XYZ_to_RGB_matrix[3] = 55.0;
     OIIO_CHECK_FALSE( metadata1 == metadata2 );
 }
 
@@ -227,9 +268,8 @@ void testCache_transform_caches()
             rta::cache::WBFromIlluminantData>
             cache1;
         rta::cache::Cache<
-            rta::cache::CameraAndIlluminantDescriptor,
-            rta::cache::WBFromIlluminantData>
-            cache2;
+            rta::cache::CameraAndIlluminantDescriptor, rta::cache::MatrixData>
+                cache2;
         rta::cache::Cache<
             rta::cache::CameraAndWBDescriptor,
             rta::cache::IlluminantAndWBData>
@@ -255,6 +295,7 @@ int main( int, char ** )
     testCache_full();
     testCache_bump();
     testCache_print_helpers();
+    testCache_metadata_comparison();
     testCache_transform_caches();
 
     return unit_test_failures;

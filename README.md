@@ -216,6 +216,7 @@ A help message with a description of all command line options can be obtained by
         --list-cameras                  Shows the list of cameras supported in spectral mode.
         --list-illuminants              Shows the list of illuminants supported in spectral mode.
         --use-timing                    Log the execution time of each step of image processing.
+        --disable-cache                 Disable the colour transform cache.
         --verbose                       (-v) Print progress messages. Repeated -v will increase verbosity.
 		
 ### Command line parameters changes since version v1.x:

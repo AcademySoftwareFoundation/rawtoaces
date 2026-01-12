@@ -18,6 +18,7 @@ void util_bindings( nanobind::module_ &m )
     image_converter.def( nanobind::init<>() );
 
     image_converter.def_rw( "settings", &ImageConverter::settings );
+    image_converter.def_ro( "status", &ImageConverter::status );
     image_converter.def( "process_image", &ImageConverter::process_image );
     image_converter.def(
         "get_WB_multipliers", &ImageConverter::get_WB_multipliers );
@@ -223,5 +224,22 @@ void util_bindings( nanobind::module_ &m )
         .value( "Off", ImageConverter::Settings::CropMode::Off )
         .value( "Soft", ImageConverter::Settings::CropMode::Soft )
         .value( "Hard", ImageConverter::Settings::CropMode::Hard )
+        .export_values();
+
+    nanobind::enum_<ImageConverter::Status>( image_converter, "Status" )
+        .value( "Success", ImageConverter::Status::Success )
+        .value( "FileExists", ImageConverter::Status::FileExists )
+        .value( "InputFileNotFound", ImageConverter::Status::InputFileNotFound )
+        .value( "EmptyInputFilename", ImageConverter::Status::EmptyInputFilename )
+        .value( "FilesystemError", ImageConverter::Status::FilesystemError )
+        .value( "OutputDirectoryError", ImageConverter::Status::OutputDirectoryError )
+        .value( "InvalidPath", ImageConverter::Status::InvalidPath )
+        .value( "ConfigurationError", ImageConverter::Status::ConfigurationError )
+        .value( "ReadError", ImageConverter::Status::ReadError )
+        .value( "MatrixApplicationError", ImageConverter::Status::MatrixApplicationError )
+        .value( "ScaleApplicationError", ImageConverter::Status::ScaleApplicationError )
+        .value( "CropApplicationError", ImageConverter::Status::CropApplicationError )
+        .value( "WriteError", ImageConverter::Status::WriteError )
+        .value( "UnknownError", ImageConverter::Status::UnknownError )
         .export_values();
 }

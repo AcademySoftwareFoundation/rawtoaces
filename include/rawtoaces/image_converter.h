@@ -25,6 +25,39 @@ collect_image_files( const std::vector<std::string> &paths );
 class ImageConverter
 {
 public:
+    /// Status codes for operation results.
+    enum class Status
+    {
+        /// Operation completed successfully.
+        Success,
+        /// Output file already exists and overwrite is not enabled.
+        FileExists,
+        /// Input file does not exist.
+        InputFileNotFound,
+        /// Empty input filename provided.
+        EmptyInputFilename,
+        /// Filesystem error occurred.
+        FilesystemError,
+        /// Output directory does not exist and cannot be created.
+        OutputDirectoryError,
+        /// Invalid path format.
+        InvalidPath,
+        /// Failed to configure the image reader.
+        ConfigurationError,
+        /// Failed to read the image file.
+        ReadError,
+        /// Failed to apply colour space conversion.
+        MatrixApplicationError,
+        /// Failed to apply scale.
+        ScaleApplicationError,
+        /// Failed to apply crop.
+        CropApplicationError,
+        /// Failed to save the output file.
+        WriteError,
+        /// Unknown error.
+        UnknownError
+    };
+
     /// The structure containing all parameters needed to configure image conversion.
     struct Settings
     {
@@ -210,6 +243,9 @@ public:
 
     /// The conversion settings.
     Settings settings;
+
+    /// This property holds the error code from the most recent method call that returns a bool. 
+    Status status = Status::Success;
 
     /// Initialise the parser object with all the command line parameters
     /// used by this tool. The method also sets the help and usage strings.

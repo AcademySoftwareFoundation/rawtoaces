@@ -62,6 +62,43 @@ int main( int argc, const char *argv[] )
                 std::cerr << "Failed on file [" << file_index << "/"
                           << total_files << "]: " << input_filename
                           << std::endl;
+                
+                // CLI specific error messages
+                switch ( converter.status )
+                {
+                    case rta::util::ImageConverter::Status::FileExists:
+                        std::cerr << "  Error: Output file already exists. "
+                                  << "Use --overwrite to allow overwriting existing files."
+                                  << std::endl;
+                        break;
+                    case rta::util::ImageConverter::Status::InputFileNotFound:
+                        std::cerr << "  Error: Input file does not exist."
+                                  << std::endl;
+                        break;
+                    case rta::util::ImageConverter::Status::EmptyInputFilename:
+                        std::cerr << "  Error: Empty input filename provided."
+                                  << std::endl;
+                        break;
+                    case rta::util::ImageConverter::Status::OutputDirectoryError:
+                        std::cerr << "  Error: Output directory error. "
+                                  << "Use --create-dirs to create missing directories."
+                                  << std::endl;
+                        break;
+                    case rta::util::ImageConverter::Status::ConfigurationError:
+                        std::cerr << "  Error: Failed to configure image conversion."
+                                  << std::endl;
+                        break;
+                    case rta::util::ImageConverter::Status::ReadError:
+                        std::cerr << "  Error: Failed to read the input file."
+                                  << std::endl;
+                        break;
+                    case rta::util::ImageConverter::Status::WriteError:
+                        std::cerr << "  Error: Failed to write the output file."
+                                  << std::endl;
+                        break;
+                    default:
+                        break;
+                }
                 break;
             }
         }

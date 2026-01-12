@@ -40,5 +40,11 @@ bool fetch_matrix_from_illuminant(
     bool                              disable_cache,
     std::vector<std::vector<double>> &out_matrix );
 
+void fetch_matrix_from_metadata(
+    const core::Metadata             &metadata,
+    int                               verbosity,
+    bool                              disable_cache,
+    std::vector<std::vector<double>> &out_matrix );
+
 } // namespace util
 } // namespace rta

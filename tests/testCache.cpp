@@ -183,6 +183,27 @@ void testCache_print_helpers()
         std::cerr << tuple << std::endl;
     } );
     ASSERT_CONTAINS( output, "a, b, (1.1, 2.2, 3.3)" );
+
+    rta::core::Metadata metadata1 = {
+        {
+            { 11,
+              { 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0 },
+              { 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0 } },
+            { 21,
+              { 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0 },
+              { 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0 } },
+        },
+        { 1.0, 2.0, 3.0 },
+        4.0
+    };
+
+    output = capture_stderr( [&]() { std::cerr << metadata1 << std::endl; } );
+    ASSERT_CONTAINS( output, "<Metadata>" );
+
+    rta::core::Metadata metadata2 = metadata1;
+    OIIO_CHECK_EQUAL( metadata1, metadata2 );
+    metadata2.calibration[1].camera_calibration_matrix[3] = 55.0;
+    OIIO_CHECK_FALSE( metadata1 == metadata2 );
 }
 
 void testCache_transform_caches()
@@ -194,6 +215,9 @@ void testCache_transform_caches()
     OIIO_CHECK_EQUAL(
         rta::cache::matrix_from_illuminant_cache.name,
         "matrix from illuminant" );
+    OIIO_CHECK_EQUAL(
+        rta::cache::matrix_from_dng_metadata_cache.name,
+        "matrix from DNG metadata" );
 
     try
     {
@@ -210,6 +234,9 @@ void testCache_transform_caches()
             rta::cache::CameraAndWBDescriptor,
             rta::cache::IlluminantAndWBData>
             cache3;
+        rta::cache::
+            Cache<rta::cache::MetadataDescriptor, rta::cache::MatrixData>
+                cache4;
     }
     catch ( const std::exception &e )
     {
@@ -228,6 +255,7 @@ int main( int, char ** )
     testCache_full();
     testCache_bump();
     testCache_print_helpers();
+    testCache_transform_caches();
 
     return unit_test_failures;
 }

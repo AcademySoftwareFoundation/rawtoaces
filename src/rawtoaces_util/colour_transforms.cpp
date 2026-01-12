@@ -314,5 +314,57 @@ bool fetch_matrix_from_illuminant(
     return true;
 }
 
+void solve_matrix_from_metadata(
+    const core::Metadata &metadata, cache::MatrixData &cache_data )
+{
+    core::MetadataSolver solver( metadata );
+    auto                 matrix = solver.calculate_IDT_matrix();
+
+    for ( size_t row = 0; row < 3; row++ )
+        for ( size_t col = 0; col < 3; col++ )
+            cache_data[row][col] = matrix[row][col];
+}
+
+void fetch_matrix_from_metadata(
+    const core::Metadata             &metadata,
+    int                               verbosity,
+    bool                              disable_cache,
+    std::vector<std::vector<double>> &out_matrix )
+{
+    cache::MetadataDescriptor descriptor = metadata;
+
+    cache::matrix_from_dng_metadata_cache.verbosity = verbosity;
+    cache::matrix_from_dng_metadata_cache.disabled  = disable_cache;
+
+    const auto &entry = cache::matrix_from_dng_metadata_cache.fetch(
+        descriptor, [&]( cache::MatrixData &cache_data ) {
+            solve_matrix_from_metadata( metadata, cache_data );
+            return true;
+        } );
+
+    const auto &matrix = entry.second;
+    out_matrix.resize( 3 );
+    for ( size_t row = 0; row < 3; row++ )
+    {
+        out_matrix[row].resize( 3 );
+        for ( size_t col = 0; col < 3; col++ )
+            out_matrix[row][col] = matrix[row][col];
+    }
+
+    if ( verbosity > 0 )
+    {
+        std::cerr << "Input Device Transform (IDT) matrix:" << std::endl;
+        for ( auto &row: out_matrix )
+        {
+            std::cerr << "  ";
+            for ( auto &col: row )
+            {
+                std::cerr << col << " ";
+            }
+            std::cerr << std::endl;
+        }
+    }
+}
+
 } // namespace util
 } // namespace rta

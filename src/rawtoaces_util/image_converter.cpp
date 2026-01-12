@@ -391,6 +391,11 @@ bool prepare_transform_spectral(
         settings.disable_cache,
         IDT_matrix );
 
+    if ( !success )
+    {
+        return false;
+    }
+
     // Step 7: Clear CAT matrix (not used in spectral mode)
     // CAT is embedded in IDT in spectral mode
     CAT_matrix.resize( 0 );
@@ -484,21 +489,8 @@ bool prepare_transform_DNG(
     }
 
     // Step 4: Calculate IDT matrix using metadata solver
-    core::MetadataSolver solver( metadata );
-    IDT_matrix = solver.calculate_IDT_matrix();
-
-    if ( settings.verbosity > 0 )
-    {
-        std::cerr << "Input transform matrix:" << std::endl;
-        for ( auto &IDT_matrix_row: IDT_matrix )
-        {
-            for ( auto &IDT_matrix_row_element: IDT_matrix_row )
-            {
-                std::cerr << IDT_matrix_row_element << " ";
-            }
-            std::cerr << std::endl;
-        }
-    }
+    fetch_matrix_from_metadata(
+        metadata, settings.verbosity, settings.disable_cache, IDT_matrix );
 
     // Step 5: Clear CAT matrix (not used for DNG)
     // Do not apply CAT for DNG

@@ -228,23 +228,23 @@ void testCache_metadata_comparison()
 
     metadata2                   = metadata1;
     metadata2.baseline_exposure = 5.0;
-    OIIO_CHECK_ASSERT( !(metadata1 == metadata2) );
+    OIIO_CHECK_ASSERT( !( metadata1 == metadata2 ) );
 
     metadata2                = metadata1;
     metadata2.neutral_RGB[1] = 11.0;
-    OIIO_CHECK_ASSERT( !(metadata1 == metadata2) );
+    OIIO_CHECK_ASSERT( !( metadata1 == metadata2 ) );
 
     metadata2                           = metadata1;
     metadata2.calibration[1].illuminant = 31;
-    OIIO_CHECK_ASSERT( !(metadata1 == metadata2) );
+    OIIO_CHECK_ASSERT( !( metadata1 == metadata2 ) );
 
     metadata2                                             = metadata1;
     metadata2.calibration[1].camera_calibration_matrix[3] = 55.0;
-    OIIO_CHECK_ASSERT( !(metadata1 == metadata2) );
+    OIIO_CHECK_ASSERT( !( metadata1 == metadata2 ) );
 
     metadata2                                     = metadata1;
     metadata2.calibration[1].XYZ_to_RGB_matrix[3] = 55.0;
-    OIIO_CHECK_ASSERT( !(metadata1 == metadata2) );
+    OIIO_CHECK_ASSERT( !( metadata1 == metadata2 ) );
 }
 
 void testCache_transform_caches()

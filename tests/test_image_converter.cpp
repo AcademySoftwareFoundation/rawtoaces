@@ -25,6 +25,7 @@
 #include <algorithm>
 
 #include "test_utils.h"
+#include "test_utils_image_converter.h"
 
 #ifdef WIN32
 #    include <io.h>

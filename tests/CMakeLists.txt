@@ -193,6 +193,7 @@ add_executable (
 	Test_ImageConverter
 	test_image_converter.cpp
 	test_utils.cpp
+	test_utils_image_converter.cpp
 )
 
 target_link_libraries(

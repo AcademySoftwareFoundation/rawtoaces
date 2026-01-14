@@ -1322,6 +1322,8 @@ bool ImageConverter::configure(
         return false;
     }
 
+    // Delegate to the ImageSpec overload, which is responsible for
+    // setting the appropriate status (both success and error cases).
     return configure( image_spec, options );
 }
 

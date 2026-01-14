@@ -34,8 +34,8 @@ std::ostream &println_tuple_impl(
         sizeof...( Ts ) > 0, "Cannot insert empty tuple into stream." );
     auto last = sizeof...( Ts ) - 1; // assuming index sequence 0,...,N-1
 
-    return (
-        ( os << std::get<Is>( tuple ) << ( Is != last ? ", " : "" ) ), ... );
+    ( ( os << std::get<Is>( tuple ) << ( Is != last ? ", " : "" ) ), ... );
+    return os;
 }
 
 template <typename... Ts>

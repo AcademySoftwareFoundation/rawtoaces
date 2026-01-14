@@ -250,14 +250,14 @@ void testCache_metadata_comparison()
 void testCache_transform_caches()
 {
     OIIO_CHECK_EQUAL(
-        rta::cache::WB_from_illuminant_cache.name, "WB from illuminant" );
+        rta::cache::get_WB_from_illuminant_cache().name, "WB from illuminant" );
     OIIO_CHECK_EQUAL(
-        rta::cache::illuminant_from_WB_cache.name, "illuminant from WB" );
+        rta::cache::get_illuminant_from_WB_cache().name, "illuminant from WB" );
     OIIO_CHECK_EQUAL(
-        rta::cache::matrix_from_illuminant_cache.name,
+        rta::cache::get_matrix_from_illuminant_cache().name,
         "matrix from illuminant" );
     OIIO_CHECK_EQUAL(
-        rta::cache::matrix_from_dng_metadata_cache.name,
+        rta::cache::get_matrix_from_dng_metadata_cache().name,
         "matrix from DNG metadata" );
 
     try

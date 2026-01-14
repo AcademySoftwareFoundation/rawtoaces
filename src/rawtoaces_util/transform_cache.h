@@ -32,8 +32,8 @@ using CameraAndIlluminantDescriptor = std::tuple<
 
 using WBFromIlluminantData = std::array<double, 3>;
 
-extern cache::Cache<CameraAndIlluminantDescriptor, WBFromIlluminantData>
-    WB_from_illuminant_cache;
+cache::Cache<CameraAndIlluminantDescriptor, WBFromIlluminantData> &
+get_WB_from_illuminant_cache();
 
 // -----------------------------------------------------------------------------
 // Illuminant from WB cache
@@ -50,8 +50,8 @@ using IlluminantAndWBData = std::pair<
     std::array<double, 3> // white balancing weights
     >;
 
-extern cache::Cache<CameraAndWBDescriptor, IlluminantAndWBData>
-    illuminant_from_WB_cache;
+cache::Cache<CameraAndWBDescriptor, IlluminantAndWBData> &
+get_illuminant_from_WB_cache();
 
 // -----------------------------------------------------------------------------
 // Matrix from illuminant cache
@@ -59,8 +59,8 @@ extern cache::Cache<CameraAndWBDescriptor, IlluminantAndWBData>
 
 using MatrixData = std::array<std::array<double, 3>, 3>;
 
-extern cache::Cache<CameraAndIlluminantDescriptor, MatrixData>
-    matrix_from_illuminant_cache;
+cache::Cache<CameraAndIlluminantDescriptor, MatrixData> &
+get_matrix_from_illuminant_cache();
 
 // -----------------------------------------------------------------------------
 // Matrix from DNG metadata
@@ -70,8 +70,8 @@ using MetadataDescriptor = rta::core::Metadata;
 
 using MatrixData = std::array<std::array<double, 3>, 3>;
 
-extern cache::Cache<MetadataDescriptor, MatrixData>
-    matrix_from_dng_metadata_cache;
+cache::Cache<MetadataDescriptor, MatrixData> &
+get_matrix_from_dng_metadata_cache();
 
 } // namespace cache
 } // namespace rta

@@ -42,17 +42,37 @@ bool operator==(
 namespace cache
 {
 
-cache::Cache<CameraAndIlluminantDescriptor, WBFromIlluminantData>
-    WB_from_illuminant_cache( "WB from illuminant" );
+cache::Cache<CameraAndIlluminantDescriptor, WBFromIlluminantData> &
+get_WB_from_illuminant_cache()
+{
+    static cache::Cache<CameraAndIlluminantDescriptor, WBFromIlluminantData>
+        WB_from_illuminant_cache( "WB from illuminant" );
+    return WB_from_illuminant_cache;
+}
 
-cache::Cache<CameraAndWBDescriptor, IlluminantAndWBData>
-    illuminant_from_WB_cache( "illuminant from WB" );
+cache::Cache<CameraAndWBDescriptor, IlluminantAndWBData> &
+get_illuminant_from_WB_cache()
+{
+    static cache::Cache<CameraAndWBDescriptor, IlluminantAndWBData>
+        illuminant_from_WB_cache( "illuminant from WB" );
+    return illuminant_from_WB_cache;
+}
 
-cache::Cache<CameraAndIlluminantDescriptor, MatrixData>
-    matrix_from_illuminant_cache( "matrix from illuminant" );
+cache::Cache<CameraAndIlluminantDescriptor, MatrixData> &
+get_matrix_from_illuminant_cache()
+{
+    static cache::Cache<CameraAndIlluminantDescriptor, MatrixData>
+        matrix_from_illuminant_cache( "matrix from illuminant" );
+    return matrix_from_illuminant_cache;
+}
 
-cache::Cache<MetadataDescriptor, MatrixData>
-    matrix_from_dng_metadata_cache( "matrix from DNG metadata" );
+cache::Cache<MetadataDescriptor, MatrixData> &
+get_matrix_from_dng_metadata_cache()
+{
+    static cache::Cache<MetadataDescriptor, MatrixData>
+        matrix_from_dng_metadata_cache( "matrix from DNG metadata" );
+    return matrix_from_dng_metadata_cache;
+}
 
 } // namespace cache
 } // namespace rta

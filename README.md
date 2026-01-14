@@ -4,6 +4,7 @@
 
 [![CI](https://github.com/AcademySoftwareFoundation/rawtoaces/actions/workflows/ci.yml/badge.svg)](https://github.com/AcademySoftwareFoundation/rawtoaces/actions/workflows/ci.yml)
 [![Code scanning – CodeQL](https://github.com/AcademySoftwareFoundation/rawtoaces/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/AcademySoftwareFoundation/rawtoaces/actions/workflows/github-code-scanning/codeql)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/11185/badge)](https://www.bestpractices.dev/projects/11185)
 [![codecov](https://codecov.io/gh/AcademySoftwareFoundation/rawtoaces/branch/main/graph/badge.svg)](https://codecov.io/gh/AcademySoftwareFoundation/rawtoaces)
 
 ## Table of Contents

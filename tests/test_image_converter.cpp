@@ -2093,6 +2093,128 @@ void test_main_parse_parameters_failure()
         "Unsupported white balancing method: 'invalid_method'. The following methods are supported: metadata, illuminant, box, custom." );
 }
 
+/// Tests that last_error_message is set when processing empty filename
+void test_last_error_message_empty_filename()
+{
+    std::cout << std::endl << "test_last_error_message_empty_filename()" << std::endl;
+
+    ImageConverter converter;
+    bool result = converter.process_image( "" );
+
+    OIIO_CHECK_ASSERT( !result );
+    OIIO_CHECK_EQUAL( converter.status, ImageConverter::Status::EmptyInputFilename );
+    OIIO_CHECK_EQUAL( converter.last_error_message(), "Empty input filename provided" );
+}
+
+/// Tests that last_error_message is set when input file does not exist
+void test_last_error_message_file_not_found()
+{
+    std::cout << std::endl << "test_last_error_message_file_not_found()" << std::endl;
+
+    ImageConverter converter;
+    std::string nonexistent_file = "nonexistent_file_12345.dng";
+    bool result = converter.process_image( nonexistent_file );
+
+    OIIO_CHECK_ASSERT( !result );
+    OIIO_CHECK_EQUAL( converter.status, ImageConverter::Status::InputFileNotFound );
+    OIIO_CHECK_EQUAL( converter.last_error_message().find( "Input file does not exist" ), 0 );
+    OIIO_CHECK_EQUAL( converter.last_error_message().find( nonexistent_file ) != std::string::npos, true );
+}
+
+/// Tests that last_error_message is set when output file already exists and overwrite is false
+void test_last_error_message_file_exists()
+{
+    std::cout << std::endl << "test_last_error_message_file_exists()" << std::endl;
+
+    
+    if ( OIIO::openimageio_version() < 30000 )
+        return;
+
+    ImageConverter converter;
+    converter.settings.overwrite = false;
+    converter.settings.WB_method = ImageConverter::Settings::WBMethod::Metadata;
+    converter.settings.matrix_method = ImageConverter::Settings::MatrixMethod::Metadata;
+
+    std::string test_file = std::filesystem::absolute( dng_test_file ).string();
+    
+    // First we process the file successfully to create output
+    bool first_result = converter.process_image( test_file );
+    if ( !first_result )
+    {
+        return;
+    }
+
+    // Clear any previous error message
+    converter.process_image( "dummy" );
+
+    // Try to process again without overwrite - should fail with FileExists
+    bool second_result = converter.process_image( test_file );
+    OIIO_CHECK_ASSERT( !second_result );
+    OIIO_CHECK_EQUAL( converter.status, ImageConverter::Status::FileExists );
+    OIIO_CHECK_EQUAL( converter.last_error_message().find( "Output file already exists" ), 0 );
+}
+
+/// Tests that last_error_message is cleared on successful operations
+void test_last_error_message_success_clears_message()
+{
+    std::cout << std::endl << "test_last_error_message_success_clears_message()" << std::endl;
+
+    
+    if ( OIIO::openimageio_version() < 30000 )
+        return;
+
+    ImageConverter converter;
+    converter.settings.overwrite = true;
+    converter.settings.WB_method = ImageConverter::Settings::WBMethod::Metadata;
+    converter.settings.matrix_method = ImageConverter::Settings::MatrixMethod::Metadata;
+
+    std::string test_file = std::filesystem::absolute( dng_test_file ).string();
+
+    // First, cause an error
+    converter.process_image( "nonexistent_file.dng" );
+    OIIO_CHECK_ASSERT( !converter.last_error_message().empty() );
+
+    // Then, process successfully
+    bool result = converter.process_image( test_file );
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_EQUAL( converter.status, ImageConverter::Status::Success );
+    OIIO_CHECK_EQUAL( converter.last_error_message().empty(), true );
+}
+
+/// Tests that last_error_message is set on configuration errors
+void test_last_error_message_configure_error()
+{
+    std::cout << std::endl << "test_last_error_message_configure_error()" << std::endl;
+
+    ImageConverter converter;
+    std::string nonexistent_file = "nonexistent_config_file.dng";
+    
+    OIIO::ParamValueList options;
+    bool result = converter.configure( nonexistent_file, options );
+
+    OIIO_CHECK_ASSERT( !result );
+    OIIO_CHECK_EQUAL( converter.status, ImageConverter::Status::ConfigurationError );
+    OIIO_CHECK_EQUAL( converter.last_error_message().find( "Failed to open image file" ), 0 );
+}
+
+/// Tests that last_error_message is set on output directory errors
+void test_last_error_message_output_directory_error()
+{
+    std::cout << std::endl << "test_last_error_message_output_directory_error()" << std::endl;
+
+    ImageConverter converter;
+    converter.settings.create_dirs = false;
+    converter.settings.output_dir = "/nonexistent/directory/path/that/does/not/exist";
+
+    std::string test_file = std::filesystem::absolute( dng_test_file ).string();
+    bool result = converter.process_image( test_file );
+
+    OIIO_CHECK_ASSERT( !result );
+    OIIO_CHECK_EQUAL( converter.status, ImageConverter::Status::OutputDirectoryError );
+    OIIO_CHECK_EQUAL( converter.last_error_message().find( "Output directory does not exist" ) != std::string::npos || 
+                      converter.last_error_message().find( "Failed to create directory" ) != std::string::npos, true );
+}
+
 /// Tests that main prints help and returns 1 when no files are provided
 void test_main_no_files_provided()
 {
@@ -2252,6 +2374,14 @@ int main( int, char ** )
 
         test_rawtoaces_spectral_mode_complete_success_with_default_illuminant_warning();
         test_illuminant_ignored_with_metadata_wb();
+
+        // Tests for last_error_message functionality
+        test_last_error_message_empty_filename();
+        test_last_error_message_file_not_found();
+        test_last_error_message_file_exists();
+        test_last_error_message_success_clears_message();
+        test_last_error_message_configure_error();
+        test_last_error_message_output_directory_error();
 
         // Tests for main.cpp error paths
         test_main_parse_args_failure();

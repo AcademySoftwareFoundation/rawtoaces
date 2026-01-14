@@ -78,6 +78,9 @@ class TestImageConverter:
         assert hasattr(converter, "get_supported_cameras")
         assert callable(converter.get_supported_cameras)
         
+        assert hasattr(converter, "last_error_message")
+        assert hasattr(converter, "status")
+        
 
     def test_process_image_with_invalid_path(self):
         """Test process_image with non-existent file returns False"""
@@ -91,6 +94,9 @@ class TestImageConverter:
         try:
             result = converter.process_image(invalid_path)
             assert result is False
+            # Check that error message is set
+            assert converter.last_error_message() != ""
+            assert converter.status != rawtoaces.ImageConverter.Status.Success
         except Exception:
             # If an exception is thrown, that's also acceptable behavior for invalid input
             pass
@@ -99,6 +105,9 @@ class TestImageConverter:
         try:
             result = converter.process_image("")
             assert result is False
+            # Check that error message is set for empty filename
+            assert converter.last_error_message() != ""
+            assert converter.status == rawtoaces.ImageConverter.Status.EmptyInputFilename
         except Exception:
             # If an exception is thrown, that's also acceptable behavior for invalid input
             pass
@@ -396,6 +405,83 @@ class TestSettings:
         with pytest.raises(ValueError) as err:
             converter.settings.custom_matrix = [[1.0, 2.0, 3.0], [1.0, 2.0, 3.0], [1.0, 2.0]]
             assert str(err.value) == "Each row of the matrix must contain 3 elements."
+
+
+class TestLastErrorMessage:
+    """Test cases for the last_error_message functionality"""
+
+    def test_last_error_message_initial_state(self):
+        """Test that last_error_message is empty initially"""
+        converter = rawtoaces.ImageConverter()
+        assert converter.last_error_message() == ""
+        assert converter.status == rawtoaces.ImageConverter.Status.Success
+
+    def test_last_error_message_empty_filename(self):
+        """Test that last_error_message is set for empty filename"""
+        converter = rawtoaces.ImageConverter()
+        result = converter.process_image("")
+        
+        assert result is False
+        assert converter.status == rawtoaces.ImageConverter.Status.EmptyInputFilename
+        assert "Empty input filename provided" in converter.last_error_message()
+
+    def test_last_error_message_file_not_found(self):
+        """Test that last_error_message is set for non-existent file"""
+        converter = rawtoaces.ImageConverter()
+        result = converter.process_image("nonexistent_file_12345.dng")
+        
+        assert result is False
+        assert converter.status == rawtoaces.ImageConverter.Status.InputFileNotFound
+        assert "Input file does not exist" in converter.last_error_message()
+        assert "nonexistent_file_12345.dng" in converter.last_error_message()
+
+    def test_last_error_message_success_clears_message(self):
+        """Test that last_error_message is cleared on successful operation"""
+        import os
+        converter = rawtoaces.ImageConverter()
+        converter.settings.overwrite = True
+        
+        # First cause an error
+        converter.process_image("nonexistent_file.dng")
+        assert converter.last_error_message() != ""
+        
+        # Then process successfully
+        path = os.path.join('.', 'tests', 'materials', 'blackmagic_cinema_camera_cinemadng.dng')
+        result = converter.process_image(path)
+        
+        if result:
+            assert converter.status == rawtoaces.ImageConverter.Status.Success
+            assert converter.last_error_message() == ""
+
+    def test_last_error_message_configure_error(self):
+        """Test that last_error_message is set on configuration errors"""
+        converter = rawtoaces.ImageConverter()
+        result = converter.configure("nonexistent_file.dng")
+        
+        assert result is False
+        assert converter.status == rawtoaces.ImageConverter.Status.ConfigurationError
+        assert "Failed to open image file" in converter.last_error_message()
+
+    def test_last_error_message_file_exists(self):
+        """Test that last_error_message is set when file exists and overwrite is False"""
+        import os
+        converter = rawtoaces.ImageConverter()
+        converter.settings.overwrite = False
+        
+        path = os.path.join('.', 'tests', 'materials', 'blackmagic_cinema_camera_cinemadng.dng')
+        
+        # First process to create output file
+        first_result = converter.process_image(path)
+        if not first_result:
+            # Skip if first processing fails
+            return
+        
+        # Try to process again without overwrite
+        second_result = converter.process_image(path)
+        
+        if not second_result:
+            assert converter.status == rawtoaces.ImageConverter.Status.FileExists
+            assert "Output file already exists" in converter.last_error_message()
 
 if __name__ == "__main__":
     pytest.main([__file__])

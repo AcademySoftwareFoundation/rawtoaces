@@ -63,37 +63,22 @@ int main( int argc, const char *argv[] )
                           << total_files << "]: " << input_filename
                           << std::endl;
                 
-                // CLI specific error messages
+                // Print library-level error message if available
+                if ( !converter.last_error_message().empty() )
+                {
+                    std::cerr << "  Reason: " << converter.last_error_message()
+                              << std::endl;
+                }
+                
+                // Add CLI-specific hints based on error status
                 switch ( converter.status )
                 {
                     case rta::util::ImageConverter::Status::FileExists:
-                        std::cerr << "  Error: Output file already exists. "
-                                  << "Use --overwrite to allow overwriting existing files."
-                                  << std::endl;
-                        break;
-                    case rta::util::ImageConverter::Status::InputFileNotFound:
-                        std::cerr << "  Error: Input file does not exist."
-                                  << std::endl;
-                        break;
-                    case rta::util::ImageConverter::Status::EmptyInputFilename:
-                        std::cerr << "  Error: Empty input filename provided."
+                        std::cerr << "  Hint: Use --overwrite to allow overwriting existing files."
                                   << std::endl;
                         break;
                     case rta::util::ImageConverter::Status::OutputDirectoryError:
-                        std::cerr << "  Error: Output directory error. "
-                                  << "Use --create-dirs to create missing directories."
-                                  << std::endl;
-                        break;
-                    case rta::util::ImageConverter::Status::ConfigurationError:
-                        std::cerr << "  Error: Failed to configure image conversion."
-                                  << std::endl;
-                        break;
-                    case rta::util::ImageConverter::Status::ReadError:
-                        std::cerr << "  Error: Failed to read the input file."
-                                  << std::endl;
-                        break;
-                    case rta::util::ImageConverter::Status::WriteError:
-                        std::cerr << "  Error: Failed to write the output file."
+                        std::cerr << "  Hint: Use --create-dirs to create missing directories."
                                   << std::endl;
                         break;
                     default:

@@ -247,6 +247,9 @@ public:
     /// This property holds the error code from the most recent method call that returns a bool. 
     Status status = Status::Success;
 
+    /// Returns the error message from the most recent method call that returned false.
+    const std::string &last_error_message() const { return _last_error_message; }
+
     /// Initialise the parser object with all the command line parameters
     /// used by this tool. The method also sets the help and usage strings.
     /// The parser object can be amended by the calling code afterwards if
@@ -402,6 +405,9 @@ private:
     std::vector<std::vector<double>> _idt_matrix;
     std::vector<std::vector<double>> _cat_matrix;
     std::vector<double>              _wb_multipliers;
+    
+    // Error message from the most recent method call that returned false.
+    std::string _last_error_message;
 };
 
 } //namespace util

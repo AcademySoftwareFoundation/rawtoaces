@@ -199,8 +199,12 @@ bool fetch_multipliers_from_illuminant(
     const auto &entry = WB_from_illuminant_cache.fetch(
 =======
     std::string solve_error;
+<<<<<<< HEAD
     const auto &entry = cache::WB_from_illuminant_cache.fetch(
 >>>>>>> a174d5c (improve test coverage: add error_message parameter, fix Python tests, add main.cpp error handling tests)
+=======
+    const auto &entry = WB_from_illuminant_cache.fetch(
+>>>>>>> f1e9945 ([analysis] fix static analyser warnings (#239))
         descriptor, [&]( cache::WBFromIlluminantData &cache_data ) {
             return solve_multipliers_from_illuminant(
                 camera_make, camera_model, in_illuminant, solver, cache_data, solve_error );

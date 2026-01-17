@@ -34,20 +34,20 @@ jobs:
         compiler: [ [gcc, g++], [clang, clang++] ]
         include:
           - vfxyear: 2022
-            container: aswf/ci-osl:2022-clang13
+            container: aswf/ci-osl:2022-clang14.1
             container_volumes: '["/node20217:/node20217:rw,rshared", "/node20217:/__e/node20:ro,rshared]"]'
             ceres_hack: 'ON'
             test_install: 'OFF'
           - vfxyear: 2023
-            container: aswf/ci-osl:2023-clang15
+            container: aswf/ci-osl:2023-clang15.2
           - vfxyear: 2024
-            container: aswf/ci-rawtoaces:2024.4
+            container: aswf/ci-rawtoaces:2024.5
             toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
           - vfxyear: 2025
-            container: aswf/ci-rawtoaces:2025.3
+            container: aswf/ci-rawtoaces:2025.4
             toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
           - vfxyear: 2026
-            container: aswf/ci-rawtoaces:2026.1
+            container: aswf/ci-rawtoaces:2026.2
             toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
 
   build:

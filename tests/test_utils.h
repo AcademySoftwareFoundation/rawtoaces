@@ -11,6 +11,7 @@
 #include <vector>
 #include <ctime>
 #include <nlohmann/json.hpp>
+#include <rawtoaces/rawtoaces_core.h>
 
 /// RAII (Resource Acquisition Is Initialization)
 /// helper class for test directory management
@@ -76,6 +77,9 @@ std::string capture_stderr( std::function<void()> action );
 /// @param action A callable (function, lambda, etc.) that may write to stdout
 /// @return The captured stdout output as a string
 std::string capture_stdout( std::function<void()> action );
+
+/// Initialize common DNG-style metadata used across tests.
+void init_metadata( rta::core::Metadata &metadata );
 
 // ============================================================================
 // DSL Builders for Test Setup

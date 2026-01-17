@@ -42,7 +42,7 @@ template <typename... Ts>
 std::ostream &operator<<( std::ostream &os, const std::tuple<Ts...> &tuple )
 {
     return println_tuple_impl( os, tuple, std::index_sequence_for<Ts...>{} );
-}
+} // LCOV_EXCL_LINE - bug in coverage tool
 
 namespace cache
 {

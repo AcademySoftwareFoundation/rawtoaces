@@ -20,6 +20,7 @@ endif()
 add_executable (
 	Test_usage_example_core
 	usage_example_core.cpp
+    test_utils.cpp
 )
 
 target_link_libraries(

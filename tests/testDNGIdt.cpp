@@ -76,19 +76,6 @@ static const std::vector<double> k_identity_xyz_to_rgb = { 1.0, 0.0, 0.0,
                                                            0.0, 1.0, 0.0,
                                                            0.0, 0.0, 1.0 };
 
-void init_metadata( rta::core::Metadata &metadata )
-{
-    metadata.baseline_exposure = 2.4;
-
-    metadata.neutral_RGB = { 0.6289999865031245, 1, 0.79040003045288199 };
-
-    metadata.calibration[0].illuminant = 17;
-    metadata.calibration[1].illuminant = 21;
-
-    metadata.calibration[0].XYZ_to_RGB_matrix = k_calibration_0_xyz_to_rgb;
-    metadata.calibration[1].XYZ_to_RGB_matrix = k_calibration_1_xyz_to_rgb;
-}
-
 void testIDT_XYZToColorTemperature()
 {
     double              XYZ[3] = { 0.9731171910, 1.0174927152, 0.9498565880 };

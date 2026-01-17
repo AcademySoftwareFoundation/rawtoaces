@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <OpenImageIO/unittest.h>
 #include <rawtoaces/rawtoaces_core.h>
+#include "test_utils.h"
 
 // This file contains some usage examples of the core library.
 // It has only very little unit test functionality to keep the code clean.
@@ -107,30 +108,6 @@ void test_SpectralSolver_illuminant()
         for ( size_t col = 0; col < 3; col++ )
             OIIO_CHECK_EQUAL_THRESH(
                 solved_IDT[row][col], true_IDT[row][col], 1e-5 );
-}
-
-/// A helper function to init the metadata object.
-/// Normally the values come from a DNG file metadata.
-void init_metadata( rta::core::Metadata &metadata )
-{
-    metadata.baseline_exposure = 2.4;
-
-    metadata.neutral_RGB = { 0.6289999865031245, 1, 0.79040003045288199 };
-
-    metadata.calibration[0].illuminant = 17;
-    metadata.calibration[1].illuminant = 21;
-
-    metadata.calibration[0].XYZ_to_RGB_matrix = {
-        1.3119699954986572,   -0.49678999185562134, 0.011559999547898769,
-        -0.41723001003265381, 1.4423700571060181,   0.045279998332262039,
-        0.067230001091957092, 0.21709999442100525,  0.72650998830795288
-    };
-
-    metadata.calibration[1].XYZ_to_RGB_matrix = {
-        1.0088499784469604,    -0.27351000905036926, -0.082580000162124634,
-        -0.48996999859809875,  1.3444099426269531,   0.11174000054597855,
-        -0.064060002565383911, 0.32997000217437744,  0.5391700267791748
-    };
 }
 
 /// Test the metadata solver.

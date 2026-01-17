@@ -19,7 +19,11 @@ void util_bindings( nanobind::module_ &m )
 
     image_converter.def_rw( "settings", &ImageConverter::settings );
     image_converter.def_ro( "status", &ImageConverter::status );
-    image_converter.def_ro( "last_error_message", &ImageConverter::last_error_message );
+    image_converter.def_prop_ro(
+        "last_error_message",
+        []( const ImageConverter &converter ) {
+            return converter.last_error_message();
+        } );
     image_converter.def( "process_image", &ImageConverter::process_image );
     image_converter.def(
         "get_WB_multipliers", &ImageConverter::get_WB_multipliers );

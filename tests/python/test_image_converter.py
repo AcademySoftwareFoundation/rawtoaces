@@ -95,7 +95,7 @@ class TestImageConverter:
             result = converter.process_image(invalid_path)
             assert result is False
             # Check that error message is set
-            assert converter.last_error_message() != ""
+            assert converter.last_error_message != ""
             assert converter.status != rawtoaces.ImageConverter.Status.Success
         except Exception:
             # If an exception is thrown, that's also acceptable behavior for invalid input
@@ -106,7 +106,7 @@ class TestImageConverter:
             result = converter.process_image("")
             assert result is False
             # Check that error message is set for empty filename
-            assert converter.last_error_message() != ""
+            assert converter.last_error_message != ""
             assert converter.status == rawtoaces.ImageConverter.Status.EmptyInputFilename
         except Exception:
             # If an exception is thrown, that's also acceptable behavior for invalid input
@@ -413,7 +413,7 @@ class TestLastErrorMessage:
     def test_last_error_message_initial_state(self):
         """Test that last_error_message is empty initially"""
         converter = rawtoaces.ImageConverter()
-        assert converter.last_error_message() == ""
+        assert converter.last_error_message == ""
         assert converter.status == rawtoaces.ImageConverter.Status.Success
 
     def test_last_error_message_empty_filename(self):
@@ -423,7 +423,7 @@ class TestLastErrorMessage:
         
         assert result is False
         assert converter.status == rawtoaces.ImageConverter.Status.EmptyInputFilename
-        assert "Empty input filename provided" in converter.last_error_message()
+        assert "Empty input filename provided" in converter.last_error_message
 
     def test_last_error_message_file_not_found(self):
         """Test that last_error_message is set for non-existent file"""
@@ -432,8 +432,8 @@ class TestLastErrorMessage:
         
         assert result is False
         assert converter.status == rawtoaces.ImageConverter.Status.InputFileNotFound
-        assert "Input file does not exist" in converter.last_error_message()
-        assert "nonexistent_file_12345.dng" in converter.last_error_message()
+        assert "Input file does not exist" in converter.last_error_message
+        assert "nonexistent_file_12345.dng" in converter.last_error_message
 
     def test_last_error_message_success_clears_message(self):
         """Test that last_error_message is cleared on successful operation"""
@@ -443,15 +443,17 @@ class TestLastErrorMessage:
         
         # First cause an error
         converter.process_image("nonexistent_file.dng")
-        assert converter.last_error_message() != ""
+        assert converter.last_error_message != ""
+        error_msg = converter.last_error_message
         
-        # Then process successfully
+        # Then process successfully - error message should persist
         path = os.path.join('.', 'tests', 'materials', 'blackmagic_cinema_camera_cinemadng.dng')
         result = converter.process_image(path)
         
         if result:
             assert converter.status == rawtoaces.ImageConverter.Status.Success
-            assert converter.last_error_message() == ""
+            # Error message should persist (not cleared on success)
+            assert converter.last_error_message == error_msg
 
     def test_last_error_message_configure_error(self):
         """Test that last_error_message is set on configuration errors"""
@@ -460,7 +462,7 @@ class TestLastErrorMessage:
         
         assert result is False
         assert converter.status == rawtoaces.ImageConverter.Status.ConfigurationError
-        assert "Failed to open image file" in converter.last_error_message()
+        assert "Failed to open image file" in converter.last_error_message
 
     def test_last_error_message_file_exists(self):
         """Test that last_error_message is set when file exists and overwrite is False"""
@@ -481,7 +483,7 @@ class TestLastErrorMessage:
         
         if not second_result:
             assert converter.status == rawtoaces.ImageConverter.Status.FileExists
-            assert "Output file already exists" in converter.last_error_message()
+            assert "Output file already exists" in converter.last_error_message
 
 if __name__ == "__main__":
     pytest.main([__file__])

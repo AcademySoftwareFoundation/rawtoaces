@@ -289,12 +289,14 @@ CameraIdentifier get_camera_identifier(
 /// @param IDT_matrix Output Input Device Transform matrix (3x3 matrix)
 /// @param CAT_matrix Output Chromatic Adaptation Transform matrix (cleared in spectral mode)
 /// @return true if transformation matrices were successfully prepared, false otherwise
+/// @param error_message Output parameter to capture error message if function returns false
 bool prepare_transform_spectral(
     const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,
     std::vector<double>              &WB_multipliers,
     std::vector<std::vector<double>> &IDT_matrix,
-    std::vector<std::vector<double>> &CAT_matrix )
+    std::vector<std::vector<double>> &CAT_matrix,
+    std::string                      &error_message )
 {
     // Initialize and validate camera identification
     std::string lower_illuminant = OIIO::Strutil::lower( settings.illuminant );
@@ -356,11 +358,13 @@ bool prepare_transform_spectral(
             solver,
             settings.verbosity,
             settings.disable_cache,
-            found_illuminant );
+            found_illuminant,
+            error_message );
 
-        // Expected to be true due to camera lookup success in the previous step,
-        // since lack of camera is the only way for find_illuminant to return false;
-        assert( success );
+        if ( !success )
+        {
+            return false;
+        }
     }
     else
     {
@@ -373,7 +377,8 @@ bool prepare_transform_spectral(
             solver,
             settings.verbosity,
             settings.disable_cache,
-            WB_multipliers );
+            WB_multipliers,
+            error_message );
 
         if ( !success )
         {
@@ -391,7 +396,8 @@ bool prepare_transform_spectral(
         solver,
         settings.verbosity,
         settings.disable_cache,
-        IDT_matrix );
+        IDT_matrix,
+        error_message );
 
     if ( !success )
     {
@@ -417,12 +423,16 @@ bool prepare_transform_spectral(
 /// @param IDT_matrix Output Input Device Transform matrix (3x3 matrix)
 /// @param CAT_matrix Output Chromatic Adaptation Transform matrix (cleared for DNG)
 /// @return true if transformation matrices were successfully prepared, false otherwise
+/// @param error_message Output parameter to capture error message if function returns false
 bool prepare_transform_DNG(
     const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,
     std::vector<std::vector<double>> &IDT_matrix,
-    std::vector<std::vector<double>> &CAT_matrix )
+    std::vector<std::vector<double>> &CAT_matrix,
+    std::string                      &error_message )
 {
+    (void)error_message; // Currently unused, but kept for consistency with prepare_transform_spectral interface
+    
     // Step 1: Extract basic DNG metadata
     core::Metadata metadata;
 
@@ -1516,15 +1526,19 @@ bool ImageConverter::configure(
 
     if ( is_spectral_white_balance || is_spectral_matrix )
     {
+        std::string error_msg;
         if ( !prepare_transform_spectral(
                  image_spec,
                  settings,
                  _wb_multipliers,
                  _idt_matrix,
-                 _cat_matrix ) )
+                 _cat_matrix,
+                 error_msg ) )
         {
             status = Status::ConfigurationError;
-            _last_error_message = "Colour space transform has not been configured properly (spectral mode)";
+            _last_error_message = error_msg.empty() ? 
+                "Colour space transform has not been configured properly (spectral mode)" : 
+                error_msg;
             return false;
         }
 
@@ -1553,11 +1567,14 @@ bool ImageConverter::configure(
             options["raw:use_camera_matrix"] = 1;
             options["raw:use_camera_wb"]     = 1;
 
+            std::string error_msg;
             if ( !prepare_transform_DNG(
-                     image_spec, settings, _idt_matrix, _cat_matrix ) )
+                     image_spec, settings, _idt_matrix, _cat_matrix, error_msg ) )
             {
                 status = Status::ConfigurationError;
-                _last_error_message = "Colour space transform has not been configured properly (metadata mode)";
+                _last_error_message = error_msg.empty() ?
+                    "Colour space transform has not been configured properly (metadata mode)" :
+                    error_msg;
                 return false;
             }
         }
@@ -1670,7 +1687,6 @@ bool ImageConverter::configure(
     }
 
     status = Status::Success;
-    _last_error_message.clear();
     return true;
 }
 
@@ -1693,7 +1709,6 @@ bool ImageConverter::load_image(
     else
     {
         status = Status::Success;
-        _last_error_message.clear();
     }
     return result;
 }
@@ -1782,7 +1797,6 @@ bool ImageConverter::apply_matrix(
     }
 
     status = Status::Success;
-    _last_error_message.clear();
     return success;
 }
 
@@ -1799,7 +1813,6 @@ bool ImageConverter::apply_scale(
     else
     {
         status = Status::Success;
-        _last_error_message.clear();
     }
     return result;
 }
@@ -1856,7 +1869,6 @@ bool ImageConverter::apply_crop(
     }
 
     status = Status::Success;
-    _last_error_message.clear();
     return true;
 }
 
@@ -1916,7 +1928,6 @@ bool ImageConverter::make_output_path(
 
         path = temp_path.string();
         status = Status::Success;
-        _last_error_message.clear();
         return true;
     }
     catch ( const std::exception &e )
@@ -1970,7 +1981,6 @@ bool ImageConverter::save_image(
     }
 
     status = Status::Success;
-    _last_error_message.clear();
     return true;
 }
 
@@ -2023,7 +2033,6 @@ bool ImageConverter::process_image( const std::string &input_filename )
     OIIO::ParamValueList hints;
     if ( !configure( input_filename, hints ) )
     {
-        // status and _last_error_message are already set by configure
         return ( false );
     }
     usage_timer.print( input_filename, "configuring reader" );
@@ -2037,7 +2046,6 @@ bool ImageConverter::process_image( const std::string &input_filename )
     OIIO::ImageBuf buffer;
     if ( !load_image( input_filename, hints, buffer ) )
     {
-        // status and _last_error_message are already set by load_image
         return ( false );
     }
     fix_metadata( buffer.specmod() );
@@ -2051,7 +2059,6 @@ bool ImageConverter::process_image( const std::string &input_filename )
     usage_timer.reset();
     if ( !apply_matrix( buffer, buffer ) )
     {
-        // status and _last_error_message are already set by apply_matrix
         return ( false );
     }
     usage_timer.print( input_filename, "applying transform matrix" );
@@ -2064,7 +2071,6 @@ bool ImageConverter::process_image( const std::string &input_filename )
     usage_timer.reset();
     if ( !apply_scale( buffer, buffer ) )
     {
-        // status and _last_error_message are already set by apply_scale
         return ( false );
     }
     usage_timer.print( input_filename, "applying scale" );
@@ -2077,7 +2083,6 @@ bool ImageConverter::process_image( const std::string &input_filename )
     usage_timer.reset();
     if ( !apply_crop( buffer, buffer ) )
     {
-        // status and _last_error_message are already set by apply_crop
         return ( false );
     }
     usage_timer.print( input_filename, "applying crop" );
@@ -2090,13 +2095,11 @@ bool ImageConverter::process_image( const std::string &input_filename )
     usage_timer.reset();
     if ( !save_image( output_filename, buffer ) )
     {
-        // status and _last_error_message are already set by save_image
         return ( false );
     }
     usage_timer.print( input_filename, "writing image" );
 
     status = Status::Success;
-    _last_error_message.clear();
     return ( true );
 }
 

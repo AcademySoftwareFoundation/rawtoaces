@@ -20,7 +20,8 @@ bool fetch_illuminant_from_multipliers(
     core::SpectralSolver      &solver,
     int                        verbosity,
     bool                       disable_cache,
-    std::string               &out_illuminant );
+    std::string               &out_illuminant,
+    std::string               &error_message );
 
 bool fetch_multipliers_from_illuminant(
     const std::string    &camera_make,
@@ -29,7 +30,8 @@ bool fetch_multipliers_from_illuminant(
     core::SpectralSolver &solver,
     int                   verbosity,
     bool                  disable_cache,
-    std::vector<double>  &out_multipliers );
+    std::vector<double>  &out_multipliers,
+    std::string          &error_message );
 
 bool fetch_matrix_from_illuminant(
     const std::string                &camera_make,
@@ -38,7 +40,8 @@ bool fetch_matrix_from_illuminant(
     core::SpectralSolver             &solver,
     int                               verbosity,
     bool                              disable_cache,
-    std::vector<std::vector<double>> &out_matrix );
+    std::vector<std::vector<double>> &out_matrix,
+    std::string                       &error_message );
 
 void fetch_matrix_from_metadata(
     const core::Metadata             &metadata,

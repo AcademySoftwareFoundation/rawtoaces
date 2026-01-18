@@ -170,3 +170,12 @@ get_output_lines( const std::string &output, bool filter_empty = true );
 #define ASSERT_NOT_CONTAINS( output, text ) assert_not_contains( output, text )
 #define ASSERT_CONTAINS_ALL( output, texts )                                   \
     assert_contains_all( output, texts )
+
+// Cross-platform environment variable helpers
+/*
+Standard C Library vs POSIX
+getenv() - Part of standard C library (C89/C99) - available everywhere
+setenv()/unsetenv() - Part of POSIX standard - only on Unix-like systems
+*/
+void set_env_var( const std::string &name, const std::string &value );
+void unset_env_var( const std::string &name );

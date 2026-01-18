@@ -19,6 +19,8 @@ add_library ( ${RAWTOACES_UTIL_LIB} ${DO_SHARED}
     transform_cache.h
     colour_transforms.cpp
     colour_transforms.h
+    exiftool.cpp
+    exiftool.h
 
     # Make the headers visible in IDEs. This should not affect the builds.
     ${UTIL_PUBLIC_HEADER}

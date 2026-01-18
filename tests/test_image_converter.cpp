@@ -124,41 +124,15 @@ std::string run_rawtoaces_command(
     return output;
 }
 
-// Cross-platform environment variable helpers
-/*
-Standard C Library vs POSIX
-getenv() - Part of standard C library (C89/C99) - available everywhere
-setenv()/unsetenv() - Part of POSIX standard - only on Unix-like systems
-*/
 #ifdef WIN32
-void set_env_var( const std::string &name, const std::string &value )
-{
-    _putenv_s( name.c_str(), value.c_str() );
-}
-
 std::string to_os_path( std::string linux_path )
 {
     return convert_linux_path_to_windows_path( linux_path );
-}
-
-void unset_env_var( const std::string &name )
-{
-    _putenv_s( name.c_str(), "" );
 }
 #else
 std::string to_os_path( std::string linux_path )
 {
     return linux_path;
-}
-
-void set_env_var( const std::string &name, const std::string &value )
-{
-    setenv( name.c_str(), value.c_str(), 1 );
-}
-
-void unset_env_var( const std::string &name )
-{
-    unsetenv( name.c_str() );
 }
 #endif
 

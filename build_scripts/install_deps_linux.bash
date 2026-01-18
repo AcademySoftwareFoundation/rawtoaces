@@ -9,6 +9,7 @@ time sudo apt-get -q -f install -y \
     nlohmann-json3-dev \
     libopencv-dev \
     openimageio-tools libopenimageio-dev \
-    nanobind-dev
+    nanobind-dev \
+    exiftool
 
 pip3 install pytest

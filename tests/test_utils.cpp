@@ -421,3 +421,26 @@ get_output_lines( const std::string &output, bool filter_empty )
     }
     return lines;
 }
+
+#ifdef WIN32
+void set_env_var( const std::string &name, const std::string &value )
+{
+    _putenv_s( name.c_str(), value.c_str() );
+}
+
+void unset_env_var( const std::string &name )
+{
+    _putenv_s( name.c_str(), "" );
+}
+#else
+
+void set_env_var( const std::string &name, const std::string &value )
+{
+    setenv( name.c_str(), value.c_str(), 1 );
+}
+
+void unset_env_var( const std::string &name )
+{
+    unsetenv( name.c_str() );
+}
+#endif

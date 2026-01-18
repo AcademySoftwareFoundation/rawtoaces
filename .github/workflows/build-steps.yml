@@ -44,7 +44,6 @@ permissions: read-all
 
 jobs:
   build_steps:
-
     runs-on: ${{ inputs.runner }}
     container:
       image: ${{ inputs.container }}
@@ -95,6 +94,7 @@ jobs:
           conan profile detect --force
           conan install --requires=nlohmann_json/3.12.0 --requires=nanobind/2.9.2 --generator CMakeDeps --generator CMakeToolchain --output-folder=build_deps --build=missing
           python -m pip install pytest
+          sudo yum install --setopt=tsflags=nodocs -y perl-Image-ExifTool
     
       - name: Configure CMake
         run: >

@@ -208,6 +208,24 @@ add_test ( NAME Test_Cache COMMAND Test_Cache )
 ################################################################################
 
 add_executable (
+    Test_Exiftool
+    testExiftool.cpp
+    test_utils.cpp
+)
+
+target_link_libraries(
+        Test_Exiftool
+    PUBLIC
+        ${RAWTOACES_UTIL_LIB}
+        OpenImageIO::OpenImageIO
+)
+
+setup_test_coverage(Test_Exiftool)
+add_test ( NAME Test_Exiftool COMMAND Test_Exiftool )
+
+################################################################################
+
+add_executable (
     Test_ColourTransforms
     testColourTransforms.cpp
     test_utils.cpp

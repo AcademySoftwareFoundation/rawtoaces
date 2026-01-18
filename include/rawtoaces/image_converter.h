@@ -201,6 +201,9 @@ public:
         /// Disable caching.
         bool disable_cache = false;
 
+        /// Disable calling exiftool to fetch missing metadata.
+        bool disable_exiftool = false;
+
         /// Verbosity level.
         int verbosity = 0;
     };

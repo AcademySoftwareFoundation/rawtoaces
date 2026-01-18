@@ -20,3 +20,6 @@ if( ENABLE_COVERAGE AND COVERAGE_SUPPORTED )
 endif()
 
 install( TARGETS rawtoaces DESTINATION ${INSTALL_BIN_DIR} )
+
+# Simplifies debugging with Xcode, doesn't affect anything else.
+set_target_properties(rawtoaces PROPERTIES XCODE_SCHEME_ARGUMENTS "${CMAKE_XCODE_SCHEME_ARGUMENTS}" )

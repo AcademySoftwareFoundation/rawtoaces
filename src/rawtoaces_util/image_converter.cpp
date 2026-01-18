@@ -7,6 +7,7 @@
 
 #include "transform_cache.h"
 #include "colour_transforms.h"
+#include "exiftool.h"
 
 #include <set>
 #include <filesystem>
@@ -883,6 +884,10 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
         .help( "Disable the colour transform cache." )
         .action( OIIO::ArgParse::store_true() );
 
+    arg_parser.arg( "--disable-exiftool" )
+        .help( "Disable using exiftool to fetch missing metadata." )
+        .action( OIIO::ArgParse::store_true() );
+
     arg_parser.arg( "--verbose" )
         .help(
             "(-v) Print progress messages. "
@@ -1156,11 +1161,12 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     settings.scale             = arg_parser["scale"].get<float>();
     settings.denoise_threshold = arg_parser["denoise-threshold"].get<float>();
 
-    settings.overwrite     = arg_parser["overwrite"].get<int>();
-    settings.create_dirs   = arg_parser["create-dirs"].get<int>();
-    settings.output_dir    = arg_parser["output-dir"].get();
-    settings.use_timing    = arg_parser["use-timing"].get<int>();
-    settings.disable_cache = arg_parser["disable-cache"].get<int>();
+    settings.overwrite        = arg_parser["overwrite"].get<int>();
+    settings.create_dirs      = arg_parser["create-dirs"].get<int>();
+    settings.output_dir       = arg_parser["output-dir"].get();
+    settings.use_timing       = arg_parser["use-timing"].get<int>();
+    settings.disable_cache    = arg_parser["disable-cache"].get<int>();
+    settings.disable_exiftool = arg_parser["disable-exiftool"].get<int>();
 
     // If an illuminant was requested, confirm that we have it in the database
     // an error out early, before we start loading any images.
@@ -1258,6 +1264,38 @@ void fix_metadata( OIIO::ImageSpec &spec )
     }
 }
 
+bool fetch_missing_metadata(
+    const std::string              &input_path,
+    const ImageConverter::Settings &settings,
+    OIIO::ImageSpec                &spec )
+{
+    if ( settings.disable_exiftool )
+        return true;
+
+    std::vector<std::string> keys_to_check;
+
+    if ( settings.custom_camera_make.empty() )
+        keys_to_check.push_back( "cameraMake" );
+    if ( settings.custom_camera_model.empty() )
+        keys_to_check.push_back( "cameraModel" );
+
+    std::vector<std::string> keys_to_fetch;
+
+    for ( auto &key: keys_to_check )
+    {
+        auto attribute = spec.find_attribute( key );
+        if ( attribute == nullptr )
+        {
+            keys_to_fetch.push_back( key );
+            continue;
+        }
+    }
+    if ( keys_to_fetch.empty() )
+        return true;
+
+    return exiftool::fetch_metadata( spec, input_path, keys_to_fetch );
+}
+
 bool ImageConverter::configure(
     const std::string &input_filename, OIIO::ParamValueList &options )
 {
@@ -1277,6 +1315,12 @@ bool ImageConverter::configure(
     }
 
     fix_metadata( image_spec );
+    result = fetch_missing_metadata( input_filename, settings, image_spec );
+    if ( !result )
+    {
+        return false;
+    }
+
     return configure( image_spec, options );
 }
 
@@ -1941,6 +1985,7 @@ bool ImageConverter::process_image( const std::string &input_filename )
         std::cerr << "Failed to read the file: " << input_filename << std::endl;
         return ( false );
     }
+    fix_metadata( buffer.specmod() );
     usage_timer.print( input_filename, "reading image" );
 
     // ___ Apply matrix/matrices ___

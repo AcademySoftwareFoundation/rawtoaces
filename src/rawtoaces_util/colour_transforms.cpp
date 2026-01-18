@@ -12,6 +12,24 @@ namespace rta
 namespace util
 {
 
+/// Constructs an error message for missing data files
+///
+/// @param data_type The type of data that was not found (e.g., "spectral data", "training data", "observer")
+/// @param details Additional details to include in the error message (e.g., path, camera info)
+/// @param error_message Output parameter to store the constructed error message
+void print_data_error(
+    const std::string &data_type,
+    const std::string &details,
+    std::string       &error_message )
+{
+    error_message = "Failed to find " + data_type;
+    if ( !details.empty() )
+    {
+        error_message += " " + details;
+    }
+    error_message += ". Please check the database search path in RAWTOACES_DATABASE_PATH";
+}
+
 bool configure_spectral_solver(
     core::SpectralSolver &solver,
     const std::string    &camera_make,
@@ -26,9 +44,10 @@ bool configure_spectral_solver(
     success = solver.find_camera( camera_make, camera_model );
     if ( !success )
     {
-        error_message = "Failed to find spectral data for camera make: '" +
-                       camera_make + "', model: '" + camera_model +
-                       "'. Please check the database search path in RAWTOACES_DATABASE_PATH";
+        print_data_error(
+            "spectral data for camera",
+            "make: '" + camera_make + "', model: '" + camera_model + "'",
+            error_message );
         return false;
     }
 
@@ -39,8 +58,7 @@ bool configure_spectral_solver(
             solver.load_spectral_data( training_path, solver.training_data );
         if ( !success )
         {
-            error_message = "Failed to find training data '" + training_path +
-                           "'. Please check the database search path in RAWTOACES_DATABASE_PATH";
+            print_data_error( "training data", "'" + training_path + "'", error_message );
             return false;
         }
     }
@@ -51,8 +69,7 @@ bool configure_spectral_solver(
         success = solver.load_spectral_data( observer_path, solver.observer );
         if ( !success )
         {
-            error_message = "Failed to find observer '" + observer_path +
-                           "'. Please check the database search path in RAWTOACES_DATABASE_PATH";
+            print_data_error( "observer", "'" + observer_path + "'", error_message );
             return false;
         }
     }
@@ -63,8 +80,7 @@ bool configure_spectral_solver(
 
         if ( !success )
         {
-            error_message = "Failed to find illuminant type '" + illuminant +
-                           "'. Please check the database search path in RAWTOACES_DATABASE_PATH";
+            print_data_error( "illuminant type", "'" + illuminant + "'", error_message );
             return false;
         }
     }

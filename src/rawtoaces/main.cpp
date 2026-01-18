@@ -64,9 +64,9 @@ int main( int argc, const char *argv[] )
                           << std::endl;
                 
                 // Print library-level error message if available
-                if ( !converter.last_error_message().empty() )
+                if ( !converter.last_error_message.empty() )
                 {
-                    std::cerr << "  Reason: " << converter.last_error_message()
+                    std::cerr << "  Reason: " << converter.last_error_message
                               << std::endl;
                 }
                 

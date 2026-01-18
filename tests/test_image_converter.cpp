@@ -2112,7 +2112,7 @@ void test_last_error_message_empty_filename()
 
     OIIO_CHECK_ASSERT( !result );
     OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::EmptyInputFilename );
-    OIIO_CHECK_EQUAL( converter.last_error_message(), "Empty input filename provided" );
+    OIIO_CHECK_EQUAL( converter.last_error_message, "Empty input filename provided" );
 }
 
 /// Tests that last_error_message is set when input file does not exist
@@ -2126,8 +2126,8 @@ void test_last_error_message_file_not_found()
 
     OIIO_CHECK_ASSERT( !result );
     OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::InputFileNotFound );
-    OIIO_CHECK_EQUAL( converter.last_error_message().find( "Input file does not exist" ), 0 );
-    OIIO_CHECK_EQUAL( converter.last_error_message().find( nonexistent_file ) != std::string::npos, true );
+    OIIO_CHECK_EQUAL( converter.last_error_message.find( "Input file does not exist" ), 0 );
+    OIIO_CHECK_EQUAL( converter.last_error_message.find( nonexistent_file ) != std::string::npos, true );
 }
 
 /// Tests that last_error_message is set when output file already exists and overwrite is false
@@ -2159,7 +2159,7 @@ void test_last_error_message_file_exists()
     bool second_result = converter.process_image( test_file );
     OIIO_CHECK_ASSERT( !second_result );
     OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::FileExists );
-    OIIO_CHECK_EQUAL( converter.last_error_message().find( "Output file already exists" ), 0 );
+    OIIO_CHECK_EQUAL( converter.last_error_message.find( "Output file already exists" ), 0 );
 }
 
 /// Tests that last_error_message persists after successful operations
@@ -2180,15 +2180,15 @@ void test_last_error_message_persists_after_success()
 
     // First, cause an error
     converter.process_image( "nonexistent_file.dng" );
-    OIIO_CHECK_ASSERT( !converter.last_error_message().empty() );
-    std::string error_msg = converter.last_error_message();
+    OIIO_CHECK_ASSERT( !converter.last_error_message.empty() );
+    std::string error_msg = converter.last_error_message;
 
     // Then, process successfully - error message should persist
     bool result = converter.process_image( test_file );
     OIIO_CHECK_ASSERT( result );
     OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::Success );
     // Error message should persist (not cleared on success)
-    OIIO_CHECK_EQUAL( converter.last_error_message(), error_msg );
+    OIIO_CHECK_EQUAL( converter.last_error_message, error_msg );
 }
 
 /// Tests that last_error_message is set on configuration errors
@@ -2204,7 +2204,7 @@ void test_last_error_message_configure_error()
 
     OIIO_CHECK_ASSERT( !result );
     OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::ConfigurationError );
-    OIIO_CHECK_EQUAL( converter.last_error_message().find( "Failed to open image file" ), 0 );
+    OIIO_CHECK_EQUAL( converter.last_error_message.find( "Failed to open image file" ), 0 );
 }
 
 /// Tests that last_error_message is set on output directory errors
@@ -2221,8 +2221,8 @@ void test_last_error_message_output_directory_error()
 
     OIIO_CHECK_ASSERT( !result );
     OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::OutputDirectoryError );
-    OIIO_CHECK_EQUAL( converter.last_error_message().find( "Output directory does not exist" ) != std::string::npos || 
-                      converter.last_error_message().find( "Failed to create directory" ) != std::string::npos, true );
+    OIIO_CHECK_EQUAL( converter.last_error_message.find( "Output directory does not exist" ) != std::string::npos || 
+                      converter.last_error_message.find( "Failed to create directory" ) != std::string::npos, true );
 }
 
 /// Tests that errors from colour_transforms::fetch_illuminant_from_multipliers are relayed to last_error_message
@@ -2249,12 +2249,12 @@ void test_last_error_message_colour_transforms_illuminant_from_multipliers()
     OIIO_CHECK_ASSERT( !result );
     OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::ConfigurationError );
     // Error message should contain information about failing to find camera or illuminant
-    OIIO_CHECK_ASSERT( !converter.last_error_message().empty() );
+    OIIO_CHECK_ASSERT( !converter.last_error_message.empty() );
     // Check that error message is related to spectral/colour transform configuration
-    bool has_relevant_error = converter.last_error_message().find( "Failed to find spectral data" ) != std::string::npos ||
-                              converter.last_error_message().find( "Failed to find illuminant" ) != std::string::npos ||
-                              converter.last_error_message().find( "Colour space transform" ) != std::string::npos ||
-                              converter.last_error_message().find( "spectral" ) != std::string::npos;
+    bool has_relevant_error = converter.last_error_message.find( "Failed to find spectral data" ) != std::string::npos ||
+                              converter.last_error_message.find( "Failed to find illuminant" ) != std::string::npos ||
+                              converter.last_error_message.find( "Colour space transform" ) != std::string::npos ||
+                              converter.last_error_message.find( "spectral" ) != std::string::npos;
     OIIO_CHECK_ASSERT( has_relevant_error );
 }
 
@@ -2287,12 +2287,12 @@ void test_last_error_message_colour_transforms_matrix_from_illuminant()
     if ( !result )
     {
         OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::ConfigurationError );
-        OIIO_CHECK_ASSERT( !converter.last_error_message().empty() );
+        OIIO_CHECK_ASSERT( !converter.last_error_message.empty() );
         // Error should be related to matrix/transform calculation
-        bool has_relevant_error = converter.last_error_message().find( "Colour space transform" ) != std::string::npos ||
-                                  converter.last_error_message().find( "matrix" ) != std::string::npos ||
-                                  converter.last_error_message().find( "Failed to calculate" ) != std::string::npos ||
-                                  converter.last_error_message().find( "spectral" ) != std::string::npos;
+        bool has_relevant_error = converter.last_error_message.find( "Colour space transform" ) != std::string::npos ||
+                                  converter.last_error_message.find( "matrix" ) != std::string::npos ||
+                                  converter.last_error_message.find( "Failed to calculate" ) != std::string::npos ||
+                                  converter.last_error_message.find( "spectral" ) != std::string::npos;
         OIIO_CHECK_ASSERT( has_relevant_error );
     }
 }

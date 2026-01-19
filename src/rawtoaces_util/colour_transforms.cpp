@@ -27,7 +27,9 @@ void print_data_error(
     {
         error_message += " " + details;
     }
-    error_message += ". Please check the database search path in RAWTOACES_DATABASE_PATH";
+    error_message +=
+        ". Please check the database search path in "
+        "RAWTOACES_DATABASE_PATH";
 }
 
 bool configure_spectral_solver(
@@ -58,7 +60,8 @@ bool configure_spectral_solver(
             solver.load_spectral_data( training_path, solver.training_data );
         if ( !success )
         {
-            print_data_error( "training data", "'" + training_path + "'", error_message );
+            print_data_error(
+                "training data", "'" + training_path + "'", error_message );
             return false;
         }
     }
@@ -69,7 +72,8 @@ bool configure_spectral_solver(
         success = solver.load_spectral_data( observer_path, solver.observer );
         if ( !success )
         {
-            print_data_error( "observer", "'" + observer_path + "'", error_message );
+            print_data_error(
+                "observer", "'" + observer_path + "'", error_message );
             return false;
         }
     }
@@ -80,7 +84,8 @@ bool configure_spectral_solver(
 
         if ( !success )
         {
-            print_data_error( "illuminant type", "'" + illuminant + "'", error_message );
+            print_data_error(
+                "illuminant type", "'" + illuminant + "'", error_message );
             return false;
         }
     }
@@ -97,14 +102,21 @@ bool solve_illuminant_from_multipliers(
     std::string                &error_message )
 {
     if ( !configure_spectral_solver(
-             solver, camera_make, camera_model, "", false, false, error_message ) )
+             solver,
+             camera_make,
+             camera_model,
+             "",
+             false,
+             false,
+             error_message ) )
     {
         return false;
     }
 
     if ( !solver.find_illuminant( wb_multipliers ) )
     {
-        error_message = "Failed to find illuminant from white balance multipliers";
+        error_message =
+            "Failed to find illuminant from white balance multipliers";
         return false;
     }
 
@@ -143,7 +155,12 @@ bool fetch_illuminant_from_multipliers(
     const auto &entry = illuminant_from_WB_cache.fetch(
         descriptor, [&]( cache::IlluminantAndWBData &cache_data ) {
             return solve_illuminant_from_multipliers(
-                camera_make, camera_model, wb_multipliers, solver, cache_data, solve_error );
+                camera_make,
+                camera_model,
+                wb_multipliers,
+                solver,
+                cache_data,
+                solve_error );
         } );
 
     bool success = entry.first;
@@ -174,7 +191,13 @@ bool solve_multipliers_from_illuminant(
     std::string                 &error_message )
 {
     if ( !configure_spectral_solver(
-             solver, camera_make, camera_model, in_illuminant, false, false, error_message ) )
+             solver,
+             camera_make,
+             camera_model,
+             in_illuminant,
+             false,
+             false,
+             error_message ) )
     {
         return false;
     }
@@ -211,19 +234,16 @@ bool fetch_multipliers_from_illuminant(
     WB_from_illuminant_cache.verbosity = verbosity;
     WB_from_illuminant_cache.disabled  = disable_cache;
 
-<<<<<<< HEAD
-    const auto &entry = WB_from_illuminant_cache.fetch(
-=======
     std::string solve_error;
-<<<<<<< HEAD
-    const auto &entry = cache::WB_from_illuminant_cache.fetch(
->>>>>>> a174d5c (improve test coverage: add error_message parameter, fix Python tests, add main.cpp error handling tests)
-=======
     const auto &entry = WB_from_illuminant_cache.fetch(
->>>>>>> f1e9945 ([analysis] fix static analyser warnings (#239))
         descriptor, [&]( cache::WBFromIlluminantData &cache_data ) {
             return solve_multipliers_from_illuminant(
-                camera_make, camera_model, in_illuminant, solver, cache_data, solve_error );
+                camera_make,
+                camera_model,
+                in_illuminant,
+                solver,
+                cache_data,
+                solve_error );
         } );
 
     bool success = entry.first;
@@ -266,7 +286,13 @@ bool solve_matrix_from_illuminant(
 {
     std::string error_msg;
     if ( !configure_spectral_solver(
-             solver, camera_make, camera_model, in_illuminant, true, true, error_msg ) )
+             solver,
+             camera_make,
+             camera_model,
+             in_illuminant,
+             true,
+             true,
+             error_msg ) )
     {
         return false;
     }
@@ -297,7 +323,7 @@ bool fetch_matrix_from_illuminant(
     int                               verbosity,
     bool                              disable_cache,
     std::vector<std::vector<double>> &out_matrix,
-    std::string                       &error_message )
+    std::string                      &error_message )
 {
     cache::CameraAndIlluminantDescriptor descriptor = { camera_make,
                                                         camera_model,

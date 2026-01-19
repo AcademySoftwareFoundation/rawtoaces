@@ -62,27 +62,29 @@ int main( int argc, const char *argv[] )
                 std::cerr << "Failed on file [" << file_index << "/"
                           << total_files << "]: " << input_filename
                           << std::endl;
-                
+
                 // Print library-level error message if available
                 if ( !converter.last_error_message.empty() )
                 {
                     std::cerr << "  Reason: " << converter.last_error_message
                               << std::endl;
                 }
-                
+
                 // Add CLI-specific hints based on error status
                 switch ( converter.status )
                 {
                     case rta::util::ImageConverter::Status::FileExists:
-                        std::cerr << "  Hint: Use --overwrite to allow overwriting existing files."
-                                  << std::endl;
+                        std::cerr
+                            << "  Hint: Use --overwrite to allow overwriting existing files."
+                            << std::endl;
                         break;
-                    case rta::util::ImageConverter::Status::OutputDirectoryError:
-                        std::cerr << "  Hint: Use --create-dirs to create missing directories."
-                                  << std::endl;
+                    case rta::util::ImageConverter::Status::
+                        OutputDirectoryError:
+                        std::cerr
+                            << "  Hint: Use --create-dirs to create missing directories."
+                            << std::endl;
                         break;
-                    default:
-                        break;
+                    default: break;
                 }
                 break;
             }

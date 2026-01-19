@@ -430,8 +430,9 @@ bool prepare_transform_DNG(
     std::vector<std::vector<double>> &CAT_matrix,
     std::string                      &error_message )
 {
-    (void)error_message; // Currently unused, but kept for consistency with prepare_transform_spectral interface
-    
+    (void)
+        error_message; // Currently unused, but kept for consistency with prepare_transform_spectral interface
+
     // Step 1: Extract basic DNG metadata
     core::Metadata metadata;
 
@@ -1321,9 +1322,10 @@ bool ImageConverter::configure(
     bool result = image_input->open( input_filename, image_spec, temp_spec );
     if ( !result )
     {
-        status = Status::ConfigurationError;
-        last_error_message = std::string("Failed to open image file: ") + input_filename + 
-                              ". Error: " + image_input->geterror();
+        status             = Status::ConfigurationError;
+        last_error_message = std::string( "Failed to open image file: " ) +
+                             input_filename +
+                             ". Error: " + image_input->geterror();
         return false;
     }
 
@@ -1454,7 +1456,8 @@ bool ImageConverter::configure(
 
         default:
             status = Status::ConfigurationError;
-            last_error_message = "White balancing method has not been configured properly";
+            last_error_message =
+                "White balancing method has not been configured properly";
             return false;
     }
 
@@ -1515,7 +1518,8 @@ bool ImageConverter::configure(
             break;
         default:
             status = Status::ConfigurationError;
-            last_error_message = "Matrix method has not been configured properly";
+            last_error_message =
+                "Matrix method has not been configured properly";
             return false;
     }
 
@@ -1535,9 +1539,10 @@ bool ImageConverter::configure(
                  error_msg ) )
         {
             status = Status::ConfigurationError;
-            last_error_message = error_msg.empty() ? 
-                "Colour space transform has not been configured properly (spectral mode)" : 
-                error_msg;
+            last_error_message =
+                error_msg.empty()
+                    ? "Colour space transform has not been configured properly (spectral mode)"
+                    : error_msg;
             return false;
         }
 
@@ -1568,12 +1573,17 @@ bool ImageConverter::configure(
 
             std::string error_msg;
             if ( !prepare_transform_DNG(
-                     image_spec, settings, _idt_matrix, _cat_matrix, error_msg ) )
+                     image_spec,
+                     settings,
+                     _idt_matrix,
+                     _cat_matrix,
+                     error_msg ) )
             {
                 status = Status::ConfigurationError;
-                last_error_message = error_msg.empty() ?
-                    "Colour space transform has not been configured properly (metadata mode)" :
-                    error_msg;
+                last_error_message =
+                    error_msg.empty()
+                        ? "Colour space transform has not been configured properly (metadata mode)"
+                        : error_msg;
                 return false;
             }
         }
@@ -1698,11 +1708,11 @@ bool ImageConverter::load_image(
     image_spec.extra_attribs = hints;
     buffer = OIIO::ImageBuf( path, 0, 0, nullptr, &image_spec, nullptr );
 
-    bool result = buffer.read(
-        0, 0, 0, buffer.nchannels(), true, OIIO::TypeDesc::FLOAT );
+    bool result =
+        buffer.read( 0, 0, 0, buffer.nchannels(), true, OIIO::TypeDesc::FLOAT );
     if ( !result )
     {
-        status = Status::ReadError;
+        status             = Status::ReadError;
         last_error_message = "Failed to read image file: " + path;
     }
     else
@@ -1762,7 +1772,7 @@ bool ImageConverter::apply_matrix(
         success = rta::util::apply_matrix( _idt_matrix, dst, src, roi );
         if ( !success )
         {
-            status = Status::MatrixApplicationError;
+            status             = Status::MatrixApplicationError;
             last_error_message = "Failed to apply IDT matrix transformation";
             return false;
         }
@@ -1773,7 +1783,7 @@ bool ImageConverter::apply_matrix(
         success = rta::util::apply_matrix( _cat_matrix, dst, dst, roi );
         if ( !success )
         {
-            status = Status::MatrixApplicationError;
+            status             = Status::MatrixApplicationError;
             last_error_message = "Failed to apply CAT matrix transformation";
             return false;
         }
@@ -1790,7 +1800,8 @@ bool ImageConverter::apply_matrix(
         if ( !success )
         {
             status = Status::MatrixApplicationError;
-            last_error_message = "Failed to apply XYZ to ACES matrix transformation";
+            last_error_message =
+                "Failed to apply XYZ to ACES matrix transformation";
             return false;
         }
     }
@@ -1802,11 +1813,11 @@ bool ImageConverter::apply_matrix(
 bool ImageConverter::apply_scale(
     OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI /* roi */ )
 {
-    bool result = OIIO::ImageBufAlgo::mul(
-        dst, src, settings.headroom * settings.scale );
+    bool result =
+        OIIO::ImageBufAlgo::mul( dst, src, settings.headroom * settings.scale );
     if ( !result )
     {
-        status = Status::ScaleApplicationError;
+        status             = Status::ScaleApplicationError;
         last_error_message = "Failed to apply scale transformation";
     }
     else
@@ -1824,7 +1835,8 @@ bool ImageConverter::apply_crop(
         if ( !OIIO::ImageBufAlgo::copy( dst, src ) )
         {
             status = Status::CropApplicationError;
-            last_error_message = "Failed to copy image buffer for crop operation";
+            last_error_message =
+                "Failed to copy image buffer for crop operation";
             return false;
         }
         dst.specmod().full_x      = dst.specmod().x;
@@ -1841,13 +1853,14 @@ bool ImageConverter::apply_crop(
             if ( !OIIO::ImageBufAlgo::copy( temp, src ) )
             {
                 status = Status::CropApplicationError;
-                last_error_message = "Failed to copy image buffer for crop operation";
+                last_error_message =
+                    "Failed to copy image buffer for crop operation";
                 return false;
             }
 
             if ( !OIIO::ImageBufAlgo::crop( dst, temp, temp.roi_full() ) )
             {
-                status = Status::CropApplicationError;
+                status             = Status::CropApplicationError;
                 last_error_message = "Failed to apply crop transformation";
                 return false;
             }
@@ -1856,7 +1869,7 @@ bool ImageConverter::apply_crop(
         {
             if ( !OIIO::ImageBufAlgo::crop( dst, src, src.roi_full() ) )
             {
-                status = Status::CropApplicationError;
+                status             = Status::CropApplicationError;
                 last_error_message = "Failed to apply crop transformation";
                 return false;
             }
@@ -1877,7 +1890,7 @@ bool ImageConverter::make_output_path(
     // Validate input path
     if ( path.empty() )
     {
-        status = Status::EmptyInputFilename;
+        status             = Status::EmptyInputFilename;
         last_error_message = "Empty input path provided";
         return false;
     }
@@ -1903,15 +1916,17 @@ bool ImageConverter::make_output_path(
                 {
                     if ( !std::filesystem::create_directory( new_directory ) )
                     {
-                        status = Status::OutputDirectoryError;
-                        last_error_message = "Failed to create directory: " + new_directory.string();
+                        status             = Status::OutputDirectoryError;
+                        last_error_message = "Failed to create directory: " +
+                                             new_directory.string();
                         return false;
                     }
                 }
                 else
                 {
-                    status = Status::OutputDirectoryError;
-                    last_error_message = "Output directory does not exist: " + new_directory.string();
+                    status             = Status::OutputDirectoryError;
+                    last_error_message = "Output directory does not exist: " +
+                                         new_directory.string();
                     return false;
                 }
             }
@@ -1921,18 +1936,20 @@ bool ImageConverter::make_output_path(
         if ( !settings.overwrite && std::filesystem::exists( temp_path ) )
         {
             status = Status::FileExists;
-            last_error_message = "Output file already exists: " + temp_path.string();
+            last_error_message =
+                "Output file already exists: " + temp_path.string();
             return false;
         }
 
-        path = temp_path.string();
+        path   = temp_path.string();
         status = Status::Success;
         return true;
     }
     catch ( const std::exception &e )
     {
         status = Status::InvalidPath;
-        last_error_message = std::string("Invalid path format '") + path + "': " + e.what();
+        last_error_message =
+            std::string( "Invalid path format '" ) + path + "': " + e.what();
         return false;
     }
 }
@@ -1966,16 +1983,18 @@ bool ImageConverter::save_image(
     }
     else
     {
-        status = Status::WriteError;
-        last_error_message = std::string("Failed to write file: ") + output_filename + 
-                              ". Error: " + image_output->geterror();
+        status             = Status::WriteError;
+        last_error_message = std::string( "Failed to write file: " ) +
+                             output_filename +
+                             ". Error: " + image_output->geterror();
         return false;
     }
 
     if ( !result )
     {
         status = Status::WriteError;
-        last_error_message = "Failed to write image data to file: " + output_filename;
+        last_error_message =
+            "Failed to write image data to file: " + output_filename;
         return false;
     }
 
@@ -1988,7 +2007,7 @@ bool ImageConverter::process_image( const std::string &input_filename )
     // Early validation: check if input file exists and is valid
     if ( input_filename.empty() )
     {
-        status = Status::EmptyInputFilename;
+        status             = Status::EmptyInputFilename;
         last_error_message = "Empty input filename provided";
         return false;
     }
@@ -1999,7 +2018,7 @@ bool ImageConverter::process_image( const std::string &input_filename )
     {
         if ( !std::filesystem::exists( input_filename ) )
         {
-            status = Status::InputFileNotFound;
+            status             = Status::InputFileNotFound;
             last_error_message = "Input file does not exist: " + input_filename;
             return false;
         }
@@ -2007,15 +2026,16 @@ bool ImageConverter::process_image( const std::string &input_filename )
     catch ( const std::filesystem::filesystem_error &e )
     {
         status = Status::FilesystemError;
-        last_error_message = std::string("Filesystem error while checking input file '") + 
-                              input_filename + "': " + e.what();
+        last_error_message =
+            std::string( "Filesystem error while checking input file '" ) +
+            input_filename + "': " + e.what();
         return false;
     }
 
     std::string output_filename = input_filename;
     if ( !make_output_path( output_filename ) )
     {
-        
+
         return ( false );
     }
 

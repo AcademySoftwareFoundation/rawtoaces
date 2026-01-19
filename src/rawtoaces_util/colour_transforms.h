@@ -41,7 +41,7 @@ bool fetch_matrix_from_illuminant(
     int                               verbosity,
     bool                              disable_cache,
     std::vector<std::vector<double>> &out_matrix,
-    std::string                       &error_message );
+    std::string                      &error_message );
 
 void fetch_matrix_from_metadata(
     const core::Metadata             &metadata,

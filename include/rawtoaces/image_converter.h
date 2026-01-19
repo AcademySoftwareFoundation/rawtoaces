@@ -244,7 +244,7 @@ public:
     /// The conversion settings.
     Settings settings;
 
-    /// This property holds the error code from the most recent method call that returns a bool. 
+    /// This property holds the error code from the most recent method call that returns a bool.
     Status status = Status::Success;
 
     /// Error message from the most recent method call that returned false.

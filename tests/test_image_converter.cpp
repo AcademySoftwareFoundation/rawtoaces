@@ -783,7 +783,12 @@ void test_missing_camera_manufacturer()
     std::string output = capture_stderr( [&]() {
         // This should fail because there's no camera make
         success = prepare_transform_spectral(
-            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix, error_message );
+            image_spec,
+            settings,
+            WB_multipliers,
+            IDT_matrix,
+            CAT_matrix,
+            error_message );
     } );
 
     OIIO_CHECK_ASSERT( !success );
@@ -981,7 +986,12 @@ void test_illuminant_type_not_found()
     std::string output = capture_stderr( [&]() {
         // This should fail because illuminant "A" is not found
         success = prepare_transform_spectral(
-            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix, error_message );
+            image_spec,
+            settings,
+            WB_multipliers,
+            IDT_matrix,
+            CAT_matrix,
+            error_message );
     } );
 
     OIIO_CHECK_ASSERT( !success );
@@ -1101,7 +1111,12 @@ void test_auto_detect_illuminant_with_wb_multipliers()
     std::string output = capture_stderr( [&]() {
         // This should succeed and auto-detect the illuminant
         success = prepare_transform_spectral(
-            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix, error_message );
+            image_spec,
+            settings,
+            WB_multipliers,
+            IDT_matrix,
+            CAT_matrix,
+            error_message );
     } );
 
     OIIO_CHECK_ASSERT( success );
@@ -1154,7 +1169,12 @@ void test_database_location_not_directory_warning()
         // This should succeed (using the valid database path)
         // but should warn about the file path not being a directory
         success = prepare_transform_spectral(
-            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix, error_message );
+            image_spec,
+            settings,
+            WB_multipliers,
+            IDT_matrix,
+            CAT_matrix,
+            error_message );
     } );
 
     OIIO_CHECK_ASSERT( success );
@@ -1246,7 +1266,12 @@ void test_illuminant_file_load_failure()
     std::string output = capture_stderr( [&]() {
         // This should fail because the requested type doesn't exist
         success = prepare_transform_spectral(
-            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix, error_message );
+            image_spec,
+            settings,
+            WB_multipliers,
+            IDT_matrix,
+            CAT_matrix,
+            error_message );
     } );
 
     // Should fail (no matching type found), but invalid file should have been processed and skipped
@@ -1608,7 +1633,12 @@ void test_illuminant_type_mismatch()
     std::string output = capture_stderr( [&]() {
         // This should fail because no matching illuminant type is found
         success = prepare_transform_spectral(
-            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix, error_message );
+            image_spec,
+            settings,
+            WB_multipliers,
+            IDT_matrix,
+            CAT_matrix,
+            error_message );
     } );
 
     OIIO_CHECK_ASSERT( !success );
@@ -1692,7 +1722,12 @@ void test_auto_detect_illuminant_from_raw_metadata()
     std::string output = capture_stderr( [&]() {
         // This should succeed and auto-detect the illuminant from raw:pre_mul
         success = prepare_transform_spectral(
-            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix, error_message );
+            image_spec,
+            settings,
+            WB_multipliers,
+            IDT_matrix,
+            CAT_matrix,
+            error_message );
     } );
 
     OIIO_CHECK_ASSERT( success );
@@ -1738,7 +1773,12 @@ void test_auto_detect_illuminant_with_normalization()
     std::string output = capture_stderr( [&]() {
         // This should succeed and auto-detect the illuminant from raw:pre_mul
         success = prepare_transform_spectral(
-            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix, error_message );
+            image_spec,
+            settings,
+            WB_multipliers,
+            IDT_matrix,
+            CAT_matrix,
+            error_message );
     } );
 
     OIIO_CHECK_ASSERT( success );
@@ -1798,7 +1838,12 @@ void test_prepare_transform_spectral_idt_calculation_fail()
     std::string output = capture_stderr( [&]() {
         // This should fail when trying to calculate IDT matrix
         success = prepare_transform_spectral(
-            image_spec, settings, WB_multipliers, IDT_matrix, CAT_matrix, error_message );
+            image_spec,
+            settings,
+            WB_multipliers,
+            IDT_matrix,
+            CAT_matrix,
+            error_message );
     } );
 
     OIIO_CHECK_ASSERT( !success );
@@ -2105,47 +2150,57 @@ void test_main_parse_parameters_failure()
 /// Tests that last_error_message is set when processing empty filename
 void test_last_error_message_empty_filename()
 {
-    std::cout << std::endl << "test_last_error_message_empty_filename()" << std::endl;
+    std::cout << std::endl
+              << "test_last_error_message_empty_filename()" << std::endl;
 
     ImageConverter converter;
-    bool result = converter.process_image( "" );
+    bool           result = converter.process_image( "" );
 
     OIIO_CHECK_ASSERT( !result );
-    OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::EmptyInputFilename );
-    OIIO_CHECK_EQUAL( converter.last_error_message, "Empty input filename provided" );
+    OIIO_CHECK_ASSERT(
+        converter.status == ImageConverter::Status::EmptyInputFilename );
+    OIIO_CHECK_EQUAL(
+        converter.last_error_message, "Empty input filename provided" );
 }
 
 /// Tests that last_error_message is set when input file does not exist
 void test_last_error_message_file_not_found()
 {
-    std::cout << std::endl << "test_last_error_message_file_not_found()" << std::endl;
+    std::cout << std::endl
+              << "test_last_error_message_file_not_found()" << std::endl;
 
     ImageConverter converter;
-    std::string nonexistent_file = "nonexistent_file_12345.dng";
-    bool result = converter.process_image( nonexistent_file );
+    std::string    nonexistent_file = "nonexistent_file_12345.dng";
+    bool           result = converter.process_image( nonexistent_file );
 
     OIIO_CHECK_ASSERT( !result );
-    OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::InputFileNotFound );
-    OIIO_CHECK_EQUAL( converter.last_error_message.find( "Input file does not exist" ), 0 );
-    OIIO_CHECK_EQUAL( converter.last_error_message.find( nonexistent_file ) != std::string::npos, true );
+    OIIO_CHECK_ASSERT(
+        converter.status == ImageConverter::Status::InputFileNotFound );
+    OIIO_CHECK_EQUAL(
+        converter.last_error_message.find( "Input file does not exist" ), 0 );
+    OIIO_CHECK_EQUAL(
+        converter.last_error_message.find( nonexistent_file ) !=
+            std::string::npos,
+        true );
 }
 
 /// Tests that last_error_message is set when output file already exists and overwrite is false
 void test_last_error_message_file_exists()
 {
-    std::cout << std::endl << "test_last_error_message_file_exists()" << std::endl;
+    std::cout << std::endl
+              << "test_last_error_message_file_exists()" << std::endl;
 
-    
     if ( OIIO::openimageio_version() < 30000 )
         return;
 
     ImageConverter converter;
     converter.settings.overwrite = false;
     converter.settings.WB_method = ImageConverter::Settings::WBMethod::Metadata;
-    converter.settings.matrix_method = ImageConverter::Settings::MatrixMethod::Metadata;
+    converter.settings.matrix_method =
+        ImageConverter::Settings::MatrixMethod::Metadata;
 
     std::string test_file = std::filesystem::absolute( dng_test_file ).string();
-    
+
     // First we process the file successfully to create output
     bool first_result = converter.process_image( test_file );
     if ( !first_result )
@@ -2153,28 +2208,29 @@ void test_last_error_message_file_exists()
         return;
     }
 
-
-
     // Try to process again without overwrite - should fail with FileExists
     bool second_result = converter.process_image( test_file );
     OIIO_CHECK_ASSERT( !second_result );
     OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::FileExists );
-    OIIO_CHECK_EQUAL( converter.last_error_message.find( "Output file already exists" ), 0 );
+    OIIO_CHECK_EQUAL(
+        converter.last_error_message.find( "Output file already exists" ), 0 );
 }
 
 /// Tests that last_error_message persists after successful operations
 void test_last_error_message_persists_after_success()
 {
-    std::cout << std::endl << "test_last_error_message_persists_after_success()" << std::endl;
+    std::cout << std::endl
+              << "test_last_error_message_persists_after_success()"
+              << std::endl;
 
-    
     if ( OIIO::openimageio_version() < 30000 )
         return;
 
     ImageConverter converter;
     converter.settings.overwrite = true;
     converter.settings.WB_method = ImageConverter::Settings::WBMethod::Metadata;
-    converter.settings.matrix_method = ImageConverter::Settings::MatrixMethod::Metadata;
+    converter.settings.matrix_method =
+        ImageConverter::Settings::MatrixMethod::Metadata;
 
     std::string test_file = std::filesystem::absolute( dng_test_file ).string();
 
@@ -2194,74 +2250,98 @@ void test_last_error_message_persists_after_success()
 /// Tests that last_error_message is set on configuration errors
 void test_last_error_message_configure_error()
 {
-    std::cout << std::endl << "test_last_error_message_configure_error()" << std::endl;
+    std::cout << std::endl
+              << "test_last_error_message_configure_error()" << std::endl;
 
     ImageConverter converter;
-    std::string nonexistent_file = "nonexistent_config_file.dng";
-    
+    std::string    nonexistent_file = "nonexistent_config_file.dng";
+
     OIIO::ParamValueList options;
     bool result = converter.configure( nonexistent_file, options );
 
     OIIO_CHECK_ASSERT( !result );
-    OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::ConfigurationError );
-    OIIO_CHECK_EQUAL( converter.last_error_message.find( "Failed to open image file" ), 0 );
+    OIIO_CHECK_ASSERT(
+        converter.status == ImageConverter::Status::ConfigurationError );
+    OIIO_CHECK_EQUAL(
+        converter.last_error_message.find( "Failed to open image file" ), 0 );
 }
 
 /// Tests that last_error_message is set on output directory errors
 void test_last_error_message_output_directory_error()
 {
-    std::cout << std::endl << "test_last_error_message_output_directory_error()" << std::endl;
+    std::cout << std::endl
+              << "test_last_error_message_output_directory_error()"
+              << std::endl;
 
     ImageConverter converter;
     converter.settings.create_dirs = false;
-    converter.settings.output_dir = "/nonexistent/directory/path/that/does/not/exist";
+    converter.settings.output_dir =
+        "/nonexistent/directory/path/that/does/not/exist";
 
     std::string test_file = std::filesystem::absolute( dng_test_file ).string();
-    bool result = converter.process_image( test_file );
+    bool        result    = converter.process_image( test_file );
 
     OIIO_CHECK_ASSERT( !result );
-    OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::OutputDirectoryError );
-    OIIO_CHECK_EQUAL( converter.last_error_message.find( "Output directory does not exist" ) != std::string::npos || 
-                      converter.last_error_message.find( "Failed to create directory" ) != std::string::npos, true );
+    OIIO_CHECK_ASSERT(
+        converter.status == ImageConverter::Status::OutputDirectoryError );
+    OIIO_CHECK_EQUAL(
+        converter.last_error_message.find(
+            "Output directory does not exist" ) != std::string::npos ||
+            converter.last_error_message.find( "Failed to create directory" ) !=
+                std::string::npos,
+        true );
 }
 
 /// Tests that errors from colour_transforms::fetch_illuminant_from_multipliers are relayed to last_error_message
 void test_last_error_message_colour_transforms_illuminant_from_multipliers()
 {
-    std::cout << std::endl << "test_last_error_message_colour_transforms_illuminant_from_multipliers()" << std::endl;
+    std::cout
+        << std::endl
+        << "test_last_error_message_colour_transforms_illuminant_from_multipliers()"
+        << std::endl;
 
     if ( OIIO::openimageio_version() < 30000 )
         return;
 
-    // Create test directory with database 
+    // Create test directory with database
     TestFixture fixture;
     auto       &test_dir = fixture.build();
 
     ImageConverter converter;
     converter.settings.database_directories.clear();
-    converter.settings.database_directories.push_back( test_dir.get_database_path() );
+    converter.settings.database_directories.push_back(
+        test_dir.get_database_path() );
     converter.settings.WB_method = ImageConverter::Settings::WBMethod::Metadata;
-    converter.settings.matrix_method = ImageConverter::Settings::MatrixMethod::Spectral;
+    converter.settings.matrix_method =
+        ImageConverter::Settings::MatrixMethod::Spectral;
 
     std::string test_file = std::filesystem::absolute( dng_test_file ).string();
-    bool result = converter.process_image( test_file );
+    bool        result    = converter.process_image( test_file );
 
     OIIO_CHECK_ASSERT( !result );
-    OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::ConfigurationError );
+    OIIO_CHECK_ASSERT(
+        converter.status == ImageConverter::Status::ConfigurationError );
     // Error message should contain information about failing to find camera or illuminant
     OIIO_CHECK_ASSERT( !converter.last_error_message.empty() );
     // Check that error message is related to spectral/colour transform configuration
-    bool has_relevant_error = converter.last_error_message.find( "Failed to find spectral data" ) != std::string::npos ||
-                              converter.last_error_message.find( "Failed to find illuminant" ) != std::string::npos ||
-                              converter.last_error_message.find( "Colour space transform" ) != std::string::npos ||
-                              converter.last_error_message.find( "spectral" ) != std::string::npos;
+    bool has_relevant_error =
+        converter.last_error_message.find( "Failed to find spectral data" ) !=
+            std::string::npos ||
+        converter.last_error_message.find( "Failed to find illuminant" ) !=
+            std::string::npos ||
+        converter.last_error_message.find( "Colour space transform" ) !=
+            std::string::npos ||
+        converter.last_error_message.find( "spectral" ) != std::string::npos;
     OIIO_CHECK_ASSERT( has_relevant_error );
 }
 
 /// Tests that errors from colour_transforms::fetch_matrix_from_illuminant are relayed to last_error_message
 void test_last_error_message_colour_transforms_matrix_from_illuminant()
 {
-    std::cout << std::endl << "test_last_error_message_colour_transforms_matrix_from_illuminant()" << std::endl;
+    std::cout
+        << std::endl
+        << "test_last_error_message_colour_transforms_matrix_from_illuminant()"
+        << std::endl;
 
     if ( OIIO::openimageio_version() < 30000 )
         return;
@@ -2275,24 +2355,32 @@ void test_last_error_message_colour_transforms_matrix_from_illuminant()
 
     ImageConverter converter;
     converter.settings.database_directories = { test_dir.get_database_path() };
-    converter.settings.WB_method = ImageConverter::Settings::WBMethod::Illuminant;
+    converter.settings.WB_method =
+        ImageConverter::Settings::WBMethod::Illuminant;
     converter.settings.illuminant = "D65";
-    converter.settings.matrix_method = ImageConverter::Settings::MatrixMethod::Spectral;
+    converter.settings.matrix_method =
+        ImageConverter::Settings::MatrixMethod::Spectral;
     converter.settings.overwrite = true;
 
     std::string test_file = std::filesystem::absolute( dng_test_file ).string();
-    bool result = converter.process_image( test_file );
+    bool        result    = converter.process_image( test_file );
 
     // This might fail due to missing training data needed for IDT matrix calculation
     if ( !result )
     {
-        OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::ConfigurationError );
+        OIIO_CHECK_ASSERT(
+            converter.status == ImageConverter::Status::ConfigurationError );
         OIIO_CHECK_ASSERT( !converter.last_error_message.empty() );
         // Error should be related to matrix/transform calculation
-        bool has_relevant_error = converter.last_error_message.find( "Colour space transform" ) != std::string::npos ||
-                                  converter.last_error_message.find( "matrix" ) != std::string::npos ||
-                                  converter.last_error_message.find( "Failed to calculate" ) != std::string::npos ||
-                                  converter.last_error_message.find( "spectral" ) != std::string::npos;
+        bool has_relevant_error =
+            converter.last_error_message.find( "Colour space transform" ) !=
+                std::string::npos ||
+            converter.last_error_message.find( "matrix" ) !=
+                std::string::npos ||
+            converter.last_error_message.find( "Failed to calculate" ) !=
+                std::string::npos ||
+            converter.last_error_message.find( "spectral" ) !=
+                std::string::npos;
         OIIO_CHECK_ASSERT( has_relevant_error );
     }
 }
@@ -2404,13 +2492,15 @@ void test_main_file_exists_hint()
     // Assert on expected error message and hint
     ASSERT_CONTAINS( output2, "Failed on file" );
     ASSERT_CONTAINS( output2, "Reason:" );
-    ASSERT_CONTAINS( output2, "Hint: Use --overwrite to allow overwriting existing files." );
+    ASSERT_CONTAINS(
+        output2, "Hint: Use --overwrite to allow overwriting existing files." );
 }
 
 /// Tests that main prints OutputDirectoryError hint when output directory doesn't exist
 void test_main_output_directory_error_hint()
 {
-    std::cout << std::endl << "test_main_output_directory_error_hint()" << std::endl;
+    std::cout << std::endl
+              << "test_main_output_directory_error_hint()" << std::endl;
 
     if ( OIIO::openimageio_version() < 30000 )
         return;
@@ -2418,25 +2508,28 @@ void test_main_output_directory_error_hint()
     std::string test_file = std::filesystem::absolute( dng_test_file ).string();
 
     // Try to process with non-existent output directory and create_dirs disabled
-    auto args = CommandBuilder()
-                    .wb_method( "metadata" )
-                    .mat_method( "metadata" )
-                    .output_dir( "/nonexistent/directory/path/that/does/not/exist" )
-                    .without_create_dirs()
-                    .input( test_file )
-                    .build();
+    auto args =
+        CommandBuilder()
+            .wb_method( "metadata" )
+            .mat_method( "metadata" )
+            .output_dir( "/nonexistent/directory/path/that/does/not/exist" )
+            .without_create_dirs()
+            .input( test_file )
+            .build();
     std::string output = run_rawtoaces_command( args, true );
 
     // Assert on expected error message and hint
     ASSERT_CONTAINS( output, "Failed on file" );
     ASSERT_CONTAINS( output, "Reason:" );
-    ASSERT_CONTAINS( output, "Hint: Use --create-dirs to create missing directories." );
+    ASSERT_CONTAINS(
+        output, "Hint: Use --create-dirs to create missing directories." );
 }
 
 /// Tests that main prints error message without hint for other status codes
 void test_main_error_message_without_hint()
 {
-    std::cout << std::endl << "test_main_error_message_without_hint()" << std::endl;
+    std::cout << std::endl
+              << "test_main_error_message_without_hint()" << std::endl;
 
     // Test with non-existent file - should show error message but no hint
     auto args = CommandBuilder()

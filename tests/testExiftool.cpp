@@ -62,7 +62,7 @@ void testExiftool_bad_env()
 void testExiftool_tool_in_env()
 {
 #if defined( WIN32 ) || defined( WIN64 )
-    const char *exiftool_path = "..\\..\\exiftool-13.45_64\\exiftool.exe";
+    const char *exiftool_path = "..\\..\\exiftool\\exiftool.exe";
 #elif defined( __APPLE__ )
     const char *exiftool_path = "/opt/homebrew/bin/exiftool";
 #else
@@ -77,7 +77,7 @@ void testExiftool_tool_in_env()
 void testExiftool_tool_in_path()
 {
 #if defined( WIN32 ) || defined( WIN64 )
-    const char *exiftool_path = "some_path;..\\..\\exiftool-13.45_64";
+    const char *exiftool_path = "some_path;..\\..\\exiftool";
 #elif defined( __APPLE__ )
     const char *exiftool_path = "some_path:/opt/homebrew/bin";
 #else
@@ -93,7 +93,7 @@ void testExiftool_tool_in_path()
 void testExiftool_bad_key()
 {
 #if defined( WIN32 ) || defined( WIN64 )
-    const char *exiftool_path = "..\\..\\exiftool-13.45_64\\exiftool.exe";
+    const char *exiftool_path = "..\\..\\exiftool\\exiftool.exe";
 #elif defined( __APPLE__ )
     const char *exiftool_path = "/opt/homebrew/bin/exiftool";
 #else

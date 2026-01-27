@@ -22,4 +22,5 @@ VCPKG_PYTHON="C:/vcpkg/installed/x64-windows/tools/python3/python.exe"
 
 curl --silent --output ./exiftool.zip https://exiftool.org/exiftool-13.45_64.zip
 unzip ./exiftool.zip
-mv ./exiftool-13.45_64/exiftool\(-k\).exe ./exiftool-13.45_64/exiftool.exe
+mv ./exiftool-13.45_64 ./exiftool
+mv ./exiftool/exiftool\(-k\).exe ./exiftool/exiftool.exe

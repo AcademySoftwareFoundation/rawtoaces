@@ -12,20 +12,20 @@ on:
     # Run weekly
      - cron: "0 0 * * 0"
   push:
-    # Run on pushes only to main or if the branch name contains "analysis"
-    branches:
-      - main
-      - '*analysis*'
-    paths:
-      - '**'
-      - '!**.md'
-      - '!**.rst'
-      - '!**/ci.yml'
-      - '!**/docs.yml'
-      - '!**/scorecard.yml'
-      - '!**/wheel.yml'
-      - '!**.properties'
-      - '!docs/**'
+#    # Run on pushes only to main or if the branch name contains "analysis"
+#    branches:
+#      - main
+#      - '*analysis*'
+#    paths:
+#      - '**'
+#      - '!**.md'
+#      - '!**.rst'
+#      - '!**/ci.yml'
+#      - '!**/docs.yml'
+#      - '!**/scorecard.yml'
+#      - '!**/wheel.yml'
+#      - '!**.properties'
+#      - '!docs/**'
   pull_request:
     branches:
       - '*analysis*'
@@ -38,7 +38,7 @@ concurrency:
 jobs:
   static_analysis:
     name: "Static analysis"
-    if: github.repository == 'AcademySoftwareFoundation/rawtoaces'
+#    if: github.repository == 'AcademySoftwareFoundation/rawtoaces'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -88,7 +88,7 @@ jobs:
 
   dynamic_analysis:
     name: "Dynamic analysis - ${{ matrix.mode }}"
-    if: github.repository == 'AcademySoftwareFoundation/rawtoaces'
+#    if: github.repository == 'AcademySoftwareFoundation/rawtoaces'
     permissions: read-all
     uses: ./.github/workflows/build-steps.yml
     with:

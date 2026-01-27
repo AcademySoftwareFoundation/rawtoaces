@@ -65,8 +65,7 @@ std::string find_exiftool()
 bool execute( const std::string &command, std::stringstream &stream )
 {
     constexpr size_t buf_size = 255;
-    char             buffer1[buf_size];
-    //    std::stringstream stream;
+    char             buffer[buf_size];
 
     errno = 0;
 
@@ -86,9 +85,9 @@ bool execute( const std::string &command, std::stringstream &stream )
     bool empty = true;
     if ( success )
     {
-        while ( fgets( buffer1, buf_size, file ) != NULL )
+        while ( fgets( buffer, buf_size, file ) != NULL )
         {
-            stream << buffer1;
+            stream << buffer;
             empty = false;
         }
     }
@@ -108,15 +107,15 @@ bool fetch_metadata(
     const std::string              &path,
     const std::vector<std::string> &keys )
 {
-
     std::string exiftool_path = find_exiftool();
 
     if ( exiftool_path.empty() )
     {
         std::cerr
-            << "Exiftool not found, please provide the path to "
-            << "exiftool binary via the RAWTOACES_EXIFTOOL_PATH environment "
-            << "variable." << std::endl;
+            << "Exiftool not found, please make sure that its location is "
+            << "available in PATH. Alternatively you can provide the path to "
+            << "the exiftool binary via the RAWTOACES_EXIFTOOL_PATH "
+            << "environment variable." << std::endl;
         return false;
     }
 
@@ -156,20 +155,21 @@ bool fetch_metadata(
 
     command += " " + path;
 
-    std::stringstream stream2;
-    if ( !execute( command, stream2 ) )
+    std::stringstream stream;
+    if ( !execute( command, stream ) )
     {
         std::cerr
-            << "Failed to execute exiftool. Please provide the path to "
-            << "exiftool binary via the RAWTOACES_EXIFTOOL_PATH environment "
-            << "variable." << std::endl;
+            << "Failed to execute exiftool. Please make sure that its location "
+            << "is available in PATH. Alternatively you can provide the path "
+            << "to the exiftool binary via the RAWTOACES_EXIFTOOL_PATH "
+            << "environment variable." << std::endl;
         return false;
     }
 
     std::map<std::string, std::string> result;
     std::vector<std::string>           lines;
     std::string                        line;
-    while ( std::getline( stream2, line ) )
+    while ( std::getline( stream, line ) )
     {
         auto pos = line.find( ": " );
         if ( pos != line.npos )
@@ -177,9 +177,9 @@ bool fetch_metadata(
             std::string exiftool_key = line.substr( 0, pos );
             std::string value        = line.substr( pos + 2 );
 
-            auto              &map      = exiftool_to_oiio.at( exiftool_key );
-            const std::string &oiio_key = std::get<0>( map );
-            bool               to_float = std::get<1>( map );
+            auto              &map_entry = exiftool_to_oiio.at( exiftool_key );
+            const std::string &oiio_key  = std::get<0>( map_entry );
+            bool               to_float  = std::get<1>( map_entry );
 
             if ( to_float )
             {

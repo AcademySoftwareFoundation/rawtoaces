@@ -41,6 +41,8 @@ using namespace rta::util;
 const std::string dng_test_file =
     "../../tests/materials/blackmagic_cinema_camera_cinemadng.dng";
 
+const std::string nef_test_file = "../../tests/materials/BatteryPark.NEF";
+
 std::string convert_linux_path_to_windows_path( const std::string &path )
 {
     std::vector<std::string> segments;
@@ -2128,6 +2130,31 @@ void test_main_no_files_processed()
     ASSERT_NOT_CONTAINS( output, "Processing file" );
 }
 
+void test_fetch_missing_metadata()
+{
+    rta::util::ImageConverter converter;
+    OIIO::ImageSpec           spec;
+
+    converter.settings.disable_exiftool = true;
+    bool result =
+        fetch_missing_metadata( dng_test_file, converter.settings, spec );
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_EQUAL( spec.get_string_attribute( "cameraMake" ), "" );
+    OIIO_CHECK_EQUAL( spec.get_string_attribute( "cameraModel" ), "" );
+
+    converter.settings.disable_exiftool = false;
+    result = fetch_missing_metadata( nef_test_file, converter.settings, spec );
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_EQUAL(
+        spec.get_string_attribute( "cameraMake" ), "NIKON CORPORATION" );
+    OIIO_CHECK_EQUAL(
+        spec.get_string_attribute( "cameraModel" ), "NIKON D200" );
+
+    result =
+        fetch_missing_metadata( "wrong_filename", converter.settings, spec );
+    OIIO_CHECK_ASSERT( !result );
+}
+
 int main( int, char ** )
 {
     try
@@ -2160,6 +2187,8 @@ int main( int, char ** )
         test_fix_metadata_source_missing();
         test_fix_metadata_source_missing();
         test_fix_metadata_unsupported_type();
+
+        test_fetch_missing_metadata();
 
         // Tests for parse_parameters
         test_parse_parameters_list_formats();

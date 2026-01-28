@@ -24,6 +24,11 @@ std::vector<std::string>
      database_paths( const std::string &override_path = "" );
 void fix_metadata( OIIO::ImageSpec &spec );
 
+bool fetch_missing_metadata(
+    const std::string              &input_path,
+    const ImageConverter::Settings &settings,
+    OIIO::ImageSpec                &spec );
+
 bool prepare_transform_spectral(
     const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,

@@ -2132,6 +2132,13 @@ void test_main_no_files_processed()
 
 void test_fetch_missing_metadata()
 {
+    std::cout << std::endl << "test_fetch_missing_metadata()" << std::endl;
+
+#if defined( WIN32 ) || defined( WIN64 )
+    const char *exiftool_path = "..\\..\\exiftool\\exiftool.exe";
+    set_env_var( "RAWTOACES_EXIFTOOL_PATH", exiftool_path );
+#endif
+
     rta::util::ImageConverter converter;
     OIIO::ImageSpec           spec;
 
@@ -2150,6 +2157,14 @@ void test_fetch_missing_metadata()
     OIIO_CHECK_EQUAL(
         spec.get_string_attribute( "cameraModel" ), "NIKON D200" );
 
+    spec.extra_attribs.remove( "cameraMake" );
+    spec.extra_attribs.remove( "cameraModel" );
+    // The dng doesn't contain these attributes, but the call should not fail.
+    result = fetch_missing_metadata( dng_test_file, converter.settings, spec );
+    OIIO_CHECK_ASSERT( result );
+
+    spec.extra_attribs.remove( "cameraMake" );
+    spec.extra_attribs.remove( "cameraModel" );
     result =
         fetch_missing_metadata( "wrong_filename", converter.settings, spec );
     OIIO_CHECK_ASSERT( !result );

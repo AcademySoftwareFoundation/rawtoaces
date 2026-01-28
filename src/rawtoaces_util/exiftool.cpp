@@ -139,7 +139,9 @@ bool fetch_metadata(
                              { "FNumber", { "aperture", true } },
                              { "FocalLength", { "focalLength", true } } };
 
-    std::string command = exiftool_path + " -S ";
+    // Adding the file name to the requested attributes, so the result of a
+    // successful call is never empty.
+    std::string command = exiftool_path + " -S -FileName";
     for ( auto key: keys )
     {
         if ( oiio_to_exiftool.count( key ) )
@@ -177,17 +179,22 @@ bool fetch_metadata(
             std::string exiftool_key = line.substr( 0, pos );
             std::string value        = line.substr( pos + 2 );
 
-            auto              &map_entry = exiftool_to_oiio.at( exiftool_key );
-            const std::string &oiio_key  = std::get<0>( map_entry );
-            bool               to_float  = std::get<1>( map_entry );
+            if ( exiftool_key != "FileName" )
+            {
+                assert( exiftool_to_oiio.count( exiftool_key ) );
 
-            if ( to_float )
-            {
-                spec[oiio_key] = std::stof( value );
-            }
-            else
-            {
-                spec[oiio_key] = value;
+                auto &map_entry = exiftool_to_oiio.at( exiftool_key );
+                const std::string &oiio_key = std::get<0>( map_entry );
+                bool               to_float = std::get<1>( map_entry );
+
+                if ( to_float )
+                {
+                    spec[oiio_key] = std::stof( value );
+                }
+                else
+                {
+                    spec[oiio_key] = value;
+                }
             }
         }
     }

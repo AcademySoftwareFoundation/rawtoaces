@@ -282,9 +282,9 @@ bool solve_matrix_from_illuminant(
     const std::string    &camera_model,
     const std::string    &in_illuminant,
     core::SpectralSolver &solver,
-    cache::MatrixData    &cache_data )
+    cache::MatrixData    &cache_data,
+    std::string          &error_message )
 {
-    std::string error_msg;
     if ( !configure_spectral_solver(
              solver,
              camera_make,
@@ -292,7 +292,7 @@ bool solve_matrix_from_illuminant(
              in_illuminant,
              true,
              true,
-             error_msg ) )
+             error_message ) )
     {
         return false;
     }
@@ -337,13 +337,18 @@ bool fetch_matrix_from_illuminant(
     const auto &entry = matrix_from_illuminant_cache.fetch(
         descriptor, [&]( cache::MatrixData &cache_data ) {
             return solve_matrix_from_illuminant(
-                camera_make, camera_model, in_illuminant, solver, cache_data );
+                camera_make,
+                camera_model,
+                in_illuminant,
+                solver,
+                cache_data,
+                error_message );
         } );
 
     bool success = entry.first;
     if ( !success )
     {
-        // Try to get error message from solve_matrix_from_illuminant if available
+        // Set fallback error message if none was set by solve_matrix_from_illuminant
         if ( error_message.empty() )
         {
             error_message = "Failed to calculate IDT matrix from illuminant";

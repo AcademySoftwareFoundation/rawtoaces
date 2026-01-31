@@ -240,9 +240,12 @@ std::vector<std::string> database_paths( const std::string &override_path = "" )
 ///
 /// @param spec Image specification containing metadata
 /// @param settings Converter settings with optional custom camera info
+/// @param error_message Output parameter to capture error message if function returns empty CameraIdentifier
 /// @return CameraInfo struct with make and model, or empty if unavailable
 CameraIdentifier get_camera_identifier(
-    const OIIO::ImageSpec &spec, const ImageConverter::Settings &settings )
+    const OIIO::ImageSpec          &spec,
+    const ImageConverter::Settings &settings,
+    std::string                    &error_message )
 {
     std::string camera_make  = settings.custom_camera_make;
     std::string camera_model = settings.custom_camera_model;
@@ -252,9 +255,9 @@ CameraIdentifier get_camera_identifier(
         camera_make = spec["cameraMake"];
         if ( camera_make.empty() )
         {
-            std::cerr << "Missing the camera manufacturer name in the file "
-                      << "metadata. You can provide a camera make using the "
-                      << "--custom-camera-make parameter" << std::endl;
+            error_message =
+                "Missing the camera manufacturer name in the file "
+                "metadata";
             return CameraIdentifier();
         }
     }
@@ -264,9 +267,8 @@ CameraIdentifier get_camera_identifier(
         camera_model = spec["cameraModel"];
         if ( camera_model.empty() )
         {
-            std::cerr << "Missing the camera model name in the file metadata. "
-                      << "You can provide a camera model using the "
-                      << "--custom-camera-model parameter" << std::endl;
+            error_message =
+                "Missing the camera model name in the file metadata";
             return CameraIdentifier();
         }
     }
@@ -301,7 +303,7 @@ bool prepare_transform_spectral(
     std::string lower_illuminant = OIIO::Strutil::lower( settings.illuminant );
 
     CameraIdentifier camera_identifier =
-        get_camera_identifier( image_spec, settings );
+        get_camera_identifier( image_spec, settings, error_message );
     if ( camera_identifier.is_empty() )
         return false;
 
@@ -1465,8 +1467,9 @@ bool ImageConverter::configure(
     if ( settings.matrix_method == Settings::MatrixMethod::Auto )
     {
         core::SpectralSolver solver( settings.database_directories );
+        std::string          temp_error_msg; // Not used in Auto mode
         CameraIdentifier     camera_identifier =
-            get_camera_identifier( image_spec, settings );
+            get_camera_identifier( image_spec, settings, temp_error_msg );
 
         if ( !camera_identifier.is_empty() &&
              solver.find_camera(

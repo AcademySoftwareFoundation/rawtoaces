@@ -20,7 +20,11 @@ VCPKG_PYTHON="C:/vcpkg/installed/x64-windows/tools/python3/python.exe"
 "$VCPKG_PYTHON" -m ensurepip --upgrade
 "$VCPKG_PYTHON" -m pip install pytest
 
-curl --silent --location --output ./exiftool.zip https://sourceforge.net/projects/exiftool/files/exiftool-13.47_64.zip
+curl --silent --location --output ./exiftool_version.txt https://sourceforge.net/projects/exiftool/files/ver.txt
+exiftool_version=`cat ./exiftool_version.txt`
+
+curl --silent --location --output ./exiftool.zip https://sourceforge.net/projects/exiftool/files/exiftool-${exiftool_version}_64.zip
 unzip ./exiftool.zip
-mv ./exiftool-13.47_64 ./exiftool
+
+mv ./exiftool-${exiftool_version}_64 ./exiftool
 mv ./exiftool/exiftool\(-k\).exe ./exiftool/exiftool.exe

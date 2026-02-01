@@ -20,9 +20,12 @@ void test_AcesRender()
     // when this is enabled on Mac, the tests fail on linux if
     // skipped completely.
 #if __linux__
-        "--wb-method",       "metadata",
+        "--wb-method",
+        "metadata",
 #endif
-        "--mat-method",      "metadata", "dummy_image_path"
+        "--mat-method",
+        "metadata",
+        "dummy_image_path"
     };
 
     const int argc = sizeof( argv ) / sizeof( argv[0] );

@@ -85,7 +85,7 @@ jobs:
         if: inputs.vfxyear < 2024
         shell: bash
         run: |
-          sudo bash build_scripts/${{ inputs.install_deps }}.bash
+          bash build_scripts/${{ inputs.install_deps }}.bash
               
       - name: Dependencies (aswf/ci-rawtoaces)
         if: inputs.vfxyear > 2023

@@ -74,6 +74,8 @@ endforeach()
 option( ENABLE_SHARED "Enable Shared Libraries" ON )
 option( RTA_CENTOS7_CERES_HACK "Work around broken config in ceres-solver 1.12" OFF )
 option( RTA_BUILD_PYTHON_BINDINGS "Build python bindings" ON )
+option( RTA_BUILD_TESTS "Build unit tests" ON )
+option( RTA_INSTALL_DATABASE "Download and install the spectral measurements database" ON )
 option( ENABLE_COVERAGE "Enable code coverage reporting" OFF )
 set ( RTA_SANITISER_MODE "none" CACHE STRING "Dynamic analysis sanitiser mode ('none', 'address', 'memory', or 'thread')" )
 
@@ -103,8 +105,10 @@ if ( RTA_BUILD_PYTHON_BINDINGS )
     add_subdirectory(src/bindings)
 endif ( RTA_BUILD_PYTHON_BINDINGS )
 
-enable_testing()
-add_subdirectory(tests)
+if ( RTA_BUILD_TESTS )
+    enable_testing()
+    add_subdirectory(tests)
+endif ( RTA_BUILD_TESTS )
 
 # Documentation (optional)
 option( BUILD_DOCS "Build documentation" OFF )
@@ -157,31 +161,32 @@ endif()
 ##
 ##  Fetch data files from rawtoaces-data
 ##
-include(FetchContent)
 
-FetchContent_Declare(
-  rawtoaces_data
-  GIT_REPOSITORY https://github.com/AcademySoftwareFoundation/rawtoaces-data
-  GIT_TAG 265e0038826572439d23934120f4bc69c19933e3 # v1.0.0
-)
+if ( RTA_INSTALL_DATABASE )
+    include(FetchContent)
 
-FetchContent_MakeAvailable(rawtoaces_data)
-
-###############################################################################
-
-if ( APPLE OR UNIX )
-    install (
-        DIRECTORY
-            ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/data
-        DESTINATION share/rawtoaces
+    FetchContent_Declare(
+        rawtoaces_data
+        GIT_REPOSITORY https://github.com/AcademySoftwareFoundation/rawtoaces-data
+        GIT_TAG 265e0038826572439d23934120f4bc69c19933e3 # v1.0.0
     )
+
+    FetchContent_MakeAvailable(rawtoaces_data)
+
+    if ( APPLE OR UNIX )
+        install (
+            DIRECTORY
+                ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/data
+            DESTINATION share/rawtoaces
+        )
     
-    install (
-        FILES
-            ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/LICENSE
-        DESTINATION share/rawtoaces/data
-    )
-endif()
+        install (
+            FILES
+                ${PROJECT_BINARY_DIR}/_deps/rawtoaces_data-src/LICENSE
+            DESTINATION share/rawtoaces/data
+        )
+    endif()
+endif ( RTA_INSTALL_DATABASE )
 
 
 #################################################

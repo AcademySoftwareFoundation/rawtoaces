@@ -2348,24 +2348,22 @@ void test_last_error_message_colour_transforms_matrix_from_illuminant()
     std::string test_file = std::filesystem::absolute( dng_test_file ).string();
     bool        result    = converter.process_image( test_file );
 
-    // This might fail due to missing training data needed for IDT matrix calculation
-    if ( !result )
-    {
-        OIIO_CHECK_ASSERT(
-            converter.status == ImageConverter::Status::ConfigurationError );
-        OIIO_CHECK_ASSERT( !converter.last_error_message.empty() );
-        // Error should be related to matrix/transform calculation
-        bool has_relevant_error =
-            converter.last_error_message.find( "Colour space transform" ) !=
-                std::string::npos ||
-            converter.last_error_message.find( "matrix" ) !=
-                std::string::npos ||
-            converter.last_error_message.find( "Failed to calculate" ) !=
-                std::string::npos ||
-            converter.last_error_message.find( "spectral" ) !=
-                std::string::npos;
-        OIIO_CHECK_ASSERT( has_relevant_error );
-    }
+    // Should fail due to missing training data needed for IDT matrix calculation
+    OIIO_CHECK_ASSERT( result == false );
+    OIIO_CHECK_ASSERT(
+        converter.status == ImageConverter::Status::ConfigurationError );
+    OIIO_CHECK_ASSERT( !converter.last_error_message.empty() );
+    // Error should be related to matrix/transform calculation
+    bool has_relevant_error =
+        converter.last_error_message.find( "Colour space transform" ) !=
+            std::string::npos ||
+        converter.last_error_message.find( "matrix" ) !=
+            std::string::npos ||
+        converter.last_error_message.find( "Failed to calculate" ) !=
+            std::string::npos ||
+        converter.last_error_message.find( "spectral" ) !=
+            std::string::npos;
+    OIIO_CHECK_ASSERT( has_relevant_error );
 }
 
 /// Tests that main prints help and returns 1 when no files are provided

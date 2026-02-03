@@ -2357,12 +2357,10 @@ void test_last_error_message_colour_transforms_matrix_from_illuminant()
     bool has_relevant_error =
         converter.last_error_message.find( "Colour space transform" ) !=
             std::string::npos ||
-        converter.last_error_message.find( "matrix" ) !=
-            std::string::npos ||
+        converter.last_error_message.find( "matrix" ) != std::string::npos ||
         converter.last_error_message.find( "Failed to calculate" ) !=
             std::string::npos ||
-        converter.last_error_message.find( "spectral" ) !=
-            std::string::npos;
+        converter.last_error_message.find( "spectral" ) != std::string::npos;
     OIIO_CHECK_ASSERT( has_relevant_error );
 }
 

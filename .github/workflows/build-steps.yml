@@ -159,4 +159,4 @@ jobs:
         if: inputs.sanitiser_mode != 'none'
         working-directory: build/src/rawtoaces
         run: |
-          ../../../tests/run_valid.sh
+          bash ../../../tests/run_valid.sh

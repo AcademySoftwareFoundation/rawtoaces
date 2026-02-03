@@ -240,9 +240,12 @@ std::vector<std::string> database_paths( const std::string &override_path = "" )
 ///
 /// @param spec Image specification containing metadata
 /// @param settings Converter settings with optional custom camera info
+/// @param error_message Output parameter to capture error message if function returns empty CameraIdentifier
 /// @return CameraInfo struct with make and model, or empty if unavailable
 CameraIdentifier get_camera_identifier(
-    const OIIO::ImageSpec &spec, const ImageConverter::Settings &settings )
+    const OIIO::ImageSpec          &spec,
+    const ImageConverter::Settings &settings,
+    std::string                    &error_message )
 {
     std::string camera_make  = settings.custom_camera_make;
     std::string camera_model = settings.custom_camera_model;
@@ -252,9 +255,9 @@ CameraIdentifier get_camera_identifier(
         camera_make = spec["cameraMake"];
         if ( camera_make.empty() )
         {
-            std::cerr << "Missing the camera manufacturer name in the file "
-                      << "metadata. You can provide a camera make using the "
-                      << "--custom-camera-make parameter" << std::endl;
+            error_message =
+                "Missing the camera manufacturer name in the file "
+                "metadata";
             return CameraIdentifier();
         }
     }
@@ -264,9 +267,8 @@ CameraIdentifier get_camera_identifier(
         camera_model = spec["cameraModel"];
         if ( camera_model.empty() )
         {
-            std::cerr << "Missing the camera model name in the file metadata. "
-                      << "You can provide a camera model using the "
-                      << "--custom-camera-model parameter" << std::endl;
+            error_message =
+                "Missing the camera model name in the file metadata";
             return CameraIdentifier();
         }
     }
@@ -288,18 +290,20 @@ CameraIdentifier get_camera_identifier(
 /// @param IDT_matrix Output Input Device Transform matrix (3x3 matrix)
 /// @param CAT_matrix Output Chromatic Adaptation Transform matrix (cleared in spectral mode)
 /// @return true if transformation matrices were successfully prepared, false otherwise
+/// @param error_message Output parameter to capture error message if function returns false
 bool prepare_transform_spectral(
     const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,
     std::vector<double>              &WB_multipliers,
     std::vector<std::vector<double>> &IDT_matrix,
-    std::vector<std::vector<double>> &CAT_matrix )
+    std::vector<std::vector<double>> &CAT_matrix,
+    std::string                      &error_message )
 {
     // Initialize and validate camera identification
     std::string lower_illuminant = OIIO::Strutil::lower( settings.illuminant );
 
     CameraIdentifier camera_identifier =
-        get_camera_identifier( image_spec, settings );
+        get_camera_identifier( image_spec, settings, error_message );
     if ( camera_identifier.is_empty() )
         return false;
 
@@ -355,11 +359,13 @@ bool prepare_transform_spectral(
             solver,
             settings.verbosity,
             settings.disable_cache,
-            found_illuminant );
+            found_illuminant,
+            error_message );
 
-        // Expected to be true due to camera lookup success in the previous step,
-        // since lack of camera is the only way for find_illuminant to return false;
-        assert( success );
+        if ( !success )
+        {
+            return false;
+        }
     }
     else
     {
@@ -372,7 +378,8 @@ bool prepare_transform_spectral(
             solver,
             settings.verbosity,
             settings.disable_cache,
-            WB_multipliers );
+            WB_multipliers,
+            error_message );
 
         if ( !success )
         {
@@ -390,7 +397,8 @@ bool prepare_transform_spectral(
         solver,
         settings.verbosity,
         settings.disable_cache,
-        IDT_matrix );
+        IDT_matrix,
+        error_message );
 
     if ( !success )
     {
@@ -416,12 +424,17 @@ bool prepare_transform_spectral(
 /// @param IDT_matrix Output Input Device Transform matrix (3x3 matrix)
 /// @param CAT_matrix Output Chromatic Adaptation Transform matrix (cleared for DNG)
 /// @return true if transformation matrices were successfully prepared, false otherwise
+/// @param error_message Output parameter to capture error message if function returns false
 bool prepare_transform_DNG(
     const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,
     std::vector<std::vector<double>> &IDT_matrix,
-    std::vector<std::vector<double>> &CAT_matrix )
+    std::vector<std::vector<double>> &CAT_matrix,
+    std::string                      &error_message )
 {
+    (void)
+        error_message; // Currently unused, but kept for consistency with prepare_transform_spectral interface
+
     // Step 1: Extract basic DNG metadata
     core::Metadata metadata;
 
@@ -1311,6 +1324,10 @@ bool ImageConverter::configure(
     bool result = image_input->open( input_filename, image_spec, temp_spec );
     if ( !result )
     {
+        status             = Status::ConfigurationError;
+        last_error_message = std::string( "Failed to open image file: " ) +
+                             input_filename +
+                             ". Error: " + image_input->geterror();
         return false;
     }
 
@@ -1321,6 +1338,8 @@ bool ImageConverter::configure(
         return false;
     }
 
+    // Delegate to the ImageSpec overload, which is responsible for
+    // setting the appropriate status (both success and error cases).
     return configure( image_spec, options );
 }
 
@@ -1438,9 +1457,9 @@ bool ImageConverter::configure(
             break;
 
         default:
-            std::cerr
-                << "ERROR: This white balancing method has not been configured "
-                << "properly." << std::endl;
+            status = Status::ConfigurationError;
+            last_error_message =
+                "White balancing method has not been configured properly";
             return false;
     }
 
@@ -1448,8 +1467,9 @@ bool ImageConverter::configure(
     if ( settings.matrix_method == Settings::MatrixMethod::Auto )
     {
         core::SpectralSolver solver( settings.database_directories );
+        std::string          temp_error_msg; // Not used in Auto mode
         CameraIdentifier     camera_identifier =
-            get_camera_identifier( image_spec, settings );
+            get_camera_identifier( image_spec, settings, temp_error_msg );
 
         if ( !camera_identifier.is_empty() &&
              solver.find_camera(
@@ -1500,9 +1520,9 @@ bool ImageConverter::configure(
             }
             break;
         default:
-            std::cerr
-                << "ERROR: This matrix method has not been configured properly."
-                << std::endl;
+            status = Status::ConfigurationError;
+            last_error_message =
+                "Matrix method has not been configured properly";
             return false;
     }
 
@@ -1512,15 +1532,20 @@ bool ImageConverter::configure(
 
     if ( is_spectral_white_balance || is_spectral_matrix )
     {
+        std::string error_msg;
         if ( !prepare_transform_spectral(
                  image_spec,
                  settings,
                  _wb_multipliers,
                  _idt_matrix,
-                 _cat_matrix ) )
+                 _cat_matrix,
+                 error_msg ) )
         {
-            std::cerr << "ERROR: the colour space transform has not been "
-                      << "configured properly (spectral mode)." << std::endl;
+            status = Status::ConfigurationError;
+            last_error_message =
+                error_msg.empty()
+                    ? "Colour space transform has not been configured properly (spectral mode)"
+                    : error_msg;
             return false;
         }
 
@@ -1549,12 +1574,19 @@ bool ImageConverter::configure(
             options["raw:use_camera_matrix"] = 1;
             options["raw:use_camera_wb"]     = 1;
 
+            std::string error_msg;
             if ( !prepare_transform_DNG(
-                     image_spec, settings, _idt_matrix, _cat_matrix ) )
+                     image_spec,
+                     settings,
+                     _idt_matrix,
+                     _cat_matrix,
+                     error_msg ) )
             {
-                std::cerr << "ERROR: the colour space transform has not been "
-                          << "configured properly (metadata mode)."
-                          << std::endl;
+                status = Status::ConfigurationError;
+                last_error_message =
+                    error_msg.empty()
+                        ? "Colour space transform has not been configured properly (metadata mode)"
+                        : error_msg;
                 return false;
             }
         }
@@ -1666,6 +1698,7 @@ bool ImageConverter::configure(
         std::cerr << "  Verbosity: " << settings.verbosity << std::endl;
     }
 
+    status = Status::Success;
     return true;
 }
 
@@ -1678,8 +1711,18 @@ bool ImageConverter::load_image(
     image_spec.extra_attribs = hints;
     buffer = OIIO::ImageBuf( path, 0, 0, nullptr, &image_spec, nullptr );
 
-    return buffer.read(
-        0, 0, 0, buffer.nchannels(), true, OIIO::TypeDesc::FLOAT );
+    bool result =
+        buffer.read( 0, 0, 0, buffer.nchannels(), true, OIIO::TypeDesc::FLOAT );
+    if ( !result )
+    {
+        status             = Status::ReadError;
+        last_error_message = "Failed to read image file: " + path;
+    }
+    else
+    {
+        status = Status::Success;
+    }
+    return result;
 }
 
 bool apply_matrix(
@@ -1731,14 +1774,22 @@ bool ImageConverter::apply_matrix(
     {
         success = rta::util::apply_matrix( _idt_matrix, dst, src, roi );
         if ( !success )
+        {
+            status             = Status::MatrixApplicationError;
+            last_error_message = "Failed to apply IDT matrix transformation";
             return false;
+        }
     }
 
     if ( _cat_matrix.size() )
     {
         success = rta::util::apply_matrix( _cat_matrix, dst, dst, roi );
         if ( !success )
+        {
+            status             = Status::MatrixApplicationError;
+            last_error_message = "Failed to apply CAT matrix transformation";
             return false;
+        }
 
         // clang-format off
         static const std::vector<std::vector<double>> XYZ_to_ACES = {
@@ -1750,17 +1801,33 @@ bool ImageConverter::apply_matrix(
 
         success = rta::util::apply_matrix( XYZ_to_ACES, dst, dst, roi );
         if ( !success )
+        {
+            status = Status::MatrixApplicationError;
+            last_error_message =
+                "Failed to apply XYZ to ACES matrix transformation";
             return false;
+        }
     }
 
+    status = Status::Success;
     return success;
 }
 
 bool ImageConverter::apply_scale(
     OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI /* roi */ )
 {
-    return OIIO::ImageBufAlgo::mul(
-        dst, src, settings.headroom * settings.scale );
+    bool result =
+        OIIO::ImageBufAlgo::mul( dst, src, settings.headroom * settings.scale );
+    if ( !result )
+    {
+        status             = Status::ScaleApplicationError;
+        last_error_message = "Failed to apply scale transformation";
+    }
+    else
+    {
+        status = Status::Success;
+    }
+    return result;
 }
 
 bool ImageConverter::apply_crop(
@@ -1770,6 +1837,9 @@ bool ImageConverter::apply_crop(
     {
         if ( !OIIO::ImageBufAlgo::copy( dst, src ) )
         {
+            status = Status::CropApplicationError;
+            last_error_message =
+                "Failed to copy image buffer for crop operation";
             return false;
         }
         dst.specmod().full_x      = dst.specmod().x;
@@ -1785,11 +1855,16 @@ bool ImageConverter::apply_crop(
             OIIO::ImageBuf temp;
             if ( !OIIO::ImageBufAlgo::copy( temp, src ) )
             {
+                status = Status::CropApplicationError;
+                last_error_message =
+                    "Failed to copy image buffer for crop operation";
                 return false;
             }
 
             if ( !OIIO::ImageBufAlgo::crop( dst, temp, temp.roi_full() ) )
             {
+                status             = Status::CropApplicationError;
+                last_error_message = "Failed to apply crop transformation";
                 return false;
             }
         }
@@ -1797,6 +1872,8 @@ bool ImageConverter::apply_crop(
         {
             if ( !OIIO::ImageBufAlgo::crop( dst, src, src.roi_full() ) )
             {
+                status             = Status::CropApplicationError;
+                last_error_message = "Failed to apply crop transformation";
                 return false;
             }
         }
@@ -1806,6 +1883,7 @@ bool ImageConverter::apply_crop(
         dst.specmod().full_y = 0;
     }
 
+    status = Status::Success;
     return true;
 }
 
@@ -1815,7 +1893,8 @@ bool ImageConverter::make_output_path(
     // Validate input path
     if ( path.empty() )
     {
-        std::cerr << "ERROR: Empty input path provided." << std::endl;
+        status             = Status::EmptyInputFilename;
+        last_error_message = "Empty input path provided";
         return false;
     }
     try
@@ -1840,15 +1919,17 @@ bool ImageConverter::make_output_path(
                 {
                     if ( !std::filesystem::create_directory( new_directory ) )
                     {
-                        std::cerr << "ERROR: Failed to create directory "
-                                  << new_directory << "." << std::endl;
+                        status             = Status::OutputDirectoryError;
+                        last_error_message = "Failed to create directory: " +
+                                             new_directory.string();
                         return false;
                     }
                 }
                 else
                 {
-                    std::cerr << "ERROR: The output directory " << new_directory
-                              << " does not exist." << std::endl;
+                    status             = Status::OutputDirectoryError;
+                    last_error_message = "Output directory does not exist: " +
+                                         new_directory.string();
                     return false;
                 }
             }
@@ -1857,20 +1938,21 @@ bool ImageConverter::make_output_path(
 
         if ( !settings.overwrite && std::filesystem::exists( temp_path ) )
         {
-            std::cerr
-                << "ERROR: file " << temp_path << " already exists. Use "
-                << "--overwrite to allow overwriting existing files. Skipping "
-                << "this file." << std::endl;
+            status = Status::FileExists;
+            last_error_message =
+                "Output file already exists: " + temp_path.string();
             return false;
         }
 
-        path = temp_path.string();
+        path   = temp_path.string();
+        status = Status::Success;
         return true;
     }
     catch ( const std::exception &e )
     {
-        std::cerr << "ERROR: Invalid path format '" << path << "': " << e.what()
-                  << std::endl;
+        status = Status::InvalidPath;
+        last_error_message =
+            std::string( "Invalid path format '" ) + path + "': " + e.what();
         return false;
     }
 }
@@ -1904,12 +1986,23 @@ bool ImageConverter::save_image(
     }
     else
     {
-        std::cerr << "ERROR: Failed to write file: " << output_filename
-                  << std::endl
-                  << "Error: " << image_output->geterror() << std::endl;
+        status             = Status::WriteError;
+        last_error_message = std::string( "Failed to write file: " ) +
+                             output_filename +
+                             ". Error: " + image_output->geterror();
+        return false;
     }
 
-    return result;
+    if ( !result )
+    {
+        status = Status::WriteError;
+        last_error_message =
+            "Failed to write image data to file: " + output_filename;
+        return false;
+    }
+
+    status = Status::Success;
+    return true;
 }
 
 bool ImageConverter::process_image( const std::string &input_filename )
@@ -1917,10 +2010,8 @@ bool ImageConverter::process_image( const std::string &input_filename )
     // Early validation: check if input file exists and is valid
     if ( input_filename.empty() )
     {
-        if ( settings.verbosity > 0 )
-        {
-            std::cerr << "ERROR: Empty input filename provided." << std::endl;
-        }
+        status             = Status::EmptyInputFilename;
+        last_error_message = "Empty input filename provided";
         return false;
     }
 
@@ -1930,27 +2021,24 @@ bool ImageConverter::process_image( const std::string &input_filename )
     {
         if ( !std::filesystem::exists( input_filename ) )
         {
-            if ( settings.verbosity > 0 )
-            {
-                std::cerr << "ERROR: Input file does not exist: "
-                          << input_filename << std::endl;
-            }
+            status             = Status::InputFileNotFound;
+            last_error_message = "Input file does not exist: " + input_filename;
             return false;
         }
     }
     catch ( const std::filesystem::filesystem_error &e )
     {
-        if ( settings.verbosity > 0 )
-        {
-            std::cerr << "ERROR: Filesystem error while checking input file '"
-                      << input_filename << "': " << e.what() << std::endl;
-        }
+        status = Status::FilesystemError;
+        last_error_message =
+            std::string( "Filesystem error while checking input file '" ) +
+            input_filename + "': " + e.what();
         return false;
     }
 
     std::string output_filename = input_filename;
     if ( !make_output_path( output_filename ) )
     {
+
         return ( false );
     }
 
@@ -1967,8 +2055,6 @@ bool ImageConverter::process_image( const std::string &input_filename )
     OIIO::ParamValueList hints;
     if ( !configure( input_filename, hints ) )
     {
-        std::cerr << "Failed to configure the reader for the file: "
-                  << input_filename << std::endl;
         return ( false );
     }
     usage_timer.print( input_filename, "configuring reader" );
@@ -1982,7 +2068,6 @@ bool ImageConverter::process_image( const std::string &input_filename )
     OIIO::ImageBuf buffer;
     if ( !load_image( input_filename, hints, buffer ) )
     {
-        std::cerr << "Failed to read the file: " << input_filename << std::endl;
         return ( false );
     }
     fix_metadata( buffer.specmod() );
@@ -1996,8 +2081,6 @@ bool ImageConverter::process_image( const std::string &input_filename )
     usage_timer.reset();
     if ( !apply_matrix( buffer, buffer ) )
     {
-        std::cerr << "Failed to apply colour space conversion to the file: "
-                  << input_filename << std::endl;
         return ( false );
     }
     usage_timer.print( input_filename, "applying transform matrix" );
@@ -2010,8 +2093,6 @@ bool ImageConverter::process_image( const std::string &input_filename )
     usage_timer.reset();
     if ( !apply_scale( buffer, buffer ) )
     {
-        std::cerr << "Failed to apply scale to the file: " << input_filename
-                  << std::endl;
         return ( false );
     }
     usage_timer.print( input_filename, "applying scale" );
@@ -2024,8 +2105,6 @@ bool ImageConverter::process_image( const std::string &input_filename )
     usage_timer.reset();
     if ( !apply_crop( buffer, buffer ) )
     {
-        std::cerr << "Failed to apply crop to the file: " << input_filename
-                  << std::endl;
         return ( false );
     }
     usage_timer.print( input_filename, "applying crop" );
@@ -2038,12 +2117,11 @@ bool ImageConverter::process_image( const std::string &input_filename )
     usage_timer.reset();
     if ( !save_image( output_filename, buffer ) )
     {
-        std::cerr << "Failed to save the file: " << output_filename
-                  << std::endl;
         return ( false );
     }
     usage_timer.print( input_filename, "writing image" );
 
+    status = Status::Success;
     return ( true );
 }
 

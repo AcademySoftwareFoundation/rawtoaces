@@ -222,6 +222,20 @@ CommandBuilder &CommandBuilder::data_dir( const std::string &path )
     return *this;
 }
 
+CommandBuilder &CommandBuilder::output_dir( const std::string &path )
+{
+    args_.push_back( "--output-dir" );
+    args_.push_back( path );
+    return *this;
+}
+
+CommandBuilder &CommandBuilder::without_create_dirs()
+{
+    /// Note: create-dirs is not included by default, so this is mainly for clarity
+    /// If needed in future, we can track this state to exclude --create-dirs explicitly
+    return *this;
+}
+
 CommandBuilder &CommandBuilder::arg( const std::string &arg )
 {
     args_.push_back( arg );

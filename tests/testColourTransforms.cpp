@@ -30,6 +30,7 @@ void test_fetch_illuminant_from_multipliers_cache_hit()
     rta::core::SpectralSolver solver( { test_dir.get_database_path() } );
 
     std::string illuminant;
+    std::string error_message;
 
     std::string output = capture_stderr( [&]() {
         bool success = rta::util::fetch_illuminant_from_multipliers(
@@ -39,7 +40,8 @@ void test_fetch_illuminant_from_multipliers_cache_hit()
             solver,
             1,
             false,
-            illuminant );
+            illuminant,
+            error_message );
         OIIO_CHECK_ASSERT( success );
 
         success = rta::util::fetch_illuminant_from_multipliers(
@@ -49,7 +51,8 @@ void test_fetch_illuminant_from_multipliers_cache_hit()
             solver,
             1,
             false,
-            illuminant );
+            illuminant,
+            error_message );
         OIIO_CHECK_ASSERT( success );
     } );
 
@@ -77,6 +80,7 @@ void test_fetch_illuminant_from_multipliers_invalid_camera_data()
     rta::core::SpectralSolver solver( { test_dir.get_database_path() } );
 
     std::string illuminant;
+    std::string error_message;
 
     bool        success;
     std::string output = capture_stderr( [&]() {
@@ -87,7 +91,8 @@ void test_fetch_illuminant_from_multipliers_invalid_camera_data()
             solver,
             1,
             false,
-            illuminant );
+            illuminant,
+            error_message );
     } );
 
     OIIO_CHECK_ASSERT( !success );
@@ -108,6 +113,7 @@ void test_fetch_illuminant_from_multipliers_cache_disabled()
     rta::core::SpectralSolver solver( { test_dir.get_database_path() } );
 
     std::string illuminant;
+    std::string error_message;
 
     std::string output = capture_stderr( [&]() {
         bool success = rta::util::fetch_illuminant_from_multipliers(
@@ -117,7 +123,8 @@ void test_fetch_illuminant_from_multipliers_cache_disabled()
             solver,
             1,
             true,
-            illuminant );
+            illuminant,
+            error_message );
         OIIO_CHECK_ASSERT( success );
 
         success = rta::util::fetch_illuminant_from_multipliers(
@@ -127,7 +134,8 @@ void test_fetch_illuminant_from_multipliers_cache_disabled()
             solver,
             1,
             true,
-            illuminant );
+            illuminant,
+            error_message );
         OIIO_CHECK_ASSERT( success );
     } );
 
@@ -150,6 +158,7 @@ void test_fetch_multipliers_from_illuminant_cache_hit()
     rta::core::SpectralSolver solver( { test_dir.get_database_path() } );
 
     std::vector<double> wb_multipliers;
+    std::string         error_message;
     std::string         output = capture_stderr( [&]() {
         bool success = rta::util::fetch_multipliers_from_illuminant(
             "CacheBrand2",
@@ -158,7 +167,8 @@ void test_fetch_multipliers_from_illuminant_cache_hit()
             solver,
             1,
             false,
-            wb_multipliers );
+            wb_multipliers,
+            error_message );
         OIIO_CHECK_ASSERT( success );
         OIIO_CHECK_EQUAL( wb_multipliers.size(), 3 );
 
@@ -169,7 +179,8 @@ void test_fetch_multipliers_from_illuminant_cache_hit()
             solver,
             1,
             false,
-            wb_multipliers );
+            wb_multipliers,
+            error_message );
         OIIO_CHECK_ASSERT( success );
     } );
 
@@ -214,17 +225,25 @@ void test_fetch_multipliers_from_illuminant_failure_clears_output()
     rta::core::SpectralSolver solver( { test_dir.get_database_path() } );
 
     std::vector<double> wb_multipliers = { 9.0, 9.0, 9.0 };
+    std::string         error_message;
 
     bool        success;
     std::string output = capture_stderr( [&]() {
         success = rta::util::fetch_multipliers_from_illuminant(
-            "BadWB", "BadWBModel", "4200", solver, 1, false, wb_multipliers );
+            "BadWB",
+            "BadWBModel",
+            "4200",
+            solver,
+            1,
+            false,
+            wb_multipliers,
+            error_message );
     } );
 
     OIIO_CHECK_ASSERT( !success );
     OIIO_CHECK_EQUAL( wb_multipliers.size(), 0 );
     ASSERT_CONTAINS(
-        output, "ERROR: Failed to calculate the white balancing weights." );
+        error_message, "Failed to calculate white balance multipliers" );
 }
 
 /// Verifies IDT matrix calculation and cache hit for illuminant lookup.
@@ -240,13 +259,28 @@ void test_fetch_matrix_from_illuminant_cache_hit()
     rta::core::SpectralSolver solver( { test_dir.get_database_path() } );
 
     std::vector<std::vector<double>> matrix;
+    std::string                      error_message;
     std::string                      output = capture_stderr( [&]() {
         bool success = rta::util::fetch_matrix_from_illuminant(
-            "CacheBrand3", "CacheModel3", "D65", solver, 1, false, matrix );
+            "CacheBrand3",
+            "CacheModel3",
+            "D65",
+            solver,
+            1,
+            false,
+            matrix,
+            error_message );
         OIIO_CHECK_ASSERT( success );
 
         success = rta::util::fetch_matrix_from_illuminant(
-            "CacheBrand3", "CacheModel3", "D65", solver, 1, false, matrix );
+            "CacheBrand3",
+            "CacheModel3",
+            "D65",
+            solver,
+            1,
+            false,
+            matrix,
+            error_message );
         OIIO_CHECK_ASSERT( success );
     } );
 
@@ -332,6 +366,7 @@ void test_fetch_illuminant_from_multipliers_missing_camera()
     rta::core::SpectralSolver solver( { test_dir.get_database_path() } );
 
     std::string illuminant;
+    std::string error_message;
 
     bool        success;
     std::string output = capture_stderr( [&]() {
@@ -342,12 +377,13 @@ void test_fetch_illuminant_from_multipliers_missing_camera()
             solver,
             1,
             true,
-            illuminant );
+            illuminant,
+            error_message );
     } );
 
     OIIO_CHECK_ASSERT( !success );
     ASSERT_CONTAINS(
-        output,
+        error_message,
         "Failed to find spectral data for camera make: 'MissingMake', model: 'MissingModel'." );
 }
 
@@ -369,18 +405,28 @@ void test_fetch_matrix_from_illuminant_calculate_wb_failure()
     rta::core::SpectralSolver solver( { test_dir.get_database_path() } );
 
     std::vector<std::vector<double>> matrix;
+    std::string                      error_message;
     bool                             success;
     std::string                      output = capture_stderr( [&]() {
         success = rta::util::fetch_matrix_from_illuminant(
-            "BadWBMatrix", "BadWBMatrixModel", "D65", solver, 1, true, matrix );
+            "BadWBMatrix",
+            "BadWBMatrixModel",
+            "D65",
+            solver,
+            1,
+            true,
+            matrix,
+            error_message );
     } );
 
     OIIO_CHECK_ASSERT( !success );
+    // Core library error still goes to stderr
     ASSERT_CONTAINS(
         output,
         "ERROR: camera needs to be initialised prior to calling SpectralSolver::calculate_WB()" );
+    // Util library error now goes to error_message
     ASSERT_CONTAINS(
-        output, "Failed to calculate the input transform matrix." );
+        error_message, "Failed to calculate IDT matrix from illuminant" );
 }
 
 int main( int, char ** )

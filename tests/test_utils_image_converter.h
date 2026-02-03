@@ -111,6 +111,12 @@ public:
     /// Add data directory
     CommandBuilder &data_dir( const std::string &path );
 
+    /// Add output directory
+    CommandBuilder &output_dir( const std::string &path );
+
+    /// Remove create-dirs flag (create-dirs is not included by default)
+    CommandBuilder &without_create_dirs();
+
     /// Add arbitrary flag/argument
     CommandBuilder &arg( const std::string &arg );
 

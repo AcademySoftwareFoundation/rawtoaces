@@ -12,11 +12,24 @@ namespace rta
 namespace util
 {
 
-void print_data_error( const std::string &data_type )
+/// Constructs an error message for missing data files
+///
+/// @param data_type The type of data that was not found (e.g., "spectral data", "training data", "observer")
+/// @param details Additional details to include in the error message (e.g., path, camera info)
+/// @param error_message Output parameter to store the constructed error message
+void print_data_error(
+    const std::string &data_type,
+    const std::string &details,
+    std::string       &error_message )
 {
-    std::cerr << "Failed to find " << data_type << "." << std::endl
-              << "Please check the database search path "
-              << "in RAWTOACES_DATABASE_PATH" << std::endl;
+    error_message = "Failed to find " + data_type;
+    if ( !details.empty() )
+    {
+        error_message += " " + details;
+    }
+    error_message +=
+        ". Please check the database search path in "
+        "RAWTOACES_DATABASE_PATH";
 }
 
 bool configure_spectral_solver(
@@ -25,17 +38,18 @@ bool configure_spectral_solver(
     const std::string    &camera_model,
     const std::string    &illuminant,
     bool                  load_observer,
-    bool                  load_training_data )
+    bool                  load_training_data,
+    std::string          &error_message )
 {
     bool success;
 
     success = solver.find_camera( camera_make, camera_model );
     if ( !success )
     {
-        const std::string data_type = "spectral data for camera make: '" +
-                                      camera_make + "', model: '" +
-                                      camera_model + "'";
-        print_data_error( data_type );
+        print_data_error(
+            "spectral data for camera",
+            "make: '" + camera_make + "', model: '" + camera_model + "'",
+            error_message );
         return false;
     }
 
@@ -46,9 +60,8 @@ bool configure_spectral_solver(
             solver.load_spectral_data( training_path, solver.training_data );
         if ( !success )
         {
-            const std::string data_type =
-                "training data '" + training_path + "'.";
-            print_data_error( data_type );
+            print_data_error(
+                "training data", "'" + training_path + "'", error_message );
             return false;
         }
     }
@@ -59,8 +72,8 @@ bool configure_spectral_solver(
         success = solver.load_spectral_data( observer_path, solver.observer );
         if ( !success )
         {
-            const std::string data_type = "observer '" + observer_path + "'";
-            print_data_error( data_type );
+            print_data_error(
+                "observer", "'" + observer_path + "'", error_message );
             return false;
         }
     }
@@ -71,9 +84,8 @@ bool configure_spectral_solver(
 
         if ( !success )
         {
-            const std::string data_type =
-                "illuminant type = '" + illuminant + "'";
-            print_data_error( data_type );
+            print_data_error(
+                "illuminant type", "'" + illuminant + "'", error_message );
             return false;
         }
     }
@@ -86,16 +98,25 @@ bool solve_illuminant_from_multipliers(
     const std::string          &camera_model,
     const std::vector<double>  &wb_multipliers,
     core::SpectralSolver       &solver,
-    cache::IlluminantAndWBData &cache_data )
+    cache::IlluminantAndWBData &cache_data,
+    std::string                &error_message )
 {
     if ( !configure_spectral_solver(
-             solver, camera_make, camera_model, "", false, false ) )
+             solver,
+             camera_make,
+             camera_model,
+             "",
+             false,
+             false,
+             error_message ) )
     {
         return false;
     }
 
     if ( !solver.find_illuminant( wb_multipliers ) )
     {
+        error_message =
+            "Failed to find illuminant from white balance multipliers";
         return false;
     }
 
@@ -115,7 +136,8 @@ bool fetch_illuminant_from_multipliers(
     core::SpectralSolver      &solver,
     int                        verbosity,
     bool                       disable_cache,
-    std::string               &out_illuminant )
+    std::string               &out_illuminant,
+    std::string               &error_message )
 {
     assert( wb_multipliers.size() == 3 );
 
@@ -129,13 +151,23 @@ bool fetch_illuminant_from_multipliers(
     illuminant_from_WB_cache.verbosity = verbosity;
     illuminant_from_WB_cache.disabled  = disable_cache;
 
+    std::string solve_error;
     const auto &entry = illuminant_from_WB_cache.fetch(
         descriptor, [&]( cache::IlluminantAndWBData &cache_data ) {
             return solve_illuminant_from_multipliers(
-                camera_make, camera_model, wb_multipliers, solver, cache_data );
+                camera_make,
+                camera_model,
+                wb_multipliers,
+                solver,
+                cache_data,
+                solve_error );
         } );
 
     bool success = entry.first;
+    if ( !success && !solve_error.empty() )
+    {
+        error_message = solve_error;
+    }
 
     if ( success )
     {
@@ -155,16 +187,24 @@ bool solve_multipliers_from_illuminant(
     const std::string           &camera_model,
     const std::string           &in_illuminant,
     core::SpectralSolver        &solver,
-    cache::WBFromIlluminantData &cache_data )
+    cache::WBFromIlluminantData &cache_data,
+    std::string                 &error_message )
 {
     if ( !configure_spectral_solver(
-             solver, camera_make, camera_model, in_illuminant, false, false ) )
+             solver,
+             camera_make,
+             camera_model,
+             in_illuminant,
+             false,
+             false,
+             error_message ) )
     {
         return false;
     }
 
     if ( !solver.calculate_WB() )
     {
+        error_message = "Failed to calculate white balance multipliers";
         return false;
     }
 
@@ -183,7 +223,8 @@ bool fetch_multipliers_from_illuminant(
     core::SpectralSolver &solver,
     int                   verbosity,
     bool                  disable_cache,
-    std::vector<double>  &out_multipliers )
+    std::vector<double>  &out_multipliers,
+    std::string          &error_message )
 {
     cache::CameraAndIlluminantDescriptor descriptor = { camera_make,
                                                         camera_model,
@@ -193,13 +234,23 @@ bool fetch_multipliers_from_illuminant(
     WB_from_illuminant_cache.verbosity = verbosity;
     WB_from_illuminant_cache.disabled  = disable_cache;
 
+    std::string solve_error;
     const auto &entry = WB_from_illuminant_cache.fetch(
         descriptor, [&]( cache::WBFromIlluminantData &cache_data ) {
             return solve_multipliers_from_illuminant(
-                camera_make, camera_model, in_illuminant, solver, cache_data );
+                camera_make,
+                camera_model,
+                in_illuminant,
+                solver,
+                cache_data,
+                solve_error );
         } );
 
     bool success = entry.first;
+    if ( !success && !solve_error.empty() )
+    {
+        error_message = solve_error;
+    }
 
     if ( success )
     {
@@ -221,9 +272,6 @@ bool fetch_multipliers_from_illuminant(
     else
     {
         out_multipliers.resize( 0 );
-
-        std::cerr << "ERROR: Failed to calculate the white balancing "
-                  << "weights." << std::endl;
     }
 
     return success;
@@ -234,10 +282,17 @@ bool solve_matrix_from_illuminant(
     const std::string    &camera_model,
     const std::string    &in_illuminant,
     core::SpectralSolver &solver,
-    cache::MatrixData    &cache_data )
+    cache::MatrixData    &cache_data,
+    std::string          &error_message )
 {
     if ( !configure_spectral_solver(
-             solver, camera_make, camera_model, in_illuminant, true, true ) )
+             solver,
+             camera_make,
+             camera_model,
+             in_illuminant,
+             true,
+             true,
+             error_message ) )
     {
         return false;
     }
@@ -267,7 +322,8 @@ bool fetch_matrix_from_illuminant(
     core::SpectralSolver             &solver,
     int                               verbosity,
     bool                              disable_cache,
-    std::vector<std::vector<double>> &out_matrix )
+    std::vector<std::vector<double>> &out_matrix,
+    std::string                      &error_message )
 {
     cache::CameraAndIlluminantDescriptor descriptor = { camera_make,
                                                         camera_model,
@@ -281,14 +337,22 @@ bool fetch_matrix_from_illuminant(
     const auto &entry = matrix_from_illuminant_cache.fetch(
         descriptor, [&]( cache::MatrixData &cache_data ) {
             return solve_matrix_from_illuminant(
-                camera_make, camera_model, in_illuminant, solver, cache_data );
+                camera_make,
+                camera_model,
+                in_illuminant,
+                solver,
+                cache_data,
+                error_message );
         } );
 
     bool success = entry.first;
     if ( !success )
     {
-        std::cerr << "Failed to calculate the input transform matrix."
-                  << std::endl;
+        // Set fallback error message if none was set by solve_matrix_from_illuminant
+        if ( error_message.empty() )
+        {
+            error_message = "Failed to calculate IDT matrix from illuminant";
+        }
         return false;
     }
 

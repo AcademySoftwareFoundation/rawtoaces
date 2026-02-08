@@ -51,7 +51,7 @@ jobs:
       - name: Dependencies
         shell: bash
         run: |
-          build_scripts/install_deps_linux.bash
+          bash build_scripts/install_deps_linux.bash
           
       - name: Install cppcheck
         shell: bash

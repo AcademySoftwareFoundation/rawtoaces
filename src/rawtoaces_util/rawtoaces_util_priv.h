@@ -27,7 +27,8 @@ void fix_metadata( OIIO::ImageSpec &spec );
 bool fetch_missing_metadata(
     const std::string              &input_path,
     const ImageConverter::Settings &settings,
-    OIIO::ImageSpec                &spec );
+    OIIO::ImageSpec                &spec,
+    std::string                    &error_message );
 
 bool prepare_transform_spectral(
     const OIIO::ImageSpec            &image_spec,

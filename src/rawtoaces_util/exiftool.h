@@ -21,12 +21,15 @@ namespace exiftool
 ///     Path to the raw image file to fetch metadata from.
 /// @param keys
 ///     List of attribute names to fetch metadata for.
+/// @param error_message
+///     A destination for any error message occured during fetching.
 /// @return
 ///    `true` if fetched successfully.
 bool fetch_metadata(
     OIIO::ImageSpec                &spec,
     const std::string              &path,
-    const std::vector<std::string> &keys );
+    const std::vector<std::string> &keys,
+    std::string                    &error_message );
 
 } // namespace exiftool
 } // namespace util

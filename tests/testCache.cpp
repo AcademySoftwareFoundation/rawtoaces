@@ -168,45 +168,34 @@ using namespace rta;
 
 void testCache_print_helpers()
 {
-    std::string output = capture_stderr( [&]() {
+    {
         std::tuple<std::string, std::string, std::string> tuple = { "a",
                                                                     "b",
                                                                     "c" };
-        std::cerr << tuple << std::endl;
-    } );
-    ASSERT_CONTAINS( output, "a, b, c" );
+        std::stringstream                                 stream;
+        stream << tuple << std::endl;
+        ASSERT_CONTAINS( stream.str(), "a, b, c" );
+    }
 
-    output = capture_stderr( [&]() {
+    {
         std::tuple<std::string, std::string, std::array<double, 3>> tuple = {
             "a", "b", { 1.1, 2.2, 3.3 }
         };
-        std::cerr << tuple << std::endl;
-    } );
-    ASSERT_CONTAINS( output, "a, b, (1.1, 2.2, 3.3)" );
+        std::stringstream stream;
+        stream << tuple << std::endl;
+        ASSERT_CONTAINS( stream.str(), "a, b, (1.1, 2.2, 3.3)" );
+    }
 
-    rta::core::Metadata metadata;
-    output = capture_stderr( [&]() { std::cerr << metadata << std::endl; } );
-    ASSERT_CONTAINS( output, "<Metadata>" );
+    {
+        rta::core::Metadata metadata;
+        std::stringstream   stream;
+        stream << metadata << std::endl;
+        ASSERT_CONTAINS( stream.str(), "<Metadata>" );
+    }
 }
 
 void testCache_metadata_comparison()
 {
-    std::string output = capture_stderr( [&]() {
-        std::tuple<std::string, std::string, std::string> tuple = { "a",
-                                                                    "b",
-                                                                    "c" };
-        std::cerr << tuple << std::endl;
-    } );
-    ASSERT_CONTAINS( output, "a, b, c" );
-
-    output = capture_stderr( [&]() {
-        std::tuple<std::string, std::string, std::array<double, 3>> tuple = {
-            "a", "b", { 1.1, 2.2, 3.3 }
-        };
-        std::cerr << tuple << std::endl;
-    } );
-    ASSERT_CONTAINS( output, "a, b, (1.1, 2.2, 3.3)" );
-
     rta::core::Metadata metadata1 = {
         {
             { 11,
@@ -220,8 +209,9 @@ void testCache_metadata_comparison()
         4.0
     };
 
-    output = capture_stderr( [&]() { std::cerr << metadata1 << std::endl; } );
-    ASSERT_CONTAINS( output, "<Metadata>" );
+    std::stringstream stream;
+    stream << metadata1 << std::endl;
+    ASSERT_CONTAINS( stream.str(), "<Metadata>" );
 
     rta::core::Metadata metadata2 = metadata1;
     OIIO_CHECK_EQUAL( metadata1, metadata2 );

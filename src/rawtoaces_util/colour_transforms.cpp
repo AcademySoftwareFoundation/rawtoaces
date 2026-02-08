@@ -29,7 +29,7 @@ void print_data_error(
     }
     error_message +=
         ". Please check the database search path in "
-        "RAWTOACES_DATABASE_PATH";
+        "RAWTOACES_DATABASE_PATH.";
 }
 
 bool configure_spectral_solver(
@@ -116,7 +116,7 @@ bool solve_illuminant_from_multipliers(
     if ( !solver.find_illuminant( wb_multipliers ) )
     {
         error_message =
-            "Failed to find illuminant from white balance multipliers";
+            "Failed to find illuminant from white balance multipliers.";
         return false;
     }
 
@@ -126,6 +126,7 @@ bool solve_illuminant_from_multipliers(
     cache_data.second[1]    = multipliers[1];
     cache_data.second[2]    = multipliers[2];
 
+    error_message = "";
     return true;
 }
 
@@ -204,7 +205,8 @@ bool solve_multipliers_from_illuminant(
 
     if ( !solver.calculate_WB() )
     {
-        error_message = "Failed to calculate white balance multipliers";
+        error_message = "Failed to calculate white balance multipliers. " +
+                        solver.last_error_message;
         return false;
     }
 
@@ -213,6 +215,7 @@ bool solve_multipliers_from_illuminant(
     cache_data[1]           = multipliers[1];
     cache_data[2]           = multipliers[2];
 
+    error_message = "";
     return true;
 }
 
@@ -299,11 +302,13 @@ bool solve_matrix_from_illuminant(
 
     if ( !solver.calculate_WB() )
     {
+        error_message = solver.last_error_message;
         return false;
     }
 
     if ( !solver.calculate_IDT_matrix() )
     {
+        error_message = solver.last_error_message;
         return false;
     }
 
@@ -348,11 +353,8 @@ bool fetch_matrix_from_illuminant(
     bool success = entry.first;
     if ( !success )
     {
-        // Set fallback error message if none was set by solve_matrix_from_illuminant
-        if ( error_message.empty() )
-        {
-            error_message = "Failed to calculate IDT matrix from illuminant";
-        }
+        error_message =
+            "Failed to calculate IDT matrix from illuminant. " + error_message;
         return false;
     }
 

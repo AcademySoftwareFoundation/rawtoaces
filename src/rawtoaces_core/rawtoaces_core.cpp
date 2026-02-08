@@ -54,11 +54,7 @@ void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
     else if ( cct_input >= 4000 && cct_input <= 25000 )
         cct = cct_input * 1.0;
     else
-    {
-        std::cerr << "The range of Correlated Color Temperature for "
-                  << "Day Light should be from 4000 to 25000." << std::endl;
-        exit( 1 );
-    }
+        assert( false );
 
     spectrum.values.clear();
 
@@ -100,12 +96,7 @@ void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
 
 void calculate_blackbody_SPD( const int &cct, Spectrum &spectrum )
 {
-    if ( cct < 1500 || cct >= 4000 )
-    {
-        std::cerr << "The range of Color Temperature for BlackBody "
-                  << "should be from 1500 to 3999." << std::endl;
-        exit( 1 );
-    }
+    assert( cct >= 1500 && cct < 4000 );
 
     spectrum.values.clear();
 
@@ -129,12 +120,15 @@ void calculate_blackbody_SPD( const int &cct, Spectrum &spectrum )
 /// @param type Type of light source (e.g. "d50", "d65", "d75", "A", "B", "C", "D50", "D65", "D75")
 /// @param is_daylight True if the light source is a daylight source, false if it is a blackbody source
 /// @param illuminant Reference to SpectralData object to fill with generated illuminant data
+/// @param error_message a destination for any potential error message.
+/// @result `true` if generated successfully.
 /// @pre cct is in valid range for the specified illuminant type
-void generate_illuminant(
+bool generate_illuminant(
     int                cct,
     const std::string &type,
     bool               is_daylight,
-    SpectralData      &illuminant )
+    SpectralData      &illuminant,
+    std::string       &error_message )
 {
     illuminant.data.clear();
 
@@ -150,12 +144,30 @@ void generate_illuminant(
     illuminant.type = type;
     if ( is_daylight )
     {
+        if ( cct < 40 || ( cct > 250 && cct < 4000 ) || cct > 25000 )
+        {
+            error_message =
+                "The range of Correlated Color Temperature for "
+                "Day Light should be from 4000 to 25000.\n";
+            return false;
+        }
+
         calculate_daylight_SPD( cct, power_spectrum );
     }
     else
     {
+        if ( cct < 1500 || cct >= 4000 )
+        {
+            error_message =
+                "The range of Color Temperature for BlackBody "
+                "should be from 1500 to 3999.\n";
+            return false;
+        }
+
         calculate_blackbody_SPD( cct, power_spectrum );
     }
+
+    return true;
 }
 
 SpectralSolver::SpectralSolver(
@@ -328,15 +340,15 @@ bool SpectralSolver::find_illuminant( const std::string &type )
     {
         int               cct             = atoi( type.substr( 1 ).c_str() );
         const std::string illuminant_type = "d" + std::to_string( cct );
-        generate_illuminant( cct, illuminant_type, true, illuminant );
-        return true;
+        return generate_illuminant(
+            cct, illuminant_type, true, illuminant, last_error_message );
     }
     else if ( is_blackbody )
     {
         int cct = atoi( type.substr( 0, type.length() - 1 ).c_str() );
         const std::string illuminant_type = std::to_string( cct ) + "k";
-        generate_illuminant( cct, illuminant_type, false, illuminant );
-        return true;
+        return generate_illuminant(
+            cct, illuminant_type, false, illuminant, last_error_message );
     }
     else
     {
@@ -360,8 +372,9 @@ bool SpectralSolver::find_illuminant( const vector<double> &wb )
     if ( camera.data.count( "main" ) == 0 ||
          camera.data.at( "main" ).size() != 3 )
     {
-        std::cerr << "ERROR: camera needs to be initialised prior to calling "
-                  << "SpectralSolver::find_illuminant()" << std::endl;
+        last_error_message =
+            "Camera needs to be initialised prior to calling "
+            "SpectralSolver::find_illuminant().";
         return false;
     }
 
@@ -372,7 +385,8 @@ bool SpectralSolver::find_illuminant( const vector<double> &wb )
         {
             SpectralData     &illuminant_data = _all_illuminants.emplace_back();
             const std::string type = "d" + std::to_string( cct / 100 );
-            generate_illuminant( cct, type, true, illuminant_data );
+            generate_illuminant(
+                cct, type, true, illuminant_data, last_error_message );
         }
 
         // Blackbody - pre-calculate
@@ -380,7 +394,8 @@ bool SpectralSolver::find_illuminant( const vector<double> &wb )
         {
             SpectralData     &illuminant_data = _all_illuminants.emplace_back();
             const std::string type            = std::to_string( cct ) + "k";
-            generate_illuminant( cct, type, false, illuminant_data );
+            generate_illuminant(
+                cct, type, false, illuminant_data, last_error_message );
         }
 
         auto illuminant_files = collect_data_files( "illuminant" );
@@ -425,16 +440,18 @@ bool SpectralSolver::calculate_WB()
     if ( camera.data.count( "main" ) == 0 ||
          camera.data.at( "main" ).size() != 3 )
     {
-        std::cerr << "ERROR: camera needs to be initialised prior to calling "
-                  << "SpectralSolver::calculate_WB()" << std::endl;
+        last_error_message =
+            "Camera needs to be initialised prior to calling "
+            "SpectralSolver::calculate_WB().";
         return false;
     }
 
     if ( illuminant.data.count( "main" ) == 0 ||
          illuminant.data.at( "main" ).size() != 1 )
     {
-        std::cerr << "ERROR: illuminant needs to be initialised prior to "
-                  << "calling SpectralSolver::calculate_WB()" << std::endl;
+        last_error_message =
+            "Illuminant needs to be initialised prior to "
+            "calling SpectralSolver::calculate_WB().";
         return false;
     }
 
@@ -717,34 +734,36 @@ bool SpectralSolver::calculate_IDT_matrix()
     if ( camera.data.count( "main" ) == 0 ||
          camera.data.at( "main" ).size() != 3 )
     {
-        std::cerr << "ERROR: camera needs to be initialised prior to calling "
-                  << "SpectralSolver::calculate_IDT_matrix()" << std::endl;
+        last_error_message =
+            "Camera needs to be initialised prior to calling "
+            "SpectralSolver::calculate_IDT_matrix().";
         return false;
     }
 
     if ( illuminant.data.count( "main" ) == 0 ||
          illuminant.data.at( "main" ).size() != 1 )
     {
-        std::cerr << "ERROR: illuminant needs to be initialised prior to "
-                  << "calling SpectralSolver::calculate_IDT_matrix()"
-                  << std::endl;
+        last_error_message =
+            "Illuminant needs to be initialised prior to "
+            "calling SpectralSolver::calculate_IDT_matrix().";
         return false;
     }
 
     if ( observer.data.count( "main" ) == 0 ||
          observer.data.at( "main" ).size() != 3 )
     {
-        std::cerr << "ERROR: observer needs to be initialised prior to calling "
-                  << "SpectralSolver::calculate_IDT_matrix()" << std::endl;
+        last_error_message =
+            "Observer needs to be initialised prior to "
+            "calling SpectralSolver::calculate_IDT_matrix().";
         return false;
     }
 
     if ( training_data.data.count( "main" ) == 0 ||
          training_data.data.at( "main" ).empty() )
     {
-        std::cerr << "ERROR: training data needs to be initialised prior to "
-                  << "calling SpectralSolver::calculate_IDT_matrix()"
-                  << std::endl;
+        last_error_message =
+            "Training data needs to be initialised prior to "
+            "calling SpectralSolver::calculate_IDT_matrix().";
         return false;
     }
 

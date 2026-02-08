@@ -41,6 +41,8 @@ void check_Spectrum(
 
 void testSpectralData_Spectrum()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::Spectrum spectrum1;
     init_Spectrum( spectrum1 );
     check_Spectrum( spectrum1 );
@@ -113,6 +115,8 @@ void check_SpectralData( const rta::core::SpectralData &data )
 
 void testSpectralData_Properties()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::SpectralData data1;
     init_SpectralData( data1 );
     check_SpectralData( data1 );
@@ -126,6 +130,8 @@ void testSpectralData_Properties()
 
 void testSpectralData_LoadSpst()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     std::filesystem::path absolutePath =
         std::filesystem::absolute( DATA_PATH "camera/ARRI_D21_380_780_5.json" );
 
@@ -291,6 +297,8 @@ void check_compound_assignment_operator_result(
 
 void testSpectralData_Operators()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     /// Create two spectra with known values for testing
     rta::core::Spectrum a( 2.0 );
     rta::core::Spectrum b( 3.0 );
@@ -389,6 +397,8 @@ void testSpectralData_Operators()
 
 void testSpectralData_ReshapeInterpolation()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     /// Create a spectrum with a different shape that will require interpolation
     /// Source: 380-400 nm with step 10 (so samples at 380, 390, 400)
     /// Target: ReferenceShape 380-780 nm with step 5 (so samples at 380, 385, 390, 395, 400, ...)
@@ -462,6 +472,8 @@ void testSpectralData_ReshapeInterpolation()
 
 void testSpectralData_ReshapeBeforeSourceRange()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     /// Test the case where source spectrum starts after ReferenceShape first wavelength
     /// Source: 400-450 nm with step 10 (so samples at 400, 410, 420, 430, 440, 450)
     /// Target: ReferenceShape 380-780 nm with step 5
@@ -521,6 +533,8 @@ void testSpectralData_ReshapeBeforeSourceRange()
 
 void testSpectralData_Max()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     /// Test max() function with empty spectrum
     /// Create an empty spectrum using EmptyShape
     rta::core::Spectrum empty_spectrum( 0.0, rta::core::Spectrum::EmptyShape );
@@ -549,21 +563,23 @@ void testSpectralData_Max()
 
 void testSpectralData_LoadFileNotFound()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     /// Test load() function with a non-existent file
     rta::core::SpectralData data;
     std::string non_existent_path = "/nonexistent/path/to/file.json";
 
     /// Capture stderr output
-    std::string stderr_output = capture_stderr( [&]() {
-        bool result = data.load( non_existent_path );
-        OIIO_CHECK_EQUAL(
-            result, false ); /// Should return false for non-existent file
-    } );
+    std::string error_message;
+    bool        result = data.load( non_existent_path, true, &error_message );
+
+    OIIO_CHECK_EQUAL(
+        result, false ); // Should return false for non-existent file
 
     /// Verify error message was printed
     std::string expected_error =
-        "Error: Failed to open file " + non_existent_path + ".\n";
-    OIIO_CHECK_EQUAL( stderr_output, expected_error );
+        "Failed to open file " + non_existent_path + ".";
+    OIIO_CHECK_EQUAL( error_message, expected_error );
 
     /// Verify data was reset (all fields should be empty)
     OIIO_CHECK_EQUAL( data.manufacturer, "" );
@@ -573,6 +589,8 @@ void testSpectralData_LoadFileNotFound()
 
 void testSpectralData_LoadInconsistentWavelengthStep()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::SpectralData data;
     TestDirectory           test_dir;
     nlohmann::json          data_main_override = { { "400", { 0.1 } },
@@ -584,36 +602,37 @@ void testSpectralData_LoadInconsistentWavelengthStep()
         nlohmann::json::array( { "R" } ),
         data_main_override );
 
-    std::string stderr_output = capture_stderr( [&]() {
-        bool result = data.load( temp_path );
-        OIIO_CHECK_EQUAL( result, false );
-    } );
+    std::string error_message;
+    bool        result = data.load( temp_path, true, &error_message );
+    OIIO_CHECK_EQUAL( result, false );
 
-    std::string expected_error =
-        "Error: Inconsistent wavelength step detected in " + temp_path +
-        ". Expected: 5, got: 6.\n";
-    OIIO_CHECK_EQUAL( stderr_output, expected_error );
+    std::string expected_error = "Inconsistent wavelength step detected in " +
+                                 temp_path + ". Expected: 5, got: 6.";
+    OIIO_CHECK_EQUAL( error_message, expected_error );
 }
 
 void testSpectralData_LoadInvalidJson()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::SpectralData data;
     TestDirectory           test_dir;
     TestFile temp_file( test_dir.path(), "invalid_spectral.json" );
     temp_file.write( "{ invalid json" );
 
-    std::string stderr_output = capture_stderr( [&]() {
-        bool result = data.load( temp_file.path() );
-        OIIO_CHECK_EQUAL( result, false );
-    } );
+    std::string error_message;
+    bool        result = data.load( temp_file.path(), true, &error_message );
 
+    OIIO_CHECK_EQUAL( result, false );
     ASSERT_CONTAINS(
-        stderr_output,
+        error_message,
         "Error: JSON parsing of " + temp_file.path() + " failed with error:" );
 }
 
 void testSpectralData_LoadJsonTypeError()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::SpectralData data;
     TestDirectory           test_dir;
 
@@ -622,16 +641,16 @@ void testSpectralData_LoadJsonTypeError()
         true // Should be an object, but here boolean to cause type error
     );
 
-    std::string stderr_output = capture_stderr( [&]() {
-        bool result = data.load( temp_path );
-        OIIO_CHECK_EQUAL( result, false );
-    } );
-
-    ASSERT_CONTAINS( stderr_output, "type_error" );
+    std::string error_message;
+    bool        result = data.load( temp_path, true, &error_message );
+    OIIO_CHECK_EQUAL( result, false );
+    ASSERT_CONTAINS( error_message, "type_error" );
 }
 
 void testSpectralData_GetUnknownSetThrows()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::SpectralData data;
     init_SpectralData( data );
 
@@ -650,6 +669,8 @@ void testSpectralData_GetUnknownSetThrows()
 
 void testSpectralData_GetUnknownChannelThrows()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::SpectralData data;
     init_SpectralData( data );
 

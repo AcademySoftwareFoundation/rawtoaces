@@ -1188,6 +1188,12 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
         core::SpectralSolver solver( settings.database_directories );
         if ( !solver.find_illuminant( settings.illuminant ) )
         {
+            if ( !solver.last_error_message.empty() )
+            {
+                std::cerr << std::endl
+                          << "Error: " << solver.last_error_message;
+            }
+
             std::cerr << std::endl
                       << "Error: No matching light source. "
                       << "Please find available options by "
@@ -1280,7 +1286,8 @@ void fix_metadata( OIIO::ImageSpec &spec )
 bool fetch_missing_metadata(
     const std::string              &input_path,
     const ImageConverter::Settings &settings,
-    OIIO::ImageSpec                &spec )
+    OIIO::ImageSpec                &spec,
+    std::string                    &error_message )
 {
     if ( settings.disable_exiftool )
         return true;
@@ -1306,7 +1313,8 @@ bool fetch_missing_metadata(
     if ( keys_to_fetch.empty() )
         return true;
 
-    return exiftool::fetch_metadata( spec, input_path, keys_to_fetch );
+    return exiftool::fetch_metadata(
+        spec, input_path, keys_to_fetch, error_message );
 }
 
 bool ImageConverter::configure(
@@ -1332,7 +1340,8 @@ bool ImageConverter::configure(
     }
 
     fix_metadata( image_spec );
-    result = fetch_missing_metadata( input_filename, settings, image_spec );
+    result = fetch_missing_metadata(
+        input_filename, settings, image_spec, last_error_message );
     if ( !result )
     {
         return false;

@@ -1327,16 +1327,14 @@ void test_find_illuminant_camera_no_main_key()
     // Try to find illuminant with white balance vector without initializing camera
     std::vector<double> wb = { 1.0, 1.0, 1.0 };
 
-    bool        success;
-    std::string output =
-        capture_stderr( [&]() { success = solver.find_illuminant( wb ); } );
+    bool success = solver.find_illuminant( wb );
 
     // Should fail because camera is not initialized (no "main" key)
     OIIO_CHECK_ASSERT( !success );
-    OIIO_CHECK_ASSERT(
-        output.find( "ERROR: camera needs to be initialised prior to calling "
-                     "SpectralSolver::find_illuminant()" ) !=
-        std::string::npos );
+    ASSERT_CONTAINS(
+        solver.last_error_message,
+        "Camera needs to be initialised prior to calling "
+        "SpectralSolver::find_illuminant()." );
 }
 
 /// Tests that find_illuminant fails when camera data has "main" but with wrong size
@@ -1365,15 +1363,14 @@ void test_find_illuminant_camera_wrong_size()
 
     std::vector<double> wb = { 1.0, 1.0, 1.0 };
 
-    bool        success;
-    std::string output =
-        capture_stderr( [&]() { success = solver.find_illuminant( wb ); } );
+    bool success = solver.find_illuminant( wb );
 
     // Should fail because camera has wrong size (4 channels instead of 3)
     OIIO_CHECK_ASSERT( !success );
     ASSERT_CONTAINS(
-        output,
-        "ERROR: camera needs to be initialised prior to calling SpectralSolver::find_illuminant()" );
+        solver.last_error_message,
+        "Camera needs to be initialised prior to calling "
+        "SpectralSolver::find_illuminant()." );
 }
 
 /// Tests that verbosity level 1 does not print optimization reports or IDT matrix
@@ -1828,7 +1825,10 @@ void test_prepare_transform_spectral_idt_calculation_fail()
 
     // Verify the error message about failed IDT matrix calculation
     ASSERT_CONTAINS(
-        error_message, "Failed to calculate IDT matrix from illuminant" );
+        error_message,
+        "Failed to calculate IDT matrix from illuminant. "
+        "Training data needs to be initialised prior to calling "
+        "SpectralSolver::calculate_IDT_matrix()." );
 }
 
 /// Tests that conversion succeeds when all required data is present
@@ -2038,14 +2038,11 @@ void test_prepare_transform_spectral_wb_calculation_fail_due_to_invalid_illumina
     std::string output =
         run_rawtoaces_with_data_dir( args, test_dir, false, true );
 
-    // Assert on the expected error messages
-    // Core library errors (SpectralSolver) still write to stderr with ERROR: prefix
     ASSERT_CONTAINS(
         output,
-        "ERROR: illuminant needs to be initialised prior to calling SpectralSolver::calculate_WB()" );
-    // Util library errors are now in last_error_message, printed with "Reason:" prefix
-    ASSERT_CONTAINS(
-        output, "Reason: Failed to calculate white balance multipliers" );
+        "Reason: Failed to calculate white balance multipliers. "
+        "Illuminant needs to be initialised prior to calling "
+        "SpectralSolver::calculate_WB()." );
 }
 
 /// Tests prepare_transform_spectral when white balance calculation fails due to invalid camera data
@@ -2078,14 +2075,11 @@ void test_prepare_transform_spectral_wb_calculation_fail_due_to_invalid_camera_d
     std::string output =
         run_rawtoaces_with_data_dir( args, test_dir, false, true );
 
-    // Assert on the expected error messages
-    // Core library errors (SpectralSolver) still write to stderr with ERROR: prefix
     ASSERT_CONTAINS(
         output,
-        "ERROR: camera needs to be initialised prior to calling SpectralSolver::calculate_WB()" );
-    // Util library errors are now in last_error_message, printed with "Reason:" prefix
-    ASSERT_CONTAINS(
-        output, "Reason: Failed to calculate white balance multipliers" );
+        "Reason: Failed to calculate white balance multipliers. "
+        "Camera needs to be initialised prior to calling "
+        "SpectralSolver::calculate_WB()." );
 }
 
 const std::string HELP_MESSAGE_SNIPPET =
@@ -2412,16 +2406,18 @@ void test_fetch_missing_metadata()
 
     rta::util::ImageConverter converter;
     OIIO::ImageSpec           spec;
+    std::string               error_message;
 
     converter.settings.disable_exiftool = true;
-    bool result =
-        fetch_missing_metadata( dng_test_file, converter.settings, spec );
+    bool result                         = fetch_missing_metadata(
+        dng_test_file, converter.settings, spec, error_message );
     OIIO_CHECK_ASSERT( result );
     OIIO_CHECK_EQUAL( spec.get_string_attribute( "cameraMake" ), "" );
     OIIO_CHECK_EQUAL( spec.get_string_attribute( "cameraModel" ), "" );
 
     converter.settings.disable_exiftool = false;
-    result = fetch_missing_metadata( nef_test_file, converter.settings, spec );
+    result                              = fetch_missing_metadata(
+        nef_test_file, converter.settings, spec, error_message );
     OIIO_CHECK_ASSERT( result );
     OIIO_CHECK_EQUAL(
         spec.get_string_attribute( "cameraMake" ), "NIKON CORPORATION" );
@@ -2431,13 +2427,14 @@ void test_fetch_missing_metadata()
     spec.extra_attribs.remove( "cameraMake" );
     spec.extra_attribs.remove( "cameraModel" );
     // The dng doesn't contain these attributes, but the call should not fail.
-    result = fetch_missing_metadata( dng_test_file, converter.settings, spec );
+    result = fetch_missing_metadata(
+        dng_test_file, converter.settings, spec, error_message );
     OIIO_CHECK_ASSERT( result );
 
     spec.extra_attribs.remove( "cameraMake" );
     spec.extra_attribs.remove( "cameraModel" );
-    result =
-        fetch_missing_metadata( "wrong_filename", converter.settings, spec );
+    result = fetch_missing_metadata(
+        "wrong_filename", converter.settings, spec, error_message );
     OIIO_CHECK_ASSERT( !result );
 }
 

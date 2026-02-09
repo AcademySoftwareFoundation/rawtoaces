@@ -82,21 +82,20 @@ void test_fetch_illuminant_from_multipliers_invalid_camera_data()
     std::string illuminant;
     std::string error_message;
 
-    bool        success;
-    std::string output = capture_stderr( [&]() {
-        success = rta::util::fetch_illuminant_from_multipliers(
-            "InvalidCamera",
-            "BadData",
-            k_wb_multipliers,
-            solver,
-            1,
-            false,
-            illuminant,
-            error_message );
-    } );
+    bool success = rta::util::fetch_illuminant_from_multipliers(
+        "InvalidCamera",
+        "BadData",
+        k_wb_multipliers,
+        solver,
+        1,
+        false,
+        illuminant,
+        error_message );
 
     OIIO_CHECK_ASSERT( !success );
-    ASSERT_CONTAINS( output, "SpectralSolver::find_illuminant()" );
+    ASSERT_CONTAINS(
+        error_message,
+        "Failed to find illuminant from white balance multipliers." );
 }
 
 /// Ensures cache-disable flag bypasses cache hits for illuminant lookup.
@@ -368,18 +367,15 @@ void test_fetch_illuminant_from_multipliers_missing_camera()
     std::string illuminant;
     std::string error_message;
 
-    bool        success;
-    std::string output = capture_stderr( [&]() {
-        success = rta::util::fetch_illuminant_from_multipliers(
-            "MissingMake",
-            "MissingModel",
-            k_wb_multipliers,
-            solver,
-            1,
-            true,
-            illuminant,
-            error_message );
-    } );
+    bool success = rta::util::fetch_illuminant_from_multipliers(
+        "MissingMake",
+        "MissingModel",
+        k_wb_multipliers,
+        solver,
+        1,
+        true,
+        illuminant,
+        error_message );
 
     OIIO_CHECK_ASSERT( !success );
     ASSERT_CONTAINS(
@@ -406,27 +402,25 @@ void test_fetch_matrix_from_illuminant_calculate_wb_failure()
 
     std::vector<std::vector<double>> matrix;
     std::string                      error_message;
-    bool                             success;
-    std::string                      output = capture_stderr( [&]() {
-        success = rta::util::fetch_matrix_from_illuminant(
-            "BadWBMatrix",
-            "BadWBMatrixModel",
-            "D65",
-            solver,
-            1,
-            true,
-            matrix,
-            error_message );
-    } );
+
+    bool success = rta::util::fetch_matrix_from_illuminant(
+        "BadWBMatrix",
+        "BadWBMatrixModel",
+        "D65",
+        solver,
+        1,
+        true,
+        matrix,
+        error_message );
 
     OIIO_CHECK_ASSERT( !success );
     // Core library error still goes to stderr
     ASSERT_CONTAINS(
-        output,
-        "ERROR: camera needs to be initialised prior to calling SpectralSolver::calculate_WB()" );
+        error_message,
+        "Camera needs to be initialised prior to calling SpectralSolver::calculate_WB()." );
     // Util library error now goes to error_message
     ASSERT_CONTAINS(
-        error_message, "Failed to calculate IDT matrix from illuminant" );
+        error_message, "Failed to calculate IDT matrix from illuminant." );
 }
 
 int main( int, char ** )

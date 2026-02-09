@@ -5294,16 +5294,16 @@ void testIDT_CalIDT()
 static void check_calculate_IDT_matrix_error(
     rta::core::SpectralSolver &solver, const std::string &expected_error )
 {
-    bool        success;
-    std::string output =
-        capture_stderr( [&]() { success = solver.calculate_IDT_matrix(); } );
+    bool        success = solver.calculate_IDT_matrix();
+    std::string output  = solver.last_error_message;
+
     OIIO_CHECK_ASSERT( !success );
     ASSERT_CONTAINS( output, expected_error );
 }
 
 const std::string expected_error_camera_not_initialized =
-    "ERROR: camera needs to be initialised prior to calling "
-    "SpectralSolver::calculate_IDT_matrix()";
+    "Camera needs to be initialised prior to calling "
+    "SpectralSolver::calculate_IDT_matrix().";
 
 /// Tests that calculate_IDT_matrix returns false and prints error when camera is not initialized
 void testIDT_CalIDT_Camera_Not_Initialized()
@@ -5354,8 +5354,8 @@ void testIDT_CalIDT_Camera_Wrong_Size()
 }
 
 const std::string expected_error_illuminant_not_initialized =
-    "ERROR: illuminant needs to be initialised prior to "
-    "calling SpectralSolver::calculate_IDT_matrix()";
+    "Illuminant needs to be initialised prior to "
+    "calling SpectralSolver::calculate_IDT_matrix().";
 
 /// Tests that calculate_IDT_matrix returns false and prints error when illuminant is not initialized
 void testIDT_CalIDT_Illuminant_Not_Initialized()
@@ -5410,8 +5410,8 @@ void testIDT_CalIDT_Illuminant_Wrong_Size()
 }
 
 const std::string expected_error_observer_not_initialized =
-    "ERROR: observer needs to be initialised prior to calling "
-    "SpectralSolver::calculate_IDT_matrix()";
+    "Observer needs to be initialised prior to calling "
+    "SpectralSolver::calculate_IDT_matrix().";
 
 /// Tests that calculate_IDT_matrix returns false and prints error when observer is not initialized
 void testIDT_CalIDT_Observer_Not_Initialized()
@@ -5453,8 +5453,8 @@ void testIDT_CalIDT_Observer_Wrong_Size()
 }
 
 const std::string expected_error_training_data_not_initialized =
-    "ERROR: training data needs to be initialised prior to "
-    "calling SpectralSolver::calculate_IDT_matrix()";
+    "Training data needs to be initialised prior to "
+    "calling SpectralSolver::calculate_IDT_matrix().";
 
 /// Tests that calculate_IDT_matrix returns false and prints error when training data is not initialized
 void testIDT_CalIDT_Training_Data_Not_Initialized()

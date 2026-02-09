@@ -128,7 +128,17 @@ struct SpectralData
     /// The spectral data storage.
     std::map<std::string, SpectralSet> data;
 
-    bool load( const std::string &path, bool reshape = true );
+    /// Loads spectral data from a given file path.
+    /// @param path a path to the file to load data from
+    /// @param reshape if set to `true`, the data will be reshaped to the
+    /// reference shape (`rta::core::Spectrum::ReferenceShape`).
+    /// @param error_message an optional destination for any error
+    /// message occured during loading.
+    /// @result `true` if loaded successfully.
+    bool load(
+        const std::string &path,
+        bool               reshape       = true,
+        std::string       *error_message = nullptr );
 
     /// A convenience operator returning the `Spectrum` of a given channel name
     /// in the "main" data set.

@@ -18,11 +18,10 @@ std::string check(
     const std::vector<std::string> &keys           = {
         "cameraMake", "cameraModel", "lensModel", "aperture", "focalLength" } )
 {
-    bool            success;
     OIIO::ImageSpec spec;
-    std::string     output = capture_stderr( [&]() {
-        success = rta::util::exiftool::fetch_metadata( spec, test_file, keys );
-    } );
+    std::string     output;
+    bool            success =
+        rta::util::exiftool::fetch_metadata( spec, test_file, keys, output );
 
     OIIO_CHECK_EQUAL( success, should_succeed );
 

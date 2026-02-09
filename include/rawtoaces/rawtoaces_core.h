@@ -169,6 +169,9 @@ public:
     /// @pre white balance calculation must have been performed successfully
     const std::vector<double> &get_WB_multipliers() const;
 
+    /// Error message from the most recent method call that returned false.
+    std::string last_error_message;
+
     int verbosity = 0;
 
 private:

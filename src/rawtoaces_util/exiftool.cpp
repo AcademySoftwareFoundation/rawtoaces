@@ -105,17 +105,18 @@ bool execute( const std::string &command, std::stringstream &stream )
 bool fetch_metadata(
     OIIO::ImageSpec                &spec,
     const std::string              &path,
-    const std::vector<std::string> &keys )
+    const std::vector<std::string> &keys,
+    std::string                    &error_message )
 {
     std::string exiftool_path = find_exiftool();
 
     if ( exiftool_path.empty() )
     {
-        std::cerr
-            << "Exiftool not found, please make sure that its location is "
-            << "available in PATH. Alternatively you can provide the path to "
-            << "the exiftool binary via the RAWTOACES_EXIFTOOL_PATH "
-            << "environment variable." << std::endl;
+        error_message =
+            "Exiftool not found, please make sure that its location is "
+            "available in PATH. Alternatively you can provide the path to the "
+            "exiftool binary via the RAWTOACES_EXIFTOOL_PATH environment "
+            "variable.";
         return false;
     }
 
@@ -150,7 +151,7 @@ bool fetch_metadata(
         }
         else
         {
-            std::cerr << "Exiftool: unknown key " << key << std::endl;
+            error_message = "Exiftool: unknown key '" + key + "'.";
             return false;
         }
     }
@@ -160,11 +161,11 @@ bool fetch_metadata(
     std::stringstream stream;
     if ( !execute( command, stream ) )
     {
-        std::cerr
-            << "Failed to execute exiftool. Please make sure that its location "
-            << "is available in PATH. Alternatively you can provide the path "
-            << "to the exiftool binary via the RAWTOACES_EXIFTOOL_PATH "
-            << "environment variable." << std::endl;
+        error_message =
+            "Failed to execute exiftool. Please make sure that its location is "
+            "available in PATH. Alternatively you can provide the path to the "
+            "exiftool binary via the RAWTOACES_EXIFTOOL_PATH environment "
+            "variable.";
         return false;
     }
 

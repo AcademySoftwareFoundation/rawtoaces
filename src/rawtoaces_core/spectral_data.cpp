@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <nlohmann/json.hpp>
 
 namespace rta
@@ -178,7 +179,8 @@ parse_string( nlohmann::json &j, std::string &dst, const std::string &key )
         dst = v;
 }
 
-bool SpectralData::load( const std::string &path, bool reshape )
+bool SpectralData::load(
+    const std::string &path, bool reshape, std::string *error_message )
 {
     // Reset all in case the object has been initialised before.
     manufacturer.erase();
@@ -206,8 +208,10 @@ bool SpectralData::load( const std::string &path, bool reshape )
         std::ifstream i( path );
         if ( !i.is_open() )
         {
-            std::cerr << "Error: Failed to open file " << path << "."
-                      << std::endl;
+            if ( error_message != nullptr )
+            {
+                *error_message = "Failed to open file " + path + ".";
+            }
             return false;
         }
         nlohmann::json file_data = nlohmann::json::parse( i );
@@ -282,10 +286,15 @@ bool SpectralData::load( const std::string &path, bool reshape )
 
                     if ( shape.step != 0 && new_step != shape.step )
                     {
-                        std::cerr << "Error: Inconsistent wavelength step "
-                                  << "detected in " << path
-                                  << ". Expected: " << shape.step
-                                  << ", got: " << new_step << "." << std::endl;
+                        if ( error_message != nullptr )
+                        {
+                            std::stringstream stream;
+                            stream << "Inconsistent wavelength "
+                                   << "step detected in " << path
+                                   << ". Expected: " << shape.step
+                                   << ", got: " << new_step << ".";
+                            *error_message = stream.str();
+                        }
                         return false;
                     }
 
@@ -321,14 +330,20 @@ bool SpectralData::load( const std::string &path, bool reshape )
     }
     catch ( nlohmann::detail::parse_error &error )
     {
-        std::cerr << "Error: JSON parsing of " << path
-                  << " failed with error: " << error.what() << std::endl;
+        if ( error_message != nullptr )
+        {
+            *error_message = "Error: JSON parsing of " + path +
+                             " failed with error: " + error.what() + ".";
+        }
         return false;
     }
     catch ( const std::exception &error )
     {
-        std::cerr << "Error: JSON parsing of " << path
-                  << " failed with error: " << error.what() << std::endl;
+        if ( error_message != nullptr )
+        {
+            *error_message = "Error: JSON parsing of " + path +
+                             " failed with error: " + error.what() + ".";
+        }
         return false;
     }
 

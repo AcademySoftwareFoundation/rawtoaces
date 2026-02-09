@@ -386,7 +386,7 @@ bool SpectralSolver::find_illuminant( const vector<double> &wb )
             SpectralData     &illuminant_data = _all_illuminants.emplace_back();
             const std::string type = "d" + std::to_string( cct / 100 );
 
-            bool success = generate_illuminant(
+            [[maybe_unused]] bool success = generate_illuminant(
                 cct, type, true, illuminant_data, last_error_message );
             assert( success );
         }
@@ -397,7 +397,7 @@ bool SpectralSolver::find_illuminant( const vector<double> &wb )
             SpectralData     &illuminant_data = _all_illuminants.emplace_back();
             const std::string type            = std::to_string( cct ) + "k";
 
-            bool success = generate_illuminant(
+            [[maybe_unused]] bool success = generate_illuminant(
                 cct, type, false, illuminant_data, last_error_message );
             assert( success );
         }

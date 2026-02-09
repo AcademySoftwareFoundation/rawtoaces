@@ -385,8 +385,9 @@ bool SpectralSolver::find_illuminant( const vector<double> &wb )
         {
             SpectralData     &illuminant_data = _all_illuminants.emplace_back();
             const std::string type = "d" + std::to_string( cct / 100 );
-            generate_illuminant(
+            bool success = generate_illuminant(
                 cct, type, true, illuminant_data, last_error_message );
+            assert( success );
         }
 
         // Blackbody - pre-calculate
@@ -394,8 +395,9 @@ bool SpectralSolver::find_illuminant( const vector<double> &wb )
         {
             SpectralData     &illuminant_data = _all_illuminants.emplace_back();
             const std::string type            = std::to_string( cct ) + "k";
-            generate_illuminant(
+            bool success = generate_illuminant(
                 cct, type, false, illuminant_data, last_error_message );
+            assert( success );
         }
 
         auto illuminant_files = collect_data_files( "illuminant" );

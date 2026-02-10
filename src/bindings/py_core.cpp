@@ -10,6 +10,26 @@
 using namespace rta::core;
 using namespace nanobind::literals;
 
+void bind_spectral_data( nanobind::module_ &m )
+{
+    nanobind::class_<SpectralData> spectral_data( m, "SpectralData" );
+
+    spectral_data.def( nanobind::init<>() );
+    spectral_data.def_rw( "manufacturer", &SpectralData::manufacturer );
+    spectral_data.def_rw( "model", &SpectralData::model );
+    spectral_data.def_rw( "type", &SpectralData::type );
+    spectral_data.def_rw( "units", &SpectralData::units );
+    spectral_data.def(
+        "load",
+        []( SpectralData      &spectral_data_value,
+            const std::string &path,
+            bool               reshape ) {
+            return spectral_data_value.load( path, reshape );
+        },
+        "path"_a,
+        "reshape"_a = true );
+}
+
 void bind_metadata( nanobind::module_ &m )
 {
     nanobind::class_<Metadata> metadata( m, "Metadata" );
@@ -51,6 +71,7 @@ void bind_metadata( nanobind::module_ &m )
 
 void core_bindings( nanobind::module_ &m )
 {
+    bind_spectral_data( m );
     bind_metadata( m );
 
     nanobind::class_<MetadataSolver> metadata_solver( m, "MetadataSolver" );
@@ -77,8 +98,16 @@ void core_bindings( nanobind::module_ &m )
             &SpectralSolver::find_illuminant ) );
     spectral_solver.def( "calculate_WB", &SpectralSolver::calculate_WB );
     spectral_solver.def(
+        "calculate_IDT_matrix", &SpectralSolver::calculate_IDT_matrix );
+    spectral_solver.def(
+        "load_spectral_data", &SpectralSolver::load_spectral_data );
+    spectral_solver.def(
         "get_WB_multipliers", &SpectralSolver::get_WB_multipliers );
     spectral_solver.def( "get_IDT_matrix", &SpectralSolver::get_IDT_matrix );
+    spectral_solver.def_rw( "camera", &SpectralSolver::camera );
+    spectral_solver.def_rw( "illuminant", &SpectralSolver::illuminant );
+    spectral_solver.def_rw( "observer", &SpectralSolver::observer );
+    spectral_solver.def_rw( "training_data", &SpectralSolver::training_data );
     spectral_solver.def_rw(
         "last_error_message", &SpectralSolver::last_error_message );
     spectral_solver.def_rw( "verbosity", &SpectralSolver::verbosity );

@@ -6,6 +6,8 @@
 Unit tests for rawtoaces Python bindings - core metadata solver bindings
 """
 
+import json
+import math
 import pytest
 
 try:
@@ -54,8 +56,54 @@ def _init_reference_metadata():
     return metadata
 
 
+def _write_test_spectral_file(
+    base_dir,
+    data_type,
+    filename,
+    channels,
+    header_data=None,
+):
+    target_dir = base_dir / data_type
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    header = header_data if header_data is not None else {}
+    data_main = {}
+    channel_count = len(channels)
+    for wavelength in range(380, 781, 5):
+        if data_type == "illuminant":
+            power_val = 1.0 + (wavelength - 380) * 0.01
+            values = [power_val for _ in range(channel_count)]
+        else:
+            v1 = 0.1 + (wavelength - 380) * 0.001
+            v2 = 0.2 + (wavelength - 380) * 0.001
+            v3 = 0.3 + (wavelength - 380) * 0.001
+            values = []
+            if channel_count > 0:
+                values.append(v1)
+            if channel_count > 1:
+                values.append(v2)
+            if channel_count > 2:
+                values.append(v3)
+            for _ in range(3, channel_count):
+                values.append(1.0)
+        data_main[str(wavelength)] = values
+
+    payload = {
+        "header": header,
+        "spectral_data": {
+            "units": "relative",
+            "index": {"main": channels},
+            "data": {"main": data_main},
+        },
+    }
+    file_path = target_dir / filename
+    file_path.write_text(json.dumps(payload), encoding="utf-8")
+    return file_path
+
+
 class TestMetadataBindings:
     def test_metadata_types_exist(self):
+        assert hasattr(rawtoaces, "SpectralData")
         assert hasattr(rawtoaces, "Metadata")
         assert hasattr(rawtoaces.Metadata, "Calibration")
         assert hasattr(rawtoaces, "MetadataSolver")
@@ -146,6 +194,12 @@ class TestSpectralSolverBindings:
         assert len(files) == 1
         assert files[0].endswith("test_camera.json")
 
+    def test_spectral_solver_load_spectral_data_not_found(self):
+        solver = rawtoaces.SpectralSolver()
+        observer = rawtoaces.SpectralData()
+
+        assert solver.load_spectral_data("cmf/missing.json", observer) is False
+
     def test_spectral_solver_find_camera_without_database_match(self, tmp_path):
         solver = rawtoaces.SpectralSolver([str(tmp_path)])
         assert solver.find_camera("nikon", "d200") is False
@@ -174,3 +228,60 @@ class TestSpectralSolverBindings:
             "Camera needs to be initialised prior to calling "
             "SpectralSolver::calculate_WB()."
         ) in solver.last_error_message
+
+    def test_spectral_solver_member_objects_are_writable(self):
+        solver = rawtoaces.SpectralSolver()
+        observer = rawtoaces.SpectralData()
+        observer.type = "observer_custom"
+        observer.units = "relative"
+
+        solver.observer = observer
+        assert isinstance(solver.observer, rawtoaces.SpectralData)
+        assert solver.observer.type == "observer_custom"
+        assert solver.observer.units == "relative"
+
+    def test_spectral_solver_full_configuration_and_idt(self, tmp_path):
+        _write_test_spectral_file(
+            tmp_path,
+            "camera",
+            "test_camera.json",
+            ["R", "G", "B"],
+            {"manufacturer": "nikon", "model": "d200"},
+        )
+        _write_test_spectral_file(
+            tmp_path,
+            "cmf",
+            "cmf_1931.json",
+            ["X", "Y", "Z"],
+            {"type": "cmf"},
+        )
+        _write_test_spectral_file(
+            tmp_path,
+            "training",
+            "training_spectral.json",
+            ["patch1", "patch2", "patch3"],
+            {"type": "training"},
+        )
+
+        solver = rawtoaces.SpectralSolver([str(tmp_path)])
+        assert solver.find_camera("nikon", "d200") is True
+        assert solver.find_illuminant("d55") is True
+        assert solver.load_spectral_data("cmf/cmf_1931.json", solver.observer) is True
+        assert (
+            solver.load_spectral_data(
+                "training/training_spectral.json", solver.training_data
+            )
+            is True
+        )
+        assert solver.calculate_WB() is True
+        assert solver.calculate_IDT_matrix() is True
+
+        wb = solver.get_WB_multipliers()
+        idt = solver.get_IDT_matrix()
+
+        assert len(wb) == 3
+        assert len(idt) == 3
+        for row in idt:
+            assert len(row) == 3
+            for value in row:
+                assert math.isfinite(value)

@@ -123,8 +123,9 @@ class TestMetadataBindings:
         metadata = rawtoaces.Metadata()
         calibration = rawtoaces.Metadata.Calibration()
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as exc_info:
             metadata.calibration = [calibration]
+        assert str(exc_info.value) == "The calibration array must contain 2 elements."
 
 
 class TestMetadataSolverBindings:
@@ -204,11 +205,29 @@ class TestSpectralSolverBindings:
         solver = rawtoaces.SpectralSolver([str(tmp_path)])
         assert solver.find_camera("nikon", "d200") is False
 
+    def test_spectral_solver_find_camera_rejects_empty_make_or_model(self):
+        solver = rawtoaces.SpectralSolver()
+
+        with pytest.raises(ValueError) as exc_info:
+            solver.find_camera("", "d200")
+        assert str(exc_info.value) == "Camera make and model must be non-empty."
+
+        with pytest.raises(ValueError) as exc_info:
+            solver.find_camera("nikon", "")
+        assert str(exc_info.value) == "Camera make and model must be non-empty."
+
     def test_spectral_solver_find_illuminant_string_builtin(self):
         solver = rawtoaces.SpectralSolver()
 
         assert solver.find_illuminant("d55") is True
         assert solver.find_illuminant("3200k") is True
+
+    def test_spectral_solver_find_illuminant_string_rejects_empty(self):
+        solver = rawtoaces.SpectralSolver()
+
+        with pytest.raises(ValueError) as exc_info:
+            solver.find_illuminant("")
+        assert str(exc_info.value) == "Illuminant type must be non-empty."
 
     def test_spectral_solver_find_illuminant_wb_requires_camera(self):
         solver = rawtoaces.SpectralSolver()
@@ -218,6 +237,16 @@ class TestSpectralSolverBindings:
             "Camera needs to be initialised prior to calling "
             "SpectralSolver::find_illuminant()."
         ) in solver.last_error_message
+
+    def test_spectral_solver_find_illuminant_wb_rejects_non_rgb_vector(self):
+        solver = rawtoaces.SpectralSolver()
+
+        with pytest.raises(ValueError) as exc_info:
+            solver.find_illuminant([1.0, 1.0])
+        assert (
+            str(exc_info.value)
+            == "White-balance multipliers must contain 3 elements."
+        )
 
     def test_spectral_solver_calculate_wb_requires_camera(self):
         solver = rawtoaces.SpectralSolver()

@@ -87,15 +87,39 @@ void core_bindings( nanobind::module_ &m )
         "search_directories"_a = std::vector<std::string>{} );
     spectral_solver.def(
         "collect_data_files", &SpectralSolver::collect_data_files );
-    spectral_solver.def( "find_camera", &SpectralSolver::find_camera );
+    spectral_solver.def(
+        "find_camera",
+        []( SpectralSolver    &solver,
+            const std::string &make,
+            const std::string &model ) {
+            if ( make.empty() || model.empty() )
+            {
+                throw std::invalid_argument(
+                    "Camera make and model must be non-empty." );
+            }
+            return solver.find_camera( make, model );
+        } );
     spectral_solver.def(
         "find_illuminant",
-        static_cast<bool ( SpectralSolver::* )( const std::string & )>(
-            &SpectralSolver::find_illuminant ) );
+        []( SpectralSolver &solver, const std::string &type ) {
+            if ( type.empty() )
+            {
+                throw std::invalid_argument(
+                    "Illuminant type must be non-empty." );
+            }
+            return solver.find_illuminant( type );
+        } );
     spectral_solver.def(
         "find_illuminant",
-        static_cast<bool ( SpectralSolver::* )( const std::vector<double> & )>(
-            &SpectralSolver::find_illuminant ) );
+        []( SpectralSolver            &solver,
+            const std::vector<double> &wb_multipliers ) {
+            if ( wb_multipliers.size() != 3 )
+            {
+                throw std::invalid_argument(
+                    "White-balance multipliers must contain 3 elements." );
+            }
+            return solver.find_illuminant( wb_multipliers );
+        } );
     spectral_solver.def( "calculate_WB", &SpectralSolver::calculate_WB );
     spectral_solver.def(
         "calculate_IDT_matrix", &SpectralSolver::calculate_IDT_matrix );

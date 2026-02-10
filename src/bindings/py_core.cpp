@@ -2,11 +2,13 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include "py_core.h"
+#include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 #include <rawtoaces/rawtoaces_core.h>
 #include <stdexcept>
 
 using namespace rta::core;
+using namespace nanobind::literals;
 
 void bind_metadata( nanobind::module_ &m )
 {
@@ -57,4 +59,27 @@ void core_bindings( nanobind::module_ &m )
         "calculate_CAT_matrix", &MetadataSolver::calculate_CAT_matrix );
     metadata_solver.def(
         "calculate_IDT_matrix", &MetadataSolver::calculate_IDT_matrix );
+
+    nanobind::class_<SpectralSolver> spectral_solver( m, "SpectralSolver" );
+    spectral_solver.def(
+        nanobind::init<const std::vector<std::string> &>(),
+        "search_directories"_a = std::vector<std::string>{} );
+    spectral_solver.def(
+        "collect_data_files", &SpectralSolver::collect_data_files );
+    spectral_solver.def( "find_camera", &SpectralSolver::find_camera );
+    spectral_solver.def(
+        "find_illuminant",
+        static_cast<bool ( SpectralSolver::* )( const std::string & )>(
+            &SpectralSolver::find_illuminant ) );
+    spectral_solver.def(
+        "find_illuminant",
+        static_cast<bool ( SpectralSolver::* )( const std::vector<double> & )>(
+            &SpectralSolver::find_illuminant ) );
+    spectral_solver.def( "calculate_WB", &SpectralSolver::calculate_WB );
+    spectral_solver.def(
+        "get_WB_multipliers", &SpectralSolver::get_WB_multipliers );
+    spectral_solver.def( "get_IDT_matrix", &SpectralSolver::get_IDT_matrix );
+    spectral_solver.def_rw(
+        "last_error_message", &SpectralSolver::last_error_message );
+    spectral_solver.def_rw( "verbosity", &SpectralSolver::verbosity );
 }

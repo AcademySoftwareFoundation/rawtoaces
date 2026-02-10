@@ -59,6 +59,7 @@ class TestMetadataBindings:
         assert hasattr(rawtoaces, "Metadata")
         assert hasattr(rawtoaces.Metadata, "Calibration")
         assert hasattr(rawtoaces, "MetadataSolver")
+        assert hasattr(rawtoaces, "SpectralSolver")
 
     def test_metadata_calibration_round_trip(self):
         metadata = _init_reference_metadata()
@@ -112,3 +113,64 @@ class TestMetadataSolverBindings:
         assert abs(idt[2][0] - -0.0024498461) < 1e-5
         assert abs(idt[2][1] - 0.0060497128) < 1e-5
         assert abs(idt[2][2] - 1.0139159537) < 1e-5
+
+
+class TestSpectralSolverBindings:
+    def test_spectral_solver_default_constructor(self):
+        solver = rawtoaces.SpectralSolver()
+        assert solver is not None
+        assert solver.verbosity == 0
+        assert solver.last_error_message == ""
+
+        wb = solver.get_WB_multipliers()
+        assert len(wb) == 3
+        assert abs(wb[0] - 1.0) < 1e-12
+        assert abs(wb[1] - 1.0) < 1e-12
+        assert abs(wb[2] - 1.0) < 1e-12
+
+        idt = solver.get_IDT_matrix()
+        assert len(idt) == 3
+        assert len(idt[0]) == 3
+        assert len(idt[1]) == 3
+        assert len(idt[2]) == 3
+
+    def test_spectral_solver_collect_data_files(self, tmp_path):
+        camera_dir = tmp_path / "camera"
+        camera_dir.mkdir()
+        (camera_dir / "test_camera.json").write_text("{}", encoding="utf-8")
+        (camera_dir / "ignored.txt").write_text("x", encoding="utf-8")
+
+        solver = rawtoaces.SpectralSolver([str(tmp_path)])
+        files = solver.collect_data_files("camera")
+
+        assert len(files) == 1
+        assert files[0].endswith("test_camera.json")
+
+    def test_spectral_solver_find_camera_without_database_match(self, tmp_path):
+        solver = rawtoaces.SpectralSolver([str(tmp_path)])
+        assert solver.find_camera("nikon", "d200") is False
+
+    def test_spectral_solver_find_illuminant_string_builtin(self):
+        solver = rawtoaces.SpectralSolver()
+
+        assert solver.find_illuminant("d55") is True
+        assert solver.find_illuminant("3200k") is True
+
+    def test_spectral_solver_find_illuminant_wb_requires_camera(self):
+        solver = rawtoaces.SpectralSolver()
+
+        assert solver.find_illuminant([1.8, 1.0, 1.4]) is False
+        assert (
+            "Camera needs to be initialised prior to calling "
+            "SpectralSolver::find_illuminant()."
+        ) in solver.last_error_message
+
+    def test_spectral_solver_calculate_wb_requires_camera(self):
+        solver = rawtoaces.SpectralSolver()
+        solver.find_illuminant("d55")
+
+        assert solver.calculate_WB() is False
+        assert (
+            "Camera needs to be initialised prior to calling "
+            "SpectralSolver::calculate_WB()."
+        ) in solver.last_error_message

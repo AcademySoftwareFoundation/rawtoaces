@@ -1139,7 +1139,7 @@ void test_database_location_not_directory_warning()
     settings.database_directories = { file_path.string(),
                                       test_dir.get_database_path() };
     settings.illuminant           = ""; // Empty to trigger auto-detection
-    settings.verbosity            = 1;  // > 0 to trigger the warning
+    settings.verbosity            = 1;
 
     // Make sure the transform is not in the cache, otherwise DB look up
     // will no be triggered.
@@ -1409,10 +1409,10 @@ void test_idt_verbosity_level_1()
 
     solver.calculate_WB();
 
-    // Calculate IDT matrix and capture stdout
+    // Calculate IDT matrix and capture stderr
     bool        success;
     std::string output =
-        capture_stdout( [&]() { success = solver.calculate_IDT_matrix(); } );
+        capture_stderr( [&]() { success = solver.calculate_IDT_matrix(); } );
 
     OIIO_CHECK_ASSERT( success );
 
@@ -1457,15 +1457,15 @@ void test_idt_verbosity_level_2()
 
     solver.calculate_WB();
 
-    // Calculate IDT matrix and capture stdout
+    // Calculate IDT matrix and capture stderr
     bool        success;
     std::string output =
-        capture_stdout( [&]() { success = solver.calculate_IDT_matrix(); } );
+        capture_stderr( [&]() { success = solver.calculate_IDT_matrix(); } );
 
     OIIO_CHECK_ASSERT( success );
 
-    // FullReport should be printed at this verbosity
-    ASSERT_CONTAINS( output, "Solver Summary" );
+    // FullReport is not printed until level 3
+    ASSERT_NOT_CONTAINS( output, "Solver Summary" );
 
     // Verify IDT matrix was calculated successfully
     const auto &IDT_matrix = solver.get_IDT_matrix();
@@ -1511,10 +1511,10 @@ void test_idt_verbosity_level_3()
 
     solver.calculate_WB();
 
-    // Calculate IDT matrix and capture stdout
+    // Calculate IDT matrix and capture stderr
     bool        success;
     std::string output =
-        capture_stdout( [&]() { success = solver.calculate_IDT_matrix(); } );
+        capture_stderr( [&]() { success = solver.calculate_IDT_matrix(); } );
 
     OIIO_CHECK_ASSERT( success );
 
@@ -1551,7 +1551,7 @@ void test_idt_curvefit_failure_returns_false()
 
     // Set up solver with verbosity to capture summary output
     rta::core::SpectralSolver solver( { test_dir.get_database_path() } );
-    solver.verbosity = 2;
+    solver.verbosity = 3;
 
     bool found_camera = solver.find_camera( "Blackmagic", "Cinema Camera" );
     OIIO_CHECK_ASSERT( found_camera );
@@ -1575,7 +1575,7 @@ void test_idt_curvefit_failure_returns_false()
 
     bool        success;
     std::string output =
-        capture_stdout( [&]() { success = solver.calculate_IDT_matrix(); } );
+        capture_stderr( [&]() { success = solver.calculate_IDT_matrix(); } );
 
     // Optimization should fail and return false
     OIIO_CHECK_ASSERT( !success );

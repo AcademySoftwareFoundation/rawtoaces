@@ -719,8 +719,8 @@ bool curveFit(
             for ( int i = 0; i < 3; i++ )
             {
                 std::cerr << "   " << out_IDT_matrix[i][0] << " "
-                          << out_IDT_matrix[i][1] << " "
-                          << out_IDT_matrix[i][2] << std::endl;
+                          << out_IDT_matrix[i][1] << " " << out_IDT_matrix[i][2]
+                          << std::endl;
             }
         }
 

@@ -1489,13 +1489,10 @@ bool ImageConverter::configure(
         else
         {
             matrix_method = Settings::MatrixMethod::Metadata;
-            if ( settings.verbosity > 0 )
-            {
-                std::cerr << "Info: Falling back to metadata matrix method "
-                          << "because no spectral data was found for camera "
-                          << static_cast<std::string>( camera_identifier )
-                          << std::endl;
-            }
+            std::cerr << "Info: Falling back to metadata matrix method "
+                      << "because no spectral data was found for camera "
+                      << static_cast<std::string>( camera_identifier )
+                      << std::endl;
         }
     }
 

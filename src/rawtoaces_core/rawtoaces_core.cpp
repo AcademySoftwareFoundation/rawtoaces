@@ -251,13 +251,13 @@ SpectralSolver::collect_data_files( const std::string &type ) const
                     }
                 }
             }
-            else if ( verbosity > 0 )
+            else
             {
                 std::cerr << "WARNING: Directory '" << type_path.string()
                           << "' does not exist." << std::endl;
             }
         }
-        else if ( verbosity > 0 )
+        else
         {
             std::cerr << "WARNING: Database location '" << directory
                       << "' is not a directory." << std::endl;
@@ -660,11 +660,10 @@ struct IDTOptimizationCost
 /// @param RGB Camera RGB responses for training patches
 /// @param XYZ Target XYZ values for training patches
 /// @param beta_params Initial 6-element parameter array for IDT matrix (modified in-place)
-/// @param verbosity Verbosity level for optimization output (0-3):
-/// - 0: Silent (no output)
-/// - 1: Brief optimization report and final IDT matrix
-/// - 2: Full optimization report and progress output
-/// - 3: Detailed progress with minimizer output to stdout
+/// @param verbosity Verbosity level for optimization output:
+/// - 0-2: No output from solver
+/// - 3: Ceres solver full report and computed IDT matrix to stderr
+/// - 4: Additionally enables Ceres minimizer progress to stdout
 /// @param out_IDT_matrix Output IDT matrix computed from optimized parameters
 /// @return true if optimization succeeded, false otherwise
 bool curveFit(
@@ -691,16 +690,14 @@ bool curveFit(
     options.min_line_search_step_size = 1e-17;
     options.max_num_iterations        = 300;
 
-    if ( verbosity > 2 )
+    if ( verbosity > 3 )
         options.minimizer_progress_to_stdout = true;
 
     ceres::Solver::Summary summary;
     ceres::Solve( options, &problem, &summary );
 
-    if ( verbosity >= 2 )
-        std::cout << summary.FullReport() << std::endl;
-    else if ( verbosity == 1 )
-        std::cout << summary.BriefReport() << std::endl;
+    if ( verbosity > 2 )
+        std::cerr << summary.FullReport() << std::endl;
 
     if ( summary.num_successful_steps )
     {
@@ -714,16 +711,14 @@ bool curveFit(
         out_IDT_matrix[2][1] = beta_params[5];
         out_IDT_matrix[2][2] = 1.0 - beta_params[4] - beta_params[5];
 
-        if ( verbosity > 1 )
+        if ( verbosity > 2 )
         {
-            printf( "The IDT matrix is ...\n" );
+            std::cerr << "The IDT matrix is ..." << std::endl;
             for ( int i = 0; i < 3; i++ )
             {
-                printf(
-                    "   %f %f %f\n",
-                    out_IDT_matrix[i][0],
-                    out_IDT_matrix[i][1],
-                    out_IDT_matrix[i][2] );
+                std::cerr << "   " << out_IDT_matrix[i][0] << " "
+                          << out_IDT_matrix[i][1] << " " << out_IDT_matrix[i][2]
+                          << std::endl;
             }
         }
 

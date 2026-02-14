@@ -660,7 +660,7 @@ struct IDTOptimizationCost
 /// @param RGB Camera RGB responses for training patches
 /// @param XYZ Target XYZ values for training patches
 /// @param beta_params Initial 6-element parameter array for IDT matrix (modified in-place)
-/// @param verbosity Verbosity level for optimization output (0-3):
+/// @param verbosity Verbosity level for optimization output (0-4):
 /// - 0: Silent (no output)
 /// - 1: No optimization output
 /// - 2: No optimization output

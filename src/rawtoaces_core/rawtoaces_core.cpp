@@ -660,12 +660,10 @@ struct IDTOptimizationCost
 /// @param RGB Camera RGB responses for training patches
 /// @param XYZ Target XYZ values for training patches
 /// @param beta_params Initial 6-element parameter array for IDT matrix (modified in-place)
-/// @param verbosity Verbosity level for optimization output (0-4):
-/// - 0: Silent (no output)
-/// - 1: No optimization output
-/// - 2: No optimization output
-/// - 3: Full optimization report and IDT matrix output to stderr
-/// - 4: Full optimization report, IDT matrix and minimizer progress to stdout
+/// @param verbosity Verbosity level for optimization output:
+/// - 0-2: No output from solver
+/// - 3: Ceres solver full report and computed IDT matrix to stderr
+/// - 4: Additionally enables Ceres minimizer progress to stdout
 /// @param out_IDT_matrix Output IDT matrix computed from optimized parameters
 /// @return true if optimization succeeded, false otherwise
 bool curveFit(

@@ -54,6 +54,8 @@ public:
         CropApplicationError,
         /// Failed to save the output file.
         WriteError,
+        /// Failed to locate spectral measurements database.
+        DatabaseNotFound,
         /// Unknown error.
         UnknownError
     };

@@ -28,6 +28,8 @@ target_link_libraries(
     PUBLIC
         ${RAWTOACES_CORE_LIB}
         OpenImageIO::OpenImageIO
+    PRIVATE
+        nlohmann_json::nlohmann_json
 )
 
 setup_test_coverage(Test_usage_example_core)
@@ -61,6 +63,8 @@ target_link_libraries(
     PUBLIC
         ${RAWTOACES_CORE_LIB}
         OpenImageIO::OpenImageIO
+    PRIVATE
+        nlohmann_json::nlohmann_json
 )
 
 setup_test_coverage(Test_SpectralData)
@@ -79,6 +83,8 @@ target_link_libraries(
     PUBLIC
         ${RAWTOACES_CORE_LIB}
         OpenImageIO::OpenImageIO
+    PRIVATE
+        nlohmann_json::nlohmann_json
 )
 
 setup_test_coverage(Test_IDT)
@@ -114,6 +120,8 @@ target_link_libraries(
     PUBLIC
         ${RAWTOACES_CORE_LIB}
         OpenImageIO::OpenImageIO
+    PRIVATE
+        nlohmann_json::nlohmann_json
 )
 
 setup_test_coverage(Test_DNGIdt)
@@ -183,6 +191,8 @@ target_link_libraries(
     PUBLIC
         ${RAWTOACES_UTIL_LIB}
         OpenImageIO::OpenImageIO
+    PRIVATE
+        nlohmann_json::nlohmann_json
 )
 
 setup_test_coverage(Test_UsageTimer)
@@ -201,6 +211,8 @@ target_link_libraries(
     PUBLIC
         ${RAWTOACES_UTIL_LIB}
         OpenImageIO::OpenImageIO
+    PRIVATE
+        nlohmann_json::nlohmann_json
 )
 
 setup_test_coverage(Test_Cache)
@@ -219,6 +231,8 @@ target_link_libraries(
     PUBLIC
         ${RAWTOACES_UTIL_LIB}
         OpenImageIO::OpenImageIO
+    PRIVATE
+        nlohmann_json::nlohmann_json
 )
 
 setup_test_coverage(Test_Exiftool)
@@ -237,6 +251,8 @@ target_link_libraries(
     PUBLIC
         ${RAWTOACES_UTIL_LIB}
         OpenImageIO::OpenImageIO
+    PRIVATE
+        nlohmann_json::nlohmann_json
 )
 
 setup_test_coverage(Test_ColourTransforms)
@@ -256,6 +272,8 @@ target_link_libraries(
     PUBLIC
         ${RAWTOACES_UTIL_LIB}
         OpenImageIO::OpenImageIO
+    PRIVATE
+        nlohmann_json::nlohmann_json
 )
 
 setup_test_coverage(Test_ImageConverter)

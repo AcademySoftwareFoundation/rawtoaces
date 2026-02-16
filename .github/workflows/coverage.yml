@@ -18,7 +18,7 @@ jobs:
     - name: Install OS dependencies
       shell: bash
       run: |
-        bash build_scripts/install_deps_mac.bash
+        bash build_scripts/install_deps_macos.bash
     
     - name: Install coverage dependencies
       run: |

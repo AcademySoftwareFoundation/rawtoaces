@@ -26,8 +26,6 @@ struct CameraIdentifier
     std::string make;
     std::string model;
 
-    CameraIdentifier() = default;
-
     bool is_empty() const { return make.empty() && model.empty(); }
 
     operator std::string() const

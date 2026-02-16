@@ -25,6 +25,10 @@ endif()
 # the Ceres::ceres alias in not getting defined on the config side
 find_package ( Ceres       CONFIG REQUIRED )
 find_package ( OpenImageIO CONFIG REQUIRED )
+
+# Windows build seems to expose nlohmann_json as dependency?
+find_package ( nlohmann_json CONFIG REQUIRED )
+
 find_package ( RAWTOACES   CONFIG REQUIRED )
 
 enable_testing()

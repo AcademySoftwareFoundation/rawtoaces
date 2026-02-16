@@ -16,6 +16,9 @@ on:
         type: string
       cxx_compiler:
         type: string
+      cxx_standard:
+        type: number
+        default: 17
       build_type:
         type: string
         default: 'Release'
@@ -103,7 +106,7 @@ jobs:
           -S .
           -D RTA_CENTOS7_CERES_HACK=${{ inputs.ceres_hack }}
           -D CMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
-          -D CMAKE_CXX_STANDARD=17
+          -D CMAKE_CXX_STANDARD=${{ inputs.cxx_standard }}
           -D CMAKE_TOOLCHAIN_FILE="${{ inputs.toolchain_file }}"
           -D CMAKE_BUILD_TYPE="${{ inputs.build_type }}"
           -D ENABLE_SHARED="${{ inputs.build_shared_libs }}"
@@ -138,7 +141,7 @@ jobs:
           -S ./tests/config_tests
           -D RAWTOACES_DIR=${{ github.workspace }}/install/lib/cmake/RAWTOACES
           -D CMAKE_TOOLCHAIN_FILE="${{ inputs.toolchain_file }}"
-          -D CMAKE_CXX_STANDARD=17
+          -D CMAKE_CXX_STANDARD=${{ inputs.cxx_standard }}
           -D CMAKE_BUILD_TYPE=${{ inputs.build_type }}
 
       - name: Build config_tests

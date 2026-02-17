@@ -541,6 +541,21 @@ void test_convert_linux_path_to_windows_path()
     OIIO_CHECK_EQUAL( result, "c:\\path1;c:\\path2;c:\\path3" );
 }
 
+/// Tests empty path passed to make_output_path
+void test_empty_input_path()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    std::string    path = "";
+    ImageConverter converter;
+    bool           success = converter.make_output_path( path );
+    OIIO_CHECK_ASSERT( !success );
+    OIIO_CHECK_ASSERT(
+        converter.status == ImageConverter::Status::EmptyInputFilename );
+    ASSERT_CONTAINS(
+        converter.last_error_message, "Empty input path provided." );
+}
+
 /// Tests fix_metadata with both Make and Model attributes
 void test_fix_metadata_both_attributes()
 {
@@ -2608,6 +2623,7 @@ int main( int, char ** )
 
         // Tests for utility functions
         test_convert_linux_path_to_windows_path();
+        test_empty_input_path();
 
         // Tests for fix_metadata
         test_fix_metadata_both_attributes();

@@ -20,6 +20,7 @@ jobs:
       container_volumes: ${{ matrix.container_volumes || '[]' }}
       cc_compiler: ${{ matrix.compiler[0] }}
       cxx_compiler: ${{ matrix.cxx_compiler[1] }}
+      cxx_standard: ${{ matrix.cxx_standard || 17 }}
       vfxyear: ${{ matrix.vfxyear || 0 }}
       ceres_hack: ${{ matrix.ceres_hack || 'OFF' }}
       test_install: ${{ matrix.test_install || 'ON' }}
@@ -48,6 +49,7 @@ jobs:
             toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
           - vfxyear: 2026
             container: aswf/ci-rawtoaces:2026.2
+            cxx_standard: 20
             toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
 
   build:
@@ -55,35 +57,30 @@ jobs:
     permissions: read-all
     uses: ./.github/workflows/build-steps.yml
     with:
-      runner: ${{ matrix.os }}
+      runner: ${{ matrix.os }}-latest
       container: ${{ matrix.container }}
       cc_compiler: ${{ matrix.cc_compiler }}
       cxx_compiler: ${{ matrix.cxx_compiler }}
-      install_deps: ${{ matrix.install_deps }}
+      install_deps: install_deps_${{ matrix.os }}
       toolchain_file: ${{ matrix.toolchain_file }}
       build_shared_libs: ${{ matrix.build_shared_libs || 'ON' }}
+      cxx_standard: 20
 
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
       fail-fast: false
 
       matrix:
+        os: [ macos, ubuntu, windows ]
         include:
-          - os: windows-latest
+          - os: windows
             c_compiler: cl
             cpp_compiler: cl
-            install_deps: install_deps_windows
             toolchain_file: "C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
             build_shared_libs: OFF
-          - os: ubuntu-latest
+          - os: ubuntu
             c_compiler: gcc
             cpp_compiler: g++
-            install_deps: install_deps_linux
-          - os: ubuntu-latest
+          - os: macos
             c_compiler: clang
             cpp_compiler: clang++
-            install_deps: install_deps_linux
-          - os: macos-latest
-            c_compiler: clang
-            cpp_compiler: clang++
-            install_deps: install_deps_mac

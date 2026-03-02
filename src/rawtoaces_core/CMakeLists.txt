@@ -26,6 +26,8 @@ target_link_libraries(
     ${RAWTOACES_CORE_LIB}
     PUBLIC
         Eigen3::Eigen
+    PRIVATE
+        nlohmann_json::nlohmann_json
 )
 
 if ( ${Ceres_VERSION_MAJOR} GREATER 1 )

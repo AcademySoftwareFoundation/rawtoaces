@@ -177,7 +177,7 @@ Minimal example using database lookup + file loading:
   idt = solver.get_IDT_matrix()     # 3x3
 
 
-Finding illuminant by WB multipliers:
+Finding a standard illuminant best matching the given white-balancing multipliers:
 
 .. code-block:: python
 

@@ -192,6 +192,15 @@ Finding a standard illuminant best matching the given white-balancing multiplier
   :py:class:`SpectralSolver` workflows.
   Corresponds to :cpp:class:`rta::core::SpectralData`.
 
+  File format and schema references:
+
+  - Format description:
+    `rawtoaces-data README (JSON Schema for Spectral Datasets) <https://github.com/AcademySoftwareFoundation/rawtoaces-data/blob/main/README.md#json-schema-for-spectral-datasets>`_
+  - Current schema:
+    `schema_1.0.0.json <https://github.com/AcademySoftwareFoundation/rawtoaces-data/blob/main/schema_1.0.0.json>`_
+  - Legacy schema (still found in many existing datasets):
+    `schema_0.1.0.json <https://github.com/AcademySoftwareFoundation/rawtoaces-data/blob/main/schema_0.1.0.json>`_
+
   .. py:attribute:: str manufacturer
   .. py:attribute:: str model
   .. py:attribute:: str type

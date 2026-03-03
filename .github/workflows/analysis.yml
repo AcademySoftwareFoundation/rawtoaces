@@ -29,6 +29,8 @@ on:
   pull_request:
     branches:
       - '*analysis*'
+  # Allow manual trigger
+  workflow_dispatch:
 
 # Allow subsequent pushes to the same PR or REF to cancel any previous jobs.
 concurrency:
@@ -38,7 +40,7 @@ concurrency:
 jobs:
   static_analysis:
     name: "Static analysis"
-    if: github.repository == 'AcademySoftwareFoundation/rawtoaces'
+    if: (github.event_name == 'workflow_dispatch') || (github.repository == 'AcademySoftwareFoundation/rawtoaces')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -47,11 +49,11 @@ jobs:
       CXX: clang++
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Dependencies
         shell: bash
         run: |
-          bash build_scripts/install_deps_linux.bash
+          bash build_scripts/install_deps_ubuntu.bash
           
       - name: Install cppcheck
         shell: bash
@@ -88,7 +90,7 @@ jobs:
 
   dynamic_analysis:
     name: "Dynamic analysis - ${{ matrix.mode }}"
-    if: github.repository == 'AcademySoftwareFoundation/rawtoaces'
+    if: (github.event_name == 'workflow_dispatch') || (github.repository == 'AcademySoftwareFoundation/rawtoaces')
     permissions: read-all
     uses: ./.github/workflows/build-steps.yml
     with:
@@ -96,7 +98,7 @@ jobs:
       cxx_compiler: clang++
       build_type: Debug
       runner: macos-latest
-      install_deps: install_deps_mac
+      install_deps: install_deps_macos
       sanitiser_mode: "${{ matrix.mode }}"
       test_install: 'OFF'
     strategy:

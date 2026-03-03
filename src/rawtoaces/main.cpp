@@ -5,6 +5,31 @@
 
 #include <set>
 
+/// Amend the error message by adding info on the relevant command line parameter.
+void update_error_message( std::string &error_message )
+{
+    static const std::map<std::string, std::string> message_map = {
+        { "Missing the camera manufacturer name in the file metadata.",
+          " You can provide a custom value using the --custom-camera-make "
+          "parameter." },
+        { "Missing the camera model name in the file metadata.",
+          " You can provide a custom value using the --custom-camera-model "
+          "parameter." },
+        { "Please provide the database path using the RAWTOACES_DATA_PATH "
+          "environment variable",
+          " or the --data-dir parameter" }
+    };
+
+    for ( auto [key, value]: message_map )
+    {
+        auto found = error_message.find( key );
+        if ( found != std::string::npos )
+        {
+            error_message.insert( found + key.length(), value );
+        }
+    }
+}
+
 int main( int argc, const char *argv[] )
 {
 #ifndef WIN32
@@ -23,6 +48,9 @@ int main( int argc, const char *argv[] )
 
     if ( !converter.parse_parameters( arg_parser ) )
     {
+        std::string error_message = converter.last_error_message;
+        update_error_message( error_message );
+        std::cerr << "Error: " << error_message << std::endl;
         return 1;
     }
 
@@ -66,8 +94,22 @@ int main( int argc, const char *argv[] )
                 // Print library-level error message if available
                 if ( !converter.last_error_message.empty() )
                 {
-                    std::cerr << "  Reason: " << converter.last_error_message
-                              << std::endl;
+                    std::string error_message = converter.last_error_message;
+                    update_error_message( error_message );
+                    std::cerr << "  Reason: " << error_message << std::endl;
+
+                    if ( converter.status ==
+                         rta::util::ImageConverter::Status::ConfigurationError )
+                    {
+                        if ( error_message.find(
+                                 "Failed to find illuminant type" ) !=
+                             std::string::npos )
+                        {
+                            // We can not recover from this error on subsequent
+                            // images, so error out.
+                            return 1;
+                        }
+                    }
                 }
 
                 // Add CLI-specific hints based on error status

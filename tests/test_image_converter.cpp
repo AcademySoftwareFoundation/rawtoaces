@@ -541,6 +541,21 @@ void test_convert_linux_path_to_windows_path()
     OIIO_CHECK_EQUAL( result, "c:\\path1;c:\\path2;c:\\path3" );
 }
 
+/// Tests empty path passed to make_output_path
+void test_empty_input_path()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    std::string    path = "";
+    ImageConverter converter;
+    bool           success = converter.make_output_path( path );
+    OIIO_CHECK_ASSERT( !success );
+    OIIO_CHECK_ASSERT(
+        converter.status == ImageConverter::Status::EmptyInputFilename );
+    ASSERT_CONTAINS(
+        converter.last_error_message, "Empty input path provided." );
+}
+
 /// Tests fix_metadata with both Make and Model attributes
 void test_fix_metadata_both_attributes()
 {
@@ -756,6 +771,46 @@ void test_parse_parameters_list_illuminants( bool use_dir_path_arg = false )
     OIIO_CHECK_EQUAL( lines[3], "my-illuminant" );
 }
 
+/// Tests that automatic mode falls back to metadata if unavailable
+void test_fallback_to_metadata()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    // Create test directory with database
+    TestFixture fixture;
+    auto       &test_dir = fixture.build();
+
+    // Create ImageSpec with camera make but no model
+    auto image_spec = ImageSpecBuilder().camera( "Blackmagic", "" ).build();
+    // Do not set cameraModel - this is what we're testing
+
+    // Set up ImageConverter with spectral mode settings
+    auto settings = SettingsBuilder()
+                        .database( test_dir.get_database_path() )
+                        .wb_method( "metadata" )
+                        .mat_method( "auto" )
+                        .build();
+
+    ImageConverter converter;
+    converter.settings = settings;
+
+    // Create empty options list
+    OIIO::ParamValueList options;
+
+    bool success;
+    auto output = capture_stderr( [&]() {
+        // This should succeed and auto-detect the illuminant
+        success = converter.configure( image_spec, options );
+    } );
+
+    OIIO_CHECK_ASSERT( success );
+
+    // Assert on the expected warning on stderr
+    ASSERT_CONTAINS( output, "Falling back to metadata matrix method." );
+    ASSERT_CONTAINS(
+        output, "Missing the camera model name in the file metadata" );
+}
+
 /// Tests that prepare_transform_spectral fails when no camera manufacturer information is available (should fail)
 void test_missing_camera_manufacturer()
 {
@@ -941,7 +996,7 @@ void test_missing_illuminant_data()
         run_rawtoaces_with_data_dir( args, test_dir, false, true );
 
     // Assert on the expected error message
-    ASSERT_CONTAINS( output, "Error: No matching light source" );
+    ASSERT_CONTAINS( output, "Failed to find illuminant type" );
 }
 
 /// Tests that conversion fails when specified illuminant type is not found in illuminant data (should fail)
@@ -2135,7 +2190,7 @@ void test_last_error_message_empty_filename()
     OIIO_CHECK_ASSERT(
         converter.status == ImageConverter::Status::EmptyInputFilename );
     OIIO_CHECK_EQUAL(
-        converter.last_error_message, "Empty input filename provided" );
+        converter.last_error_message, "Empty input filename provided." );
 }
 
 /// Tests that last_error_message is set when input file does not exist
@@ -2259,12 +2314,10 @@ void test_last_error_message_output_directory_error()
     OIIO_CHECK_ASSERT( !result );
     OIIO_CHECK_ASSERT(
         converter.status == ImageConverter::Status::OutputDirectoryError );
-    OIIO_CHECK_EQUAL(
-        converter.last_error_message.find(
-            "Output directory does not exist" ) != std::string::npos ||
-            converter.last_error_message.find( "Failed to create directory" ) !=
-                std::string::npos,
-        true );
+    ASSERT_NOT_CONTAINS(
+        converter.last_error_message, "Failed to create directory: '" );
+    ASSERT_CONTAINS(
+        converter.last_error_message, converter.settings.output_dir );
 }
 
 /// Tests that errors from colour_transforms::fetch_illuminant_from_multipliers are relayed to last_error_message
@@ -2520,6 +2573,31 @@ void test_main_error_message_without_hint()
     ASSERT_NOT_CONTAINS( output, "Hint: Use --create-dirs" );
 }
 
+void check_data_dir_hint( const std::vector<std::string> &args )
+{
+    // Test with missing database
+    std::string output = run_rawtoaces_command( args, true );
+
+    // Assert on expected error message - file not found during collection
+    ASSERT_CONTAINS( output, "Spectral measurements database not found" );
+    ASSERT_CONTAINS( output, "--data-dir parameter" );
+}
+
+void test_main_error_data_dir_hint()
+{
+    std::cout << '\n' << __FUNCTION__ << std::endl;
+
+    std::string test_file = std::filesystem::absolute( nef_test_file ).string();
+
+    auto args =
+        CommandBuilder().mat_method( "spectral" ).input( test_file ).build();
+    std::string output = run_rawtoaces_command( args, true );
+
+    check_data_dir_hint( args );
+    check_data_dir_hint( { "--list-cameras" } );
+    check_data_dir_hint( { "--list-illuminants" } );
+}
+
 int main( int, char ** )
 {
     try
@@ -2545,6 +2623,7 @@ int main( int, char ** )
 
         // Tests for utility functions
         test_convert_linux_path_to_windows_path();
+        test_empty_input_path();
 
         // Tests for fix_metadata
         test_fix_metadata_both_attributes();
@@ -2567,6 +2646,7 @@ int main( int, char ** )
         test_empty_camera_model();
         test_camera_data_not_found();
 
+        test_fallback_to_metadata();
         test_missing_training_data();
         test_missing_observer_data();
         test_missing_illuminant_data();
@@ -2621,6 +2701,7 @@ int main( int, char ** )
         test_main_file_exists_hint();
         test_main_output_directory_error_hint();
         test_main_error_message_without_hint();
+        test_main_error_data_dir_hint();
     }
     catch ( const std::exception &e )
     {

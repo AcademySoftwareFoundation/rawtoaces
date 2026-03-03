@@ -231,6 +231,50 @@ std::vector<std::string> database_paths( const std::string &override_path = "" )
     return result;
 }
 
+bool update_database_directories(
+    std::vector<std::string> &database_directories,
+    std::string              &error_message,
+    const std::string        &override_path = "" )
+{
+    if ( database_directories.empty() )
+        database_directories = database_paths( override_path );
+
+    bool found_database = false;
+    for ( auto &directory: database_directories )
+    {
+        std::filesystem::path dir_path( directory );
+        std::error_code       error_code;
+
+        static const std::vector<std::string> subdirs = {
+            "camera", "cmf", "illuminant", "training"
+        };
+
+        for ( auto &subdir: subdirs )
+        {
+            if ( std::filesystem::is_directory(
+                     dir_path / subdir, error_code ) )
+            {
+                found_database = true;
+                break;
+            }
+        }
+
+        if ( found_database )
+            break;
+    }
+
+    if ( !found_database )
+    {
+        error_message =
+            "Spectral measurements database not found. "
+            "Please provide the database path using the "
+            "RAWTOACES_DATA_PATH environment variable.";
+        return false;
+    }
+
+    return true;
+}
+
 /// Get camera info (with make and model) from image metadata or custom settings.
 ///
 /// Returns camera information using custom settings if provided, otherwise
@@ -255,7 +299,7 @@ CameraIdentifier get_camera_identifier(
         {
             error_message =
                 "Missing the camera manufacturer name in the file "
-                "metadata";
+                "metadata.";
             return CameraIdentifier();
         }
     }
@@ -266,7 +310,7 @@ CameraIdentifier get_camera_identifier(
         if ( camera_model.empty() )
         {
             error_message =
-                "Missing the camera model name in the file metadata";
+                "Missing the camera model name in the file metadata.";
             return CameraIdentifier();
         }
     }
@@ -936,6 +980,15 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
 
     if ( arg_parser["list-cameras"].get<int>() )
     {
+        std::string error_message;
+        if ( !update_database_directories(
+                 settings.database_directories, error_message, data_dir ) )
+        {
+            last_error_message = error_message;
+            status             = Status::DatabaseNotFound;
+            return false;
+        }
+
         auto cameras = get_supported_cameras();
         std::cout
             << std::endl
@@ -947,6 +1000,15 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
 
     if ( arg_parser["list-illuminants"].get<int>() )
     {
+        std::string error_message;
+        if ( !update_database_directories(
+                 settings.database_directories, error_message, data_dir ) )
+        {
+            last_error_message = error_message;
+            status             = Status::DatabaseNotFound;
+            return false;
+        }
+
         auto illuminants = get_supported_illuminants();
         std::cout << std::endl
                   << "The following illuminants are supported:" << std::endl
@@ -1179,27 +1241,6 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     settings.disable_cache    = arg_parser["disable-cache"].get<int>();
     settings.disable_exiftool = arg_parser["disable-exiftool"].get<int>();
 
-    // If an illuminant was requested, confirm that we have it in the database
-    // an error out early, before we start loading any images.
-    if ( settings.WB_method == Settings::WBMethod::Illuminant )
-    {
-        core::SpectralSolver solver( settings.database_directories );
-        if ( !solver.find_illuminant( settings.illuminant ) )
-        {
-            if ( !solver.last_error_message.empty() )
-            {
-                std::cerr << std::endl
-                          << "Error: " << solver.last_error_message;
-            }
-
-            std::cerr << std::endl
-                      << "Error: No matching light source. "
-                      << "Please find available options by "
-                      << "\"rawtoaces --list-illuminants\"." << std::endl;
-            exit( -1 );
-        }
-    }
-
     return true;
 }
 
@@ -1399,6 +1440,29 @@ bool ImageConverter::configure(
     bool is_DNG =
         image_spec.extra_attribs.find( "raw:dng:version" )->get_int() > 0;
 
+    bool require_spectral =
+        settings.WB_method == Settings::WBMethod::Illuminant ||
+        settings.matrix_method == Settings::MatrixMethod::Spectral;
+    if ( require_spectral ||
+         settings.matrix_method == Settings::MatrixMethod::Auto )
+    {
+        std::string error_message;
+        if ( !update_database_directories(
+                 settings.database_directories, error_message ) )
+        {
+            if ( require_spectral )
+            {
+                status             = Status::DatabaseNotFound;
+                last_error_message = error_message;
+                return false;
+            }
+            else
+            {
+                std::cerr << "Warning: " << error_message << std::endl;
+            }
+        }
+    }
+
     switch ( settings.WB_method )
     {
         case Settings::WBMethod::Metadata: {
@@ -1474,23 +1538,31 @@ bool ImageConverter::configure(
     if ( settings.matrix_method == Settings::MatrixMethod::Auto )
     {
         core::SpectralSolver solver( settings.database_directories );
-        std::string          temp_error_msg; // Not used in Auto mode
+        std::string          temp_error_msg;
         CameraIdentifier     camera_identifier =
             get_camera_identifier( image_spec, settings, temp_error_msg );
 
-        if ( !camera_identifier.is_empty() &&
-             solver.find_camera(
-                 camera_identifier.make, camera_identifier.model ) )
+        if ( !camera_identifier.is_empty() )
         {
-            matrix_method = Settings::MatrixMethod::Spectral;
+            if ( solver.find_camera(
+                     camera_identifier.make, camera_identifier.model ) )
+            {
+                matrix_method = Settings::MatrixMethod::Spectral;
+            }
+            else
+            {
+                matrix_method = Settings::MatrixMethod::Metadata;
+                std::cerr << "Info: Falling back to metadata matrix method "
+                          << "because no spectral data was found for camera "
+                          << static_cast<std::string>( camera_identifier )
+                          << std::endl;
+            }
         }
         else
         {
             matrix_method = Settings::MatrixMethod::Metadata;
-            std::cerr << "Info: Falling back to metadata matrix method "
-                      << "because no spectral data was found for camera "
-                      << static_cast<std::string>( camera_identifier )
-                      << std::endl;
+            std::cerr << "Info: Falling back to metadata matrix method. "
+                      << temp_error_msg << std::endl;
         }
     }
 
@@ -1898,7 +1970,7 @@ bool ImageConverter::make_output_path(
     if ( path.empty() )
     {
         status             = Status::EmptyInputFilename;
-        last_error_message = "Empty input path provided";
+        last_error_message = "Empty input path provided.";
         return false;
     }
     try
@@ -1924,16 +1996,16 @@ bool ImageConverter::make_output_path(
                     if ( !std::filesystem::create_directory( new_directory ) )
                     {
                         status             = Status::OutputDirectoryError;
-                        last_error_message = "Failed to create directory: " +
-                                             new_directory.string();
+                        last_error_message = "Failed to create directory: '" +
+                                             new_directory.string() + "'.";
                         return false;
                     }
                 }
                 else
                 {
                     status             = Status::OutputDirectoryError;
-                    last_error_message = "Output directory does not exist: " +
-                                         new_directory.string();
+                    last_error_message = "Output directory does not exist: '" +
+                                         new_directory.string() + "'.";
                     return false;
                 }
             }
@@ -1944,7 +2016,7 @@ bool ImageConverter::make_output_path(
         {
             status = Status::FileExists;
             last_error_message =
-                "Output file already exists: " + temp_path.string();
+                "Output file already exists: '" + temp_path.string() + "'.";
             return false;
         }
 
@@ -1991,9 +2063,8 @@ bool ImageConverter::save_image(
     else
     {
         status             = Status::WriteError;
-        last_error_message = std::string( "Failed to write file: " ) +
-                             output_filename +
-                             ". Error: " + image_output->geterror();
+        last_error_message = std::string( "Failed to write file: '" ) +
+                             output_filename + "': " + image_output->geterror();
         return false;
     }
 
@@ -2001,7 +2072,7 @@ bool ImageConverter::save_image(
     {
         status = Status::WriteError;
         last_error_message =
-            "Failed to write image data to file: " + output_filename;
+            "Failed to write image data to file: '" + output_filename + "'.";
         return false;
     }
 
@@ -2015,7 +2086,7 @@ bool ImageConverter::process_image( const std::string &input_filename )
     if ( input_filename.empty() )
     {
         status             = Status::EmptyInputFilename;
-        last_error_message = "Empty input filename provided";
+        last_error_message = "Empty input filename provided.";
         return false;
     }
 
@@ -2025,8 +2096,9 @@ bool ImageConverter::process_image( const std::string &input_filename )
     {
         if ( !std::filesystem::exists( input_filename ) )
         {
-            status             = Status::InputFileNotFound;
-            last_error_message = "Input file does not exist: " + input_filename;
+            status = Status::InputFileNotFound;
+            last_error_message =
+                "Input file does not exist: '" + input_filename + "'.";
             return false;
         }
     }
@@ -2043,7 +2115,7 @@ bool ImageConverter::process_image( const std::string &input_filename )
     if ( !make_output_path( output_filename ) )
     {
 
-        return ( false );
+        return false;
     }
 
     util::UsageTimer usage_timer;
@@ -2052,27 +2124,27 @@ bool ImageConverter::process_image( const std::string &input_filename )
     // ___ Configure transform ___
     if ( settings.verbosity > 0 )
     {
-        std::cerr << "Configuring transform for: " << input_filename
+        std::cerr << "Configuring transform for: '" << input_filename << "'."
                   << std::endl;
     }
     usage_timer.reset();
     OIIO::ParamValueList hints;
     if ( !configure( input_filename, hints ) )
     {
-        return ( false );
+        return false;
     }
     usage_timer.print( input_filename, "configuring reader" );
 
     // ___ Load image ___
     if ( settings.verbosity > 0 )
     {
-        std::cerr << "Loading image: " << input_filename << std::endl;
+        std::cerr << "Loading image: '" << input_filename << "'." << std::endl;
     }
     usage_timer.reset();
     OIIO::ImageBuf buffer;
     if ( !load_image( input_filename, hints, buffer ) )
     {
-        return ( false );
+        return false;
     }
     fix_metadata( buffer.specmod() );
     usage_timer.print( input_filename, "reading image" );
@@ -2085,7 +2157,7 @@ bool ImageConverter::process_image( const std::string &input_filename )
     usage_timer.reset();
     if ( !apply_matrix( buffer, buffer ) )
     {
-        return ( false );
+        return false;
     }
     usage_timer.print( input_filename, "applying transform matrix" );
 
@@ -2097,7 +2169,7 @@ bool ImageConverter::process_image( const std::string &input_filename )
     usage_timer.reset();
     if ( !apply_scale( buffer, buffer ) )
     {
-        return ( false );
+        return false;
     }
     usage_timer.print( input_filename, "applying scale" );
 
@@ -2109,24 +2181,24 @@ bool ImageConverter::process_image( const std::string &input_filename )
     usage_timer.reset();
     if ( !apply_crop( buffer, buffer ) )
     {
-        return ( false );
+        return false;
     }
     usage_timer.print( input_filename, "applying crop" );
 
     // ___ Save image ___
     if ( settings.verbosity > 0 )
     {
-        std::cerr << "Saving output: " << output_filename << std::endl;
+        std::cerr << "Saving output: '" << output_filename << "'." << std::endl;
     }
     usage_timer.reset();
     if ( !save_image( output_filename, buffer ) )
     {
-        return ( false );
+        return false;
     }
     usage_timer.print( input_filename, "writing image" );
 
     status = Status::Success;
-    return ( true );
+    return true;
 }
 
 const std::vector<double> &ImageConverter::get_WB_multipliers() const

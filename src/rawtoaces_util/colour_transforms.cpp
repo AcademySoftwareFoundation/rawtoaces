@@ -84,8 +84,15 @@ bool configure_spectral_solver(
 
         if ( !success )
         {
-            print_data_error(
-                "illuminant type", "'" + illuminant + "'", error_message );
+            if ( !solver.last_error_message.empty() )
+            {
+                error_message = solver.last_error_message;
+            }
+            else
+            {
+                print_data_error(
+                    "illuminant type", "'" + illuminant + "'", error_message );
+            }
             return false;
         }
     }

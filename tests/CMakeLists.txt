@@ -288,15 +288,20 @@ if(RTA_BUILD_PYTHON_BINDINGS)
             COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/python/test_image_converter.py -v
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         )
+        add_test(
+            NAME Test_Python_CoreBindings
+            COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/python/test_core_bindings.py -v
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        )
 
         # Set environment for Python test to find the compiled module
         # Handle both single-config (Linux/macOS) and multi-config (Windows) generators
         if(WIN32)
-            set_tests_properties(Test_Python_ImageConverter PROPERTIES
+            set_tests_properties(Test_Python_ImageConverter Test_Python_CoreBindings PROPERTIES
                 ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}/src/bindings/Release;${CMAKE_BINARY_DIR}/src/bindings;$ENV{PYTHONPATH}"
             )
         else()
-            set_tests_properties(Test_Python_ImageConverter PROPERTIES
+            set_tests_properties(Test_Python_ImageConverter Test_Python_CoreBindings PROPERTIES
                 ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}/src/bindings:$ENV{PYTHONPATH}"
             )
         endif()

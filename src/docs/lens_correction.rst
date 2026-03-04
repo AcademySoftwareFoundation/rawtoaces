@@ -112,6 +112,7 @@ override all camera/lens info used for correction:
       converter = rawtoaces.ImageConverter()
       
       converter.settings.lens_correction_types =
+        rawtoaces.ImageConverter.Settings.LensCorrectionType.Aberration |
         rawtoaces.ImageConverter.Settings.LensCorrectionType.Distortion |
         rawtoaces.ImageConverter.Settings.LensCorrectionType.Vignetting
       converter.settings.require_lens_correction = True

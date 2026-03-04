@@ -93,6 +93,44 @@ Camera Override Options
 
 These options are useful when metadata is missing or incorrect.
 
+.. _lens-correction-options:
+
+Lens Correction Options
+^^^^^^^^^^^^^^^^^^^^^^^
+
+See :doc:`Lens Correction<lens_correction>` for more information on lens correction.
+
+``--lens-correction <types>``
+   Lens correction types to be applied to the images.
+   Specify a string containing the following symbols in any order:
+    
+   - ``c``: chromatic abberation
+   - ``d``: geometric distortion
+   - ``v``: vignetting
+   - ``a``: all of the above
+    
+``--require-lens-correction``
+   Lens correction is treated as optional by default, i.e. the correction will
+   only be applied if there is sufficient information about the camera/lens and
+   the shot conditions (aperture, focal length, focus distance) is available
+   for the image. Setting this flag will make lens correction mandatory, the
+   conversion will fail if lens correction can't be applied.
+    
+``--custom-lens-make <name>``
+   Override lens manufacturer name.
+    
+``--custom-lens-model <name>``
+   Override lens model name.
+   
+``--custom-aperture <value>``
+   Override aperture (F-number) value.
+   
+``--custom-focal-length <value>``
+   Override focal length value (in millimetres).
+      
+``--custom-focus-distance <value>``
+   Override focus distance value (in metres).
+
 Verbosity Options
 ^^^^^^^^^^^^^^^^^
 

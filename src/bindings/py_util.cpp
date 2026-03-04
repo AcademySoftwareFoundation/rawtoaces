@@ -79,6 +79,24 @@ void util_bindings( nanobind::module_ &m )
     settings.def_rw( "use_timing", &ImageConverter::Settings::use_timing );
     settings.def_rw( "verbosity", &ImageConverter::Settings::verbosity );
 
+    settings.def_rw(
+        "lens_correction_types",
+        &ImageConverter::Settings::lens_correction_types );
+    settings.def_rw(
+        "require_lens_correction",
+        &ImageConverter::Settings::require_lens_correction );
+    settings.def_rw(
+        "custom_lens_make", &ImageConverter::Settings::custom_lens_make );
+    settings.def_rw(
+        "custom_lens_model", &ImageConverter::Settings::custom_lens_model );
+    settings.def_rw(
+        "custom_aperture", &ImageConverter::Settings::custom_aperture );
+    settings.def_rw(
+        "custom_focal_length", &ImageConverter::Settings::custom_focal_length );
+    settings.def_rw(
+        "custom_focus_distance",
+        &ImageConverter::Settings::custom_focus_distance );
+
     settings.def_prop_rw(
         "WB_box",
         []( const ImageConverter::Settings &settings ) {
@@ -226,6 +244,19 @@ void util_bindings( nanobind::module_ &m )
         .value( "Off", ImageConverter::Settings::CropMode::Off )
         .value( "Soft", ImageConverter::Settings::CropMode::Soft )
         .value( "Hard", ImageConverter::Settings::CropMode::Hard )
+        .export_values();
+
+    nanobind::enum_<ImageConverter::Settings::LensCorrectionType>(
+        settings, "LensCorrectionType", nanobind::is_flag() )
+        .value(
+            "Aberration",
+            ImageConverter::Settings::LensCorrectionType::Aberration )
+        .value(
+            "Distortion",
+            ImageConverter::Settings::LensCorrectionType::Distortion )
+        .value(
+            "Vignetting",
+            ImageConverter::Settings::LensCorrectionType::Vignetting )
         .export_values();
 
     nanobind::enum_<ImageConverter::Status>( image_converter, "Status" )

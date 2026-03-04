@@ -771,6 +771,62 @@ void test_parse_parameters_list_illuminants( bool use_dir_path_arg = false )
     OIIO_CHECK_EQUAL( lines[3], "my-illuminant" );
 }
 
+void check_parse_parameters_lens_correction(
+    const char *params,
+    bool        has_aberration,
+    bool        has_distortion,
+    bool        has_vignetting,
+    bool        has_unknown )
+{
+    const char *const argv[] = { "filename", "--lens-correction", params };
+    const int         argc   = sizeof( argv ) / sizeof( argv[0] );
+
+    ImageConverter converter;
+
+    OIIO::ArgParse parser;
+    converter.init_parser( parser );
+
+    parser.parse_args( argc, (const char **)argv );
+    bool success;
+
+    auto output = capture_stderr(
+        [&]() { success = converter.parse_parameters( parser ); } );
+
+    OIIO_CHECK_NE( success, has_unknown );
+
+    if ( success )
+    {
+        OIIO_CHECK_EQUAL(
+            converter.settings.lens_correction_types &&
+                ImageConverter::Settings::LensCorrectionType::Aberration,
+            has_aberration );
+        OIIO_CHECK_EQUAL(
+            converter.settings.lens_correction_types &&
+                ImageConverter::Settings::LensCorrectionType::Distortion,
+            has_distortion );
+        OIIO_CHECK_EQUAL(
+            converter.settings.lens_correction_types &&
+                ImageConverter::Settings::LensCorrectionType::Vignetting,
+            has_vignetting );
+    }
+    else
+    {
+        ASSERT_CONTAINS( output, "Unknown lens correction mode '" );
+    }
+}
+
+void test_parse_parameters_lens_correction()
+{
+#if ( RTA_ENABLE_LENSFUN )
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    check_parse_parameters_lens_correction( "cd", true, true, false, false );
+    check_parse_parameters_lens_correction( "v", false, false, true, false );
+    check_parse_parameters_lens_correction( "a", true, true, true, false );
+    check_parse_parameters_lens_correction( "X", false, false, false, true );
+#endif // ( RTA_ENABLE_LENSFUN )
+}
+
 /// Tests that automatic mode falls back to metadata if unavailable
 void test_fallback_to_metadata()
 {
@@ -1164,7 +1220,7 @@ void test_auto_detect_illuminant_with_wb_multipliers()
     OIIO_CHECK_ASSERT( success );
 
     // Assert on expected messages
-    ASSERT_CONTAINS( output, "WARNING: Directory '" );
+    ASSERT_CONTAINS( output, "Warning: Directory '" );
     ASSERT_CONTAINS( output, "illuminant' does not exist." );
     ASSERT_CONTAINS( output, "Found illuminant: '2000k'." );
 }
@@ -1222,7 +1278,7 @@ void test_database_location_not_directory_warning()
     OIIO_CHECK_ASSERT( success );
 
     // Assert on expected warning
-    ASSERT_CONTAINS( output, "WARNING: Database location '" );
+    ASSERT_CONTAINS( output, "Warning: Database location '" );
     ASSERT_CONTAINS( output, "' is not a directory." );
 
     // Clean up the test file
@@ -2452,10 +2508,7 @@ void test_fetch_missing_metadata()
 {
     std::cout << std::endl << "test_fetch_missing_metadata()" << std::endl;
 
-#if defined( WIN32 ) || defined( WIN64 )
-    const char *exiftool_path = "..\\..\\exiftool\\exiftool.exe";
-    set_env_var( "RAWTOACES_EXIFTOOL_PATH", exiftool_path );
-#endif
+    set_exiftool_path( true, false );
 
     rta::util::ImageConverter converter;
     OIIO::ImageSpec           spec;
@@ -2469,13 +2522,23 @@ void test_fetch_missing_metadata()
     OIIO_CHECK_EQUAL( spec.get_string_attribute( "cameraModel" ), "" );
 
     converter.settings.disable_exiftool = false;
-    result                              = fetch_missing_metadata(
+    converter.settings.lens_correction_types =
+        rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting;
+    result = fetch_missing_metadata(
         nef_test_file, converter.settings, spec, error_message );
     OIIO_CHECK_ASSERT( result );
     OIIO_CHECK_EQUAL(
         spec.get_string_attribute( "cameraMake" ), "NIKON CORPORATION" );
     OIIO_CHECK_EQUAL(
         spec.get_string_attribute( "cameraModel" ), "NIKON D200" );
+
+#if ( RTA_ENABLE_LENSFUN )
+    OIIO_CHECK_EQUAL(
+        spec.get_string_attribute( "lensModel" ),
+        "AF Zoom-Nikkor 28-70mm f/3.5-4.5D" );
+    OIIO_CHECK_EQUAL( spec.get_float_attribute( "aperture" ), 8.0f );
+    OIIO_CHECK_EQUAL( spec.get_float_attribute( "focalLength" ), 28.0f );
+#endif // ( RTA_ENABLE_LENSFUN )
 
     spec.extra_attribs.remove( "cameraMake" );
     spec.extra_attribs.remove( "cameraModel" );
@@ -2598,6 +2661,43 @@ void test_main_error_data_dir_hint()
     check_data_dir_hint( { "--list-illuminants" } );
 }
 
+/// Tests bit-wise operations on LensCorrectionType
+void test_lens_correction_type()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    rta::util::ImageConverter::Settings::LensCorrectionType types =
+        rta::util::ImageConverter::Settings::LensCorrectionType::Distortion;
+    OIIO_CHECK_ASSERT(
+        types ==
+        rta::util::ImageConverter::Settings::LensCorrectionType::Distortion );
+
+    types |=
+        rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting;
+    OIIO_CHECK_ASSERT(
+        ( types & rta::util::ImageConverter::Settings::LensCorrectionType::
+                      Vignetting ) !=
+        rta::util::ImageConverter::Settings::LensCorrectionType::None );
+    OIIO_CHECK_ASSERT(
+        ( types & rta::util::ImageConverter::Settings::LensCorrectionType::
+                      Distortion ) !=
+        rta::util::ImageConverter::Settings::LensCorrectionType::None );
+    OIIO_CHECK_ASSERT(
+        ( types & rta::util::ImageConverter::Settings::LensCorrectionType::
+                      Aberration ) ==
+        rta::util::ImageConverter::Settings::LensCorrectionType::None );
+
+    OIIO_CHECK_ASSERT(
+        types &&
+        rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting );
+    OIIO_CHECK_ASSERT(
+        types &&
+        rta::util::ImageConverter::Settings::LensCorrectionType::Distortion );
+    OIIO_CHECK_ASSERT( !(
+        types &&
+        rta::util::ImageConverter::Settings::LensCorrectionType::Aberration ) );
+}
+
 int main( int, char ** )
 {
     try
@@ -2640,6 +2740,7 @@ int main( int, char ** )
         test_parse_parameters_list_cameras( true );
         test_parse_parameters_list_illuminants();
         test_parse_parameters_list_illuminants( true );
+        test_parse_parameters_lens_correction();
 
         // Tests for prepare_transform_spectral parts
         test_missing_camera_manufacturer();
@@ -2702,6 +2803,9 @@ int main( int, char ** )
         test_main_output_directory_error_hint();
         test_main_error_message_without_hint();
         test_main_error_data_dir_hint();
+
+        // Tests for lens correction types
+        test_lens_correction_type();
     }
     catch ( const std::exception &e )
     {

@@ -253,13 +253,13 @@ SpectralSolver::collect_data_files( const std::string &type ) const
             }
             else
             {
-                std::cerr << "WARNING: Directory '" << type_path.string()
+                std::cerr << "Warning: Directory '" << type_path.string()
                           << "' does not exist." << std::endl;
             }
         }
         else
         {
-            std::cerr << "WARNING: Database location '" << directory
+            std::cerr << "Warning: Database location '" << directory
                       << "' is not a directory." << std::endl;
         }
     }

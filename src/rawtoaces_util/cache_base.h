@@ -7,6 +7,8 @@
 #include <list>
 #include <array>
 #include <functional>
+#include <OpenImageIO/imagebuf.h>
+#include <rawtoaces/rawtoaces_core.h>
 
 namespace rta
 {
@@ -43,6 +45,15 @@ std::ostream &operator<<( std::ostream &os, const std::tuple<Ts...> &tuple )
 {
     return println_tuple_impl( os, tuple, std::index_sequence_for<Ts...>{} );
 } // LCOV_EXCL_LINE - bug in coverage tool
+
+std::ostream &operator<<( std::ostream &os, const rta::core::Metadata &data );
+
+bool operator==(
+    const rta::core::Metadata &data1, const rta::core::Metadata &data2 );
+
+std::ostream &operator<<( std::ostream &os, const OIIO::ImageSpec &data );
+
+bool operator==( const OIIO::ImageSpec &data1, const OIIO::ImageSpec &data2 );
 
 namespace cache
 {
@@ -105,9 +116,7 @@ public:
             }
         }
 
-        _map.emplace_front();
-
-        auto &entry        = _map.front();
+        auto &entry        = _map.emplace_front();
         entry.first        = descriptor;
         entry.second.first = func( entry.second.second );
         return entry.second;

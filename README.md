@@ -48,7 +48,8 @@ To build `rawtoaces` you would need to satisfy these dependencies:
 | `ceres`          | `1.12.0`   | Ceres Solver is an open source library for solving Non-linear Least Squares problems with bounds constraints and unconstrained optimization problems. It processes non-linear regression for rawtoaces.  | [Ceres Solver installation](http://ceres-solver.org/installation.html)|
 | `OpenImageIO`    | `3.0`      | OpenImageIO is an open source library providing vast functionality for image processing. rawtoaces relies on OpenImageIO for reading raw files, saving AcesContainer files, and also all pixel operations.  | [OpenImageIO installation](https://github.com/AcademySoftwareFoundation/OpenImageIO/blob/main/INSTALL.md) |
 | `nlohmann-json`  | `3.6`      | nlohmann-json is a simple header-only library for parsing JSON files. | [nlohmann-json integration](https://github.com/nlohmann/json#integration) |
-| `nanobind`       | `1.9`      | nanobind is a small binding library that exposes C++ types in Python and vice versa. | [nanobind installation](https://nanobind.readthedocs.io/en/latest/installing.html) |
+| `nanobind`       | `2.2.0`    | nanobind is a small binding library that exposes C++ types in Python and vice versa. | [nanobind installation](https://nanobind.readthedocs.io/en/latest/installing.html) |
+| `lensfun`        | `0.3.2`    | Lensfun itself is a library for correcting several lens artefacts and a database for storing lens profiles. | [lensfun installation](https://lensfun.github.io/development/) |
 
 ### MacOS
 
@@ -193,6 +194,14 @@ A help message with a description of all command line options can be obtained by
         --custom-camera-model STR       Camera model name to be used for spectral sensitivity curves lookup. If present, overrides the value stored in the file metadata.
         --headroom VAL                  Highlight headroom factor. (default: 6)
         --scale VAL                     Additional scaling factor to apply to the pixel values. (default: 1)
+    Lens correction:
+        --lens-correction STR           Lens correction types to be applied to the images. Specify a string containing the following symbols in any order: 'c' - chromatic aberration, 'd' - distortion, 'v' - vignetting; or 'a' - enable all.
+        --require-lens-correction       Image conversion will fail if this flag is set to true and lens correction can not be performed. If the flag was not set, a warning will be issued and conversion continued without lens corrections.
+        --custom-lens-make STR          Lens manufacturer name to be used for lens correction. If present, overrides the value stored in the file metadata.
+        --custom-lens-model STR         Lens model name to be used for lens correction. If present, overrides the value stored in the file metadata.
+        --custom-aperture VAL           Lens aperture (F-number) to be used for lens correction If present, overrides the value stored in the file metadata.
+        --custom-focal-length VAL       Lens focal length (in mm) to be used for lens correction If present, overrides the value stored in the file metadata.
+        --custom-focus-distance VAL     Lens focus distance to be used for lens correction If present, overrides the value stored in the file metadata.
     General options:
         --overwrite                     Allows overwriting existing files. If not set, trying to write to an existing file will generate an error.
         --data-dir STR                  Directory containing rawtoaces spectral sensitivity and illuminant data files. Overrides the default search path and the RAWTOACES_DATA_PATH environment variable.

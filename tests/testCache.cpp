@@ -6,11 +6,11 @@
 #    include <windows.h>
 #endif
 
-#include "test_utils.h"
-#include <OpenImageIO/unittest.h>
-
 #include "../src/rawtoaces_util/cache_base.h"
 #include "../src/rawtoaces_util/transform_cache.h"
+
+#include "test_utils.h"
+#include <OpenImageIO/unittest.h>
 
 using Descriptor = std::string;
 using Data       = int;
@@ -272,8 +272,7 @@ void testCache_transform_caches()
     catch ( const std::exception &e )
     {
         // always fails
-        OIIO_CHECK_EQUAL(
-            "Could not extract time from output: ", std::string( e.what() ) );
+        OIIO_CHECK_EQUAL( "Unexpected exception: ", std::string( e.what() ) );
     }
 }
 

@@ -136,7 +136,6 @@ bool fetch_metadata(
         exiftool_to_oiio = { { "Make", { "cameraMake", false } },
                              { "Model", { "cameraModel", false } },
                              { "LensID", { "lensModel", false } },
-                             { "LensModel", { "lensModel", false } },
                              { "FNumber", { "aperture", true } },
                              { "FocalLength", { "focalLength", true } } };
 
@@ -145,14 +144,23 @@ bool fetch_metadata(
     std::string command = exiftool_path + " -S -FileName";
     for ( auto key: keys )
     {
-        if ( oiio_to_exiftool.count( key ) )
+        if ( key == "focus" )
         {
-            command += " -" + oiio_to_exiftool.at( key );
+            command += " -FocusDistance";
+            command += " -FocusDistanceUpper";
+            command += " -FocusDistanceLower";
         }
         else
         {
-            error_message = "Exiftool: unknown key '" + key + "'.";
-            return false;
+            if ( oiio_to_exiftool.count( key ) )
+            {
+                command += " -" + oiio_to_exiftool.at( key );
+            }
+            else
+            {
+                error_message = "Exiftool: unknown key '" + key + "'.";
+                return false;
+            }
         }
     }
 
@@ -169,6 +177,11 @@ bool fetch_metadata(
         return false;
     }
 
+    bool  do_focus_distance    = false;
+    float focus_distance       = 0.0f;
+    float focus_distance_upper = 0.0f;
+    float focus_distance_lower = 0.0f;
+
     std::map<std::string, std::string> result;
     std::vector<std::string>           lines;
     std::string                        line;
@@ -180,7 +193,22 @@ bool fetch_metadata(
             std::string exiftool_key = line.substr( 0, pos );
             std::string value        = line.substr( pos + 2 );
 
-            if ( exiftool_key != "FileName" )
+            if ( exiftool_key == "FocusDistance" )
+            {
+                do_focus_distance = true;
+                focus_distance    = std::stof( value );
+            }
+            else if ( exiftool_key == "FocusDistanceUpper" )
+            {
+                do_focus_distance    = true;
+                focus_distance_upper = std::stof( value );
+            }
+            else if ( exiftool_key == "FocusDistanceLower" )
+            {
+                do_focus_distance    = true;
+                focus_distance_lower = std::stof( value );
+            }
+            else if ( exiftool_key != "FileName" )
             {
                 assert( exiftool_to_oiio.count( exiftool_key ) );
 
@@ -198,6 +226,34 @@ bool fetch_metadata(
                 }
             }
         }
+    }
+
+    if ( do_focus_distance )
+    {
+        if ( focus_distance == 0.0f )
+        {
+            if ( focus_distance_upper > 0 )
+            {
+                if ( focus_distance_lower > 0 )
+                {
+                    focus_distance = 2.0f / ( 1.0f / focus_distance_lower +
+                                              1.0f / focus_distance_upper );
+                }
+                else
+                {
+                    focus_distance = focus_distance_upper;
+                }
+            }
+            else
+            {
+                if ( focus_distance_lower > 0 )
+                {
+                    focus_distance = focus_distance_lower;
+                }
+            }
+        }
+
+        spec["focus"] = focus_distance;
     }
 
     return true;

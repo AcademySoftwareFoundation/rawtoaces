@@ -29,7 +29,7 @@ void print_data_error(
     }
     error_message +=
         ". Please check the database search path in "
-        "RAWTOACES_DATABASE_PATH.";
+        "RAWTOACES_DATA_PATH.";
 }
 
 bool configure_spectral_solver(

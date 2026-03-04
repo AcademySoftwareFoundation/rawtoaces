@@ -9,7 +9,9 @@ time sudo apt-get -q -f install -y \
     nlohmann-json3-dev \
     libopencv-dev \
     openimageio-tools libopenimageio-dev \
-    nanobind-dev \
-    exiftool
+    exiftool \
+    liblensfun-dev \
+    liblensfun-data-v1
 
-pip3 install pytest
+# Nanobind in apt is still v1.9, we need at least v2.2.
+pip3 install pytest nanobind

@@ -3,8 +3,6 @@
 
 #include <rawtoaces/image_converter.h>
 
-#include <set>
-
 /// Amend the error message by adding info on the relevant command line parameter.
 void update_error_message( std::string &error_message )
 {
@@ -14,6 +12,15 @@ void update_error_message( std::string &error_message )
           "parameter." },
         { "Missing the camera model name in the file metadata.",
           " You can provide a custom value using the --custom-camera-model "
+          "parameter." },
+        { "Missing the lens model name in the file metadata.",
+          " You can provide a custom value using the --custom-lens-model "
+          "parameter." },
+        { "Missing the aperture value in the file metadata.",
+          " You can provide a custom value using the --custom-aperture "
+          "parameter." },
+        { "Missing the focal length value in the file metadata.",
+          " You can provide a custom value using the --custom-focal-length "
           "parameter." },
         { "Please provide the database path using the RAWTOACES_DATA_PATH "
           "environment variable",

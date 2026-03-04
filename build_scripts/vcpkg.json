@@ -5,7 +5,8 @@
         "ceres",
         "nlohmann-json",
         { "name": "openimageio", "features": [ "libraw" ] },
-        "nanobind"
+        "nanobind",
+        "lensfun"
     ],
     "overrides": [
         { "name": "eigen3", "version": "3.4.0" }

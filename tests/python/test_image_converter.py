@@ -377,7 +377,30 @@ class TestSettings:
         converter.settings.chromatic_aberration = [1.2, 2.3]
         assert abs(converter.settings.chromatic_aberration[0] - 1.2) < 0.001
         assert abs(converter.settings.chromatic_aberration[1] - 2.3) < 0.001
+
+        converter.settings.lens_correction_types = rawtoaces.ImageConverter.Settings.LensCorrectionType.Distortion | rawtoaces.ImageConverter.Settings.LensCorrectionType.Vignetting
+        assert (converter.settings.lens_correction_types & rawtoaces.ImageConverter.Settings.LensCorrectionType.Distortion).value != 0
+        assert (converter.settings.lens_correction_types & rawtoaces.ImageConverter.Settings.LensCorrectionType.Vignetting).value != 0
+        assert (converter.settings.lens_correction_types & rawtoaces.ImageConverter.Settings.LensCorrectionType.Aberration).value == 0
         
+        converter.settings.require_lens_correction = True
+        assert converter.settings.require_lens_correction == True
+    
+        converter.settings.custom_lens_make = "custom_lens_make"
+        assert converter.settings.custom_lens_make == "custom_lens_make"
+    
+        converter.settings.custom_lens_make = "custom_lens_model"
+        assert converter.settings.custom_lens_make == "custom_lens_model"
+    
+        converter.settings.custom_aperture = 5.6
+        assert abs(converter.settings.custom_aperture - 5.6) < 0.001
+
+        converter.settings.custom_focal_length = 85.0
+        assert abs(converter.settings.custom_focal_length - 85.0) < 0.001
+
+        converter.settings.custom_focus_distance = 250.0
+        assert abs(converter.settings.custom_focus_distance - 250.0) < 0.001
+    
     def test_settings_invalid_size(self):
         """Test that Settings has all attributes"""
         converter = rawtoaces.ImageConverter()
@@ -406,6 +429,39 @@ class TestSettings:
             converter.settings.custom_matrix = [[1.0, 2.0, 3.0], [1.0, 2.0, 3.0], [1.0, 2.0]]
             assert str(err.value) == "Each row of the matrix must contain 3 elements."
 
+class TestLensCorrection:
+    """Test cases for the lens correction functionality"""
+
+    def test_conversion(self):
+        """Test that image conversion runs successfully when configured to perform lens corrections"""
+        converter = rawtoaces.ImageConverter()
+
+        converter.settings.lens_correction_types = rawtoaces.ImageConverter.Settings.LensCorrectionType.Distortion | rawtoaces.ImageConverter.Settings.LensCorrectionType.Vignetting | rawtoaces.ImageConverter.Settings.LensCorrectionType.Aberration
+        
+        converter.settings.overwrite = True
+        converter.settings.require_lens_correction = True
+        converter.settings.custom_camera_make = "RTA_TestCameraMake"
+        converter.settings.custom_camera_model = "RTA_TestCameraModel"
+        converter.settings.custom_lens_make = "RTA_TestLensMake"
+        converter.settings.custom_lens_model = "RTA_TestLensModel"
+        converter.settings.custom_aperture = 3.5
+        converter.settings.custom_focal_length = 12.0
+        converter.settings.custom_focus_distance = 1000.0
+
+        import os
+        image_path = os.path.join('.', 'tests', 'materials', 'blackmagic_cinema_camera_cinemadng.dng')
+        enable_lensfun = os.getenv('RTA_ENABLE_LENSFUN')
+        
+        if enable_lensfun == "OFF":
+            result = converter.process_image(image_path)
+            assert "The rawtoaces tool/library has been built without lensfun support." in converter.last_error_message
+            assert result == False
+        else:
+            data_path = os.path.join('.', 'tests', 'materials', 'lensfun_db')
+            os.putenv('RAWTOACES_LENSFUNDB_PATH', data_path)
+            result = converter.process_image(image_path)
+            assert converter.last_error_message == ""
+            assert result
 
 class TestLastErrorMessage:
     """Test cases for the last_error_message functionality"""

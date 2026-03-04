@@ -183,3 +183,5 @@ setenv()/unsetenv() - Part of POSIX standard - only on Unix-like systems
 */
 void set_env_var( const std::string &name, const std::string &value );
 void unset_env_var( const std::string &name );
+
+void set_exiftool_path( bool local, bool global );

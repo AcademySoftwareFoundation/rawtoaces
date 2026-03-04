@@ -12,6 +12,11 @@ else ()
     find_package ( Ceres CONFIG REQUIRED )
 endif ()
 
+if ( RTA_ENABLE_LENSFUN )
+    find_package ( PkgConfig REQUIRED )
+    pkg_check_modules( lensfun REQUIRED lensfun>=0.3.2 )
+endif ( RTA_ENABLE_LENSFUN )
+
 if (RTA_BUILD_PYTHON_BINDINGS)
 
     if ( CMAKE_VERSION VERSION_LESS 3.18 )

@@ -67,6 +67,15 @@ jobs:
         with:
           path: src/docs/_build/html
 
+      - name: Upload artifact for manual builds
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          path: src/docs/_build/html
+          name: rawtoaces-documentation
+          retention-days: 5
+    
+
   deploy-docs:
     # Only deploy on push to main
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -21,6 +21,13 @@ add_library ( ${RAWTOACES_UTIL_LIB} ${DO_SHARED}
     colour_transforms.h
     exiftool.cpp
     exiftool.h
+    
+    $<$<BOOL:${RTA_ENABLE_LENSFUN}>:
+        lens_correction.cpp
+        lens_correction.h
+        lens_correction_cache.cpp
+        lens_correction_cache.h
+    >
 
     # Make the headers visible in IDEs. This should not affect the builds.
     ${UTIL_PUBLIC_HEADER}
@@ -31,6 +38,15 @@ target_link_libraries ( ${RAWTOACES_UTIL_LIB}
         ${RAWTOACES_CORE_LIB}
         OpenImageIO::OpenImageIO
 )
+
+if ( ${RTA_ENABLE_LENSFUN} )
+    target_include_directories(rawtoaces_util PUBLIC "${lensfun_INCLUDEDIR}/lensfun" )
+    target_compile_options ( rawtoaces_util PUBLIC ${lensfun_CFLAGS} )
+    target_link_directories(rawtoaces_util PUBLIC ${lensfun_LIBDIR} )
+    target_link_libraries(rawtoaces_util PUBLIC ${lensfun_LINK_LIBRARIES} )
+    target_link_options ( rawtoaces_util PUBLIC ${lensfun_LDFLAGS} )
+    target_compile_definitions(rawtoaces_util PRIVATE RTA_ENABLE_LENSFUN=1 )
+endif()
 
 target_compile_definitions( rawtoaces_util PRIVATE RAWTOACES_VERSION="${RAWTOACES_VERSION}" )
 

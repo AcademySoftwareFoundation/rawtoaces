@@ -48,7 +48,7 @@ jobs:
       CC:  clang
       CXX: clang++
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Dependencies
         shell: bash
@@ -72,13 +72,13 @@ jobs:
           -D CMAKE_CXX_FLAGS="-g -O0"
           -D CMAKE_EXPORT_COMPILE_COMMANDS=ON
 
-      - uses: whisperity/codechecker-analysis-action@v1
+      - uses: whisperity/codechecker-analysis-action@c1fbda08799d91447c007e18db31e423ee37fccd # v1
         id: codechecker
         with:
           logfile: ${{ github.workspace }}/build/compile_commands.json
           config: '/home/runner/work/rawtoaces/rawtoaces/tests/static_analysis/codechecker.json'
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: ${{ steps.codechecker.outputs.warnings == 'true' }}
         with:
           name: "CodeChecker Bug Reports"

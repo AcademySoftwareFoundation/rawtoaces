@@ -389,8 +389,8 @@ class TestSettings:
         converter.settings.custom_lens_make = "custom_lens_make"
         assert converter.settings.custom_lens_make == "custom_lens_make"
     
-        converter.settings.custom_lens_make = "custom_lens_model"
-        assert converter.settings.custom_lens_make == "custom_lens_model"
+        converter.settings.custom_lens_model = "custom_lens_model"
+        assert converter.settings.custom_lens_model == "custom_lens_model"
     
         converter.settings.custom_aperture = 5.6
         assert abs(converter.settings.custom_aperture - 5.6) < 0.001

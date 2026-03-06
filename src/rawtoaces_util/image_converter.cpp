@@ -1578,7 +1578,7 @@ bool ImageConverter::apply_lens_correction(
         fetch_lens_parameter(
             lens_make,
             src_spec,
-            "lenMake",
+            "lensMake",
             "lens manufacturer name",
             last_error_message );
 
@@ -1633,14 +1633,14 @@ bool ImageConverter::apply_lens_correction(
                 last_error_message );
         }
 
-        OIIO::ParamValueList options;
+        const OIIO::ImageBuf *src_ptr = &src;
 
         if ( settings.lens_correction_types &&
              ImageConverter::Settings::LensCorrectionType::Vignetting )
         {
             if ( !apply_vignette_map(
                      dst,
-                     src,
+                     *src_ptr,
                      camera_make,
                      camera_model,
                      lens_make,
@@ -1654,6 +1654,12 @@ bool ImageConverter::apply_lens_correction(
             {
                 return false;
             }
+
+            if ( &dst != src_ptr )
+            {
+                dst.specmod().extra_attribs = src.spec().extra_attribs;
+                src_ptr                     = &dst;
+            }
         }
 
         if ( settings.lens_correction_types &&
@@ -1661,7 +1667,7 @@ bool ImageConverter::apply_lens_correction(
         {
             if ( !apply_aberration_map(
                      dst,
-                     src,
+                     *src_ptr,
                      camera_make,
                      camera_model,
                      lens_make,
@@ -1673,6 +1679,12 @@ bool ImageConverter::apply_lens_correction(
             {
                 return false;
             }
+
+            if ( &dst != src_ptr )
+            {
+                dst.specmod().extra_attribs = src.spec().extra_attribs;
+                src_ptr                     = &dst;
+            }
         }
 
         if ( settings.lens_correction_types &&
@@ -1680,7 +1692,7 @@ bool ImageConverter::apply_lens_correction(
         {
             if ( !apply_distortion_map(
                      dst,
-                     src,
+                     *src_ptr,
                      camera_make,
                      camera_model,
                      lens_make,
@@ -1691,6 +1703,11 @@ bool ImageConverter::apply_lens_correction(
                      last_error_message ) )
             {
                 return false;
+            }
+
+            if ( &dst != src_ptr )
+            {
+                dst.specmod().extra_attribs = src.spec().extra_attribs;
             }
         }
 #else

@@ -97,7 +97,7 @@ const lfModifier *modifier_from_spec(
     auto cam = cameras[0];
 
     const lfLens **lenses =
-        Database->FindLenses( cam, NULL, lens_model.c_str() );
+        Database->FindLenses( cam, lens_make.c_str(), lens_model.c_str() );
 
     if ( lenses == nullptr )
     {

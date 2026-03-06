@@ -72,14 +72,14 @@ override all camera/lens info used for correction:
 
       rawtoaces                                    \
       --lens-correction a                          \
-      --require-lens correction                    \
+      --require-lens-correction                    \
       --custom-camera-make "Canon"                 \
       --custom-camera-model "EOS R5"               \
       --custom-lens-make "Canon"                   \
       --custom-lens-model "RF 24-105mm F4L IS USM" \
       --custom-aperture 4.0                        \
       --custom-focal-length 35.0                   \
-      --custom-focus_distance 240.0                \
+      --custom-focus-distance 240.0                \
       <INPUT_PATH>
 
   .. tab:: C++

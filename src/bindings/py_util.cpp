@@ -261,6 +261,7 @@ void util_bindings( nanobind::module_ &m )
 
     nanobind::enum_<ImageConverter::Status>( image_converter, "Status" )
         .value( "Success", ImageConverter::Status::Success )
+        .value( "DatabaseNotFound", ImageConverter::Status::DatabaseNotFound )
         .value( "FileExists", ImageConverter::Status::FileExists )
         .value( "InputFileNotFound", ImageConverter::Status::InputFileNotFound )
         .value(

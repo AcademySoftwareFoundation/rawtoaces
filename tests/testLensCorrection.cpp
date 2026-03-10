@@ -718,7 +718,7 @@ void check_apply_lens_correction(
         std::cout << "v";
         converter.settings.lens_correction_types |=
             rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting;
-        target_error += 0.0000001;
+        target_error += 0.0000001f;
     }
     if ( do_aberration )
     {
@@ -726,14 +726,14 @@ void check_apply_lens_correction(
         converter.settings.lens_correction_types |=
             rta::util::ImageConverter::Settings::LensCorrectionType::Aberration;
 
-        target_error += 0.0003;
+        target_error += 0.0003f;
     }
     if ( do_distortion )
     {
         std::cout << "d";
         converter.settings.lens_correction_types |=
             rta::util::ImageConverter::Settings::LensCorrectionType::Distortion;
-        target_error += 0.011;
+        target_error += 0.011f;
     }
 
     std::cout << "'" << std::endl;

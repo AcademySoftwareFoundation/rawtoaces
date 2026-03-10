@@ -176,39 +176,118 @@ OIIO::ImageBuf make_source_image()
     return source_image;
 }
 
-void test_vignette()
+OIIO::ImageBuf create_test_image(
+    const OIIO::ImageBuf &src_image,
+    bool                  do_vignetting,
+    bool                  do_aberration,
+    bool                  do_distortion )
+{
+    const auto    &src_spec  = src_image.spec();
+    OIIO::ImageBuf tmp_image = src_image;
+
+    // Apply the requested types of lens phenomena in the reverse order of what
+    // we do in correction: distortion -> aberration -> vignetting.
+
+    if ( do_distortion )
+    {
+        // Create a geometric distortion map.
+        OIIO::ImageBuf distort_map;
+        {
+            OIIO::ImageSpec map_spec =
+                rta::util::init_lens_map_spec( src_spec, 2, DIST_PARAMS );
+
+            std::string error_message;
+            rta::util::solve_distortion_map(
+                map_spec, true, distort_map, error_message );
+            OIIO_CHECK_EQUAL( error_message, "" );
+        }
+
+        // Apply the distortion map to the source image.
+        OIIO::ImageBuf distorted_image = OIIO::ImageBufAlgo::st_warp(
+            tmp_image, distort_map, nullptr, 0, 1 );
+
+        tmp_image = distorted_image;
+    }
+
+    if ( do_aberration )
+    {
+        // Create a chromatic aberration map.
+        OIIO::ImageBuf aberration_map;
+        {
+            OIIO::ImageSpec map_spec =
+                rta::util::init_lens_map_spec( src_spec, 6, DIST_PARAMS );
+
+            std::string error_message;
+            rta::util::solve_aberration_map(
+                map_spec, true, aberration_map, error_message );
+        }
+
+        // Apply the distortion map to the source image.
+        OIIO::ImageBuf distorted_image( src_spec );
+        OIIO::ROI      dst_roi = src_spec.roi();
+        for ( int i = 0; i < 3; i++ )
+        {
+            dst_roi.chbegin = i;
+            dst_roi.chend   = i + 1;
+
+            OIIO::ImageBufAlgo::st_warp(
+                distorted_image,
+                tmp_image,
+                aberration_map,
+                nullptr,
+                i * 2,
+                i * 2 + 1,
+                false,
+                false,
+                dst_roi );
+        }
+
+        tmp_image = distorted_image;
+    }
+
+    if ( do_vignetting )
+    {
+
+        // Create a vignette map.
+#if OIIO_VERSION < OIIO_MAKE_VERSION( 3, 1, 0 )
+        const int nchannels = 3;
+#else
+        const int nchannels = 1;
+#endif
+
+        OIIO::ImageBuf vignette_map;
+        {
+            OIIO::ImageSpec map_spec = rta::util::init_lens_map_spec(
+                src_spec, nchannels, VIGN_PARAMS );
+
+            std::string error_message;
+            rta::util::solve_vignette_map(
+                map_spec, true, vignette_map, error_message );
+        }
+
+        // Apply vignetting to the source image.
+        OIIO::ImageBuf distorted_image;
+
+#if OIIO_VERSION < OIIO_MAKE_VERSION( 3, 1, 0 )
+        OIIO::ImageBufAlgo::mul( distorted_image, tmp_image, vignette_map );
+#else
+        OIIO::ImageBufAlgo::scale( distorted_image, tmp_image, vignette_map );
+#endif
+
+        tmp_image = distorted_image;
+    }
+
+    return tmp_image;
+}
+
+void test_vignetting()
 {
     std::cout << "\n" << __FUNCTION__ << "\n";
 
     // Create a test image first.
     OIIO::ImageBuf source_image = make_source_image();
-    const auto    &src_spec     = source_image.spec();
-
-    // Create a vignette map.
-#if OIIO_VERSION < OIIO_MAKE_VERSION( 3, 1, 0 )
-    const int nchannels = 3;
-#else
-    const int nchannels = 1;
-#endif
-
-    OIIO::ImageBuf vignette_map;
-    {
-        OIIO::ImageSpec map_spec =
-            rta::util::init_lens_map_spec( src_spec, nchannels, VIGN_PARAMS );
-
-        std::string error_message;
-        rta::util::solve_vignette_map(
-            map_spec, true, vignette_map, error_message );
-    }
-
-    // Apply vignetting to the source image.
-    OIIO::ImageBuf distorted_image( src_spec );
-
-#if OIIO_VERSION < OIIO_MAKE_VERSION( 3, 1, 0 )
-    OIIO::ImageBufAlgo::mul( distorted_image, source_image, vignette_map );
-#else
-    OIIO::ImageBufAlgo::scale( distorted_image, source_image, vignette_map );
-#endif
+    OIIO::ImageBuf distorted_image =
+        create_test_image( source_image, true, false, false );
 
     // Check that the image is now vignetted.
     OIIO::ImageBufAlgo::CompareResults comp1 = OIIO::ImageBufAlgo::compare(
@@ -216,14 +295,22 @@ void test_vignette()
     OIIO_CHECK_GT( comp1.meanerror, 0.11 );
 
     // Calculate and apply devignetting.
-    std::string error_message;
-    bool        success = rta::util::apply_vignette_map(
-        distorted_image, distorted_image, VIGN_PARAMS, 1, true, error_message );
+    std::string    error_message;
+    OIIO::ImageBuf undistorted_image;
+    bool           success = rta::util::apply_vignette_map(
+        undistorted_image,
+        distorted_image,
+        VIGN_PARAMS,
+        1,
+        true,
+        error_message );
+
     OIIO_CHECK_ASSERT( success );
+    OIIO_CHECK_EQUAL( error_message, "" );
 
     // Check that vignetting has been removed.
     OIIO::ImageBufAlgo::CompareResults comp2 = OIIO::ImageBufAlgo::compare(
-        source_image, distorted_image, 0.1f, 0.1f, source_image.roi_full() );
+        source_image, undistorted_image, 0.1f, 0.1f, source_image.roi_full() );
     OIIO_CHECK_LE( comp2.meanerror, 1e-7 );
 }
 
@@ -233,23 +320,8 @@ void test_distortion()
 
     // Create a test image first.
     OIIO::ImageBuf source_image = make_source_image();
-    const auto    &src_spec     = source_image.spec();
-
-    // Create a geometric distortion map.
-    OIIO::ImageBuf distort_map;
-    {
-        OIIO::ImageSpec map_spec =
-            rta::util::init_lens_map_spec( src_spec, 2, DIST_PARAMS );
-
-        std::string error_message;
-        rta::util::solve_distortion_map(
-            map_spec, true, distort_map, error_message );
-    }
-
-    // Apply the distortion map to the source image.
-    OIIO::ImageBuf distorted_image;
-    distorted_image =
-        OIIO::ImageBufAlgo::st_warp( source_image, distort_map, nullptr, 0, 1 );
+    OIIO::ImageBuf distorted_image =
+        create_test_image( source_image, false, false, true );
 
     // Check that the image is now distorted.
     OIIO::ImageBufAlgo::CompareResults comp1 = OIIO::ImageBufAlgo::compare(
@@ -257,15 +329,22 @@ void test_distortion()
     OIIO_CHECK_GT( comp1.meanerror, 0.15 );
 
     // Calculate and apply distortion correction.
-    std::string error_message;
-    bool        success = rta::util::apply_distortion_map(
-        distorted_image, distorted_image, DIST_PARAMS, 0, true, error_message );
+    std::string    error_message;
+    OIIO::ImageBuf undistorted_image;
+    bool           success = rta::util::apply_distortion_map(
+        undistorted_image,
+        distorted_image,
+        DIST_PARAMS,
+        0,
+        true,
+        error_message );
 
     OIIO_CHECK_ASSERT( success );
+    OIIO_CHECK_EQUAL( error_message, "" );
 
     // Check that un-distort reduces the error.
     OIIO::ImageBufAlgo::CompareResults comp2 = OIIO::ImageBufAlgo::compare(
-        source_image, distorted_image, 0.1f, 0.1f, source_image.roi_full() );
+        source_image, undistorted_image, 0.1f, 0.1f, source_image.roi_full() );
     OIIO_CHECK_LE( comp2.meanerror, 0.0104 );
 }
 
@@ -275,53 +354,31 @@ void test_aberration()
 
     // Create a test image first.
     OIIO::ImageBuf source_image = make_source_image();
-    const auto    &src_spec     = source_image.spec();
+    OIIO::ImageBuf distorted_image =
+        create_test_image( source_image, false, true, false );
 
-    // Create a chromatic aberration map.
-    OIIO::ImageBuf aberration_map;
-    {
-        OIIO::ImageSpec map_spec =
-            rta::util::init_lens_map_spec( src_spec, 6, DIST_PARAMS );
-
-        std::string error_message;
-        rta::util::solve_aberration_map(
-            map_spec, true, aberration_map, error_message );
-    }
-
-    // Apply the distortion map to the source image.
-    OIIO::ImageBuf distorted_image( src_spec );
-    OIIO::ROI      dst_roi = source_image.roi();
-    for ( int i = 0; i < 3; i++ )
-    {
-        dst_roi.chbegin = i;
-        dst_roi.chend   = i + 1;
-
-        OIIO::ImageBufAlgo::st_warp(
-            distorted_image,
-            source_image,
-            aberration_map,
-            nullptr,
-            i * 2,
-            i * 2 + 1,
-            false,
-            false,
-            dst_roi );
-    }
-
+    // Check that the image is now distorted.
     OIIO::ImageBufAlgo::CompareResults comp1 = OIIO::ImageBufAlgo::compare(
         source_image, distorted_image, 0.1f, 0.1f, source_image.roi_full() );
     OIIO_CHECK_GT( comp1.meanerror, 0.001 );
 
     // Calculate and apply chromatic aberration correction.
-    std::string error_message;
-    bool        success = rta::util::apply_aberration_map(
-        distorted_image, distorted_image, DIST_PARAMS, 0, true, error_message );
+    std::string    error_message;
+    OIIO::ImageBuf undistorted_image;
+    bool           success = rta::util::apply_aberration_map(
+        undistorted_image,
+        distorted_image,
+        DIST_PARAMS,
+        0,
+        true,
+        error_message );
 
     OIIO_CHECK_ASSERT( success );
+    OIIO_CHECK_EQUAL( error_message, "" );
 
     // Check that un-distort reduces the error.
     OIIO::ImageBufAlgo::CompareResults comp2 = OIIO::ImageBufAlgo::compare(
-        source_image, distorted_image, 0.1f, 0.1f, source_image.roi_full() );
+        source_image, undistorted_image, 0.1f, 0.1f, source_image.roi_full() );
     OIIO_CHECK_LE( comp2.meanerror, 0.0003 );
 }
 
@@ -450,6 +507,7 @@ void test_apply_lens_correction()
 #endif
 
     rta::util::ImageConverter converter;
+    converter.settings.disable_cache = true;
     converter.settings.lens_correction_types =
         rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting;
 
@@ -480,7 +538,7 @@ void check_missing(
     OIIO_CHECK_ASSERT( !success );
     ASSERT_CONTAINS(
         converter.last_error_message,
-        "Missing the " + property_name + " info" );
+        "Missing the " + property_name + " in the file metadata" );
 }
 
 void test_apply_lens_correction_fail_init()
@@ -491,6 +549,7 @@ void test_apply_lens_correction_fail_init()
     converter.settings.lens_correction_types =
         rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting;
     converter.settings.require_lens_correction = true;
+    converter.settings.disable_cache           = true;
 
     OIIO::ImageBuf buffer;
     check_missing( converter, buffer, "camera manufacturer name" );
@@ -528,6 +587,7 @@ void test_apply_lens_correction_fail_generate()
         converter.settings.lens_correction_types =
             rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting;
         converter.settings.require_lens_correction = true;
+        converter.settings.disable_cache           = true;
 
         bool success = converter.apply_lens_correction( buffer, buffer );
         OIIO_CHECK_ASSERT( !success );
@@ -541,6 +601,7 @@ void test_apply_lens_correction_fail_generate()
         converter.settings.lens_correction_types =
             rta::util::ImageConverter::Settings::LensCorrectionType::Distortion;
         converter.settings.require_lens_correction = true;
+        converter.settings.disable_cache           = true;
 
         bool success = converter.apply_lens_correction( buffer, buffer );
         OIIO_CHECK_ASSERT( !success );
@@ -554,6 +615,7 @@ void test_apply_lens_correction_fail_generate()
         converter.settings.lens_correction_types =
             rta::util::ImageConverter::Settings::LensCorrectionType::Aberration;
         converter.settings.require_lens_correction = true;
+        converter.settings.disable_cache           = true;
 
         bool success = converter.apply_lens_correction( buffer, buffer );
         OIIO_CHECK_ASSERT( !success );
@@ -589,6 +651,7 @@ void test_apply_lens_correction_fail_apply()
         converter.settings.lens_correction_types =
             rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting;
         converter.settings.require_lens_correction = true;
+        converter.settings.disable_cache           = true;
 
         bool success =
             converter.apply_lens_correction( dst_buffer, src_buffer );
@@ -623,6 +686,85 @@ void test_apply_lens_correction_fail_apply()
         ASSERT_CONTAINS(
             converter.last_error_message,
             "Failed to apply the chromatic aberration map." );
+    }
+}
+
+void check_apply_lens_correction(
+    bool do_vignetting, bool do_aberration, bool do_distortion )
+{
+    // Create a test image first.
+    OIIO::ImageBuf source_image    = make_source_image();
+    OIIO::ImageBuf distorted_image = create_test_image(
+        source_image, do_vignetting, do_aberration, do_distortion );
+
+    auto &distorted_spec          = distorted_image.specmod();
+    distorted_spec["cameraMake"]  = camera_make;
+    distorted_spec["cameraModel"] = camera_model;
+    distorted_spec["lensMake"]    = lens_make;
+    distorted_spec["lensModel"]   = lens_model;
+    distorted_spec["aperture"]    = aperture;
+    distorted_spec["focalLength"] = focal_length;
+    distorted_spec["focus"]       = focus_distance;
+
+    rta::util::ImageConverter converter;
+    converter.settings.require_lens_correction = true;
+    converter.settings.disable_cache           = true;
+
+    float target_error = 0;
+
+    std::cout << "  Checking '";
+    if ( do_vignetting )
+    {
+        std::cout << "v";
+        converter.settings.lens_correction_types |=
+            rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting;
+        target_error += 0.0000001;
+    }
+    if ( do_aberration )
+    {
+        std::cout << "a";
+        converter.settings.lens_correction_types |=
+            rta::util::ImageConverter::Settings::LensCorrectionType::Aberration;
+
+        target_error += 0.0003;
+    }
+    if ( do_distortion )
+    {
+        std::cout << "d";
+        converter.settings.lens_correction_types |=
+            rta::util::ImageConverter::Settings::LensCorrectionType::Distortion;
+        target_error += 0.011;
+    }
+
+    std::cout << "'" << std::endl;
+
+    OIIO::ImageBuf undistorted_image;
+    bool           success =
+        converter.apply_lens_correction( undistorted_image, distorted_image );
+
+    OIIO_CHECK_ASSERT( success );
+    OIIO_CHECK_EQUAL( converter.last_error_message, "" );
+
+    // Check that un-distort reduces the error.
+    OIIO::ImageBufAlgo::CompareResults comp2 = OIIO::ImageBufAlgo::compare(
+        source_image, undistorted_image, 0.1f, 0.1f, source_image.roi_full() );
+    OIIO_CHECK_LE( comp2.meanerror, target_error );
+}
+
+void test_apply_lens_correction_success()
+{
+    std::cout << "\n" << __FUNCTION__ << "\n";
+
+    for ( int do_vignetting = 0; do_vignetting < 2; do_vignetting++ )
+    {
+        for ( int do_aberration = 0; do_aberration < 2; do_aberration++ )
+        {
+            for ( int do_distortion = 0; do_distortion < 2; do_distortion++ )
+            {
+                check_apply_lens_correction(
+                    do_vignetting, do_aberration, do_distortion );
+            }
+        }
     }
 }
 
@@ -664,7 +806,7 @@ int main( int, char ** )
     test_camera_not_found();
     test_lens_not_found();
 
-    test_vignette();
+    test_vignetting();
     test_distortion();
     test_aberration();
 
@@ -672,11 +814,9 @@ int main( int, char ** )
     rta::test_imagespec_comparison();
     test_lens_correction_caches();
 
-    //    test_fetch_lens_data();
-
     test_apply_lens_correction_fail_init();
-
     test_apply_lens_correction_fail_apply();
+    test_apply_lens_correction_success();
 
     return unit_test_failures;
 }

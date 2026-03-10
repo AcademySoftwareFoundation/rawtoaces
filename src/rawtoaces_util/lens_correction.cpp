@@ -458,7 +458,11 @@ bool apply_distortion_map(
         return false;
     }
 
-    spec = dst_buffer.spec();
+    if ( dst_buffer.initialized() )
+        spec = dst_buffer.spec();
+    else
+        spec = src_buffer.spec();
+
     OIIO::ImageBuf temp_buffer( spec );
 
     success = OIIO::ImageBufAlgo::st_warp(
@@ -597,7 +601,11 @@ bool apply_aberration_map(
         return false;
     }
 
-    spec = dst_buffer.spec();
+    if ( dst_buffer.initialized() )
+        spec = dst_buffer.spec();
+    else
+        spec = src_buffer.spec();
+
     OIIO::ImageBuf temp_buffer( spec );
 
     OIIO::ROI roi = spec.roi();
@@ -609,7 +617,7 @@ bool apply_aberration_map(
         roi.chend   = i + 1;
         success     = OIIO::ImageBufAlgo::st_warp(
             temp_buffer,
-            dst_buffer,
+            src_buffer,
             aberration_map,
             nullptr,
             s_chan,

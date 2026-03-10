@@ -1535,7 +1535,7 @@ bool fetch_lens_parameter(
         if ( parameter == T() )
         {
             error_message =
-                "Missing the " + property_name + " info in the file metadata.";
+                "Missing the " + property_name + " in the file metadata.";
             return false;
         }
     }
@@ -1545,8 +1545,13 @@ bool fetch_lens_parameter(
 bool ImageConverter::apply_lens_correction(
     OIIO::ImageBuf &dst, const OIIO::ImageBuf &src )
 {
-    if ( settings.lens_correction_types !=
+    if ( settings.lens_correction_types ==
          ImageConverter::Settings::LensCorrectionType::None )
+    {
+        // No correction requested, copy the source to destination if needed.
+        dst.copy( src );
+    }
+    else
     {
 #if ( RTA_ENABLE_LENSFUN )
         auto &src_spec = src.spec();

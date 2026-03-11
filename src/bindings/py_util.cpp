@@ -275,6 +275,8 @@ void util_bindings( nanobind::module_ &m )
             "ConfigurationError", ImageConverter::Status::ConfigurationError )
         .value( "ReadError", ImageConverter::Status::ReadError )
         .value(
+            "LensCorrectionError", ImageConverter::Status::LensCoorectionError )
+        .value(
             "MatrixApplicationError",
             ImageConverter::Status::MatrixApplicationError )
         .value(

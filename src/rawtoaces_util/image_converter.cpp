@@ -1564,6 +1564,7 @@ bool ImageConverter::apply_lens_correction(
                  "camera manufacturer name",
                  last_error_message ) )
         {
+            status = Status::LensCorrectionError;
             return false;
         }
 
@@ -1575,6 +1576,7 @@ bool ImageConverter::apply_lens_correction(
                  "camera model name",
                  last_error_message ) )
         {
+            status = Status::LensCorrectionError;
             return false;
         }
 
@@ -1595,6 +1597,7 @@ bool ImageConverter::apply_lens_correction(
                  "lens model name",
                  last_error_message ) )
         {
+            status = Status::LensCorrectionError;
             return false;
         }
 
@@ -1606,6 +1609,7 @@ bool ImageConverter::apply_lens_correction(
                  "focal length value",
                  last_error_message ) )
         {
+            status = Status::LensCorrectionError;
             return false;
         }
 
@@ -1623,6 +1627,7 @@ bool ImageConverter::apply_lens_correction(
                      "aperture value",
                      last_error_message ) )
             {
+                status = Status::LensCorrectionError;
                 return false;
             }
 
@@ -1657,6 +1662,7 @@ bool ImageConverter::apply_lens_correction(
                      settings.disable_cache,
                      last_error_message ) )
             {
+                status = Status::LensCorrectionError;
                 return false;
             }
 
@@ -1682,6 +1688,7 @@ bool ImageConverter::apply_lens_correction(
                      settings.disable_cache,
                      last_error_message ) )
             {
+                status = Status::LensCorrectionError;
                 return false;
             }
 
@@ -1707,6 +1714,7 @@ bool ImageConverter::apply_lens_correction(
                      settings.disable_cache,
                      last_error_message ) )
             {
+                status = Status::LensCorrectionError;
                 return false;
             }
 
@@ -1718,9 +1726,9 @@ bool ImageConverter::apply_lens_correction(
 #else
         dst.copy( src );
         last_error_message =
-            "The rawtoaces tool/library has been built "
-            "without lensfun support. Lens correction is "
-            "not available.";
+            "The rawtoaces tool/library has been built without lensfun "
+            "support. Lens correction is not available.";
+        status = Status::LensCorrectionError;
         return false;
 #endif // ( RTA_ENABLE_LENSFUN )
     }
@@ -1755,6 +1763,7 @@ bool ImageConverter::configure(
         input_filename, settings, image_spec, last_error_message );
     if ( !result )
     {
+        status = Status::ConfigurationError;
         return false;
     }
 
@@ -2551,7 +2560,6 @@ bool ImageConverter::process_image( const std::string &input_filename )
     std::string output_filename = input_filename;
     if ( !make_output_path( output_filename ) )
     {
-
         return false;
     }
 

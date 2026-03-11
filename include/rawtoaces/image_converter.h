@@ -46,6 +46,8 @@ public:
         ConfigurationError,
         /// Failed to read the image file.
         ReadError,
+        /// Failed to apply lens correction.
+        LensCorrectionError,
         /// Failed to apply colour space conversion.
         MatrixApplicationError,
         /// Failed to apply scale.

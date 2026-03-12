@@ -1,3 +1,25 @@
+Release 2.1.0 (March ?? 2026) -- compared to 2.0.0
+--------------------------------------------------------
+
+- *feat*: lens correction [#255](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/255)
+- *feat*: implement transform cache [#236](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/236)
+- *feat*: fetch metadata using ExifTool [#242](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/242)
+- *improvement*: use OIIO RAW extensions for file validation [#231](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/231)
+- *refactor*: refactor error handling to separate library and CLI error messages [#237](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/237)
+- *refactor*: refactor logging, verbosity levels [#247](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/247), [#249](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/249), [#252](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/252)
+- *python*: more python bindings for ImageConverter [#223](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/223)
+- *python*: python bindings for core library [#248](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/248)
+- *doc*: implement developer documentation builds [#222](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/222)
+- *doc*: documentation updates [#224](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/224)
+- *tests*: spectral data tests [#220](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/220)
+- *tests*: improve unit test coverage [#226](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/226), [#227](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/227), [#228](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/228), [#235](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/235), [#241](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/241)
+- *analysis*: implement dynamic analysis [#233](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/233)
+- *analysis*: fix analysis warnings [#230](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/230), [#239](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/239), [#246](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/246)
+- *build*: add options to disable unittests and data installation [#244](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/244)
+- *build*: fix build issues [#234](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/234)
+- *ci*: improve caching [#225](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/225), [#232](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/232)
+- *ci*: CI runners maintenance [#240](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/240), [#243](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/243), [#245](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/245), [#253](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/253), [#254](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/254), [#256](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/256)
+- *admin*: add OpenSSF Best Practices badge [#238](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/238)
 
 Release 2.0.0 (December 8 2025) -- compared to 1.1.0
 --------------------------------------------------------

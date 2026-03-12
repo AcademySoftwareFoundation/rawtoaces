@@ -240,6 +240,30 @@ add_test ( NAME Test_Exiftool COMMAND Test_Exiftool )
 
 ################################################################################
 
+if ( RTA_ENABLE_LENSFUN )
+
+    add_executable (
+        Test_LensCorrection
+        testLensCorrection.cpp
+        test_utils.cpp
+    )
+
+    target_link_libraries(
+            Test_LensCorrection
+        PUBLIC
+            ${RAWTOACES_UTIL_LIB}
+            OpenImageIO::OpenImageIO
+        PRIVATE
+            nlohmann_json::nlohmann_json
+    )
+
+    setup_test_coverage(Test_LensCorrection)
+    add_test ( NAME Test_LensCorrection COMMAND Test_LensCorrection )
+
+endif ( RTA_ENABLE_LENSFUN )
+
+################################################################################
+
 add_executable (
     Test_ColourTransforms
     testColourTransforms.cpp
@@ -276,6 +300,10 @@ target_link_libraries(
         nlohmann_json::nlohmann_json
 )
 
+if ( RTA_ENABLE_LENSFUN )
+    target_compile_definitions(Test_ImageConverter PRIVATE RTA_ENABLE_LENSFUN=1 )
+endif ( RTA_ENABLE_LENSFUN )
+
 setup_test_coverage(Test_ImageConverter)
 add_test ( NAME Test_ImageConverter COMMAND Test_ImageConverter )
 
@@ -297,14 +325,18 @@ if(RTA_BUILD_PYTHON_BINDINGS)
         # Set environment for Python test to find the compiled module
         # Handle both single-config (Linux/macOS) and multi-config (Windows) generators
         if(WIN32)
-            set_tests_properties(Test_Python_ImageConverter Test_Python_CoreBindings PROPERTIES
-                ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}/src/bindings/Release;${CMAKE_BINARY_DIR}/src/bindings;$ENV{PYTHONPATH}"
-            )
+            set( TEST_PYTHONPATH "${CMAKE_BINARY_DIR}/src/bindings/Release;${CMAKE_BINARY_DIR}/src/bindings;$ENV{PYTHONPATH}" )
         else()
-            set_tests_properties(Test_Python_ImageConverter Test_Python_CoreBindings PROPERTIES
-                ENVIRONMENT "PYTHONPATH=${CMAKE_BINARY_DIR}/src/bindings:$ENV{PYTHONPATH}"
-            )
+            set( TEST_PYTHONPATH "${CMAKE_BINARY_DIR}/src/bindings;$ENV{PYTHONPATH}" )
         endif()
+
+        set_tests_properties(Test_Python_CoreBindings PROPERTIES
+            ENVIRONMENT "PYTHONPATH=${TEST_PYTHONPATH}"
+        )    
+
+        set_tests_properties(Test_Python_ImageConverter PROPERTIES
+            ENVIRONMENT "PYTHONPATH=${TEST_PYTHONPATH};RTA_ENABLE_LENSFUN=${RTA_ENABLE_LENSFUN}"
+        )
     endif()
 endif()
 

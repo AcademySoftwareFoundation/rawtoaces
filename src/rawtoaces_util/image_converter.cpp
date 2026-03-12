@@ -6,6 +6,11 @@
 #include <rawtoaces/usage_timer.h>
 
 #include "transform_cache.h"
+
+#if ( RTA_ENABLE_LENSFUN )
+#    include "lens_correction.h"
+#endif // ( RTA_ENABLE_LENSFUN )
+
 #include "colour_transforms.h"
 #include "exiftool.h"
 
@@ -20,6 +25,37 @@ namespace rta
 {
 namespace util
 {
+
+ImageConverter::Settings::LensCorrectionType operator&(
+    const ImageConverter::Settings::LensCorrectionType &lhs,
+    const ImageConverter::Settings::LensCorrectionType &rhs )
+{
+    return static_cast<ImageConverter::Settings::LensCorrectionType>(
+        static_cast<int>( lhs ) & static_cast<int>( rhs ) );
+}
+
+ImageConverter::Settings::LensCorrectionType operator|(
+    const ImageConverter::Settings::LensCorrectionType &lhs,
+    const ImageConverter::Settings::LensCorrectionType &rhs )
+{
+    return static_cast<ImageConverter::Settings::LensCorrectionType>(
+        static_cast<int>( lhs ) | static_cast<int>( rhs ) );
+}
+
+ImageConverter::Settings::LensCorrectionType &operator|=(
+    ImageConverter::Settings::LensCorrectionType       &lhs,
+    const ImageConverter::Settings::LensCorrectionType &rhs )
+{
+    lhs = lhs | rhs;
+    return lhs;
+}
+
+bool operator&&(
+    const ImageConverter::Settings::LensCorrectionType &lhs,
+    const ImageConverter::Settings::LensCorrectionType &rhs )
+{
+    return static_cast<int>( lhs ) & static_cast<int>( rhs );
+}
 
 struct CameraIdentifier
 {
@@ -801,6 +837,64 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
         .defaultval( 1.0f )
         .action( OIIO::ArgParse::store<float>() );
 
+#if ( RTA_ENABLE_LENSFUN )
+
+    arg_parser.separator( "Lens correction:" );
+
+    arg_parser.arg( "--lens-correction" )
+        .help(
+            "Lens correction types to be applied to the images. Specify a "
+            "string containing the following symbols in any order: "
+            "'c' - chromatic aberration, 'd' - distortion, 'v' - vignetting; "
+            "or 'a' - enable all." )
+        .metavar( "STR" )
+        .action( OIIO::ArgParse::store() );
+
+    arg_parser.arg( "--require-lens-correction" )
+        .help(
+            "Image conversion will fail if this flag is set to true and lens "
+            "correction can not be performed. If the flag was not set, a "
+            "warning will be issued and conversion continued without lens "
+            "correction." )
+        .action( OIIO::ArgParse::store_true() );
+
+    arg_parser.arg( "--custom-lens-make" )
+        .help(
+            "Lens manufacturer name to be used for lens correction. "
+            "If present, overrides the value stored in the file metadata." )
+        .metavar( "STR" )
+        .action( OIIO::ArgParse::store() );
+
+    arg_parser.arg( "--custom-lens-model" )
+        .help(
+            "Lens model name to be used for lens correction. "
+            "If present, overrides the value stored in the file metadata." )
+        .metavar( "STR" )
+        .action( OIIO::ArgParse::store() );
+
+    arg_parser.arg( "--custom-aperture" )
+        .help(
+            "Lens aperture (F-number) to be used for lens correction "
+            "If present, overrides the value stored in the file metadata." )
+        .metavar( "VAL" )
+        .action( OIIO::ArgParse::store<float>() );
+
+    arg_parser.arg( "--custom-focal-length" )
+        .help(
+            "Lens focal length (in mm) to be used for lens correction "
+            "If present, overrides the value stored in the file metadata." )
+        .metavar( "VAL" )
+        .action( OIIO::ArgParse::store<float>() );
+
+    arg_parser.arg( "--custom-focus-distance" )
+        .help(
+            "Lens focus distance to be used for lens correction "
+            "If present, overrides the value stored in the file metadata." )
+        .metavar( "VAL" )
+        .action( OIIO::ArgParse::store<float>() );
+
+#endif // ( RTA_ENABLE_LENSFUN )
+
     arg_parser.separator( "General options:" );
 
     arg_parser.arg( "--overwrite" )
@@ -1241,6 +1335,50 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     settings.disable_cache    = arg_parser["disable-cache"].get<int>();
     settings.disable_exiftool = arg_parser["disable-exiftool"].get<int>();
 
+#if ( RTA_ENABLE_LENSFUN )
+    std::string lens_correction = arg_parser["lens-correction"].get();
+    settings.require_lens_correction =
+        arg_parser["require-lens-correction"].get<int>();
+    settings.custom_lens_make  = arg_parser["custom-lens-make"].get();
+    settings.custom_lens_model = arg_parser["custom-lens-model"].get();
+    settings.custom_aperture   = arg_parser["custom-aperture"].get<float>();
+    settings.custom_focal_length =
+        arg_parser["custom-focal-length"].get<float>();
+    settings.custom_focus_distance =
+        arg_parser["custom-focus-distance"].get<float>();
+
+    for ( const char &c: lens_correction )
+    {
+        switch ( c )
+        {
+            case 'c':
+                settings.lens_correction_types |=
+                    Settings::LensCorrectionType::Aberration;
+                break;
+            case 'd':
+                settings.lens_correction_types |=
+                    Settings::LensCorrectionType::Distortion;
+                break;
+            case 'v':
+                settings.lens_correction_types |=
+                    Settings::LensCorrectionType::Vignetting;
+                break;
+            case 'a':
+                settings.lens_correction_types |=
+                    Settings::LensCorrectionType::Aberration;
+                settings.lens_correction_types |=
+                    Settings::LensCorrectionType::Distortion;
+                settings.lens_correction_types |=
+                    Settings::LensCorrectionType::Vignetting;
+                break;
+            default:
+                std::cerr << "Unknown lens correction mode '" << c << "'."
+                          << std::endl;
+                return false;
+        }
+    }
+#endif // ( RTA_ENABLE_LENSFUN )
+
     return true;
 }
 
@@ -1298,7 +1436,9 @@ std::vector<std::string> ImageConverter::get_supported_cameras() const
 void fix_metadata( OIIO::ImageSpec &spec )
 {
     const std::map<std::string, std::string> standard_mapping = {
-        { "Make", "cameraMake" }, { "Model", "cameraModel" }
+        { "Make", "cameraMake" },
+        { "Model", "cameraModel" },
+        { "FNumber", "aperture" }
     };
 
     for ( auto mapping_pair: standard_mapping )
@@ -1338,6 +1478,27 @@ bool fetch_missing_metadata(
     if ( settings.custom_camera_model.empty() )
         keys_to_check.push_back( "cameraModel" );
 
+#if ( RTA_ENABLE_LENSFUN )
+    if ( settings.lens_correction_types !=
+         ImageConverter::Settings::LensCorrectionType::None )
+    {
+        if ( settings.custom_lens_model.empty() )
+            keys_to_check.push_back( "lensModel" );
+
+        if ( settings.custom_focal_length == 0.0f )
+            keys_to_check.push_back( "focalLength" );
+
+        if ( settings.lens_correction_types &&
+             ImageConverter::Settings::LensCorrectionType::Vignetting )
+        {
+            if ( settings.custom_aperture == 0.0f )
+                keys_to_check.push_back( "aperture" );
+
+            if ( settings.custom_focus_distance == 0.0f )
+                keys_to_check.push_back( "focus" );
+        }
+    }
+#endif // ( RTA_ENABLE_LENSFUN )
     std::vector<std::string> keys_to_fetch;
 
     for ( auto &key: keys_to_check )
@@ -1354,6 +1515,225 @@ bool fetch_missing_metadata(
 
     return exiftool::fetch_metadata(
         spec, input_path, keys_to_fetch, error_message );
+}
+
+template <typename T>
+bool fetch_lens_parameter(
+    T                     &parameter,
+    const OIIO::ImageSpec &spec,
+    const std::string     &attribute_name,
+    const std::string     &property_name,
+    std::string           &error_message )
+{
+    if ( parameter == T() )
+    {
+        if constexpr ( std::is_same<T, float>::value )
+            parameter = spec.get_float_attribute( attribute_name );
+        else
+            parameter = spec.get_string_attribute( attribute_name );
+
+        if ( parameter == T() )
+        {
+            error_message =
+                "Missing the " + property_name + " in the file metadata.";
+            return false;
+        }
+    }
+    return true;
+}
+
+bool ImageConverter::apply_lens_correction(
+    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src )
+{
+    if ( settings.lens_correction_types ==
+         ImageConverter::Settings::LensCorrectionType::None )
+    {
+        // No correction requested, copy the source to destination if needed.
+        dst.copy( src );
+    }
+    else
+    {
+#if ( RTA_ENABLE_LENSFUN )
+        auto &src_spec = src.spec();
+
+        std::string camera_make = settings.custom_camera_make;
+        if ( !fetch_lens_parameter(
+                 camera_make,
+                 src_spec,
+                 "cameraMake",
+                 "camera manufacturer name",
+                 last_error_message ) )
+        {
+            status = Status::LensCorrectionError;
+            return false;
+        }
+
+        std::string camera_model = settings.custom_camera_model;
+        if ( !fetch_lens_parameter(
+                 camera_model,
+                 src_spec,
+                 "cameraModel",
+                 "camera model name",
+                 last_error_message ) )
+        {
+            status = Status::LensCorrectionError;
+            return false;
+        }
+
+        std::string lens_make = settings.custom_lens_make;
+        // Do not fail if the lens make is missing. We can work around that.
+        fetch_lens_parameter(
+            lens_make,
+            src_spec,
+            "lensMake",
+            "lens manufacturer name",
+            last_error_message );
+
+        std::string lens_model = settings.custom_lens_model;
+        if ( !fetch_lens_parameter(
+                 lens_model,
+                 src_spec,
+                 "lensModel",
+                 "lens model name",
+                 last_error_message ) )
+        {
+            status = Status::LensCorrectionError;
+            return false;
+        }
+
+        float focal_length = settings.custom_focal_length;
+        if ( !fetch_lens_parameter(
+                 focal_length,
+                 src_spec,
+                 "focalLength",
+                 "focal length value",
+                 last_error_message ) )
+        {
+            status = Status::LensCorrectionError;
+            return false;
+        }
+
+        float aperture       = 0.0f;
+        float focus_distance = 0.0f;
+
+        if ( settings.lens_correction_types &&
+             ImageConverter::Settings::LensCorrectionType::Vignetting )
+        {
+            aperture = settings.custom_aperture;
+            if ( !fetch_lens_parameter(
+                     aperture,
+                     src_spec,
+                     "aperture",
+                     "aperture value",
+                     last_error_message ) )
+            {
+                status = Status::LensCorrectionError;
+                return false;
+            }
+
+            // Do not fail if the focus distance is missing. Not many raw files
+            // have this information, nor many lens vignette models account for
+            // that.
+            focus_distance = settings.custom_focus_distance;
+            fetch_lens_parameter(
+                focus_distance,
+                src_spec,
+                "focus",
+                "focus distance value",
+                last_error_message );
+        }
+
+        const OIIO::ImageBuf *src_ptr = &src;
+
+        if ( settings.lens_correction_types &&
+             ImageConverter::Settings::LensCorrectionType::Vignetting )
+        {
+            if ( !apply_vignette_map(
+                     dst,
+                     *src_ptr,
+                     camera_make,
+                     camera_model,
+                     lens_make,
+                     lens_model,
+                     focal_length,
+                     aperture,
+                     focus_distance,
+                     settings.verbosity,
+                     settings.disable_cache,
+                     last_error_message ) )
+            {
+                status = Status::LensCorrectionError;
+                return false;
+            }
+
+            if ( &dst != src_ptr )
+            {
+                dst.specmod().extra_attribs = src.spec().extra_attribs;
+                src_ptr                     = &dst;
+            }
+        }
+
+        if ( settings.lens_correction_types &&
+             ImageConverter::Settings::LensCorrectionType::Aberration )
+        {
+            if ( !apply_aberration_map(
+                     dst,
+                     *src_ptr,
+                     camera_make,
+                     camera_model,
+                     lens_make,
+                     lens_model,
+                     focal_length,
+                     settings.verbosity,
+                     settings.disable_cache,
+                     last_error_message ) )
+            {
+                status = Status::LensCorrectionError;
+                return false;
+            }
+
+            if ( &dst != src_ptr )
+            {
+                dst.specmod().extra_attribs = src.spec().extra_attribs;
+                src_ptr                     = &dst;
+            }
+        }
+
+        if ( settings.lens_correction_types &&
+             ImageConverter::Settings::LensCorrectionType::Distortion )
+        {
+            if ( !apply_distortion_map(
+                     dst,
+                     *src_ptr,
+                     camera_make,
+                     camera_model,
+                     lens_make,
+                     lens_model,
+                     focal_length,
+                     settings.verbosity,
+                     settings.disable_cache,
+                     last_error_message ) )
+            {
+                status = Status::LensCorrectionError;
+                return false;
+            }
+
+            if ( &dst != src_ptr )
+            {
+                dst.specmod().extra_attribs = src.spec().extra_attribs;
+            }
+        }
+#else
+        dst.copy( src );
+        last_error_message =
+            "The rawtoaces tool/library has been built without lensfun "
+            "support. Lens correction is not available.";
+        status = Status::LensCorrectionError;
+        return false;
+#endif // ( RTA_ENABLE_LENSFUN )
+    }
+
+    return true;
 }
 
 bool ImageConverter::configure(
@@ -1383,6 +1763,7 @@ bool ImageConverter::configure(
         input_filename, settings, image_spec, last_error_message );
     if ( !result )
     {
+        status = Status::ConfigurationError;
         return false;
     }
 
@@ -1763,6 +2144,71 @@ bool ImageConverter::configure(
         std::cerr << "  Demosaic: " << settings.demosaic_algorithm << std::endl;
         std::cerr << "  Headroom: " << settings.headroom << std::endl;
         std::cerr << "  Scale: " << settings.scale << std::endl;
+
+        std::cerr << "  Lens correction: ";
+        bool has_correction = false;
+        if ( settings.lens_correction_types &&
+             rta::util::ImageConverter::Settings::LensCorrectionType::
+                 Aberration )
+        {
+            std::cerr << "aberration";
+            has_correction = true;
+        }
+        if ( settings.lens_correction_types &&
+             rta::util::ImageConverter::Settings::LensCorrectionType::
+                 Distortion )
+        {
+            if ( has_correction )
+                std::cerr << ", ";
+            std::cerr << "distortion";
+            has_correction = true;
+        }
+        if ( settings.lens_correction_types &&
+             rta::util::ImageConverter::Settings::LensCorrectionType::
+                 Vignetting )
+        {
+            if ( has_correction )
+                std::cerr << ", ";
+            std::cerr << "vignetting";
+            has_correction = true;
+        }
+        if ( !has_correction )
+        {
+            std::cerr << "<none>";
+        }
+        std::cerr << std::endl;
+        if ( has_correction )
+        {
+            std::cerr << "  Require lens correction: "
+                      << ( settings.require_lens_correction ? "true" : "false" )
+                      << std::endl;
+
+            if ( !settings.custom_lens_make.empty() ||
+                 !settings.custom_lens_model.empty() )
+            {
+                std::cerr << "  Lens override: " << settings.custom_lens_make
+                          << " / " << settings.custom_lens_model << std::endl;
+            }
+
+            if ( settings.custom_aperture != 0.0f )
+            {
+                std::cerr << "  Aperture override: " << settings.custom_aperture
+                          << std::endl;
+            }
+
+            if ( settings.custom_focal_length != 0.0f )
+            {
+                std::cerr << "  Focal length override: "
+                          << settings.custom_focal_length << std::endl;
+            }
+
+            if ( settings.custom_focus_distance != 0.0f )
+            {
+                std::cerr << "  Focus distance override: "
+                          << settings.custom_focus_distance << std::endl;
+            }
+        }
+
         std::cerr << "  Output dir: "
                   << ( settings.output_dir.empty() ? "<same as input>"
                                                    : settings.output_dir )
@@ -2114,7 +2560,6 @@ bool ImageConverter::process_image( const std::string &input_filename )
     std::string output_filename = input_filename;
     if ( !make_output_path( output_filename ) )
     {
-
         return false;
     }
 
@@ -2148,6 +2593,35 @@ bool ImageConverter::process_image( const std::string &input_filename )
     }
     fix_metadata( buffer.specmod() );
     usage_timer.print( input_filename, "reading image" );
+
+    if ( settings.lens_correction_types !=
+         ImageConverter::Settings::LensCorrectionType::None )
+    {
+        usage_timer.reset();
+        std::string fetch_error_message;
+        fetch_missing_metadata(
+            input_filename, settings, buffer.specmod(), fetch_error_message );
+        usage_timer.print( input_filename, "fetching missing metadata" );
+
+        usage_timer.reset();
+        if ( !apply_lens_correction( buffer, buffer ) )
+        {
+            std::string message =
+                "Failed to apply lens correction to the file: " +
+                input_filename + ". " + last_error_message + " " +
+                fetch_error_message;
+            if ( settings.require_lens_correction )
+            {
+                last_error_message = message;
+                return false;
+            }
+            else
+            {
+                std::cerr << "Warning: " << message << std::endl;
+            }
+        }
+        usage_timer.print( input_filename, "applying lens correction" );
+    }
 
     // ___ Apply matrix/matrices ___
     if ( settings.verbosity > 0 )

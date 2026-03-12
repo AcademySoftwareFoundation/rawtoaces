@@ -473,3 +473,35 @@ void unset_env_var( const std::string &name )
     unsetenv( name.c_str() );
 }
 #endif
+
+void set_exiftool_path( bool local, bool global )
+{
+#if defined( WIN32 ) || defined( WIN64 )
+    const char *local_path  = "..\\..\\exiftool\\exiftool.exe";
+    const char *global_path = "some_path;..\\..\\exiftool";
+#elif defined( __APPLE__ )
+    const char *local_path  = "/opt/homebrew/bin/exiftool";
+    const char *global_path = "some_path:/opt/homebrew/bin";
+#else
+    const char *local_path  = "/usr/bin/exiftool";
+    const char *global_path = "some_path:/usr/bin";
+#endif
+
+    if ( local )
+    {
+        set_env_var( "RAWTOACES_EXIFTOOL_PATH", local_path );
+    }
+    else
+    {
+        unset_env_var( "RAWTOACES_EXIFTOOL_PATH" );
+    }
+
+    if ( global )
+    {
+        set_env_var( "PATH", global_path );
+    }
+    else
+    {
+        unset_env_var( "PATH" );
+    }
+}

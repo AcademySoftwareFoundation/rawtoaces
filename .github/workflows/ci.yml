@@ -53,7 +53,7 @@ jobs:
             toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
 
   build:
-    name: "${{matrix.os}} ${{matrix.c_compiler}}"
+    name: "${{matrix.os}} ${{matrix.c_compiler}} lensfun-${{matrix.lensfun}}"
     permissions: read-all
     uses: ./.github/workflows/build-steps.yml
     with:
@@ -64,6 +64,7 @@ jobs:
       install_deps: install_deps_${{ matrix.os }}
       toolchain_file: ${{ matrix.toolchain_file }}
       build_shared_libs: ${{ matrix.build_shared_libs || 'ON' }}
+      enable_lensfun: ${{ matrix.lensfun }}
       cxx_standard: 20
 
     strategy:
@@ -72,6 +73,7 @@ jobs:
 
       matrix:
         os: [ macos, ubuntu, windows ]
+        lensfun: [ OFF, ON ]
         include:
           - os: windows
             c_compiler: cl

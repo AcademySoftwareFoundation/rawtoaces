@@ -46,6 +46,8 @@ public:
         ConfigurationError,
         /// Failed to read the image file.
         ReadError,
+        /// Failed to apply lens correction.
+        LensCorrectionError,
         /// Failed to apply colour space conversion.
         MatrixApplicationError,
         /// Failed to apply scale.
@@ -162,7 +164,7 @@ public:
         /// curves lookup.
         std::string custom_camera_model;
 
-        ///////////////////////////
+        //----------------------------------------------------------------------
         // Libraw-specific options:
 
         /// Enable automatic exposure adjustment.
@@ -210,7 +212,7 @@ public:
         /// 'DHT', 'AAHD', 'AHD'.
         std::string demosaic_algorithm = "AHD";
 
-        /////////////////
+        //----------------------------------------------------------------------
         // Global config:
 
         /// Directory containing rawtoaces spectral sensitivity and illuminant
@@ -227,7 +229,59 @@ public:
         /// The directory to write the output files to.
         std::string output_dir;
 
-        //////////////
+        //----------------------------------------------------------------------
+        // Lens correction:
+
+        /// The enumerator containing all supported lens correction types.
+        enum class LensCorrectionType
+        {
+            None       = 0,
+            Aberration = 1 << 0,
+            Distortion = 1 << 1,
+            Vignetting = 1 << 2
+        };
+
+        /// @{
+        /// Bit-wise operators on lens correction types
+        friend LensCorrectionType operator&(
+            const LensCorrectionType &lhs, const LensCorrectionType &rhs );
+
+        friend LensCorrectionType operator|(
+            const LensCorrectionType &lhs, const LensCorrectionType &rhs );
+
+        friend LensCorrectionType &
+        operator|=( LensCorrectionType &lhs, const LensCorrectionType &rhs );
+        /// @}
+
+        /// Convenience operator to simplify testing for enabled flags.
+        /// Performs `bit-wise and` and returns true if not zero.
+        friend bool operator&&(
+            const LensCorrectionType &lhs, const LensCorrectionType &rhs );
+
+        /// The selected lens correction types.
+        LensCorrectionType lens_correction_types = LensCorrectionType::None;
+
+        /// If true, treat lens correction as mandatory. The conversion will
+        /// fail if any of the correction types above is requested,
+        /// but rawtoaces is unable to obtail a suitable lens model.
+        bool require_lens_correction = false;
+
+        /// Lens manufacturer name to be used for lens correction data lookup.
+        std::string custom_lens_make;
+
+        /// Lens model name to be used for lens correction data lookup.
+        std::string custom_lens_model;
+
+        /// Aperture (f-number) to be user for lens correction.
+        float custom_aperture = 0.0f;
+
+        /// Focal length to be user for lens correction.
+        float custom_focal_length = 0.0f;
+
+        /// Focus distance to be user for lens correction.
+        float custom_focus_distance = 0.0f;
+
+        //----------------------------------------------------------------------
         // Diagnostic:
 
         /// Log the execution time of each step of image processing.
@@ -318,6 +372,17 @@ public:
         const std::string          &path,
         const OIIO::ParamValueList &hints,
         OIIO::ImageBuf             &buffer );
+
+    /// Apply the lens correction to the image buffer.
+    /// @param dst
+    ///     Destination image buffer.
+    /// @param src
+    ///     Source image buffer, can be the same as `dst` for in-place
+    ///     conversion.
+    /// @result
+    ///    `true` if applied successfully.
+    bool
+    apply_lens_correction( OIIO::ImageBuf &dst, const OIIO::ImageBuf &src );
 
     /// Apply the colour space conversion matrix (or matrices) to convert the
     /// image buffer from the raw camera colour space to ACES.

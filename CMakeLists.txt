@@ -77,6 +77,7 @@ option( RTA_BUILD_PYTHON_BINDINGS "Build python bindings" ON )
 option( RTA_BUILD_TESTS "Build unit tests" ON )
 option( RTA_INSTALL_DATABASE "Download and install the spectral measurements database" ON )
 option( ENABLE_COVERAGE "Enable code coverage reporting" OFF )
+option( RTA_ENABLE_LENSFUN "Use lensfun for lens correction" ON )
 set ( RTA_SANITISER_MODE "none" CACHE STRING "Dynamic analysis sanitiser mode ('none', 'address', 'memory', or 'thread')" )
 
 if ( ENABLE_SHARED )

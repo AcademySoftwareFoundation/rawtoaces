@@ -4,3 +4,4 @@
 -/usr/lib/llvm-*/lib/clang/*/include/cetintrin.h
 -/usr/share/nanobind/*
 -/usr/include/python*
+-/home/runner/.local/lib/python*

@@ -1,0 +1,33 @@
+<lensdatabase version="1">
+    <mount>
+        <name>RTA_TestMount</name>
+        <compat>Generic</compat>
+    </mount>
+    <camera>
+        <maker>RTA_TestCameraMake</maker>
+        <model>RTA_TestCameraModel</model>
+        <mount>RTA_TestMount</mount>
+        <cropfactor>2</cropfactor>
+    </camera>
+    <lens>
+        <maker>RTA_TestLensMake</maker>
+        <model>RTA_TestLensModel</model>
+        <mount>RTA_TestMount</mount>
+        <cropfactor>2</cropfactor>
+        <aspect-ratio>4:3</aspect-ratio>
+        <calibration>
+            <distortion model="ptlens" focal="12" a="0.02" b="-0.06" c="-0.05"/>
+            <tca model="poly3" focal="12" br="-0.00002" vr="1.0002" bb="-0.00002" vb="1.0002"/>
+            <vignetting model="pa" focal="12" aperture="3.5" distance="1000" k1="-0.8" k2="0.4" k3="-0.3"/>
+        </calibration>
+    </lens>
+    <lens>
+        <maker>RTA_TestLensMake</maker>
+        <model>RTA_BadLensModel</model>
+        <mount>RTA_TestMount</mount>
+        <cropfactor>2</cropfactor>
+        <aspect-ratio>4:3</aspect-ratio>
+        <calibration>
+        </calibration>
+    </lens>
+</lensdatabase>

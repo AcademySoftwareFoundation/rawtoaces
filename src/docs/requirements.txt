@@ -5,3 +5,4 @@ sphinx>=7.0
 sphinx-rtd-theme>=2.0
 breathe>=4.35
 myst-parser>=2.0
+sphinx_tabs>=3.0

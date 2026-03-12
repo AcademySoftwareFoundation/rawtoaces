@@ -5,14 +5,6 @@
 
 #include <rawtoaces/rawtoaces_core.h>
 
-// These need to be declared before including cache_base.h
-namespace rta
-{
-std::ostream &operator<<( std::ostream &os, const rta::core::Metadata &data );
-bool          operator==(
-    const rta::core::Metadata &data1, const rta::core::Metadata &data2 );
-} // namespace rta
-
 #include "cache_base.h"
 
 namespace rta

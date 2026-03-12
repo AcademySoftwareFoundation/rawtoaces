@@ -10,6 +10,7 @@ brew install \
     openimageio \
     nanobind \
     robin-map \
-    exiftool
+    exiftool \
+    lensfun
 
 python3 -m pip install --break-system-packages pytest

@@ -30,6 +30,9 @@ on:
       build_shared_libs:
         type: string
         default: 'ON'
+      enable_lensfun:
+        type: string
+        default: 'ON'
       vfxyear:
         type: number
         default: 0
@@ -97,7 +100,7 @@ jobs:
           conan profile detect --force
           conan install --requires=nlohmann_json/3.12.0 --requires=nanobind/2.9.2 --generator CMakeDeps --generator CMakeToolchain --output-folder=build_deps --build=missing
           python -m pip install pytest
-          sudo yum install --setopt=tsflags=nodocs -y perl-Image-ExifTool
+          sudo yum install --setopt=tsflags=nodocs -y perl-Image-ExifTool lensfun-devel
     
       - name: Configure CMake
         run: >
@@ -110,6 +113,7 @@ jobs:
           -D CMAKE_TOOLCHAIN_FILE="${{ inputs.toolchain_file }}"
           -D CMAKE_BUILD_TYPE="${{ inputs.build_type }}"
           -D ENABLE_SHARED="${{ inputs.build_shared_libs }}"
+          -D RTA_ENABLE_LENSFUN="${{ inputs.enable_lensfun }}"
           -D RTA_SANITISER_MODE="${{ inputs.sanitiser_mode }}"
           
       - name: Build

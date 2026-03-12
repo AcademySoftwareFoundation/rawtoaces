@@ -1,5 +1,5 @@
 
-Release 2.0.0 (December ?? 2025) -- compared to 1.1.0
+Release 2.0.0 (December 8 2025) -- compared to 1.1.0
 --------------------------------------------------------
 
 **This version is not API- or ABI-compatible with the previous versions.**

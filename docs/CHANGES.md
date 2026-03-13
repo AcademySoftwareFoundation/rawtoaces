@@ -28,7 +28,7 @@ Release 2.1.0 (March ?? 2026) -- compared to 2.0.0
 * Adds new methods to the existing classes:
     * `rta::util::ImageConverter.get_supported_formats()`
     * `rta::util::ImageConverter.apply_lens_correction()`
-* Adds an optional parameter `last_error_message` to the method `rta::core::SpectralData.load()`
+* Adds an optional parameter `error_message` to the method `rta::core::SpectralData.load()`
 
 ### All changes:
 

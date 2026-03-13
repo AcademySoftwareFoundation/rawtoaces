@@ -1,6 +1,37 @@
 Release 2.1.0 (March ?? 2026) -- compared to 2.0.0
 --------------------------------------------------------
 
+
+**This version is API-compatible but not ABI-compatible with the previous versions.**
+
+### MAIN CHANGES:
+
+* Lens correction. This version introduces lens correction functionality, utilising the lensfun library (adds compile time dependency on lensfun). The following types of lens phenomena are supported: chromatic aberration, distortion, vignetting.
+* Adds functionality to fetch missing metadata using exiftool (adds runtime dependency on exiftool).
+* Adds in-memory transform cache to speed up conversion of multiple images using the same camera settings.
+
+### API changes:
+
+* Adds new properties to the existing classes:
+    * `rta::util::ImageConverter::Settings.lens_correction_types`
+    * `rta::util::ImageConverter::Settings.require_lens_correction`
+    * `rta::util::ImageConverter::Settings.custom_lens_make`
+    * `rta::util::ImageConverter::Settings.custom_lens_model`
+    * `rta::util::ImageConverter::Settings.custom_aperture`
+    * `rta::util::ImageConverter::Settings.custom_focal_length`
+    * `rta::util::ImageConverter::Settings.custom_focus_distance`
+    * `rta::util::ImageConverter::Settings.disable_cache`
+    * `rta::util::ImageConverter::Settings.disable_exiftool`
+    * `rta::util::ImageConverter.status`
+    * `rta::util::ImageConverter.last_error_message`
+    * `rta::core::SpectralSolver.last_error_message`
+* Adds new methods to the existing classes:
+    * `rta::util::ImageConverter.get_supported_formats()`
+    * `rta::util::ImageConverter.apply_lens_correction()`
+* Adds an optional parameter `last_error_message` to the method `rta::core::SpectralData.load()`
+
+### All changes:
+
 - *feat*: lens correction [#255](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/255)
 - *feat*: implement transform cache [#236](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/236)
 - *feat*: fetch metadata using ExifTool [#242](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/242)

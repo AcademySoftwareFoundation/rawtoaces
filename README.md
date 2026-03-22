@@ -47,7 +47,7 @@ To build `rawtoaces` you would need to satisfy these dependencies:
 | Library          | Min Version| Purpose  | Link to installation instruction |
 | -------          | -----------| -------- | -------------------------------- |
 | `cmake`          | `3.16`     | | [CMake download](https://cmake.org/download/)|
-| Qt 6 (optional)  | `6.5`      | Widgets module for `rawtoaces_gui` | [Qt documentation](https://doc.qt.io/qt-6/) |
+| Qt 6 (optional)  | `6.4`      | Widgets module for `rawtoaces_gui` | [Qt documentation](https://doc.qt.io/qt-6/) |
 | `ceres`          | `1.12.0`   | Ceres Solver is an open source library for solving Non-linear Least Squares problems with bounds constraints and unconstrained optimization problems. It processes non-linear regression for rawtoaces.  | [Ceres Solver installation](http://ceres-solver.org/installation.html)|
 | `OpenImageIO`    | `3.0`      | OpenImageIO is an open source library providing vast functionality for image processing. rawtoaces relies on OpenImageIO for reading raw files, saving AcesContainer files, and also all pixel operations.  | [OpenImageIO installation](https://github.com/AcademySoftwareFoundation/OpenImageIO/blob/main/INSTALL.md) |
 | `nlohmann-json`  | `3.6`      | nlohmann-json is a simple header-only library for parsing JSON files. | [nlohmann-json integration](https://github.com/nlohmann/json#integration) |

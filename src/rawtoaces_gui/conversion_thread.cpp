@@ -22,6 +22,12 @@ void ConversionThread::requestCancel()
 void ConversionThread::run()
 {
     const int total = static_cast<int>( m_paths.size() );
+    if ( total <= 0 )
+    {
+        emit progress( 0, 0 );
+        emit batchFinished();
+        return;
+    }
     for ( int i = 0; i < total; ++i )
     {
         if ( m_cancel.load() )

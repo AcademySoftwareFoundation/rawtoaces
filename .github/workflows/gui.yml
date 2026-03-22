@@ -25,6 +25,7 @@ jobs:
             exiftool \
             liblensfun-dev \
             liblensfun-data-v1 \
+            libglib2.0-dev \
             qt6-base-dev \
             qt6-base-dev-tools
 

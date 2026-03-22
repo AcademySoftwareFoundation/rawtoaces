@@ -5,18 +5,14 @@
 
 #include <QApplication>
 
-#ifndef WIN32
-#    include <cstdlib>
-#else
-#    include <cstdlib>
-#endif
+#include <cstdlib>
 
 int main( int argc, char *argv[] )
 {
-#ifndef WIN32
-    setenv( "TZ", "UTC", 1 );
-#else
+#if defined( _WIN32 )
     _putenv( const_cast<char *>( "TZ=UTC" ) );
+#else
+    setenv( "TZ", "UTC", 1 );
 #endif
 
     QApplication application( argc, argv );

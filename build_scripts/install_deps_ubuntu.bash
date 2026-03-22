@@ -11,7 +11,8 @@ time sudo apt-get -q -f install -y \
     openimageio-tools libopenimageio-dev \
     exiftool \
     liblensfun-dev \
-    liblensfun-data-v1
+    liblensfun-data-v1 \
+    libglib2.0-dev
 
 # Nanobind in apt is still v1.9, we need at least v2.2.
 pip3 install pytest nanobind

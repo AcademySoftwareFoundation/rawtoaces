@@ -28,7 +28,6 @@
 #include <QDoubleSpinBox>
 #include <QCheckBox>
 #include <QLineEdit>
-#include <QSplitter>
 #include <QTabWidget>
 #include <QTextEdit>
 #include <QVBoxLayout>
@@ -1365,11 +1364,13 @@ void MainWindow::onBatchFinished()
 
 void MainWindow::onAbout()
 {
-    QMessageBox::about(
-        this,
-        tr( "About rawtoaces" ),
-        tr( "rawtoaces GUI — ACES container output from camera RAW.\n"
-            "Settings match the same options as the rawtoaces image converter." ) );
+    QString body = tr(
+        "rawtoaces GUI — ACES container output from camera RAW.\n"
+        "Settings match the same options as the rawtoaces image converter." );
+#ifdef VERSION
+    body.prepend( tr( "Version %1\n\n" ).arg( QStringLiteral( VERSION ) ) );
+#endif
+    QMessageBox::about( this, tr( "About rawtoaces" ), body );
 }
 
 namespace
@@ -1411,6 +1412,32 @@ void setVerbosityComboFromLevel( QComboBox *comboBox, int level )
 
 void MainWindow::closeEvent( QCloseEvent *event )
 {
+    if ( m_worker != nullptr && m_worker->isRunning() )
+    {
+        const auto reply = QMessageBox::question(
+            this,
+            tr( "rawtoaces" ),
+            tr( "A conversion is still running. Cancel it and close?" ),
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No );
+        if ( reply != QMessageBox::Yes )
+        {
+            event->ignore();
+            return;
+        }
+        m_worker->requestCancel();
+        constexpr int kStopWaitMs = 300000;
+        if ( !m_worker->wait( kStopWaitMs ) )
+        {
+            QMessageBox::warning(
+                this,
+                tr( "rawtoaces" ),
+                tr( "The conversion could not be stopped before the timeout. "
+                    "Try again after the current file finishes." ) );
+            event->ignore();
+            return;
+        }
+    }
     savePreferences();
     QMainWindow::closeEvent( event );
 }

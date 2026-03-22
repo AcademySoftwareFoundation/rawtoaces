@@ -67,4 +67,4 @@ jobs:
         run: cmake --build build --config Release
 
       - name: Binary smoke
-        run: test -x build/src/rawtoaces_gui/rawtoaces_gui
+        run: test -x "build/src/rawtoaces_gui/Raw to ACES.app/Contents/MacOS/Raw to ACES"

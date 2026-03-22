@@ -300,7 +300,7 @@ std::vector<std::string> spectralDatabaseDirsFromLineEdit( const QString &text )
 MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
 {
     setObjectName( QStringLiteral( "rawtoacesMainWindow" ) );
-    setWindowTitle( tr( "rawtoaces" ) );
+    setWindowTitle( QApplication::applicationDisplayName() );
 
     m_mainSplitter = new QSplitter( Qt::Vertical );
 
@@ -1283,7 +1283,9 @@ void MainWindow::onConvert()
     if ( paths.isEmpty() )
     {
         QMessageBox::warning(
-            this, tr( "rawtoaces" ), tr( "Add at least one input file." ) );
+            this,
+            QApplication::applicationDisplayName(),
+            tr( "Add at least one input file." ) );
         return;
     }
 
@@ -1365,12 +1367,16 @@ void MainWindow::onBatchFinished()
 void MainWindow::onAbout()
 {
     QString body = tr(
-        "rawtoaces GUI — ACES container output from camera RAW.\n"
-        "Settings match the same options as the rawtoaces image converter." );
+        "%1 — ACES container output from camera RAW.\n"
+        "Settings match the same options as the rawtoaces image converter." )
+                       .arg( QApplication::applicationDisplayName() );
 #ifdef VERSION
     body.prepend( tr( "Version %1\n\n" ).arg( QStringLiteral( VERSION ) ) );
 #endif
-    QMessageBox::about( this, tr( "About rawtoaces" ), body );
+    QMessageBox::about(
+        this,
+        tr( "About %1" ).arg( QApplication::applicationDisplayName() ),
+        body );
 }
 
 namespace
@@ -1416,7 +1422,7 @@ void MainWindow::closeEvent( QCloseEvent *event )
     {
         const auto reply = QMessageBox::question(
             this,
-            tr( "rawtoaces" ),
+            QApplication::applicationDisplayName(),
             tr( "A conversion is still running. Cancel it and close?" ),
             QMessageBox::Yes | QMessageBox::No,
             QMessageBox::No );
@@ -1431,7 +1437,7 @@ void MainWindow::closeEvent( QCloseEvent *event )
         {
             QMessageBox::warning(
                 this,
-                tr( "rawtoaces" ),
+                QApplication::applicationDisplayName(),
                 tr( "The conversion could not be stopped before the timeout. "
                     "Try again after the current file finishes." ) );
             event->ignore();

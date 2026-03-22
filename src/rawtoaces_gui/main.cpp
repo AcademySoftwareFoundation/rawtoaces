@@ -22,7 +22,7 @@ int main( int argc, char *argv[] )
     QApplication application( argc, argv );
     QApplication::setApplicationName( QStringLiteral( "rawtoaces" ) );
     // macOS menu bar uses the display name (not the .app / executable basename).
-    QApplication::setApplicationDisplayName( QStringLiteral( "rawtoaces" ) );
+    QApplication::setApplicationDisplayName( QStringLiteral( "Raw to ACES" ) );
     QApplication::setOrganizationName( QStringLiteral( "rawtoaces" ) );
 
 #if defined( Q_OS_MACOS )

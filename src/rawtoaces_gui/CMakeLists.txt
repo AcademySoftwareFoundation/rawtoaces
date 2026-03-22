@@ -33,12 +33,14 @@ if(WIN32)
 endif()
 
 # macOS: build a real .app so Finder/Dock get bundle metadata; menu bar title
-# still uses setApplicationDisplayName in main.cpp.
+# follows setApplicationDisplayName in main.cpp (e.g. "Raw to ACES").
 if(APPLE)
     set(RTA_GUI_MACOS_ICON "${CMAKE_CURRENT_SOURCE_DIR}/macos/rawtoaces_gui.icns")
     set_target_properties(rawtoaces_gui PROPERTIES
         MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_BUNDLE_NAME "rawtoaces"
+        # Bundle folder and CFBundleExecutable (Linux/Windows keep target name: rawtoaces_gui).
+        OUTPUT_NAME "Raw to ACES"
+        MACOSX_BUNDLE_BUNDLE_NAME "Raw to ACES"
         MACOSX_BUNDLE_GUI_IDENTIFIER "org.aswf.rawtoaces.gui"
         MACOSX_BUNDLE_INFO_SHORT_VERSION_STRING "${RAWTOACES_VERSION}"
         MACOSX_BUNDLE_BUNDLE_VERSION "${RAWTOACES_VERSION}"
@@ -48,7 +50,7 @@ if(APPLE)
         set_source_files_properties("${RTA_GUI_MACOS_ICON}" PROPERTIES
             MACOSX_PACKAGE_LOCATION Resources
         )
-        # Base name must match Resources/*.icns; same as CFBundleExecutable avoids edge cases.
+        # Base name (no extension) must match Resources/*.icns; independent of OUTPUT_NAME.
         set_target_properties(rawtoaces_gui PROPERTIES
             MACOSX_BUNDLE_ICON_FILE "rawtoaces_gui"
         )

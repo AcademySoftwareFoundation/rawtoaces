@@ -17,8 +17,8 @@ class ConversionThread final : public QThread
 public:
     explicit ConversionThread( QObject *parent = nullptr );
 
-    void setJob(
-        rta::util::ImageConverter::Settings settings, QStringList paths );
+    void
+    setJob( rta::util::ImageConverter::Settings settings, QStringList paths );
 
     void requestCancel();
 

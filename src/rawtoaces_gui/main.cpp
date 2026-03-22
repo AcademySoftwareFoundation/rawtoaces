@@ -6,9 +6,9 @@
 #include <QApplication>
 
 #ifndef WIN32
-#include <cstdlib>
+#    include <cstdlib>
 #else
-#include <cstdlib>
+#    include <cstdlib>
 #endif
 
 int main( int argc, char *argv[] )

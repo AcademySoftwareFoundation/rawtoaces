@@ -3,7 +3,8 @@
 
 #include "conversion_thread.h"
 
-ConversionThread::ConversionThread( QObject *parent ) : QThread( parent ) {}
+ConversionThread::ConversionThread( QObject *parent ) : QThread( parent )
+{}
 
 void ConversionThread::setJob(
     rta::util::ImageConverter::Settings settings, QStringList paths )
@@ -30,12 +31,12 @@ void ConversionThread::run()
         }
 
         const QString path = m_paths.at( i );
-        emit fileStarted( i, path );
+        emit          fileStarted( i, path );
 
         rta::util::ImageConverter converter;
         converter.settings = m_settings;
-        const bool ok = converter.process_image( path.toStdString() );
-        emit fileFinished(
+        const bool ok      = converter.process_image( path.toStdString() );
+        emit       fileFinished(
             i, ok, QString::fromStdString( converter.last_error_message ) );
         emit progress( i + 1, total );
     }

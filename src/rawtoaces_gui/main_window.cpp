@@ -59,7 +59,8 @@ QWidget *wrapCheckBoxForFormRow( QCheckBox *checkBox )
     lay->setAlignment( Qt::AlignVCenter );
     lay->addWidget( checkBox, 0, Qt::AlignVCenter );
     lay->addStretch( 1 );
-    host->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::MinimumExpanding );
+    host->setSizePolicy(
+        QSizePolicy::Expanding, QSizePolicy::MinimumExpanding );
     return host;
 }
 
@@ -71,8 +72,8 @@ constexpr int kStdNumericFieldWidth = 112;
 /// because each `QGroupBox` carries style-dependent chrome; instead each
 /// **logical** block (including one full two-column row) sits in
 /// `wrapSettingsSectionTail` with a fixed bottom margin (`kSettingsSectionTailGap`).
-constexpr int kSettingsTabPageMargin   = 6;
-constexpr int kSettingsSectionTailGap  = 6;
+constexpr int kSettingsTabPageMargin  = 6;
+constexpr int kSettingsSectionTailGap = 6;
 
 void applySettingsTabPageMarginsOnly( QVBoxLayout *outerColumn )
 {
@@ -80,10 +81,11 @@ void applySettingsTabPageMarginsOnly( QVBoxLayout *outerColumn )
     {
         return;
     }
-    outerColumn->setContentsMargins( kSettingsTabPageMargin,
-                                     kSettingsTabPageMargin,
-                                     kSettingsTabPageMargin,
-                                     kSettingsTabPageMargin );
+    outerColumn->setContentsMargins(
+        kSettingsTabPageMargin,
+        kSettingsTabPageMargin,
+        kSettingsTabPageMargin,
+        kSettingsTabPageMargin );
 }
 
 void applySettingsTabPageChrome( QVBoxLayout *outerColumn )
@@ -120,8 +122,7 @@ void styleGroupBoxForSettingsRowPair( QGroupBox *box )
     {
         return;
     }
-    box->setSizePolicy( QSizePolicy::Preferred,
-                        QSizePolicy::MinimumExpanding );
+    box->setSizePolicy( QSizePolicy::Preferred, QSizePolicy::MinimumExpanding );
 }
 
 QWidget *wrapScroll( QWidget *inner )
@@ -168,12 +169,14 @@ void alignFormLabelTopForField( QFormLayout *form, QWidget *field )
     }
     for ( int r = 0; r < form->rowCount(); ++r )
     {
-        QLayoutItem *const fieldItem = form->itemAt( r, QFormLayout::FieldRole );
+        QLayoutItem *const fieldItem =
+            form->itemAt( r, QFormLayout::FieldRole );
         if ( fieldItem == nullptr || fieldItem->widget() != field )
         {
             continue;
         }
-        QLayoutItem *const labelItem = form->itemAt( r, QFormLayout::LabelRole );
+        QLayoutItem *const labelItem =
+            form->itemAt( r, QFormLayout::LabelRole );
         if ( labelItem != nullptr )
         {
             labelItem->setAlignment( Qt::AlignRight | Qt::AlignTop );
@@ -192,7 +195,8 @@ void alignFormFieldTopForField( QFormLayout *form, QWidget *field )
     }
     for ( int r = 0; r < form->rowCount(); ++r )
     {
-        QLayoutItem *const fieldItem = form->itemAt( r, QFormLayout::FieldRole );
+        QLayoutItem *const fieldItem =
+            form->itemAt( r, QFormLayout::FieldRole );
         if ( fieldItem == nullptr || fieldItem->widget() != field )
         {
             continue;
@@ -237,10 +241,11 @@ void mountFormInGroupBoxFullWidth( QGroupBox *group, QFormLayout **outForm )
     outer->addWidget( inner );
 }
 
-void addLabeledSpinRows( QFormLayout *form,
-                         QSpinBox    *boxes[4],
-                         const QStringList &rowLabels,
-                         int                maxFieldWidth )
+void addLabeledSpinRows(
+    QFormLayout       *form,
+    QSpinBox          *boxes[4],
+    const QStringList &rowLabels,
+    int                maxFieldWidth )
 {
     for ( int i = 0; i < 4; ++i )
     {
@@ -252,7 +257,8 @@ void addLabeledSpinRows( QFormLayout *form,
     }
 }
 
-QStringList flattenBatches( const std::vector<std::vector<std::string>> &batches )
+QStringList
+flattenBatches( const std::vector<std::vector<std::string>> &batches )
 {
     QStringList out;
     for ( const auto &batch: batches )
@@ -276,7 +282,7 @@ std::vector<std::string> spectralDatabaseDirsFromLineEdit( const QString &text )
         return {};
     }
     std::vector<std::string> out;
-    const QStringList parts = trimmed.split(
+    const QStringList        parts = trimmed.split(
         QRegularExpression( QStringLiteral( "[;:]" ) ), Qt::SkipEmptyParts );
     for ( const QString &part: parts )
     {
@@ -299,7 +305,7 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
 
     m_mainSplitter = new QSplitter( Qt::Vertical );
 
-    auto *top = new QWidget;
+    auto *top    = new QWidget;
     auto *topLay = new QVBoxLayout( top );
     topLay->setSpacing( 6 );
 
@@ -308,7 +314,7 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     inputLay->setSpacing( 6 );
 
     auto *fileRow = new QHBoxLayout;
-    m_fileList = new QListWidget;
+    m_fileList    = new QListWidget;
     m_fileList->setObjectName( QStringLiteral( "guiFileList" ) );
     m_fileList->setSelectionMode( QAbstractItemView::ExtendedSelection );
     m_fileList->setMinimumHeight( 48 );
@@ -331,7 +337,8 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
 
     connect( addFiles, &QPushButton::clicked, this, &MainWindow::onAddFiles );
     connect( addFolder, &QPushButton::clicked, this, &MainWindow::onAddFolder );
-    connect( removeBtn, &QPushButton::clicked, this, &MainWindow::onRemoveSelected );
+    connect(
+        removeBtn, &QPushButton::clicked, this, &MainWindow::onRemoveSelected );
     connect( clearBtn, &QPushButton::clicked, this, &MainWindow::onClearFiles );
 
     m_log = new QTextEdit;
@@ -350,8 +357,8 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     auto *rawOuter = new QVBoxLayout( rawInner );
     applySettingsTabPageChrome( rawOuter );
 
-    auto *rawLevels = new QGroupBox( tr( "Levels && exposure" ) );
-    QFormLayout *rawLay = nullptr;
+    auto        *rawLevels = new QGroupBox( tr( "Levels && exposure" ) );
+    QFormLayout *rawLay    = nullptr;
     mountFormInGroupBox( rawLevels, &rawLay );
     rawLay->setHorizontalSpacing( 12 );
     rawLay->setVerticalSpacing( 8 );
@@ -359,8 +366,8 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     // clips macOS indicators; expanding policy still respects fixed-width spins.
     rawLay->setFieldGrowthPolicy( QFormLayout::ExpandingFieldsGrow );
     m_autoBright = new QCheckBox;
-    m_autoBright->setToolTip(
-        tr( "LibRaw automatic brightening; other level options still apply." ) );
+    m_autoBright->setToolTip( tr(
+        "LibRaw automatic brightening; other level options still apply." ) );
     m_adjustMaximum = new QDoubleSpinBox;
     m_adjustMaximum->setRange( 0.0, 1.0 );
     m_adjustMaximum->setDecimals( 4 );
@@ -382,9 +389,9 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
 
     m_saturationFromMetadata = new QCheckBox( tr( "Take from metadata" ) );
     m_saturationFromMetadata->setChecked( true );
-    m_saturationFromMetadata->setToolTip(
-        tr( "Use the saturation (clip / white) level from RAW metadata; when off, "
-            "use the value below." ) );
+    m_saturationFromMetadata->setToolTip( tr(
+        "Use the saturation (clip / white) level from RAW metadata; when off, "
+        "use the value below." ) );
     m_saturationLevel = new QSpinBox;
     m_saturationLevel->setRange( 1, 2147483647 );
     m_saturationLevel->setValue( 16383 );
@@ -407,23 +414,26 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     saturationVBox->addWidget( m_saturationFromMetadata );
     saturationVBox->addWidget( m_saturationLevel );
 
-    rawLay->addRow( tr( "Auto bright:" ), wrapCheckBoxForFormRow( m_autoBright ) );
+    rawLay->addRow(
+        tr( "Auto bright:" ), wrapCheckBoxForFormRow( m_autoBright ) );
     rawLay->addRow( tr( "Adjust maximum threshold:" ), m_adjustMaximum );
     rawLay->addRow( tr( "Black level:" ), blackLevelBlock );
     rawLay->addRow( tr( "Saturation level:" ), saturationBlock );
     alignFormLabelTopForField( rawLay, blackLevelBlock );
     alignFormLabelTopForField( rawLay, saturationBlock );
-    connect( m_blackLevelFromMetadata,
-             &QCheckBox::toggled,
-             this,
-             &MainWindow::updateBlackSaturationUi );
-    connect( m_saturationFromMetadata,
-             &QCheckBox::toggled,
-             this,
-             &MainWindow::updateBlackSaturationUi );
+    connect(
+        m_blackLevelFromMetadata,
+        &QCheckBox::toggled,
+        this,
+        &MainWindow::updateBlackSaturationUi );
+    connect(
+        m_saturationFromMetadata,
+        &QCheckBox::toggled,
+        this,
+        &MainWindow::updateBlackSaturationUi );
     updateBlackSaturationUi();
 
-    auto *rawChroma = new QGroupBox( tr( "Chromatic aberration && size" ) );
+    auto *rawChroma     = new QGroupBox( tr( "Chromatic aberration && size" ) );
     QFormLayout *chForm = nullptr;
     mountFormInGroupBox( rawChroma, &chForm );
     chForm->setHorizontalSpacing( 12 );
@@ -437,7 +447,7 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     m_chromaB->setDecimals( 4 );
     m_chromaR->setValue( 1.0 );
     m_chromaB->setValue( 1.0 );
-    m_halfSize = new QCheckBox;
+    m_halfSize      = new QCheckBox;
     m_highlightMode = new QComboBox;
     m_highlightMode->setObjectName( QStringLiteral( "guiHighlightMode" ) );
     m_highlightMode->addItem( tr( "0 — Clip" ), 0 );
@@ -456,11 +466,11 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     setFieldMaxWidth( m_chromaB, kStdNumericFieldWidth );
     chForm->addRow( tr( "Red channel multiplier:" ), m_chromaR );
     chForm->addRow( tr( "Blue channel multiplier:" ), m_chromaB );
-    chForm->addRow( tr( "Half-size decode:" ),
-                      wrapCheckBoxForFormRow( m_halfSize ) );
+    chForm->addRow(
+        tr( "Half-size decode:" ), wrapCheckBoxForFormRow( m_halfSize ) );
     chForm->addRow( tr( "Highlight mode:" ), m_highlightMode );
 
-    auto *rawCrop = new QGroupBox( tr( "Crop, orientation && denoise" ) );
+    auto *rawCrop       = new QGroupBox( tr( "Crop, orientation && denoise" ) );
     QFormLayout *crForm = nullptr;
     mountFormInGroupBox( rawCrop, &crForm );
     crForm->setHorizontalSpacing( 12 );
@@ -477,8 +487,7 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     cropRegionForm->setLabelAlignment( Qt::AlignRight | Qt::AlignTop );
     cropRegionForm->setContentsMargins( 0, 0, 0, 0 );
     cropRegionForm->setHorizontalSpacing( 12 );
-    cropRegionForm->setFieldGrowthPolicy(
-        QFormLayout::FieldsStayAtSizeHint );
+    cropRegionForm->setFieldGrowthPolicy( QFormLayout::FieldsStayAtSizeHint );
     addLabeledSpinRows(
         cropRegionForm,
         m_cropBox,
@@ -514,20 +523,21 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     crForm->addRow( tr( "Denoise threshold:" ), m_denoise );
     setFieldMaxWidth( m_denoise, kStdNumericFieldWidth );
 
-    auto *rawDemo = new QGroupBox( tr( "Demosaic" ) );
-    QFormLayout *dmForm = nullptr;
+    auto        *rawDemo = new QGroupBox( tr( "Demosaic" ) );
+    QFormLayout *dmForm  = nullptr;
     mountFormInGroupBox( rawDemo, &dmForm );
     dmForm->setHorizontalSpacing( 12 );
     dmForm->setFieldGrowthPolicy( QFormLayout::FieldsStayAtSizeHint );
-    m_demosaic = new QComboBox;
+    m_demosaic                      = new QComboBox;
     const QStringList demosaicNames = {
         QStringLiteral( "linear" ), QStringLiteral( "VNG" ),
-        QStringLiteral( "PPG" ),   QStringLiteral( "AHD" ),
-        QStringLiteral( "DCB" ),   QStringLiteral( "AHD-Mod" ),
-        QStringLiteral( "AFD" ),   QStringLiteral( "VCD" ),
-        QStringLiteral( "Mixed" ), QStringLiteral( "LMMSE" ),
-        QStringLiteral( "AMaZE" ), QStringLiteral( "DHT" ),
-        QStringLiteral( "AAHD" ),  QStringLiteral( "AHD" ) };
+        QStringLiteral( "PPG" ),    QStringLiteral( "AHD" ),
+        QStringLiteral( "DCB" ),    QStringLiteral( "AHD-Mod" ),
+        QStringLiteral( "AFD" ),    QStringLiteral( "VCD" ),
+        QStringLiteral( "Mixed" ),  QStringLiteral( "LMMSE" ),
+        QStringLiteral( "AMaZE" ),  QStringLiteral( "DHT" ),
+        QStringLiteral( "AAHD" ),   QStringLiteral( "AHD" )
+    };
     m_demosaic->addItems( demosaicNames );
     m_demosaic->setMaximumWidth( kStdNumericFieldWidth * 2 );
     dmForm->addRow( tr( "Algorithm:" ), m_demosaic );
@@ -561,7 +571,7 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     auto *colourOuter = new QVBoxLayout( colourInner );
     applySettingsTabPageChrome( colourOuter );
 
-    auto *grpSpectral = new QGroupBox( tr( "Spectral data" ) );
+    auto        *grpSpectral  = new QGroupBox( tr( "Spectral data" ) );
     QFormLayout *spectralForm = nullptr;
     mountFormInGroupBoxFullWidth( grpSpectral, &spectralForm );
     spectralForm->setHorizontalSpacing( 12 );
@@ -570,10 +580,10 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     m_dataDir = new QLineEdit;
     m_dataDir->setObjectName( QStringLiteral( "guiDataDir" ) );
     m_dataDir->setPlaceholderText( tr( "Empty = default search paths" ) );
-    m_dataDir->setToolTip(
-        tr( "Override directories for camera / illuminant spectral data. "
-            "Separate multiple paths with ';' or ':'. Empty uses library defaults "
-            "and environment." ) );
+    m_dataDir->setToolTip( tr(
+        "Override directories for camera / illuminant spectral data. "
+        "Separate multiple paths with ';' or ':'. Empty uses library defaults "
+        "and environment." ) );
     auto *dataBrowse = new QPushButton( tr( "Browse…" ) );
     auto *dataWrap   = new QWidget;
     dataWrap->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Preferred );
@@ -583,9 +593,10 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     dataHBox->addWidget( m_dataDir, 1 );
     dataHBox->addWidget( dataBrowse );
     spectralForm->addRow( tr( "Data directory:" ), dataWrap );
-    connect( dataBrowse, &QPushButton::clicked, this, &MainWindow::onBrowseDataDir );
+    connect(
+        dataBrowse, &QPushButton::clicked, this, &MainWindow::onBrowseDataDir );
 
-    auto *grpWb = new QGroupBox( tr( "White balance" ) );
+    auto        *grpWb  = new QGroupBox( tr( "White balance" ) );
     QFormLayout *wbForm = nullptr;
     mountFormInGroupBox( grpWb, &wbForm );
     wbForm->setHorizontalSpacing( 12 );
@@ -599,7 +610,7 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     m_illuminant = new QLineEdit;
     m_illuminant->setPlaceholderText( tr( "e.g. D55, 3200K" ) );
     m_wbIlluminantWrap = new QWidget;
-    auto *illumHBox = new QHBoxLayout( m_wbIlluminantWrap );
+    auto *illumHBox    = new QHBoxLayout( m_wbIlluminantWrap );
     illumHBox->setContentsMargins( 0, 0, 0, 0 );
     illumHBox->addWidget( m_illuminant, 1 );
     for ( int i = 0; i < 4; ++i )
@@ -608,7 +619,7 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
         m_wbBox[i]->setRange( -1000000000, 1000000000 );
     }
     m_wbBoxRegionWrap = new QWidget;
-    auto *wbBoxForm = new QFormLayout( m_wbBoxRegionWrap );
+    auto *wbBoxForm   = new QFormLayout( m_wbBoxRegionWrap );
     polishFormLayout( wbBoxForm );
     wbBoxForm->setLabelAlignment( Qt::AlignRight | Qt::AlignTop );
     wbBoxForm->setContentsMargins( 0, 0, 0, 0 );
@@ -621,7 +632,7 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
         kStdNumericFieldWidth );
 
     m_wbCustomGainsWrap = new QWidget;
-    auto *cwbForm = new QFormLayout( m_wbCustomGainsWrap );
+    auto *cwbForm       = new QFormLayout( m_wbCustomGainsWrap );
     polishFormLayout( cwbForm );
     cwbForm->setLabelAlignment( Qt::AlignRight | Qt::AlignTop );
     cwbForm->setContentsMargins( 0, 0, 0, 0 );
@@ -652,13 +663,14 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
         qobject_cast<QLabel *>( wbForm->labelForField( m_wbBoxRegionWrap ) );
     m_wbCustomGainsLabel =
         qobject_cast<QLabel *>( wbForm->labelForField( m_wbCustomGainsWrap ) );
-    connect( m_wbMethod,
-             &QComboBox::currentIndexChanged,
-             this,
-             &MainWindow::updateWbMethodDependentUi );
+    connect(
+        m_wbMethod,
+        &QComboBox::currentIndexChanged,
+        this,
+        &MainWindow::updateWbMethodDependentUi );
     updateWbMethodDependentUi();
 
-    auto *grpMat = new QGroupBox( tr( "Colour matrix && camera" ) );
+    auto        *grpMat  = new QGroupBox( tr( "Colour matrix && camera" ) );
     QFormLayout *matForm = nullptr;
     mountFormInGroupBox( grpMat, &matForm );
     matForm->setHorizontalSpacing( 12 );
@@ -691,16 +703,17 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     matForm->addRow( tr( "Custom 3×3 matrix:" ), m_customMatrixWrap );
     m_customMatrixLabel =
         qobject_cast<QLabel *>( matForm->labelForField( m_customMatrixWrap ) );
-    connect( m_matrixMethod,
-             &QComboBox::currentIndexChanged,
-             this,
-             &MainWindow::updateMatrixMethodDependentUi );
+    connect(
+        m_matrixMethod,
+        &QComboBox::currentIndexChanged,
+        this,
+        &MainWindow::updateMatrixMethodDependentUi );
     updateMatrixMethodDependentUi();
 
     m_customCameraMake  = new QLineEdit;
     m_customCameraModel = new QLineEdit;
-    auto *makeWrap = new QWidget;
-    auto *makeHBox = new QHBoxLayout( makeWrap );
+    auto *makeWrap      = new QWidget;
+    auto *makeHBox      = new QHBoxLayout( makeWrap );
     makeHBox->setContentsMargins( 0, 0, 0, 0 );
     makeHBox->addWidget( m_customCameraMake, 1 );
     auto *modelWrap = new QWidget;
@@ -710,7 +723,7 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     matForm->addRow( tr( "Override camera make:" ), makeWrap );
     matForm->addRow( tr( "Override camera model:" ), modelWrap );
 
-    auto *grpTone = new QGroupBox( tr( "Tone && scale" ) );
+    auto        *grpTone  = new QGroupBox( tr( "Tone && scale" ) );
     QFormLayout *toneForm = nullptr;
     mountFormInGroupBox( grpTone, &toneForm );
     toneForm->setHorizontalSpacing( 12 );
@@ -748,8 +761,8 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     auto *lensInner = new QWidget;
     auto *lensOuter = new QVBoxLayout( lensInner );
     applySettingsTabPageChrome( lensOuter );
-    auto *lensFlagsBox = new QGroupBox( tr( "Lens corrections" ) );
-    QFormLayout *lensLay = nullptr;
+    auto        *lensFlagsBox = new QGroupBox( tr( "Lens corrections" ) );
+    QFormLayout *lensLay      = nullptr;
     mountFormInGroupBox( lensFlagsBox, &lensLay );
     lensLay->setHorizontalSpacing( 12 );
     lensLay->setVerticalSpacing( 8 );
@@ -766,14 +779,15 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     lensCorrVBox->addWidget( m_lensCorrDistortion );
     lensCorrVBox->addWidget( m_lensCorrVignetting );
     lensLay->addRow( tr( "Correction types:" ), lensCorrStack );
-    lensLay->addRow( tr( "Fail if correction unavailable:" ),
-                      wrapCheckBoxForFormRow( m_requireLens ) );
+    lensLay->addRow(
+        tr( "Fail if correction unavailable:" ),
+        wrapCheckBoxForFormRow( m_requireLens ) );
     // Tall field: align label with the first checkbox, not vertical center of stack.
     alignFormLabelTopForField( lensLay, lensCorrStack );
     alignFormFieldTopForField( lensLay, lensCorrStack );
 
-    auto *lensOverride = new QGroupBox( tr( "Lens metadata" ) );
-    QFormLayout *ovLay = nullptr;
+    auto        *lensOverride = new QGroupBox( tr( "Lens metadata" ) );
+    QFormLayout *ovLay        = nullptr;
     mountFormInGroupBox( lensOverride, &ovLay );
     ovLay->setHorizontalSpacing( 12 );
     ovLay->setVerticalSpacing( 8 );
@@ -785,14 +799,15 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
         tr( "When enabled, use the make, model, aperture, focal length, and "
             "focus distance below for lens correction; when off, converter "
             "defaults apply (same as leaving CLI overrides unset)." ) );
-    ovLay->addRow( tr( "Override:" ),
-                   wrapCheckBoxForFormRow( m_lensMetadataOverride ) );
-    connect( m_lensMetadataOverride,
-             &QCheckBox::toggled,
-             this,
-             &MainWindow::updateLensMetadataOverrideUi );
-    m_lensMake  = new QLineEdit;
-    m_lensModel = new QLineEdit;
+    ovLay->addRow(
+        tr( "Override:" ), wrapCheckBoxForFormRow( m_lensMetadataOverride ) );
+    connect(
+        m_lensMetadataOverride,
+        &QCheckBox::toggled,
+        this,
+        &MainWindow::updateLensMetadataOverrideUi );
+    m_lensMake     = new QLineEdit;
+    m_lensModel    = new QLineEdit;
     m_lensAperture = new QDoubleSpinBox;
     m_lensAperture->setRange( 0.0, 1.0e6 );
     m_lensAperture->setDecimals( 3 );
@@ -832,16 +847,16 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     lensOuter->addStretch();
     m_settingsTabs->addTab( wrapScroll( lensInner ), tr( "Lens" ) );
 #else
-    m_lensCorrAberration = nullptr;
-    m_lensCorrDistortion = nullptr;
-    m_lensCorrVignetting = nullptr;
-    m_requireLens        = nullptr;
+    m_lensCorrAberration   = nullptr;
+    m_lensCorrDistortion   = nullptr;
+    m_lensCorrVignetting   = nullptr;
+    m_requireLens          = nullptr;
     m_lensMetadataOverride = nullptr;
-    m_lensMake           = nullptr;
-    m_lensModel          = nullptr;
-    m_lensAperture       = nullptr;
-    m_lensFocal          = nullptr;
-    m_lensFocus          = nullptr;
+    m_lensMake             = nullptr;
+    m_lensModel            = nullptr;
+    m_lensAperture         = nullptr;
+    m_lensFocal            = nullptr;
+    m_lensFocus            = nullptr;
 #endif
 
     // --- Output & diagnostics tab (last; paths, write flags, logging) ---
@@ -849,8 +864,8 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     auto *odVBox  = new QVBoxLayout( odInner );
     applySettingsTabPageChrome( odVBox );
 
-    auto *pathGroup = new QGroupBox( tr( "Output" ) );
-    QFormLayout *pathForm = nullptr;
+    auto        *pathGroup = new QGroupBox( tr( "Output" ) );
+    QFormLayout *pathForm  = nullptr;
     mountFormInGroupBoxFullWidth( pathGroup, &pathForm );
     pathForm->setHorizontalSpacing( 12 );
     pathForm->setVerticalSpacing( 8 );
@@ -860,19 +875,20 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     m_outputDir->setObjectName( QStringLiteral( "guiOutputDir" ) );
     m_outputDir->setPlaceholderText(
         tr( "Empty = same folder as each RAW; or set a subfolder / path" ) );
-    m_outputDir->setToolTip(
-        tr( "Leave empty to write .exr next to the source file. "
-            "If set, output paths are resolved under each input file’s directory." ) );
+    m_outputDir->setToolTip( tr(
+        "Leave empty to write .exr next to the source file. "
+        "If set, output paths are resolved under each input file’s directory." ) );
     auto *outBrowse = new QPushButton( tr( "Browse…" ) );
     auto *outWrap   = new QWidget;
     outWrap->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Preferred );
-    auto *outHBox   = new QHBoxLayout( outWrap );
+    auto *outHBox = new QHBoxLayout( outWrap );
     outHBox->setContentsMargins( 0, 0, 0, 0 );
     outHBox->setSpacing( 8 );
     outHBox->addWidget( m_outputDir, 1 );
     outHBox->addWidget( outBrowse );
     pathForm->addRow( tr( "Output directory:" ), outWrap );
-    connect( outBrowse, &QPushButton::clicked, this, &MainWindow::onBrowseOutput );
+    connect(
+        outBrowse, &QPushButton::clicked, this, &MainWindow::onBrowseOutput );
 
     m_overwrite  = new QCheckBox;
     m_createDirs = new QCheckBox;
@@ -881,13 +897,15 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     m_createDirs->setToolTip(
         tr( "When an output directory is set, create missing parent folders "
             "if they do not exist." ) );
-    pathForm->addRow( tr( "Overwrite existing files:" ),
-                      wrapCheckBoxForFormRow( m_overwrite ) );
-    pathForm->addRow( tr( "Create missing directories:" ),
-                      wrapCheckBoxForFormRow( m_createDirs ) );
+    pathForm->addRow(
+        tr( "Overwrite existing files:" ),
+        wrapCheckBoxForFormRow( m_overwrite ) );
+    pathForm->addRow(
+        tr( "Create missing directories:" ),
+        wrapCheckBoxForFormRow( m_createDirs ) );
 
-    auto *logGroup = new QGroupBox( tr( "Logging && cache" ) );
-    QFormLayout *diagLay = nullptr;
+    auto        *logGroup = new QGroupBox( tr( "Logging && cache" ) );
+    QFormLayout *diagLay  = nullptr;
     mountFormInGroupBox( logGroup, &diagLay );
     diagLay->setHorizontalSpacing( 12 );
     diagLay->setVerticalSpacing( 8 );
@@ -895,7 +913,7 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     m_useTiming       = new QCheckBox;
     m_disableCache    = new QCheckBox;
     m_disableExiftool = new QCheckBox;
-    m_verbosity = new QComboBox;
+    m_verbosity       = new QComboBox;
     m_verbosity->setObjectName( QStringLiteral( "guiVerbosity" ) );
     m_verbosity->addItem( tr( "Quiet" ), 0 );
     m_verbosity->addItem( tr( "Progress" ), 1 );
@@ -904,22 +922,25 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     m_verbosity->addItem( tr( "Solver trace" ), 4 );
     m_verbosity->setCurrentIndex( 0 );
     m_verbosity->setMaximumWidth( kStdNumericFieldWidth * 2 );
-    m_verbosity->setToolTip(
-        tr( "How much is printed to the log and terminal. "
-            "Progress: per-step messages. Detailed: adds configuration summary. "
-            "Solver report: Ceres summary and IDT matrix. "
-            "Solver trace: also Ceres minimizer progress." ) );
-    diagLay->addRow( tr( "Log timing:" ), wrapCheckBoxForFormRow( m_useTiming ) );
-    diagLay->addRow( tr( "Disable cache:" ),
-                      wrapCheckBoxForFormRow( m_disableCache ) );
-    diagLay->addRow( tr( "Disable exiftool:" ),
-                      wrapCheckBoxForFormRow( m_disableExiftool ) );
+    m_verbosity->setToolTip( tr(
+        "How much is printed to the log and terminal. "
+        "Progress: per-step messages. Detailed: adds configuration summary. "
+        "Solver report: Ceres summary and IDT matrix. "
+        "Solver trace: also Ceres minimizer progress." ) );
+    diagLay->addRow(
+        tr( "Log timing:" ), wrapCheckBoxForFormRow( m_useTiming ) );
+    diagLay->addRow(
+        tr( "Disable cache:" ), wrapCheckBoxForFormRow( m_disableCache ) );
+    diagLay->addRow(
+        tr( "Disable exiftool:" ),
+        wrapCheckBoxForFormRow( m_disableExiftool ) );
     diagLay->addRow( tr( "Verbosity:" ), m_verbosity );
 
     odVBox->addWidget( wrapSettingsSectionTail( pathGroup ) );
     odVBox->addWidget( wrapSettingsSectionTail( logGroup ) );
     odVBox->addStretch();
-    m_settingsTabs->addTab( wrapScroll( odInner ), tr( "Output && diagnostics" ) );
+    m_settingsTabs->addTab(
+        wrapScroll( odInner ), tr( "Output && diagnostics" ) );
 
     auto *runRow = new QWidget;
     auto *runLay = new QHBoxLayout( runRow );
@@ -942,8 +963,10 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     runLay->addWidget( m_convertButton );
     runLay->addWidget( m_cancelButton );
     runLay->addWidget( m_progress, 1 );
-    connect( m_convertButton, &QPushButton::clicked, this, &MainWindow::onConvert );
-    connect( m_cancelButton, &QPushButton::clicked, this, &MainWindow::onCancel );
+    connect(
+        m_convertButton, &QPushButton::clicked, this, &MainWindow::onConvert );
+    connect(
+        m_cancelButton, &QPushButton::clicked, this, &MainWindow::onCancel );
 
     auto *bottom    = new QWidget;
     auto *bottomLay = new QVBoxLayout( bottom );
@@ -984,37 +1007,19 @@ rta::util::ImageConverter::Settings MainWindow::buildSettingsFromUi() const
 
     switch ( m_wbMethod->currentIndex() )
     {
-        case 0:
-            s.WB_method = S::WBMethod::Metadata;
-            break;
-        case 1:
-            s.WB_method = S::WBMethod::Illuminant;
-            break;
-        case 2:
-            s.WB_method = S::WBMethod::Box;
-            break;
-        default:
-            s.WB_method = S::WBMethod::Custom;
-            break;
+        case 0: s.WB_method = S::WBMethod::Metadata; break;
+        case 1: s.WB_method = S::WBMethod::Illuminant; break;
+        case 2: s.WB_method = S::WBMethod::Box; break;
+        default: s.WB_method = S::WBMethod::Custom; break;
     }
 
     switch ( m_matrixMethod->currentIndex() )
     {
-        case 0:
-            s.matrix_method = S::MatrixMethod::Auto;
-            break;
-        case 1:
-            s.matrix_method = S::MatrixMethod::Spectral;
-            break;
-        case 2:
-            s.matrix_method = S::MatrixMethod::Metadata;
-            break;
-        case 3:
-            s.matrix_method = S::MatrixMethod::Adobe;
-            break;
-        default:
-            s.matrix_method = S::MatrixMethod::Custom;
-            break;
+        case 0: s.matrix_method = S::MatrixMethod::Auto; break;
+        case 1: s.matrix_method = S::MatrixMethod::Spectral; break;
+        case 2: s.matrix_method = S::MatrixMethod::Metadata; break;
+        case 3: s.matrix_method = S::MatrixMethod::Adobe; break;
+        default: s.matrix_method = S::MatrixMethod::Custom; break;
     }
 
     s.illuminant = m_illuminant->text().toStdString();
@@ -1045,25 +1050,20 @@ rta::util::ImageConverter::Settings MainWindow::buildSettingsFromUi() const
     s.headroom            = static_cast<float>( m_headroom->value() );
     s.scale               = static_cast<float>( m_scale->value() );
 
-    s.auto_bright = m_autoBright->isChecked();
-    s.adjust_maximum_threshold =
-        static_cast<float>( m_adjustMaximum->value() );
-    s.black_level =
-        ( m_blackLevelFromMetadata != nullptr &&
-          m_blackLevelFromMetadata->isChecked() )
-            ? -1
-            : m_blackLevel->value();
-    s.saturation_level =
-        ( m_saturationFromMetadata != nullptr &&
-          m_saturationFromMetadata->isChecked() )
-            ? 0
-            : m_saturationLevel->value();
-    s.chromatic_aberration[0] =
-        static_cast<float>( m_chromaR->value() );
-    s.chromatic_aberration[1] =
-        static_cast<float>( m_chromaB->value() );
-    s.half_size      = m_halfSize->isChecked();
-    s.highlight_mode = m_highlightMode->currentData().toInt();
+    s.auto_bright              = m_autoBright->isChecked();
+    s.adjust_maximum_threshold = static_cast<float>( m_adjustMaximum->value() );
+    s.black_level              = ( m_blackLevelFromMetadata != nullptr &&
+                      m_blackLevelFromMetadata->isChecked() )
+                                     ? -1
+                                     : m_blackLevel->value();
+    s.saturation_level         = ( m_saturationFromMetadata != nullptr &&
+                           m_saturationFromMetadata->isChecked() )
+                                     ? 0
+                                     : m_saturationLevel->value();
+    s.chromatic_aberration[0]  = static_cast<float>( m_chromaR->value() );
+    s.chromatic_aberration[1]  = static_cast<float>( m_chromaB->value() );
+    s.half_size                = m_halfSize->isChecked();
+    s.highlight_mode           = m_highlightMode->currentData().toInt();
     for ( int i = 0; i < 4; ++i )
     {
         s.crop_box[i] = m_cropBox[i]->value();
@@ -1071,21 +1071,14 @@ rta::util::ImageConverter::Settings MainWindow::buildSettingsFromUi() const
 
     switch ( m_cropMode->currentIndex() )
     {
-        case 0:
-            s.crop_mode = S::CropMode::Off;
-            break;
-        case 1:
-            s.crop_mode = S::CropMode::Soft;
-            break;
-        default:
-            s.crop_mode = S::CropMode::Hard;
-            break;
+        case 0: s.crop_mode = S::CropMode::Off; break;
+        case 1: s.crop_mode = S::CropMode::Soft; break;
+        default: s.crop_mode = S::CropMode::Hard; break;
     }
 
-    s.flip = m_flip->currentData().toInt();
-    s.denoise_threshold = static_cast<float>( m_denoise->value() );
-    s.demosaic_algorithm =
-        m_demosaic->currentText().toStdString();
+    s.flip               = m_flip->currentData().toInt();
+    s.denoise_threshold  = static_cast<float>( m_denoise->value() );
+    s.demosaic_algorithm = m_demosaic->currentText().toStdString();
 
     s.overwrite   = m_overwrite->isChecked();
     s.create_dirs = m_createDirs->isChecked();
@@ -1111,15 +1104,13 @@ rta::util::ImageConverter::Settings MainWindow::buildSettingsFromUi() const
             s.lens_correction_types |= S::LensCorrectionType::Vignetting;
         }
         s.require_lens_correction = m_requireLens->isChecked();
-        if ( m_lensMetadataOverride != nullptr
-             && m_lensMetadataOverride->isChecked() )
+        if ( m_lensMetadataOverride != nullptr &&
+             m_lensMetadataOverride->isChecked() )
         {
             s.custom_lens_make  = m_lensMake->text().toStdString();
             s.custom_lens_model = m_lensModel->text().toStdString();
-            s.custom_aperture =
-                static_cast<float>( m_lensAperture->value() );
-            s.custom_focal_length =
-                static_cast<float>( m_lensFocal->value() );
+            s.custom_aperture   = static_cast<float>( m_lensAperture->value() );
+            s.custom_focal_length = static_cast<float>( m_lensFocal->value() );
             s.custom_focus_distance =
                 static_cast<float>( m_lensFocus->value() );
         }
@@ -1178,7 +1169,7 @@ void MainWindow::updateWbMethodDependentUi()
     {
         return;
     }
-    const int idx = m_wbMethod->currentIndex();
+    const int  idx             = m_wbMethod->currentIndex();
     const bool showIlluminant  = ( idx == 1 );
     const bool showBoxRegion   = ( idx == 2 );
     const bool showCustomGains = ( idx == 3 );
@@ -1244,9 +1235,8 @@ void MainWindow::onAddFolder()
         return;
     }
     const std::vector<std::string> paths = { dir.toStdString() };
-    const auto                       batches =
-        rta::util::collect_image_files( paths );
-    const QStringList flat = flattenBatches( batches );
+    const auto        batches = rta::util::collect_image_files( paths );
+    const QStringList flat    = flattenBatches( batches );
     for ( const QString &f: flat )
     {
         m_fileList->addItem( f );
@@ -1305,23 +1295,27 @@ void MainWindow::onConvert()
     appendLog( tr( "Starting batch (%1 files)…" ).arg( paths.size() ) );
 
     auto *thread = new ConversionThread( this );
-    m_worker = thread;
-    connect( thread,
-             &ConversionThread::fileStarted,
-             this,
-             &MainWindow::onConversionFileStarted );
-    connect( thread,
-             &ConversionThread::fileFinished,
-             this,
-             &MainWindow::onConversionFileFinished );
-    connect( thread,
-             &ConversionThread::progress,
-             this,
-             &MainWindow::onConversionProgress );
-    connect( thread,
-             &ConversionThread::batchFinished,
-             this,
-             &MainWindow::onBatchFinished );
+    m_worker     = thread;
+    connect(
+        thread,
+        &ConversionThread::fileStarted,
+        this,
+        &MainWindow::onConversionFileStarted );
+    connect(
+        thread,
+        &ConversionThread::fileFinished,
+        this,
+        &MainWindow::onConversionFileFinished );
+    connect(
+        thread,
+        &ConversionThread::progress,
+        this,
+        &MainWindow::onConversionProgress );
+    connect(
+        thread,
+        &ConversionThread::batchFinished,
+        this,
+        &MainWindow::onBatchFinished );
     connect( thread, &QThread::finished, thread, &QObject::deleteLater );
 
     thread->setJob( settings, paths );
@@ -1380,7 +1374,7 @@ void MainWindow::onAbout()
 
 namespace
 {
-constexpr auto kPrefsRootQLS        = "rawtoaces_gui";
+constexpr auto kPrefsRootQLS       = "rawtoaces_gui";
 constexpr int  kPrefsFormatVersion = 1;
 
 void setComboBoxIndexClamped( QComboBox *comboBox, int index )
@@ -1389,8 +1383,7 @@ void setComboBoxIndexClamped( QComboBox *comboBox, int index )
     {
         return;
     }
-    comboBox->setCurrentIndex(
-        qBound( 0, index, comboBox->count() - 1 ) );
+    comboBox->setCurrentIndex( qBound( 0, index, comboBox->count() - 1 ) );
 }
 
 void setComboBoxCurrentByIntData( QComboBox *comboBox, int value )
@@ -1426,61 +1419,60 @@ void MainWindow::savePreferences() const
 {
     QSettings settings;
     settings.beginGroup( kPrefsRootQLS );
-    settings.setValue( QStringLiteral( "formatVersion" ),
-                       kPrefsFormatVersion );
+    settings.setValue( QStringLiteral( "formatVersion" ), kPrefsFormatVersion );
 
     settings.beginGroup( QStringLiteral( "window" ) );
     settings.setValue( QStringLiteral( "geometry" ), saveGeometry() );
     if ( m_mainSplitter != nullptr )
     {
-        settings.setValue( QStringLiteral( "splitter" ),
-                           m_mainSplitter->saveState() );
+        settings.setValue(
+            QStringLiteral( "splitter" ), m_mainSplitter->saveState() );
     }
     if ( m_settingsTabs != nullptr )
     {
-        settings.setValue( QStringLiteral( "settingsTab" ),
-                           m_settingsTabs->currentIndex() );
+        settings.setValue(
+            QStringLiteral( "settingsTab" ), m_settingsTabs->currentIndex() );
     }
     settings.endGroup();
 
     settings.beginGroup( QStringLiteral( "paths" ) );
     if ( m_outputDir != nullptr )
     {
-        settings.setValue( QStringLiteral( "outputDir" ),
-                           m_outputDir->text() );
+        settings.setValue( QStringLiteral( "outputDir" ), m_outputDir->text() );
     }
     if ( m_dataDir != nullptr )
     {
-        settings.setValue( QStringLiteral( "spectralDataOverride" ),
-                           m_dataDir->text() );
+        settings.setValue(
+            QStringLiteral( "spectralDataOverride" ), m_dataDir->text() );
     }
     settings.endGroup();
 
     settings.beginGroup( QStringLiteral( "colour" ) );
     if ( m_wbMethod != nullptr )
     {
-        settings.setValue( QStringLiteral( "wbMethodIndex" ),
-                           m_wbMethod->currentIndex() );
+        settings.setValue(
+            QStringLiteral( "wbMethodIndex" ), m_wbMethod->currentIndex() );
     }
     if ( m_illuminant != nullptr )
     {
-        settings.setValue( QStringLiteral( "illuminant" ),
-                           m_illuminant->text() );
+        settings.setValue(
+            QStringLiteral( "illuminant" ), m_illuminant->text() );
     }
     for ( int i = 0; i < 4 && m_wbBox[i] != nullptr; ++i )
     {
-        settings.setValue( QStringLiteral( "wbBox%1" ).arg( i ),
-                           m_wbBox[i]->value() );
+        settings.setValue(
+            QStringLiteral( "wbBox%1" ).arg( i ), m_wbBox[i]->value() );
     }
     for ( int i = 0; i < 4 && m_customWb[i] != nullptr; ++i )
     {
-        settings.setValue( QStringLiteral( "customWb%1" ).arg( i ),
-                           m_customWb[i]->value() );
+        settings.setValue(
+            QStringLiteral( "customWb%1" ).arg( i ), m_customWb[i]->value() );
     }
     if ( m_matrixMethod != nullptr )
     {
-        settings.setValue( QStringLiteral( "matrixMethodIndex" ),
-                           m_matrixMethod->currentIndex() );
+        settings.setValue(
+            QStringLiteral( "matrixMethodIndex" ),
+            m_matrixMethod->currentIndex() );
     }
     for ( int r = 0; r < 3; ++r )
     {
@@ -1496,18 +1488,18 @@ void MainWindow::savePreferences() const
     }
     if ( m_customCameraMake != nullptr )
     {
-        settings.setValue( QStringLiteral( "customCameraMake" ),
-                           m_customCameraMake->text() );
+        settings.setValue(
+            QStringLiteral( "customCameraMake" ), m_customCameraMake->text() );
     }
     if ( m_customCameraModel != nullptr )
     {
-        settings.setValue( QStringLiteral( "customCameraModel" ),
-                           m_customCameraModel->text() );
+        settings.setValue(
+            QStringLiteral( "customCameraModel" ),
+            m_customCameraModel->text() );
     }
     if ( m_headroom != nullptr )
     {
-        settings.setValue( QStringLiteral( "headroom" ),
-                           m_headroom->value() );
+        settings.setValue( QStringLiteral( "headroom" ), m_headroom->value() );
     }
     if ( m_scale != nullptr )
     {
@@ -1518,33 +1510,35 @@ void MainWindow::savePreferences() const
     settings.beginGroup( QStringLiteral( "raw" ) );
     if ( m_autoBright != nullptr )
     {
-        settings.setValue( QStringLiteral( "autoBright" ),
-                           m_autoBright->isChecked() );
+        settings.setValue(
+            QStringLiteral( "autoBright" ), m_autoBright->isChecked() );
     }
     if ( m_adjustMaximum != nullptr )
     {
-        settings.setValue( QStringLiteral( "adjustMaximum" ),
-                           m_adjustMaximum->value() );
+        settings.setValue(
+            QStringLiteral( "adjustMaximum" ), m_adjustMaximum->value() );
     }
     if ( m_blackLevelFromMetadata != nullptr )
     {
-        settings.setValue( QStringLiteral( "blackLevelFromMetadata" ),
-                           m_blackLevelFromMetadata->isChecked() );
+        settings.setValue(
+            QStringLiteral( "blackLevelFromMetadata" ),
+            m_blackLevelFromMetadata->isChecked() );
     }
     if ( m_blackLevel != nullptr )
     {
-        settings.setValue( QStringLiteral( "blackLevel" ),
-                           m_blackLevel->value() );
+        settings.setValue(
+            QStringLiteral( "blackLevel" ), m_blackLevel->value() );
     }
     if ( m_saturationFromMetadata != nullptr )
     {
-        settings.setValue( QStringLiteral( "saturationFromMetadata" ),
-                           m_saturationFromMetadata->isChecked() );
+        settings.setValue(
+            QStringLiteral( "saturationFromMetadata" ),
+            m_saturationFromMetadata->isChecked() );
     }
     if ( m_saturationLevel != nullptr )
     {
-        settings.setValue( QStringLiteral( "saturationLevel" ),
-                           m_saturationLevel->value() );
+        settings.setValue(
+            QStringLiteral( "saturationLevel" ), m_saturationLevel->value() );
     }
     if ( m_chromaR != nullptr )
     {
@@ -1556,28 +1550,29 @@ void MainWindow::savePreferences() const
     }
     if ( m_halfSize != nullptr )
     {
-        settings.setValue( QStringLiteral( "halfSize" ),
-                           m_halfSize->isChecked() );
+        settings.setValue(
+            QStringLiteral( "halfSize" ), m_halfSize->isChecked() );
     }
     if ( m_highlightMode != nullptr )
     {
-        settings.setValue( QStringLiteral( "highlightMode" ),
-                           m_highlightMode->currentData().toInt() );
+        settings.setValue(
+            QStringLiteral( "highlightMode" ),
+            m_highlightMode->currentData().toInt() );
     }
     for ( int i = 0; i < 4 && m_cropBox[i] != nullptr; ++i )
     {
-        settings.setValue( QStringLiteral( "cropBox%1" ).arg( i ),
-                           m_cropBox[i]->value() );
+        settings.setValue(
+            QStringLiteral( "cropBox%1" ).arg( i ), m_cropBox[i]->value() );
     }
     if ( m_cropMode != nullptr )
     {
-        settings.setValue( QStringLiteral( "cropModeIndex" ),
-                           m_cropMode->currentIndex() );
+        settings.setValue(
+            QStringLiteral( "cropModeIndex" ), m_cropMode->currentIndex() );
     }
     if ( m_flip != nullptr )
     {
-        settings.setValue( QStringLiteral( "flip" ),
-                           m_flip->currentData().toInt() );
+        settings.setValue(
+            QStringLiteral( "flip" ), m_flip->currentData().toInt() );
     }
     if ( m_denoise != nullptr )
     {
@@ -1585,39 +1580,40 @@ void MainWindow::savePreferences() const
     }
     if ( m_demosaic != nullptr )
     {
-        settings.setValue( QStringLiteral( "demosaicAlgorithm" ),
-                           m_demosaic->currentText() );
+        settings.setValue(
+            QStringLiteral( "demosaicAlgorithm" ), m_demosaic->currentText() );
     }
     settings.endGroup();
 
     settings.beginGroup( QStringLiteral( "output" ) );
     if ( m_overwrite != nullptr )
     {
-        settings.setValue( QStringLiteral( "overwrite" ),
-                           m_overwrite->isChecked() );
+        settings.setValue(
+            QStringLiteral( "overwrite" ), m_overwrite->isChecked() );
     }
     if ( m_createDirs != nullptr )
     {
-        settings.setValue( QStringLiteral( "createDirs" ),
-                           m_createDirs->isChecked() );
+        settings.setValue(
+            QStringLiteral( "createDirs" ), m_createDirs->isChecked() );
     }
     settings.endGroup();
 
     settings.beginGroup( QStringLiteral( "diagnostics" ) );
     if ( m_useTiming != nullptr )
     {
-        settings.setValue( QStringLiteral( "useTiming" ),
-                           m_useTiming->isChecked() );
+        settings.setValue(
+            QStringLiteral( "useTiming" ), m_useTiming->isChecked() );
     }
     if ( m_disableCache != nullptr )
     {
-        settings.setValue( QStringLiteral( "disableCache" ),
-                           m_disableCache->isChecked() );
+        settings.setValue(
+            QStringLiteral( "disableCache" ), m_disableCache->isChecked() );
     }
     if ( m_disableExiftool != nullptr )
     {
-        settings.setValue( QStringLiteral( "disableExiftool" ),
-                           m_disableExiftool->isChecked() );
+        settings.setValue(
+            QStringLiteral( "disableExiftool" ),
+            m_disableExiftool->isChecked() );
     }
     if ( m_verbosity != nullptr )
     {
@@ -1631,26 +1627,28 @@ void MainWindow::savePreferences() const
     if ( m_lensCorrAberration != nullptr )
     {
         settings.beginGroup( QStringLiteral( "lens" ) );
-        settings.setValue( QStringLiteral( "corrAberration" ),
-                             m_lensCorrAberration->isChecked() );
-        settings.setValue( QStringLiteral( "corrDistortion" ),
-                             m_lensCorrDistortion->isChecked() );
-        settings.setValue( QStringLiteral( "corrVignetting" ),
-                             m_lensCorrVignetting->isChecked() );
-        settings.setValue( QStringLiteral( "requireLens" ),
-                             m_requireLens->isChecked() );
-        settings.setValue( QStringLiteral( "lensMetadataOverride" ),
-                             m_lensMetadataOverride->isChecked() );
-        settings.setValue( QStringLiteral( "lensMake" ),
-                             m_lensMake->text() );
-        settings.setValue( QStringLiteral( "lensModel" ),
-                             m_lensModel->text() );
-        settings.setValue( QStringLiteral( "lensAperture" ),
-                             m_lensAperture->value() );
-        settings.setValue( QStringLiteral( "lensFocal" ),
-                             m_lensFocal->value() );
-        settings.setValue( QStringLiteral( "lensFocus" ),
-                             m_lensFocus->value() );
+        settings.setValue(
+            QStringLiteral( "corrAberration" ),
+            m_lensCorrAberration->isChecked() );
+        settings.setValue(
+            QStringLiteral( "corrDistortion" ),
+            m_lensCorrDistortion->isChecked() );
+        settings.setValue(
+            QStringLiteral( "corrVignetting" ),
+            m_lensCorrVignetting->isChecked() );
+        settings.setValue(
+            QStringLiteral( "requireLens" ), m_requireLens->isChecked() );
+        settings.setValue(
+            QStringLiteral( "lensMetadataOverride" ),
+            m_lensMetadataOverride->isChecked() );
+        settings.setValue( QStringLiteral( "lensMake" ), m_lensMake->text() );
+        settings.setValue( QStringLiteral( "lensModel" ), m_lensModel->text() );
+        settings.setValue(
+            QStringLiteral( "lensAperture" ), m_lensAperture->value() );
+        settings.setValue(
+            QStringLiteral( "lensFocal" ), m_lensFocal->value() );
+        settings.setValue(
+            QStringLiteral( "lensFocus" ), m_lensFocus->value() );
         settings.endGroup();
     }
 #endif
@@ -1716,15 +1714,17 @@ void MainWindow::loadPreferences()
     {
         m_wbBox[i]->setValue(
             settings
-                .value( QStringLiteral( "wbBox%1" ).arg( i ), m_wbBox[i]->value() )
+                .value(
+                    QStringLiteral( "wbBox%1" ).arg( i ), m_wbBox[i]->value() )
                 .toInt() );
     }
     for ( int i = 0; i < 4 && m_customWb[i] != nullptr; ++i )
     {
         m_customWb[i]->setValue(
             settings
-                .value( QStringLiteral( "customWb%1" ).arg( i ),
-                        m_customWb[i]->value() )
+                .value(
+                    QStringLiteral( "customWb%1" ).arg( i ),
+                    m_customWb[i]->value() )
                 .toDouble() );
     }
     setComboBoxIndexClamped(
@@ -1738,10 +1738,11 @@ void MainWindow::loadPreferences()
             {
                 m_customMat[r][c]->setValue(
                     settings
-                        .value( QStringLiteral( "customMatrix_%1_%2" )
-                                    .arg( r )
-                                    .arg( c ),
-                                m_customMat[r][c]->value() )
+                        .value(
+                            QStringLiteral( "customMatrix_%1_%2" )
+                                .arg( r )
+                                .arg( c ),
+                            m_customMat[r][c]->value() )
                         .toDouble() );
             }
         }
@@ -1749,8 +1750,7 @@ void MainWindow::loadPreferences()
     if ( m_customCameraMake != nullptr )
     {
         m_customCameraMake->setText(
-            settings.value( QStringLiteral( "customCameraMake" ) )
-                .toString() );
+            settings.value( QStringLiteral( "customCameraMake" ) ).toString() );
     }
     if ( m_customCameraModel != nullptr )
     {
@@ -1776,24 +1776,26 @@ void MainWindow::loadPreferences()
     if ( m_autoBright != nullptr )
     {
         m_autoBright->setChecked(
-            settings.value( QStringLiteral( "autoBright" ),
-                            m_autoBright->isChecked() )
+            settings
+                .value(
+                    QStringLiteral( "autoBright" ), m_autoBright->isChecked() )
                 .toBool() );
     }
     if ( m_adjustMaximum != nullptr )
     {
-        m_adjustMaximum->setValue(
-            settings
-                .value( QStringLiteral( "adjustMaximum" ),
-                        m_adjustMaximum->value() )
-                .toDouble() );
+        m_adjustMaximum->setValue( settings
+                                       .value(
+                                           QStringLiteral( "adjustMaximum" ),
+                                           m_adjustMaximum->value() )
+                                       .toDouble() );
     }
     if ( m_blackLevelFromMetadata != nullptr )
     {
         m_blackLevelFromMetadata->setChecked(
             settings
-                .value( QStringLiteral( "blackLevelFromMetadata" ),
-                        m_blackLevelFromMetadata->isChecked() )
+                .value(
+                    QStringLiteral( "blackLevelFromMetadata" ),
+                    m_blackLevelFromMetadata->isChecked() )
                 .toBool() );
     }
     if ( m_blackLevel != nullptr )
@@ -1807,16 +1809,18 @@ void MainWindow::loadPreferences()
     {
         m_saturationFromMetadata->setChecked(
             settings
-                .value( QStringLiteral( "saturationFromMetadata" ),
-                        m_saturationFromMetadata->isChecked() )
+                .value(
+                    QStringLiteral( "saturationFromMetadata" ),
+                    m_saturationFromMetadata->isChecked() )
                 .toBool() );
     }
     if ( m_saturationLevel != nullptr )
     {
         m_saturationLevel->setValue(
             settings
-                .value( QStringLiteral( "saturationLevel" ),
-                        m_saturationLevel->value() )
+                .value(
+                    QStringLiteral( "saturationLevel" ),
+                    m_saturationLevel->value() )
                 .toInt() );
     }
     if ( m_chromaR != nullptr )
@@ -1834,25 +1838,26 @@ void MainWindow::loadPreferences()
     if ( m_halfSize != nullptr )
     {
         m_halfSize->setChecked(
-            settings.value( QStringLiteral( "halfSize" ),
-                            m_halfSize->isChecked() )
+            settings
+                .value( QStringLiteral( "halfSize" ), m_halfSize->isChecked() )
                 .toBool() );
     }
     if ( m_highlightMode != nullptr )
     {
         const int v = settings
-                          .value( QStringLiteral( "highlightMode" ),
-                                  m_highlightMode->currentData().toInt() )
+                          .value(
+                              QStringLiteral( "highlightMode" ),
+                              m_highlightMode->currentData().toInt() )
                           .toInt();
         setComboBoxCurrentByIntData( m_highlightMode, std::clamp( v, 0, 9 ) );
     }
     for ( int i = 0; i < 4 && m_cropBox[i] != nullptr; ++i )
     {
-        m_cropBox[i]->setValue(
-            settings
-                .value( QStringLiteral( "cropBox%1" ).arg( i ),
-                        m_cropBox[i]->value() )
-                .toInt() );
+        m_cropBox[i]->setValue( settings
+                                    .value(
+                                        QStringLiteral( "cropBox%1" ).arg( i ),
+                                        m_cropBox[i]->value() )
+                                    .toInt() );
     }
     setComboBoxIndexClamped(
         m_cropMode,
@@ -1861,8 +1866,8 @@ void MainWindow::loadPreferences()
     {
         const int v =
             settings
-                .value( QStringLiteral( "flip" ),
-                        m_flip->currentData().toInt() )
+                .value(
+                    QStringLiteral( "flip" ), m_flip->currentData().toInt() )
                 .toInt();
         setComboBoxCurrentByIntData( m_flip, std::clamp( v, 0, 8 ) );
     }
@@ -1875,8 +1880,7 @@ void MainWindow::loadPreferences()
     if ( m_demosaic != nullptr )
     {
         const QString algo =
-            settings.value( QStringLiteral( "demosaicAlgorithm" ) )
-                .toString();
+            settings.value( QStringLiteral( "demosaicAlgorithm" ) ).toString();
         if ( !algo.isEmpty() )
         {
             const int demosaicIx = m_demosaic->findText( algo );
@@ -1892,15 +1896,17 @@ void MainWindow::loadPreferences()
     if ( m_overwrite != nullptr )
     {
         m_overwrite->setChecked(
-            settings.value( QStringLiteral( "overwrite" ),
-                            m_overwrite->isChecked() )
+            settings
+                .value(
+                    QStringLiteral( "overwrite" ), m_overwrite->isChecked() )
                 .toBool() );
     }
     if ( m_createDirs != nullptr )
     {
         m_createDirs->setChecked(
-            settings.value( QStringLiteral( "createDirs" ),
-                            m_createDirs->isChecked() )
+            settings
+                .value(
+                    QStringLiteral( "createDirs" ), m_createDirs->isChecked() )
                 .toBool() );
     }
     settings.endGroup();
@@ -1909,22 +1915,26 @@ void MainWindow::loadPreferences()
     if ( m_useTiming != nullptr )
     {
         m_useTiming->setChecked(
-            settings.value( QStringLiteral( "useTiming" ),
-                            m_useTiming->isChecked() )
+            settings
+                .value(
+                    QStringLiteral( "useTiming" ), m_useTiming->isChecked() )
                 .toBool() );
     }
     if ( m_disableCache != nullptr )
     {
-        m_disableCache->setChecked(
-            settings.value( QStringLiteral( "disableCache" ),
-                            m_disableCache->isChecked() )
-                .toBool() );
+        m_disableCache->setChecked( settings
+                                        .value(
+                                            QStringLiteral( "disableCache" ),
+                                            m_disableCache->isChecked() )
+                                        .toBool() );
     }
     if ( m_disableExiftool != nullptr )
     {
         m_disableExiftool->setChecked(
-            settings.value( QStringLiteral( "disableExiftool" ),
-                            m_disableExiftool->isChecked() )
+            settings
+                .value(
+                    QStringLiteral( "disableExiftool" ),
+                    m_disableExiftool->isChecked() )
                 .toBool() );
     }
     if ( m_verbosity != nullptr )
@@ -1940,24 +1950,30 @@ void MainWindow::loadPreferences()
     {
         settings.beginGroup( QStringLiteral( "lens" ) );
         m_lensCorrAberration->setChecked(
-            settings.value( QStringLiteral( "corrAberration" ),
-                            m_lensCorrAberration->isChecked() )
+            settings
+                .value(
+                    QStringLiteral( "corrAberration" ),
+                    m_lensCorrAberration->isChecked() )
                 .toBool() );
         m_lensCorrDistortion->setChecked(
-            settings.value( QStringLiteral( "corrDistortion" ),
-                            m_lensCorrDistortion->isChecked() )
+            settings
+                .value(
+                    QStringLiteral( "corrDistortion" ),
+                    m_lensCorrDistortion->isChecked() )
                 .toBool() );
         m_lensCorrVignetting->setChecked(
-            settings.value( QStringLiteral( "corrVignetting" ),
-                            m_lensCorrVignetting->isChecked() )
-                .toBool() );
-        m_requireLens->setChecked(
-            settings.value( QStringLiteral( "requireLens" ),
-                            m_requireLens->isChecked() )
-                .toBool() );
-        m_lensMetadataOverride->setChecked(
             settings
-                .value( QStringLiteral( "lensMetadataOverride" ), false )
+                .value(
+                    QStringLiteral( "corrVignetting" ),
+                    m_lensCorrVignetting->isChecked() )
+                .toBool() );
+        m_requireLens->setChecked( settings
+                                       .value(
+                                           QStringLiteral( "requireLens" ),
+                                           m_requireLens->isChecked() )
+                                       .toBool() );
+        m_lensMetadataOverride->setChecked(
+            settings.value( QStringLiteral( "lensMetadataOverride" ), false )
                 .toBool() );
         m_lensMake->setText(
             settings.value( QStringLiteral( "lensMake" ) ).toString() );
@@ -1965,8 +1981,8 @@ void MainWindow::loadPreferences()
             settings.value( QStringLiteral( "lensModel" ) ).toString() );
         m_lensAperture->setValue(
             settings
-                .value( QStringLiteral( "lensAperture" ),
-                        m_lensAperture->value() )
+                .value(
+                    QStringLiteral( "lensAperture" ), m_lensAperture->value() )
                 .toDouble() );
         m_lensFocal->setValue(
             settings

@@ -32,4 +32,34 @@ if(WIN32)
     set_target_properties(rawtoaces_gui PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
-install(TARGETS rawtoaces_gui DESTINATION ${INSTALL_BIN_DIR})
+# macOS: build a real .app so Finder/Dock get bundle metadata; menu bar title
+# still uses setApplicationDisplayName in main.cpp.
+if(APPLE)
+    set(RTA_GUI_MACOS_ICON "${CMAKE_CURRENT_SOURCE_DIR}/macos/rawtoaces_gui.icns")
+    set_target_properties(rawtoaces_gui PROPERTIES
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_BUNDLE_NAME "rawtoaces"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "org.aswf.rawtoaces.gui"
+        MACOSX_BUNDLE_INFO_SHORT_VERSION_STRING "${RAWTOACES_VERSION}"
+        MACOSX_BUNDLE_BUNDLE_VERSION "${RAWTOACES_VERSION}"
+    )
+    if(EXISTS "${RTA_GUI_MACOS_ICON}")
+        target_sources(rawtoaces_gui PRIVATE "${RTA_GUI_MACOS_ICON}")
+        set_source_files_properties("${RTA_GUI_MACOS_ICON}" PROPERTIES
+            MACOSX_PACKAGE_LOCATION Resources
+        )
+        # Base name must match Resources/*.icns; same as CFBundleExecutable avoids edge cases.
+        set_target_properties(rawtoaces_gui PROPERTIES
+            MACOSX_BUNDLE_ICON_FILE "rawtoaces_gui"
+        )
+    endif()
+endif()
+
+if(APPLE)
+    install(TARGETS rawtoaces_gui
+        BUNDLE DESTINATION ${INSTALL_BIN_DIR}
+        RUNTIME DESTINATION ${INSTALL_BIN_DIR}
+    )
+else()
+    install(TARGETS rawtoaces_gui DESTINATION ${INSTALL_BIN_DIR})
+endif()

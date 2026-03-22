@@ -4,6 +4,10 @@
 #include "main_window.h"
 
 #include <QApplication>
+#include <QCoreApplication>
+#include <QDir>
+#include <QFile>
+#include <QIcon>
 
 #include <cstdlib>
 
@@ -17,7 +21,20 @@ int main( int argc, char *argv[] )
 
     QApplication application( argc, argv );
     QApplication::setApplicationName( QStringLiteral( "rawtoaces" ) );
+    // macOS menu bar uses the display name (not the .app / executable basename).
+    QApplication::setApplicationDisplayName( QStringLiteral( "rawtoaces" ) );
     QApplication::setOrganizationName( QStringLiteral( "rawtoaces" ) );
+
+#if defined( Q_OS_MACOS )
+    // Qt paints the Dock tile from this pixmap (no system squircle); the .icns uses a
+    // pre-masked squircle alpha from regenerate-macos-icon.sh.
+    const QString icnsPath = QDir{ QCoreApplication::applicationDirPath() }.filePath(
+        QStringLiteral( "../Resources/rawtoaces_gui.icns" ) );
+    if ( QFile::exists( icnsPath ) )
+    {
+        QApplication::setWindowIcon( QIcon( icnsPath ) );
+    }
+#endif
 
     MainWindow mainWindow;
     mainWindow.show();

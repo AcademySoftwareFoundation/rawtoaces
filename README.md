@@ -128,6 +128,7 @@ $ cmake -S . -B build -DRTA_BUILD_GUI=ON -DCMAKE_PREFIX_PATH="$(brew --prefix qt
 $ cmake --build build
 ```
 
+After building, start the GUI from `build/src/rawtoaces_gui/`: use the **`rawtoaces_gui`** program on Windows and Linux, or **`rawtoaces_gui.app`** on macOS. It appears in the menu bar and about box as **rawtoaces**.
 
 #### Docker
 

@@ -26,8 +26,8 @@ int main( int argc, char *argv[] )
     QApplication::setOrganizationName( QStringLiteral( "rawtoaces" ) );
 
 #if defined( Q_OS_MACOS )
-    // Qt paints the Dock tile from this pixmap (no system squircle); the .icns uses a
-    // pre-masked squircle alpha from regenerate-macos-icon.sh.
+    // Qt paints the Dock tile from this pixmap (no system squircle); the .icns carries
+    // transparent corners (squircle)
     const QString icnsPath = QDir{ QCoreApplication::applicationDirPath() }.filePath(
         QStringLiteral( "../Resources/rawtoaces_gui.icns" ) );
     if ( QFile::exists( icnsPath ) )

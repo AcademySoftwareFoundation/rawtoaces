@@ -1,0 +1,69 @@
+name: GUI
+
+permissions:
+  contents: read
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  gui-ubuntu:
+    name: "GUI Ubuntu"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -q install -y \
+            libceres-dev \
+            nlohmann-json3-dev \
+            libopencv-dev \
+            openimageio-tools libopenimageio-dev \
+            exiftool \
+            liblensfun-dev \
+            liblensfun-data-v1 \
+            qt6-base-dev \
+            qt6-base-dev-tools
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -D CMAKE_BUILD_TYPE=Release
+          -D RTA_BUILD_GUI=ON
+          -D RTA_BUILD_TESTS=ON
+          -D RTA_BUILD_PYTHON_BINDINGS=OFF
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Binary smoke
+        run: test -x build/src/rawtoaces_gui/rawtoaces_gui
+
+  gui-macos:
+    name: "GUI macOS"
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Dependencies
+        run: |
+          brew install cmake ceres-solver nlohmann-json openimageio nanobind robin-map qt@6 exiftool lensfun
+          python3 -m pip install --break-system-packages pytest || python3 -m pip install pytest
+
+      - name: Configure
+        run: |
+          QT_PREFIX="$(brew --prefix qt@6)"
+          cmake -S . -B build \
+            -D CMAKE_BUILD_TYPE=Release \
+            -D RTA_BUILD_GUI=ON \
+            -D RTA_BUILD_TESTS=ON \
+            -D CMAKE_PREFIX_PATH="$QT_PREFIX"
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Binary smoke
+        run: test -x build/src/rawtoaces_gui/rawtoaces_gui

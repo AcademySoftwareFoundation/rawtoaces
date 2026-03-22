@@ -3,6 +3,7 @@
 </p>
 
 [![CI](https://github.com/AcademySoftwareFoundation/rawtoaces/actions/workflows/ci.yml/badge.svg)](https://github.com/AcademySoftwareFoundation/rawtoaces/actions/workflows/ci.yml)
+[![GUI](https://github.com/AcademySoftwareFoundation/rawtoaces/actions/workflows/gui.yml/badge.svg)](https://github.com/AcademySoftwareFoundation/rawtoaces/actions/workflows/gui.yml)
 [![Code scanning – CodeQL](https://github.com/AcademySoftwareFoundation/rawtoaces/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/AcademySoftwareFoundation/rawtoaces/actions/workflows/github-code-scanning/codeql)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/11185/badge)](https://www.bestpractices.dev/projects/11185)
 [![codecov](https://codecov.io/gh/AcademySoftwareFoundation/rawtoaces/branch/main/graph/badge.svg)](https://codecov.io/gh/AcademySoftwareFoundation/rawtoaces)
@@ -35,8 +36,9 @@ The source code contains the following:
 * [`config/`](./config) - CMake configuration files
 * [`docs/`](./docs) - Credits and changes information
 * [`include/`](./include) - Public header files for the `rawtoaces` library
-* [`src/`](./src) - Source code for the core library, utility library, and the command line tool
+* [`src/`](./src) - Source code for the core library, utility library, command line tool, and optional Qt GUI (`rawtoaces_gui`)
 * [`unittest/`](./unittest) - Unit tests for `rawtoaces`
+
 
 ## Prerequisites
 
@@ -44,7 +46,8 @@ To build `rawtoaces` you would need to satisfy these dependencies:
 
 | Library          | Min Version| Purpose  | Link to installation instruction |
 | -------          | -----------| -------- | -------------------------------- |
-| `cmake`          | `3.12`     | | [CMake download](https://cmake.org/download/)|
+| `cmake`          | `3.16`     | | [CMake download](https://cmake.org/download/)|
+| Qt 6 (optional)  | `6.5`      | Widgets module for `rawtoaces_gui` | [Qt documentation](https://doc.qt.io/qt-6/) |
 | `ceres`          | `1.12.0`   | Ceres Solver is an open source library for solving Non-linear Least Squares problems with bounds constraints and unconstrained optimization problems. It processes non-linear regression for rawtoaces.  | [Ceres Solver installation](http://ceres-solver.org/installation.html)|
 | `OpenImageIO`    | `3.0`      | OpenImageIO is an open source library providing vast functionality for image processing. rawtoaces relies on OpenImageIO for reading raw files, saving AcesContainer files, and also all pixel operations.  | [OpenImageIO installation](https://github.com/AcademySoftwareFoundation/OpenImageIO/blob/main/INSTALL.md) |
 | `nlohmann-json`  | `3.6`      | nlohmann-json is a simple header-only library for parsing JSON files. | [nlohmann-json integration](https://github.com/nlohmann/json#integration) |
@@ -115,6 +118,16 @@ $ sudo cmake --install build # Optional if you want it to be accessible system w
 ```
 
 The default process will install `librawtoaces_core_${rawtoaces_version}.dylib` and `librawtoaces_util_${rawtoaces_version}.dylib` to `/usr/local/lib`, a few header files to `/usr/local/include/rawtoaces` and a number of data files into `/usr/local/include/rawtoaces/data`.
+
+#### Qt GUI (optional)
+
+Build the desktop application `rawtoaces_gui` with `-DRTA_BUILD_GUI=ON` (requires Qt 6 Widgets). On macOS with Homebrew Qt, point CMake at the prefix, for example:
+
+```sh
+$ cmake -S . -B build -DRTA_BUILD_GUI=ON -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)"
+$ cmake --build build
+```
+
 
 #### Docker
 

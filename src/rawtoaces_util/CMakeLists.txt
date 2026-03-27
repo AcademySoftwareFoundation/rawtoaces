@@ -21,6 +21,7 @@ add_library ( ${RAWTOACES_UTIL_LIB} ${DO_SHARED}
     colour_transforms.h
     exiftool.cpp
     exiftool.h
+    rawtoaces_util_priv.h
     
     $<$<BOOL:${RTA_ENABLE_LENSFUN}>:
         lens_correction.cpp

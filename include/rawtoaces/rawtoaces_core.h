@@ -91,6 +91,25 @@ public:
     std::vector<std::string>
     collect_data_files( const std::string &type ) const;
 
+    /// A helper method collecting aliases of a given type from the database.
+    /// This function searches through the configured search directories to
+    /// find all make/model aliases of the specified type ("camera" is the only
+    /// currently supported type).
+    ///
+    /// @param type type of the aliases to search for (e.g., "camera")
+    /// @param make_aliases output parameter referencing the map
+    /// to be filled with the found make aliases.
+    /// @param model_aliases output parameter referencing the map
+    /// to be filled with the found model aliases.
+    /// @return `true` on success.
+    bool collect_aliases(
+        const std::string                  &type,
+        std::map<std::string, std::string> &make_aliases,
+        std::map<
+            std::string,
+            std::map<std::string, std::pair<std::string, std::string>>>
+            &model_aliases ) const;
+
     /// A helper method loading the spectral data for a file at the given path.
     /// This function loads spectral data from a file, handling both absolute and relative paths.
     /// For relative paths, it searches through all configured search directories.

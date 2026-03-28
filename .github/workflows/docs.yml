@@ -1,21 +1,25 @@
 # Documentation build and deployment workflow
-# Builds documentation using Doxygen + Sphinx + Breathe
-# Deploys to GitHub Pages on pushes to main branch
+# Builds documentation for the default branch and release tags.
+# Deploys a combined versioned site to GitHub Pages.
 
 name: Documentation
 
 on:
   push:
     branches: [ "main" ]
+    tags:
+      - 'v*'
     paths:
-      - 'docs/**'
+      - 'src/docs/**'
       - 'include/**'
       - '.github/workflows/docs.yml'
+      - 'build_scripts/build_versioned_docs.py'
   pull_request:
     paths:
-      - 'docs/**'
+      - 'src/docs/**'
       - 'include/**'
       - '.github/workflows/docs.yml'
+      - 'build_scripts/build_versioned_docs.py'
   # Allow manual trigger
   workflow_dispatch:
 
@@ -36,6 +40,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
 
       - name: Install Doxygen
         run: |
@@ -52,33 +58,27 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r src/docs/requirements.txt
 
-      - name: Build Doxygen XML
-        working-directory: src/docs
-        run: doxygen Doxyfile
-
-      - name: Build Sphinx HTML
-        working-directory: src/docs
+      - name: Build versioned documentation site
         run: |
-          sphinx-build -b html -D breathe_projects.rawtoaces=doxygen/xml . _build/html
+          python build_scripts/build_versioned_docs.py --repo-root . --output-dir site
 
       - name: Upload artifact for GitHub Pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
-          path: src/docs/_build/html
+          path: site
 
       - name: Upload artifact for manual builds
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
-          path: src/docs/_build/html
+          path: site
           name: rawtoaces-documentation
           retention-days: 5
     
 
   deploy-docs:
-    # Only deploy on push to main
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push'
     needs: build-docs
     runs-on: ubuntu-latest
     

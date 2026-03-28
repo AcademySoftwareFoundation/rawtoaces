@@ -18,7 +18,6 @@ class QPushButton;
 class QProgressBar;
 class QTextEdit;
 class QTabWidget;
-class QSplitter;
 class QCloseEvent;
 class QLabel;
 class ConversionThread;
@@ -67,7 +66,6 @@ private:
     QProgressBar *m_progress      = nullptr;
     QTextEdit    *m_log           = nullptr;
 
-    QSplitter  *m_mainSplitter = nullptr;
     QTabWidget *m_settingsTabs = nullptr;
 
     QComboBox      *m_wbMethod     = nullptr;

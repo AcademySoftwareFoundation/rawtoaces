@@ -23,13 +23,13 @@
 #include <QScrollArea>
 #include <QSettings>
 #include <QSizePolicy>
-#include <QSplitter>
 #include <QSpinBox>
 #include <QDoubleSpinBox>
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QTabWidget>
 #include <QTextEdit>
+#include <QToolButton>
 #include <QVBoxLayout>
 #include <QCloseEvent>
 
@@ -69,10 +69,16 @@ constexpr int kStdNumericFieldWidth = 112;
 /// Inset from the scroll viewport edges on settings tabs (Raw, Colour, Lens,
 /// Output). Vertical gaps between sections do **not** use `QVBoxLayout::spacing`
 /// because each `QGroupBox` carries style-dependent chrome; instead each
-/// **logical** block (including one full two-column row) sits in
+/// **logical** block (including a vertical stack of group boxes) sits in
 /// `wrapSettingsSectionTail` with a fixed bottom margin (`kSettingsSectionTailGap`).
 constexpr int kSettingsTabPageMargin  = 6;
 constexpr int kSettingsSectionTailGap = 6;
+
+/// Vertical gap between collapsible blocks on Basic / Advanced tabs.
+constexpr int kCollapsibleTabSectionSpacing = 12;
+
+/// Inset around the main tab widget and the bottom Convert / progress row.
+constexpr int kCentralChromeMargin = 10;
 
 void applySettingsTabPageMarginsOnly( QVBoxLayout *outerColumn )
 {
@@ -93,10 +99,12 @@ void applySettingsTabPageChrome( QVBoxLayout *outerColumn )
     outerColumn->setSpacing( 0 );
 }
 
-/// Uniform space **below** a settings “section” (one full-width group or one
-/// entire side-by-side row). Style engine margins on `QGroupBox` differ by
-/// width and pairing; this wrapper is the single place that defines rhythm.
-QWidget *wrapSettingsSectionTail( QWidget *content )
+/// Uniform space **below** a settings “section” (one full-width group or a
+/// stacked block of groups). Style engine margins on `QGroupBox` differ;
+/// this wrapper is the single place that defines rhythm.
+/// `contentStretchInTail` > 0 lets the content fill extra height inside the
+/// wrapper (e.g. Input files on the Inputs tab).
+QWidget *wrapSettingsSectionTail( QWidget *content, int contentStretchInTail = 0 )
 {
     if ( content == nullptr )
     {
@@ -106,22 +114,8 @@ QWidget *wrapSettingsSectionTail( QWidget *content )
     auto *lay  = new QVBoxLayout( wrap );
     lay->setContentsMargins( 0, 0, 0, kSettingsSectionTailGap );
     lay->setSpacing( 0 );
-    lay->addWidget( content );
+    lay->addWidget( content, contentStretchInTail );
     return wrap;
-}
-
-/// `QHBoxLayout` + `Qt::AlignTop` keeps each `QGroupBox` at its content height
-/// while the row height follows the taller column, leaving bare space under the
-/// short box (looks like extra padding above the next full-width section).
-/// Filling the row vertically keeps both frames aligned; inner forms stay
-/// top-pinned via `mountFormInGroupBox`.
-void styleGroupBoxForSettingsRowPair( QGroupBox *box )
-{
-    if ( box == nullptr )
-    {
-        return;
-    }
-    box->setSizePolicy( QSizePolicy::Preferred, QSizePolicy::MinimumExpanding );
 }
 
 QWidget *wrapScroll( QWidget *inner )
@@ -131,6 +125,54 @@ QWidget *wrapScroll( QWidget *inner )
     scroll->setFrameShape( QFrame::NoFrame );
     scroll->setWidget( inner );
     return scroll;
+}
+
+/// Qt Widgets has no collapsible `QGroupBox`; a checkable `QToolButton` header
+/// with a disclosure arrow is the usual pattern. `body` holds the form fields
+/// (no inner `QGroupBox` frame — the header is the section chrome).
+QWidget *wrapCollapsibleSection(
+    QWidget *body, const QString &title, bool expandedByDefault = true )
+{
+    if ( body == nullptr )
+    {
+        return nullptr;
+    }
+
+    auto *section = new QWidget;
+    auto *vlay    = new QVBoxLayout( section );
+    vlay->setContentsMargins( 0, 0, 0, 0 );
+    vlay->setSpacing( 4 );
+
+    auto *toggle = new QToolButton;
+    toggle->setText( title );
+    toggle->setCheckable( true );
+    toggle->setChecked( expandedByDefault );
+    toggle->setToolButtonStyle( Qt::ToolButtonTextBesideIcon );
+    toggle->setArrowType(
+        expandedByDefault ? Qt::DownArrow : Qt::RightArrow );
+    body->setVisible( expandedByDefault );
+    toggle->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Fixed );
+    toggle->setAutoRaise( true );
+    toggle->setFocusPolicy( Qt::StrongFocus );
+    {
+        QFont headerFont = toggle->font();
+        headerFont.setBold( true );
+        toggle->setFont( headerFont );
+    }
+    toggle->setAccessibleName( title );
+
+    QObject::connect(
+        toggle,
+        &QToolButton::toggled,
+        section,
+        [toggle, body]( bool expanded ) {
+            body->setVisible( expanded );
+            toggle->setArrowType( expanded ? Qt::DownArrow : Qt::RightArrow );
+        } );
+
+    vlay->addWidget( toggle );
+    vlay->addWidget( body );
+    return section;
 }
 
 /// Fixed pixel width for compact numeric fields. Uses setFixedWidth (not only
@@ -206,15 +248,16 @@ void alignFormFieldTopForField( QFormLayout *form, QWidget *field )
 }
 
 /// macOS often stretches a `QFormLayout` that is the direct layout of a wide
-/// `QGroupBox`, centering short rows. Put the form on a child widget with
-/// horizontal Maximum width and anchor it to the top-leading corner.
-void mountFormInGroupBox( QGroupBox *group, QFormLayout **outForm )
+/// Form in a plain host with narrow field column (Maximum width), anchored
+/// top-leading — same layout pattern as former `QGroupBox` forms without frame.
+void mountFormInWidget( QWidget *host, QFormLayout **outForm )
 {
-    if ( group == nullptr || outForm == nullptr )
+    if ( host == nullptr || outForm == nullptr )
     {
         return;
     }
-    auto *outer = new QVBoxLayout( group );
+    auto *outer = new QVBoxLayout( host );
+    outer->setContentsMargins( 0, 0, 0, 0 );
     auto *inner = new QWidget;
     *outForm    = new QFormLayout( inner );
     polishFormLayout( *outForm );
@@ -222,21 +265,20 @@ void mountFormInGroupBox( QGroupBox *group, QFormLayout **outForm )
     outer->addWidget( inner, 0, Qt::AlignLeft | Qt::AlignTop );
 }
 
-/// Same as `mountFormInGroupBox`, but the form host grows horizontally (paths).
-void mountFormInGroupBoxFullWidth( QGroupBox *group, QFormLayout **outForm )
+/// Full-width form host (paths / wide rows); same layout as a full-width
+/// `QGroupBox` form without the group frame.
+void mountFormInWidgetFullWidth( QWidget *host, QFormLayout **outForm )
 {
-    if ( group == nullptr || outForm == nullptr )
+    if ( host == nullptr || outForm == nullptr )
     {
         return;
     }
-    auto *outer = new QVBoxLayout( group );
+    auto *outer = new QVBoxLayout( host );
+    outer->setContentsMargins( 0, 0, 0, 0 );
     auto *inner = new QWidget;
     *outForm    = new QFormLayout( inner );
     polishFormLayout( *outForm );
     inner->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Preferred );
-    // Default alignment (0): item fills the layout cell horizontally. Passing
-    // only Qt::AlignTop still omits a horizontal flag, so QBoxLayout centers
-    // the widget and keeps it at its width hint — same “narrow path rows” bug.
     outer->addWidget( inner );
 }
 
@@ -302,15 +344,11 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     setObjectName( QStringLiteral( "rawtoacesMainWindow" ) );
     setWindowTitle( QApplication::applicationDisplayName() );
 
-    m_mainSplitter = new QSplitter( Qt::Vertical );
-
-    auto *top    = new QWidget;
-    auto *topLay = new QVBoxLayout( top );
-    topLay->setSpacing( 6 );
-
     auto *inputGroup = new QGroupBox( tr( "Input files" ) );
     auto *inputLay   = new QVBoxLayout( inputGroup );
     inputLay->setSpacing( 6 );
+    inputGroup->setSizePolicy(
+        QSizePolicy::Preferred, QSizePolicy::MinimumExpanding );
 
     auto *fileRow = new QHBoxLayout;
     m_fileList    = new QListWidget;
@@ -331,14 +369,53 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     fileBtnCol->addWidget( clearBtn );
     fileBtnCol->addStretch();
     fileRow->addLayout( fileBtnCol );
-    inputLay->addLayout( fileRow );
-    topLay->addWidget( inputGroup );
+    inputLay->addLayout( fileRow, 1 );
 
     connect( addFiles, &QPushButton::clicked, this, &MainWindow::onAddFiles );
     connect( addFolder, &QPushButton::clicked, this, &MainWindow::onAddFolder );
     connect(
         removeBtn, &QPushButton::clicked, this, &MainWindow::onRemoveSelected );
     connect( clearBtn, &QPushButton::clicked, this, &MainWindow::onClearFiles );
+
+    auto        *pathGroup = new QWidget;
+    QFormLayout *pathForm  = nullptr;
+    mountFormInWidgetFullWidth( pathGroup, &pathForm );
+    pathForm->setHorizontalSpacing( 12 );
+    pathForm->setVerticalSpacing( 8 );
+    pathForm->setFieldGrowthPolicy( QFormLayout::ExpandingFieldsGrow );
+
+    m_outputDir = new QLineEdit;
+    m_outputDir->setObjectName( QStringLiteral( "guiOutputDir" ) );
+    m_outputDir->setPlaceholderText(
+        tr( "Empty = same folder as each RAW; or set a subfolder / path" ) );
+    m_outputDir->setToolTip( tr(
+        "Leave empty to write .exr next to the source file. "
+        "If set, output paths are resolved under each input file’s directory." ) );
+    auto *outBrowse = new QPushButton( tr( "Browse…" ) );
+    auto *outWrap   = new QWidget;
+    outWrap->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Preferred );
+    auto *outHBox = new QHBoxLayout( outWrap );
+    outHBox->setContentsMargins( 0, 0, 0, 0 );
+    outHBox->setSpacing( 8 );
+    outHBox->addWidget( m_outputDir, 1 );
+    outHBox->addWidget( outBrowse );
+    pathForm->addRow( tr( "Output directory:" ), outWrap );
+    connect(
+        outBrowse, &QPushButton::clicked, this, &MainWindow::onBrowseOutput );
+
+    m_overwrite  = new QCheckBox;
+    m_createDirs = new QCheckBox;
+    m_overwrite->setToolTip(
+        tr( "Replace existing output files instead of skipping them." ) );
+    m_createDirs->setToolTip(
+        tr( "When an output directory is set, create missing parent folders "
+            "if they do not exist." ) );
+    pathForm->addRow(
+        tr( "Overwrite existing files:" ),
+        wrapCheckBoxForFormRow( m_overwrite ) );
+    pathForm->addRow(
+        tr( "Create missing directories:" ),
+        wrapCheckBoxForFormRow( m_createDirs ) );
 
     m_log = new QTextEdit;
     m_log->setObjectName( QStringLiteral( "guiLog" ) );
@@ -347,18 +424,55 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
         tr( "Conversion progress and messages will appear here." ) );
     m_log->setMinimumHeight( 72 );
 
+    m_useTiming       = new QCheckBox;
+    m_disableCache    = new QCheckBox;
+    m_disableExiftool = new QCheckBox;
+    m_verbosity       = new QComboBox;
+    m_verbosity->setObjectName( QStringLiteral( "guiVerbosity" ) );
+    m_verbosity->addItem( tr( "Quiet" ), 0 );
+    m_verbosity->addItem( tr( "Progress" ), 1 );
+    m_verbosity->addItem( tr( "Detailed" ), 2 );
+    m_verbosity->addItem( tr( "Solver report" ), 3 );
+    m_verbosity->addItem( tr( "Solver trace" ), 4 );
+    m_verbosity->setCurrentIndex( 0 );
+    m_verbosity->setMaximumWidth( kStdNumericFieldWidth * 2 );
+    m_verbosity->setToolTip( tr(
+        "How much is printed to the log and terminal. "
+        "Progress: per-step messages. Detailed: adds configuration summary. "
+        "Solver report: Ceres summary and IDT matrix. "
+        "Solver trace: also Ceres minimizer progress." ) );
+
+    auto        *logsOptionsGroup = new QWidget;
+    QFormLayout *logsOptionsForm  = nullptr;
+    mountFormInWidget( logsOptionsGroup, &logsOptionsForm );
+    logsOptionsForm->setHorizontalSpacing( 12 );
+    logsOptionsForm->setVerticalSpacing( 8 );
+    logsOptionsForm->setFieldGrowthPolicy( QFormLayout::ExpandingFieldsGrow );
+    logsOptionsForm->addRow( tr( "Verbosity:" ), m_verbosity );
+    logsOptionsForm->addRow(
+        tr( "Log timing:" ), wrapCheckBoxForFormRow( m_useTiming ) );
+
+    auto        *logCacheGroup = new QWidget;
+    QFormLayout *cacheDiagLay  = nullptr;
+    mountFormInWidget( logCacheGroup, &cacheDiagLay );
+    cacheDiagLay->setHorizontalSpacing( 12 );
+    cacheDiagLay->setVerticalSpacing( 8 );
+    cacheDiagLay->setFieldGrowthPolicy( QFormLayout::ExpandingFieldsGrow );
+    cacheDiagLay->addRow(
+        tr( "Disable cache:" ), wrapCheckBoxForFormRow( m_disableCache ) );
+    cacheDiagLay->addRow(
+        tr( "Disable exiftool:" ),
+        wrapCheckBoxForFormRow( m_disableExiftool ) );
+
     m_settingsTabs = new QTabWidget;
     m_settingsTabs->setObjectName( QStringLiteral( "guiSettingsTabs" ) );
     m_settingsTabs->setDocumentMode( true );
 
-    // --- Raw tab (decode pipeline first) ---
-    auto *rawInner = new QWidget;
-    auto *rawOuter = new QVBoxLayout( rawInner );
-    applySettingsTabPageChrome( rawOuter );
+    // --- Raw decode groups (used on Basic / Advanced tabs) ---
 
-    auto        *rawLevels = new QGroupBox( tr( "Levels && exposure" ) );
+    auto        *rawLevels = new QWidget;
     QFormLayout *rawLay    = nullptr;
-    mountFormInGroupBox( rawLevels, &rawLay );
+    mountFormInWidget( rawLevels, &rawLay );
     rawLay->setHorizontalSpacing( 12 );
     rawLay->setVerticalSpacing( 8 );
     // `FieldsStayAtSizeHint` keeps checkbox hosts at a tiny preferred width and
@@ -432,9 +546,9 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
         &MainWindow::updateBlackSaturationUi );
     updateBlackSaturationUi();
 
-    auto *rawChroma     = new QGroupBox( tr( "Chromatic aberration && size" ) );
-    QFormLayout *chForm = nullptr;
-    mountFormInGroupBox( rawChroma, &chForm );
+    auto        *rawChroma = new QWidget;
+    QFormLayout *chForm    = nullptr;
+    mountFormInWidget( rawChroma, &chForm );
     chForm->setHorizontalSpacing( 12 );
     chForm->setVerticalSpacing( 8 );
     chForm->setFieldGrowthPolicy( QFormLayout::ExpandingFieldsGrow );
@@ -469,9 +583,9 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
         tr( "Half-size decode:" ), wrapCheckBoxForFormRow( m_halfSize ) );
     chForm->addRow( tr( "Highlight mode:" ), m_highlightMode );
 
-    auto *rawCrop       = new QGroupBox( tr( "Crop, orientation && denoise" ) );
-    QFormLayout *crForm = nullptr;
-    mountFormInGroupBox( rawCrop, &crForm );
+    auto        *rawCrop = new QWidget;
+    QFormLayout *crForm  = nullptr;
+    mountFormInWidget( rawCrop, &crForm );
     crForm->setHorizontalSpacing( 12 );
     crForm->setVerticalSpacing( 8 );
     crForm->setFieldGrowthPolicy( QFormLayout::FieldsStayAtSizeHint );
@@ -522,9 +636,9 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     crForm->addRow( tr( "Denoise threshold:" ), m_denoise );
     setFieldMaxWidth( m_denoise, kStdNumericFieldWidth );
 
-    auto        *rawDemo = new QGroupBox( tr( "Demosaic" ) );
+    auto        *rawDemo = new QWidget;
     QFormLayout *dmForm  = nullptr;
-    mountFormInGroupBox( rawDemo, &dmForm );
+    mountFormInWidget( rawDemo, &dmForm );
     dmForm->setHorizontalSpacing( 12 );
     dmForm->setFieldGrowthPolicy( QFormLayout::FieldsStayAtSizeHint );
     m_demosaic                      = new QComboBox;
@@ -541,38 +655,10 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     m_demosaic->setMaximumWidth( kStdNumericFieldWidth * 2 );
     dmForm->addRow( tr( "Algorithm:" ), m_demosaic );
 
-    styleGroupBoxForSettingsRowPair( rawLevels );
-    styleGroupBoxForSettingsRowPair( rawChroma );
-    auto *rawTopRow = new QWidget;
-    auto *rawTopLay = new QHBoxLayout( rawTopRow );
-    rawTopLay->setContentsMargins( 0, 0, 0, 0 );
-    rawTopLay->setSpacing( 12 );
-    rawTopLay->addWidget( rawLevels, 1 );
-    rawTopLay->addWidget( rawChroma, 1 );
-
-    styleGroupBoxForSettingsRowPair( rawCrop );
-    styleGroupBoxForSettingsRowPair( rawDemo );
-    auto *rawMidRow = new QWidget;
-    auto *rawMidLay = new QHBoxLayout( rawMidRow );
-    rawMidLay->setContentsMargins( 0, 0, 0, 0 );
-    rawMidLay->setSpacing( 12 );
-    rawMidLay->addWidget( rawCrop, 3 );
-    rawMidLay->addWidget( rawDemo, 1 );
-
-    rawOuter->addWidget( wrapSettingsSectionTail( rawTopRow ) );
-    rawOuter->addWidget( wrapSettingsSectionTail( rawMidRow ) );
-    rawOuter->addStretch();
-
-    m_settingsTabs->addTab( wrapScroll( rawInner ), tr( "Raw" ) );
-
-    // --- Colour tab ---
-    auto *colourInner = new QWidget;
-    auto *colourOuter = new QVBoxLayout( colourInner );
-    applySettingsTabPageChrome( colourOuter );
-
-    auto        *grpSpectral  = new QGroupBox( tr( "Spectral data" ) );
+    // --- Colour groups (used on Basic / Advanced tabs) ---
+    auto        *grpSpectral  = new QWidget;
     QFormLayout *spectralForm = nullptr;
-    mountFormInGroupBoxFullWidth( grpSpectral, &spectralForm );
+    mountFormInWidgetFullWidth( grpSpectral, &spectralForm );
     spectralForm->setHorizontalSpacing( 12 );
     spectralForm->setVerticalSpacing( 8 );
     spectralForm->setFieldGrowthPolicy( QFormLayout::ExpandingFieldsGrow );
@@ -595,9 +681,9 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     connect(
         dataBrowse, &QPushButton::clicked, this, &MainWindow::onBrowseDataDir );
 
-    auto        *grpWb  = new QGroupBox( tr( "White balance" ) );
+    auto        *grpWb  = new QWidget;
     QFormLayout *wbForm = nullptr;
-    mountFormInGroupBox( grpWb, &wbForm );
+    mountFormInWidget( grpWb, &wbForm );
     wbForm->setHorizontalSpacing( 12 );
     wbForm->setVerticalSpacing( 8 );
     wbForm->setFieldGrowthPolicy( QFormLayout::FieldsStayAtSizeHint );
@@ -669,9 +755,9 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
         &MainWindow::updateWbMethodDependentUi );
     updateWbMethodDependentUi();
 
-    auto        *grpMat  = new QGroupBox( tr( "Colour matrix && camera" ) );
+    auto        *grpMat  = new QWidget;
     QFormLayout *matForm = nullptr;
-    mountFormInGroupBox( grpMat, &matForm );
+    mountFormInWidget( grpMat, &matForm );
     matForm->setHorizontalSpacing( 12 );
     matForm->setVerticalSpacing( 8 );
     matForm->setFieldGrowthPolicy( QFormLayout::FieldsStayAtSizeHint );
@@ -722,9 +808,9 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     matForm->addRow( tr( "Override camera make:" ), makeWrap );
     matForm->addRow( tr( "Override camera model:" ), modelWrap );
 
-    auto        *grpTone  = new QGroupBox( tr( "Tone && scale" ) );
+    auto        *grpTone  = new QWidget;
     QFormLayout *toneForm = nullptr;
-    mountFormInGroupBox( grpTone, &toneForm );
+    mountFormInWidget( grpTone, &toneForm );
     toneForm->setHorizontalSpacing( 12 );
     toneForm->setFieldGrowthPolicy( QFormLayout::FieldsStayAtSizeHint );
     m_headroom = new QDoubleSpinBox;
@@ -740,29 +826,12 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     setFieldMaxWidth( m_headroom, kStdNumericFieldWidth );
     setFieldMaxWidth( m_scale, kStdNumericFieldWidth );
 
-    styleGroupBoxForSettingsRowPair( grpWb );
-    styleGroupBoxForSettingsRowPair( grpTone );
-    auto *colourTopRow = new QWidget;
-    auto *colourTopLay = new QHBoxLayout( colourTopRow );
-    colourTopLay->setContentsMargins( 0, 0, 0, 0 );
-    colourTopLay->setSpacing( 12 );
-    colourTopLay->addWidget( grpWb, 3 );
-    colourTopLay->addWidget( grpTone, 1 );
-
-    colourOuter->addWidget( wrapSettingsSectionTail( grpSpectral ) );
-    colourOuter->addWidget( wrapSettingsSectionTail( colourTopRow ) );
-    colourOuter->addWidget( wrapSettingsSectionTail( grpMat ) );
-    colourOuter->addStretch();
-
-    m_settingsTabs->addTab( wrapScroll( colourInner ), tr( "Colour" ) );
-
+    QWidget *lensFlagsBox = nullptr;
+    QWidget *lensOverride = nullptr;
 #ifdef RTA_GUI_HAS_LENSFUN
-    auto *lensInner = new QWidget;
-    auto *lensOuter = new QVBoxLayout( lensInner );
-    applySettingsTabPageChrome( lensOuter );
-    auto        *lensFlagsBox = new QGroupBox( tr( "Lens corrections" ) );
-    QFormLayout *lensLay      = nullptr;
-    mountFormInGroupBox( lensFlagsBox, &lensLay );
+    lensFlagsBox          = new QWidget;
+    QFormLayout *lensLay  = nullptr;
+    mountFormInWidget( lensFlagsBox, &lensLay );
     lensLay->setHorizontalSpacing( 12 );
     lensLay->setVerticalSpacing( 8 );
     lensLay->setFieldGrowthPolicy( QFormLayout::ExpandingFieldsGrow );
@@ -785,9 +854,9 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     alignFormLabelTopForField( lensLay, lensCorrStack );
     alignFormFieldTopForField( lensLay, lensCorrStack );
 
-    auto        *lensOverride = new QGroupBox( tr( "Lens metadata" ) );
-    QFormLayout *ovLay        = nullptr;
-    mountFormInGroupBox( lensOverride, &ovLay );
+    lensOverride       = new QWidget;
+    QFormLayout *ovLay = nullptr;
+    mountFormInWidget( lensOverride, &ovLay );
     ovLay->setHorizontalSpacing( 12 );
     ovLay->setVerticalSpacing( 8 );
     ovLay->setFieldGrowthPolicy( QFormLayout::ExpandingFieldsGrow );
@@ -834,17 +903,6 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     setFieldMaxWidth( m_lensFocus, kStdNumericFieldWidth );
     updateLensMetadataOverrideUi();
 
-    styleGroupBoxForSettingsRowPair( lensFlagsBox );
-    styleGroupBoxForSettingsRowPair( lensOverride );
-    auto *lensTopRow = new QWidget;
-    auto *lensTopLay = new QHBoxLayout( lensTopRow );
-    lensTopLay->setContentsMargins( 0, 0, 0, 0 );
-    lensTopLay->setSpacing( 12 );
-    lensTopLay->addWidget( lensFlagsBox, 1 );
-    lensTopLay->addWidget( lensOverride, 1 );
-    lensOuter->addWidget( wrapSettingsSectionTail( lensTopRow ) );
-    lensOuter->addStretch();
-    m_settingsTabs->addTab( wrapScroll( lensInner ), tr( "Lens" ) );
 #else
     m_lensCorrAberration   = nullptr;
     m_lensCorrDistortion   = nullptr;
@@ -858,88 +916,63 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     m_lensFocus            = nullptr;
 #endif
 
-    // --- Output & diagnostics tab (last; paths, write flags, logging) ---
-    auto *odInner = new QWidget;
-    auto *odVBox  = new QVBoxLayout( odInner );
-    applySettingsTabPageChrome( odVBox );
+    // --- Tab pages: Inputs, Basic, Advanced, Logs ---
+    auto *inputsInner = new QWidget;
+    auto *inputsOuter = new QVBoxLayout( inputsInner );
+    applySettingsTabPageChrome( inputsOuter );
+    inputsOuter->setSpacing( kCollapsibleTabSectionSpacing );
+    inputsOuter->addWidget( wrapSettingsSectionTail( inputGroup, 1 ), 1 );
+    inputsOuter->addWidget(
+        wrapCollapsibleSection( pathGroup, tr( "Output settings" ), false ), 0 );
 
-    auto        *pathGroup = new QGroupBox( tr( "Output" ) );
-    QFormLayout *pathForm  = nullptr;
-    mountFormInGroupBoxFullWidth( pathGroup, &pathForm );
-    pathForm->setHorizontalSpacing( 12 );
-    pathForm->setVerticalSpacing( 8 );
-    pathForm->setFieldGrowthPolicy( QFormLayout::ExpandingFieldsGrow );
+    auto *basicInner = new QWidget;
+    auto *basicOuter = new QVBoxLayout( basicInner );
+    applySettingsTabPageChrome( basicOuter );
+    basicOuter->setSpacing( kCollapsibleTabSectionSpacing );
+    basicOuter->addWidget(
+        wrapCollapsibleSection( rawLevels, tr( "Levels && exposure" ) ) );
+    basicOuter->addWidget( wrapCollapsibleSection(
+        rawChroma, tr( "Chromatic aberration && size" ) ) );
+    basicOuter->addWidget(
+        wrapCollapsibleSection( grpWb, tr( "White balance" ) ) );
+    basicOuter->addWidget(
+        wrapCollapsibleSection( grpTone, tr( "Tone && scale" ) ) );
+    basicOuter->addStretch();
 
-    m_outputDir = new QLineEdit;
-    m_outputDir->setObjectName( QStringLiteral( "guiOutputDir" ) );
-    m_outputDir->setPlaceholderText(
-        tr( "Empty = same folder as each RAW; or set a subfolder / path" ) );
-    m_outputDir->setToolTip( tr(
-        "Leave empty to write .exr next to the source file. "
-        "If set, output paths are resolved under each input file’s directory." ) );
-    auto *outBrowse = new QPushButton( tr( "Browse…" ) );
-    auto *outWrap   = new QWidget;
-    outWrap->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Preferred );
-    auto *outHBox = new QHBoxLayout( outWrap );
-    outHBox->setContentsMargins( 0, 0, 0, 0 );
-    outHBox->setSpacing( 8 );
-    outHBox->addWidget( m_outputDir, 1 );
-    outHBox->addWidget( outBrowse );
-    pathForm->addRow( tr( "Output directory:" ), outWrap );
-    connect(
-        outBrowse, &QPushButton::clicked, this, &MainWindow::onBrowseOutput );
+    auto *advancedInner = new QWidget;
+    auto *advancedOuter = new QVBoxLayout( advancedInner );
+    applySettingsTabPageChrome( advancedOuter );
+    advancedOuter->setSpacing( kCollapsibleTabSectionSpacing );
+    advancedOuter->addWidget(
+        wrapCollapsibleSection( grpSpectral, tr( "Spectral data" ) ) );
+    advancedOuter->addWidget( wrapCollapsibleSection(
+        grpMat, tr( "Colour matrix && camera" ) ) );
+    advancedOuter->addWidget( wrapCollapsibleSection(
+        rawCrop, tr( "Crop, orientation && denoise" ) ) );
+    advancedOuter->addWidget(
+        wrapCollapsibleSection( rawDemo, tr( "Demosaic" ) ) );
+#ifdef RTA_GUI_HAS_LENSFUN
+    advancedOuter->addWidget( wrapCollapsibleSection(
+        lensFlagsBox, tr( "Lens corrections" ) ) );
+    advancedOuter->addWidget( wrapCollapsibleSection(
+        lensOverride, tr( "Lens metadata" ) ) );
+#endif
+    advancedOuter->addWidget( wrapCollapsibleSection(
+        logCacheGroup, tr( "Cache" ) ) );
+    advancedOuter->addStretch();
 
-    m_overwrite  = new QCheckBox;
-    m_createDirs = new QCheckBox;
-    m_overwrite->setToolTip(
-        tr( "Replace existing output files instead of skipping them." ) );
-    m_createDirs->setToolTip(
-        tr( "When an output directory is set, create missing parent folders "
-            "if they do not exist." ) );
-    pathForm->addRow(
-        tr( "Overwrite existing files:" ),
-        wrapCheckBoxForFormRow( m_overwrite ) );
-    pathForm->addRow(
-        tr( "Create missing directories:" ),
-        wrapCheckBoxForFormRow( m_createDirs ) );
+    auto *logsInner = new QWidget;
+    auto *logsOuter = new QVBoxLayout( logsInner );
+    applySettingsTabPageChrome( logsOuter );
+    logsOuter->setSpacing( kCollapsibleTabSectionSpacing );
+    logsOuter->addWidget( wrapCollapsibleSection(
+        logsOptionsGroup, tr( "Log output settings" ), false ) );
+    logsOuter->addWidget( m_log, 1 );
 
-    auto        *logGroup = new QGroupBox( tr( "Logging && cache" ) );
-    QFormLayout *diagLay  = nullptr;
-    mountFormInGroupBox( logGroup, &diagLay );
-    diagLay->setHorizontalSpacing( 12 );
-    diagLay->setVerticalSpacing( 8 );
-    diagLay->setFieldGrowthPolicy( QFormLayout::ExpandingFieldsGrow );
-    m_useTiming       = new QCheckBox;
-    m_disableCache    = new QCheckBox;
-    m_disableExiftool = new QCheckBox;
-    m_verbosity       = new QComboBox;
-    m_verbosity->setObjectName( QStringLiteral( "guiVerbosity" ) );
-    m_verbosity->addItem( tr( "Quiet" ), 0 );
-    m_verbosity->addItem( tr( "Progress" ), 1 );
-    m_verbosity->addItem( tr( "Detailed" ), 2 );
-    m_verbosity->addItem( tr( "Solver report" ), 3 );
-    m_verbosity->addItem( tr( "Solver trace" ), 4 );
-    m_verbosity->setCurrentIndex( 0 );
-    m_verbosity->setMaximumWidth( kStdNumericFieldWidth * 2 );
-    m_verbosity->setToolTip( tr(
-        "How much is printed to the log and terminal. "
-        "Progress: per-step messages. Detailed: adds configuration summary. "
-        "Solver report: Ceres summary and IDT matrix. "
-        "Solver trace: also Ceres minimizer progress." ) );
-    diagLay->addRow(
-        tr( "Log timing:" ), wrapCheckBoxForFormRow( m_useTiming ) );
-    diagLay->addRow(
-        tr( "Disable cache:" ), wrapCheckBoxForFormRow( m_disableCache ) );
-    diagLay->addRow(
-        tr( "Disable exiftool:" ),
-        wrapCheckBoxForFormRow( m_disableExiftool ) );
-    diagLay->addRow( tr( "Verbosity:" ), m_verbosity );
-
-    odVBox->addWidget( wrapSettingsSectionTail( pathGroup ) );
-    odVBox->addWidget( wrapSettingsSectionTail( logGroup ) );
-    odVBox->addStretch();
-    m_settingsTabs->addTab(
-        wrapScroll( odInner ), tr( "Output && diagnostics" ) );
+    m_settingsTabs->addTab( wrapScroll( inputsInner ), tr( "Inputs" ) );
+    m_settingsTabs->addTab( wrapScroll( basicInner ), tr( "Basic" ) );
+    m_settingsTabs->addTab( wrapScroll( advancedInner ), tr( "Advanced" ) );
+    m_settingsTabs->addTab( logsInner, tr( "Logs" ) );
 
     auto *runRow = new QWidget;
     auto *runLay = new QHBoxLayout( runRow );
@@ -969,19 +1002,22 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
 
     auto *bottom    = new QWidget;
     auto *bottomLay = new QVBoxLayout( bottom );
-    bottomLay->setSpacing( 8 );
+    bottomLay->setContentsMargins( 0, 0, 0, 0 );
+    bottomLay->setSpacing( 0 );
     bottomLay->addWidget( runRow );
-    bottomLay->addWidget( m_log, 1 );
+    bottom->setSizePolicy( QSizePolicy::Preferred, QSizePolicy::Maximum );
 
-    m_mainSplitter->addWidget( top );
-    m_mainSplitter->addWidget( m_settingsTabs );
-    m_mainSplitter->addWidget( bottom );
-    m_mainSplitter->setStretchFactor( 0, 0 );
-    m_mainSplitter->setStretchFactor( 1, 6 );
-    m_mainSplitter->setStretchFactor( 2, 2 );
-    m_mainSplitter->setSizes( { 120, 540, 200 } );
-
-    setCentralWidget( m_mainSplitter );
+    auto *central    = new QWidget;
+    auto *centralLay = new QVBoxLayout( central );
+    centralLay->setContentsMargins(
+        kCentralChromeMargin,
+        0,
+        kCentralChromeMargin,
+        kCentralChromeMargin );
+    centralLay->setSpacing( kCentralChromeMargin );
+    centralLay->addWidget( m_settingsTabs, 1 );
+    centralLay->addWidget( bottom, 0 );
+    setCentralWidget( central );
 
     alignFormFieldTopForField( rawLay, blackLevelBlock );
     alignFormFieldTopForField( rawLay, saturationBlock );
@@ -1456,11 +1492,6 @@ void MainWindow::savePreferences() const
 
     settings.beginGroup( QStringLiteral( "window" ) );
     settings.setValue( QStringLiteral( "geometry" ), saveGeometry() );
-    if ( m_mainSplitter != nullptr )
-    {
-        settings.setValue(
-            QStringLiteral( "splitter" ), m_mainSplitter->saveState() );
-    }
     if ( m_settingsTabs != nullptr )
     {
         settings.setValue(
@@ -1706,15 +1737,6 @@ void MainWindow::loadPreferences()
     if ( !geometry.isEmpty() )
     {
         restoreGeometry( geometry );
-    }
-    if ( m_mainSplitter != nullptr )
-    {
-        const QByteArray splitterState =
-            settings.value( QStringLiteral( "splitter" ) ).toByteArray();
-        if ( !splitterState.isEmpty() )
-        {
-            m_mainSplitter->restoreState( splitterState );
-        }
     }
     const int tabIndex =
         settings.value( QStringLiteral( "settingsTab" ), 0 ).toInt();

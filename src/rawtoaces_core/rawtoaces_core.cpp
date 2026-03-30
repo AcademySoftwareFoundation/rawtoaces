@@ -2,6 +2,10 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include <rawtoaces/rawtoaces_core.h>
+
+#include <nlohmann/json.hpp>
+#include <fstream>
+
 #include "rawtoaces_core_priv.h"
 #include "mathOps.h"
 #include "define.h"
@@ -266,6 +270,109 @@ SpectralSolver::collect_data_files( const std::string &type ) const
     return result;
 }
 
+bool SpectralSolver::collect_aliases(
+    const std::string                  &type,
+    std::map<std::string, std::string> &make_aliases,
+    std::map<
+        std::string,
+        std::map<std::string, std::pair<std::string, std::string>>>
+        &model_aliases ) const
+{
+    for ( const auto &directory: _search_directories )
+    {
+        std::filesystem::path path( directory );
+        path.append( "aliases.json" );
+
+        if ( std::filesystem::exists( path ) )
+        {
+            // For now we consider the aliases files optional.
+            // In a case of error, we just skip the file and process the next
+            // one. We still want to report warnings to let the user a chance
+            // to fix broken files.
+
+            std::ifstream ifstream( path );
+            if ( !ifstream.is_open() )
+            {
+                std::cerr << "Warning: cannot open file " << path.string()
+                          << "." << std::endl;
+                continue;
+            }
+
+            nlohmann::json file_data;
+
+            try
+            {
+                file_data = nlohmann::json::parse( ifstream );
+            }
+            catch ( const std::exception &error )
+            {
+                std::cerr << "Warning: JSON parsing of the alias file "
+                          << path.string()
+                          << " failed with error: " << error.what() << "."
+                          << std::endl;
+                continue;
+            }
+
+            if ( !file_data.contains( "data" ) )
+            {
+                std::cerr << "Warning: the alias file " << path.string()
+                          << " must contain the 'data' section." << std::endl;
+                continue;
+            }
+
+            const auto &mapping_data = file_data["data"];
+
+            if ( !mapping_data.contains( type ) )
+            {
+                continue;
+            }
+
+            const auto &type_mapping = mapping_data[type];
+
+            if ( type_mapping.contains( "make" ) )
+            {
+                const auto &make_mapping = type_mapping["make"];
+                for ( auto &[src_make, dst_make]: make_mapping.items() )
+                {
+                    if ( make_aliases.find( src_make ) == make_aliases.end() )
+                    {
+                        make_aliases[src_make] = dst_make;
+                    }
+                }
+            }
+
+            if ( type_mapping.contains( "model" ) )
+            {
+                const auto &model_mapping = type_mapping["model"];
+                for ( auto &[src_make, models]: model_mapping.items() )
+                {
+                    for ( auto &[src_model, dst]: models.items() )
+                    {
+                        const std::string src_make_str  = src_make;
+                        const std::string src_model_str = src_model;
+                        if ( model_aliases.find( src_make_str ) !=
+                                 model_aliases.end() &&
+                             model_aliases[src_make_str].find(
+                                 src_model_str ) !=
+                                 model_aliases[src_make_str].end() )
+                        {
+                            continue;
+                        }
+
+                        const std::string dst_make_str  = dst["make"];
+                        const std::string dst_model_str = dst["model"];
+                        model_aliases[src_make_str][src_model_str] = {
+                            dst_make_str, dst_model_str
+                        };
+                    }
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
 bool SpectralSolver::load_spectral_data(
     const std::string &file_path, SpectralData &out_data )
 {
@@ -304,15 +411,69 @@ bool SpectralSolver::find_camera(
         return true;
     }
 
+    std::string dst_make  = make;
+    std::string dst_model = model;
+
+    std::map<std::string, std::string> make_aliases;
+    std::map<
+        std::string,
+        std::map<std::string, std::pair<std::string, std::string>>>
+        model_aliases;
+
+    if ( collect_aliases( "camera", make_aliases, model_aliases ) )
+    {
+
+        bool found_make_alias = false;
+        for ( const auto &[alias_src_make, alias_dst_make]: make_aliases )
+        {
+            if ( is_not_equal_insensitive( make, alias_src_make ) )
+                continue;
+
+            dst_make         = alias_dst_make;
+            found_make_alias = true;
+            break;
+        }
+
+        bool found_model_alias = false;
+        for ( const auto &[alias_src_make, alias_src_dict]: model_aliases )
+        {
+            if ( is_not_equal_insensitive( dst_make, alias_src_make ) )
+                continue;
+
+            for ( const auto &[alias_src_model, alias_dst_pair]:
+                  alias_src_dict )
+            {
+                if ( is_not_equal_insensitive( model, alias_src_model ) )
+                    continue;
+                dst_make          = alias_dst_pair.first;
+                dst_model         = alias_dst_pair.second;
+                found_model_alias = true;
+                break;
+            }
+
+            if ( found_model_alias )
+                break;
+        }
+
+        if ( found_make_alias || found_model_alias )
+        {
+            if ( !is_not_equal_insensitive( camera.manufacturer, dst_make ) &&
+                 !is_not_equal_insensitive( camera.model, dst_model ) )
+            {
+                return true;
+            }
+        }
+    }
+
     auto camera_files = collect_data_files( "camera" );
 
     for ( const auto &camera_file: camera_files )
     {
         camera.load( camera_file );
 
-        if ( is_not_equal_insensitive( camera.manufacturer, make ) )
+        if ( is_not_equal_insensitive( camera.manufacturer, dst_make ) )
             continue;
-        if ( is_not_equal_insensitive( camera.model, model ) )
+        if ( is_not_equal_insensitive( camera.model, dst_model ) )
             continue;
         return true;
     }

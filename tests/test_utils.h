@@ -45,6 +45,11 @@ public:
         const std::optional<nlohmann::json> &data_main_override =
             std::nullopt );
 
+    /// Creates a test aliases file with the specified data
+    /// @param data The aliases data to be put into the file
+    /// @return The full path to the created file
+    std::string create_aliases_file( const nlohmann::json &data );
+
 private:
     std::string test_dir;
     std::string database_dir;
@@ -108,6 +113,11 @@ public:
         const std::optional<nlohmann::json> &index_main_override = std::nullopt,
         const std::optional<nlohmann::json> &data_main_override =
             std::nullopt );
+
+    TestFixture &with_aliases(
+        const std::vector<std::array<std::string, 3>> &make_aliases,
+        const std::vector<std::array<std::string, 5>> &model_aliases,
+        bool                                           empty = false );
 
     /// Remove training data file (training is included by default)
     TestFixture &without_training();

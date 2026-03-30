@@ -1409,6 +1409,43 @@ std::vector<std::string> ImageConverter::get_supported_illuminants() const
     return result;
 }
 
+/// Combine the make and model strings together, unless they are the same,
+/// or the model name starts with the make followed by a whitespace.
+/// "Canon" + "Canon R5" = "Canon R5"
+/// "Canon R5" + "Canon R5" = "Canon R5"
+/// "Canon" + "Canon_R5" = "Canon Canon_R5"
+std::string
+combine_make_model( const std::string &make, const std::string &model )
+{
+    bool has_prefix = true;
+
+    if ( make.length() <= model.length() )
+    {
+        size_t i;
+        for ( i = 0; i < make.length(); i++ )
+        {
+            if ( std::tolower( make[i] ) != std::tolower( model[i] ) )
+            {
+                has_prefix = false;
+                break;
+            }
+        }
+        if ( has_prefix && ( i < model.length() ) )
+        {
+            has_prefix = model[i] == ' ';
+        }
+    }
+    else
+    {
+        has_prefix = false;
+    }
+
+    if ( has_prefix )
+        return model;
+    else
+        return make + " " + model;
+}
+
 std::vector<std::string> ImageConverter::get_supported_cameras() const
 {
     std::vector<std::string> result;
@@ -1420,10 +1457,53 @@ std::vector<std::string> ImageConverter::get_supported_cameras() const
         core::SpectralData data;
         if ( data.load( file, false ) )
         {
-            std::string name = data.manufacturer + " / " + data.model;
+            std::string name =
+                combine_make_model( data.manufacturer, data.model );
             result.push_back( name );
         }
     }
+
+    std::map<std::string, std::string> make_aliases;
+    std::map<
+        std::string,
+        std::map<std::string, std::pair<std::string, std::string>>>
+        model_aliases;
+    if ( solver.collect_aliases( "camera", make_aliases, model_aliases ) )
+    {
+        std::vector<std::string> parsed_aliases;
+        for ( auto &[src_make, src_models]: model_aliases )
+        {
+            for ( auto &[src_model, dst]: src_models )
+            {
+                const std::string &dst_make  = dst.first;
+                const std::string &dst_model = dst.second;
+                const std::string  dst_make_model =
+                    combine_make_model( dst_make, dst_model );
+                const std::string src_make_model =
+                    combine_make_model( src_make, src_model );
+
+                if ( std::find(
+                         result.begin(), result.end(), dst_make_model ) !=
+                     result.end() )
+                {
+                    const std::string entry =
+                        src_make_model + " (alias for " + dst_make_model + ")";
+                    parsed_aliases.push_back( entry );
+                }
+                else
+                {
+                    std::cerr << "Warning: the alias " << src_make_model
+                              << " points to a missing camera "
+                              << dst_make_model << std::endl;
+                }
+            }
+        }
+
+        result.insert(
+            result.end(), parsed_aliases.begin(), parsed_aliases.end() );
+    }
+
+    std::sort( result.begin(), result.end() );
 
     return result;
 }

@@ -314,6 +314,28 @@ std::string TestDirectory::create_test_data_file(
     return file_path;
 }
 
+std::string
+TestDirectory::create_aliases_file( const nlohmann::json &header_data )
+{
+    // Create target directory dynamically based on type
+    std::string target_dir = database_dir;
+    std::filesystem::create_directories( target_dir );
+
+    // Use expected filename for specific types, random for others
+    std::string filename  = "aliases.json";
+    std::string file_path = target_dir + "/" + filename;
+
+    // Create minimal JSON structure with only what's actually used
+    nlohmann::json json_data = header_data;
+
+    // Write to file with pretty formatting
+    std::ofstream file( file_path );
+    file << json_data.dump( 4 ) << std::endl;
+    file.close();
+
+    return file_path;
+}
+
 // ============================================================================
 // TestFixture Implementation
 // ============================================================================
@@ -341,6 +363,63 @@ TestFixture &TestFixture::with_camera(
         { { "manufacturer", make }, { "model", model } },
         index_main_override,
         data_main_override );
+    return *this;
+}
+
+TestFixture &TestFixture::with_aliases(
+    const std::vector<std::array<std::string, 3>> &make_aliases,
+    const std::vector<std::array<std::string, 5>> &model_aliases,
+    bool                                           empty )
+{
+    nlohmann::json json_data = nlohmann::json::object();
+
+    if ( !empty )
+    {
+        json_data["data"] = nlohmann::json::object();
+
+        for ( auto &make_alias: make_aliases )
+        {
+            const auto &type     = make_alias[0];
+            const auto &src_make = make_alias[1];
+            const auto &dst_make = make_alias[2];
+
+            if ( !json_data["data"].contains( type ) )
+                json_data["data"][type] = nlohmann::json::object();
+
+            if ( !json_data["data"][type].contains( "make" ) )
+                json_data["data"][type]["make"] = nlohmann::json::object();
+
+            if ( !json_data["data"][type]["make"].contains( src_make ) )
+                json_data["data"][type]["make"][src_make] = dst_make;
+        }
+
+        for ( auto &model_alias: model_aliases )
+        {
+            const auto &type      = model_alias[0];
+            const auto &src_make  = model_alias[1];
+            const auto &src_model = model_alias[2];
+            const auto &dst_make  = model_alias[3];
+            const auto &dst_model = model_alias[4];
+
+            if ( !json_data["data"].contains( type ) )
+                json_data["data"][type] = nlohmann::json::object();
+
+            if ( !json_data["data"][type].contains( "model" ) )
+                json_data["data"][type]["model"] = nlohmann::json::object();
+
+            if ( !json_data["data"][type]["model"].contains( src_make ) )
+                json_data["data"][type]["model"][src_make] =
+                    nlohmann::json::object();
+
+            if ( !json_data["data"][type]["model"][src_make].contains(
+                     src_model ) )
+                json_data["data"][type]["model"][src_make][src_model] = {
+                    { "make", dst_make }, { "model", dst_model }
+                };
+        }
+    }
+
+    test_dir_->create_aliases_file( json_data );
     return *this;
 }
 

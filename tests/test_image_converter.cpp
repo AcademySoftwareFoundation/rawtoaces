@@ -636,6 +636,222 @@ void test_fix_metadata_unsupported_type()
     OIIO_CHECK_EQUAL( spec.find_attribute( "Make" ), nullptr );
 }
 
+void test_combine_make_model()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    std::string result = combine_make_model( "MAKE", "MODEL" );
+    OIIO_CHECK_EQUAL( result, "MAKE MODEL" );
+
+    result = combine_make_model( "Make", "MAKE MODEL" );
+    OIIO_CHECK_EQUAL( result, "MAKE MODEL" );
+
+    result = combine_make_model( "MAKE", "MAKEMODEL" );
+    OIIO_CHECK_EQUAL( result, "MAKE MAKEMODEL" );
+
+    result = combine_make_model( "MAKE_LONGER_THEN_MODEL", "MODEL" );
+    OIIO_CHECK_EQUAL( result, "MAKE_LONGER_THEN_MODEL MODEL" );
+}
+
+void test_empty_aliases()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    TestFixture fixture;
+    auto       &test_dir = fixture.with_camera( "Canon", "EOS_R6" )
+                         .with_aliases( {}, {}, true )
+                         .without_training()
+                         .without_observer()
+                         .build();
+
+    rta::core::SpectralSolver solver(
+        { "/bad/path", test_dir.get_database_path() } );
+
+    std::map<std::string, std::string> make_aliases;
+    std::map<
+        std::string,
+        std::map<std::string, std::pair<std::string, std::string>>>
+        model_aliases;
+
+    bool result;
+    auto output = capture_stderr( [&]() {
+        result =
+            solver.collect_aliases( "camera", make_aliases, model_aliases );
+    } );
+
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_ASSERT( make_aliases.empty() );
+    OIIO_CHECK_ASSERT( model_aliases.empty() );
+    ASSERT_CONTAINS( output, "Warning: the alias file " );
+    ASSERT_CONTAINS( output, " must contain the 'data' section." );
+}
+
+void test_collect_aliases()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    TestFixture fixture1;
+    auto       &test_dir1 = fixture1.with_camera( "Canon", "EOS_R6" )
+                          .with_aliases( {}, {} )
+                          .without_training()
+                          .without_observer()
+                          .build();
+
+    TestFixture fixture2;
+    auto       &test_dir2 =
+        fixture2.with_camera( "Canon", "EOS_R6" )
+            .with_aliases(
+                { { "camera", "MAKE_SRC_MAKE", "MAKE_DST_MAKE" } },
+                { { "camera",
+                    "MODEL_SRC_MAKE",
+                    "MODEL_SRC_MODEL",
+                    "MODEL_DST_MAKE",
+                    "MODEL_DST_MODEL" } } )
+            .without_training()
+            .without_observer()
+            .build();
+
+    TestFixture fixture3;
+    auto       &test_dir3 =
+        fixture3.with_camera( "Canon", "EOS_R6" )
+            .with_aliases(
+                { { "camera", "MAKE_SRC_MAKE", "MAKE_DST_MAKE_skip" } },
+                { { "camera",
+                    "MODEL_SRC_MAKE",
+                    "MODEL_SRC_MODEL",
+                    "MODEL_DST_MAKE",
+                    "MODEL_DST_MODEL_skip" } } )
+            .without_training()
+            .without_observer()
+            .build();
+
+    rta::core::SpectralSolver solver( { "/bad/path",
+                                        test_dir1.get_database_path(),
+                                        test_dir2.get_database_path(),
+                                        test_dir3.get_database_path() } );
+
+    std::map<std::string, std::string> make_aliases;
+    std::map<
+        std::string,
+        std::map<std::string, std::pair<std::string, std::string>>>
+         model_aliases;
+    bool result =
+        solver.collect_aliases( "camera", make_aliases, model_aliases );
+
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_EQUAL( make_aliases.size(), 1 );
+    OIIO_CHECK_EQUAL( make_aliases["MAKE_SRC_MAKE"], "MAKE_DST_MAKE" );
+    OIIO_CHECK_EQUAL( model_aliases.size(), 1 );
+    OIIO_CHECK_EQUAL( model_aliases["MODEL_SRC_MAKE"].size(), 1 );
+    OIIO_CHECK_EQUAL(
+        model_aliases["MODEL_SRC_MAKE"]["MODEL_SRC_MODEL"].first,
+        "MODEL_DST_MAKE" );
+    OIIO_CHECK_EQUAL(
+        model_aliases["MODEL_SRC_MAKE"]["MODEL_SRC_MODEL"].second,
+        "MODEL_DST_MODEL" );
+}
+
+void test_get_supported_cameras( bool bad_alias )
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    std::string dst_make  = bad_alias ? "missing_make" : "Canon";
+    std::string dst_model = bad_alias ? "missing_model" : "EOS_R6";
+
+    // Create test directory with dynamic database
+    // Store TestFixture to keep it alive for the test duration
+    TestFixture fixture;
+    auto       &test_dir = fixture.with_camera( "Canon", "EOS_R6" )
+                         .with_camera( "Mamiya", "Mamiya 7" )
+                         .with_aliases(
+                             {},
+                             { { "camera",
+                                 "ALIAS_MAKE",
+                                 "ALIAS_MODEL",
+                                 dst_make,
+                                 dst_model } } )
+                         .without_training()
+                         .without_observer()
+                         .build();
+
+    ImageConverter converter;
+    converter.settings.database_directories = { test_dir.get_database_path() };
+
+    std::vector<std::string> supported_cameras;
+
+    auto output = capture_stderr(
+        [&]() { supported_cameras = converter.get_supported_cameras(); } );
+
+    // Check that both cameras are present (order doesn't matter)
+    bool found_canon  = false;
+    bool found_mamiya = false;
+    bool found_alias  = false;
+    for ( auto &camera: supported_cameras )
+    {
+        if ( camera == "Canon EOS_R6" )
+            found_canon = true;
+        if ( camera == "Mamiya 7" )
+            found_mamiya = true;
+        if ( camera == "ALIAS_MAKE ALIAS_MODEL (alias for Canon EOS_R6)" )
+            found_alias = true;
+    }
+
+    OIIO_CHECK_EQUAL( supported_cameras.size(), bad_alias ? 2 : 3 );
+    OIIO_CHECK_EQUAL( found_canon, true );
+    OIIO_CHECK_EQUAL( found_mamiya, true );
+    OIIO_CHECK_NE( found_alias, bad_alias );
+
+    if ( bad_alias )
+    {
+        ASSERT_CONTAINS(
+            output,
+            "Warning: the alias ALIAS_MAKE ALIAS_MODEL "
+            "points to a missing camera missing_make "
+            "missing_model" );
+    }
+}
+
+void test_find_camera_alias()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    // Create test directory with dynamic database
+    // Store TestFixture to keep it alive for the test duration
+    TestFixture fixture;
+    auto       &test_dir = fixture.with_camera( "Canon", "EOS_R6" )
+                         .with_aliases(
+                             { { "camera", "ALIAS_MAKE_1", "ALIAS_MAKE_2" },
+                               { "camera", "ALIAS_MAKE_3", "ALIAS_MAKE_4" } },
+                             { { "camera",
+                                 "ALIAS_MAKE_2",
+                                 "ALIAS_MODEL_1",
+                                 "some_make",
+                                 "some_model" },
+                               { "camera",
+                                 "ALIAS_MAKE_4",
+                                 "ALIAS_MODEL_2",
+                                 "Canon",
+                                 "EOS_R6" } } )
+                         .without_training()
+                         .without_observer()
+                         .build();
+
+    rta::core::SpectralSolver solver( { test_dir.get_database_path() } );
+    bool result = solver.find_camera( "ALIAS_MAKE_3", "ALIAS_MODEL_2" );
+
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_EQUAL( solver.camera.manufacturer, "Canon" );
+    OIIO_CHECK_EQUAL( solver.camera.model, "EOS_R6" );
+
+    // Searching for a camera if already pre-selected follows a different
+    // code path.
+    result = solver.find_camera( "ALIAS_MAKE_3", "ALIAS_MODEL_2" );
+
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_EQUAL( solver.camera.manufacturer, "Canon" );
+    OIIO_CHECK_EQUAL( solver.camera.model, "EOS_R6" );
+}
+
 std::string run_rawtoaces_with_data_dir(
     std::vector<std::string> args, // Pass by value to avoid modifying original
     TestDirectory           &test_dir,
@@ -732,9 +948,9 @@ void test_parse_parameters_list_cameras( bool use_dir_path_arg = false )
     bool found_canon = false, found_mamiya = false;
     for ( size_t i = 1; i < lines.size(); ++i )
     {
-        if ( lines[i] == "Canon / EOS_R6" )
+        if ( lines[i] == "Canon EOS_R6" )
             found_canon = true;
-        if ( lines[i] == "Mamiya / Mamiya 7" )
+        if ( lines[i] == "Mamiya 7" )
             found_mamiya = true;
     }
     OIIO_CHECK_EQUAL( found_canon, true );
@@ -2733,6 +2949,13 @@ int main( int, char ** )
         test_fix_metadata_unsupported_type();
 
         test_fetch_missing_metadata();
+
+        test_combine_make_model();
+        test_empty_aliases();
+        test_collect_aliases();
+        test_get_supported_cameras( false );
+        test_get_supported_cameras( true );
+        test_find_camera_alias();
 
         // Tests for parse_parameters
         test_parse_parameters_list_formats();

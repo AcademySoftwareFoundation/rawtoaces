@@ -636,20 +636,20 @@ void test_fix_metadata_unsupported_type()
     OIIO_CHECK_EQUAL( spec.find_attribute( "Make" ), nullptr );
 }
 
-void test_combine_camera_name()
+void test_combine_make_model()
 {
     std::cout << "\n" << __FUNCTION__ << std::endl;
 
-    std::string result = combine_camera_name( "MAKE", "MODEL" );
+    std::string result = combine_make_model( "MAKE", "MODEL" );
     OIIO_CHECK_EQUAL( result, "MAKE MODEL" );
 
-    result = combine_camera_name( "Make", "MAKE MODEL" );
+    result = combine_make_model( "Make", "MAKE MODEL" );
     OIIO_CHECK_EQUAL( result, "MAKE MODEL" );
 
-    result = combine_camera_name( "MAKE", "MAKEMODEL" );
+    result = combine_make_model( "MAKE", "MAKEMODEL" );
     OIIO_CHECK_EQUAL( result, "MAKE MAKEMODEL" );
 
-    result = combine_camera_name( "MAKE_LONGER_THEN_MODEL", "MODEL" );
+    result = combine_make_model( "MAKE_LONGER_THEN_MODEL", "MODEL" );
     OIIO_CHECK_EQUAL( result, "MAKE_LONGER_THEN_MODEL MODEL" );
 }
 
@@ -2950,7 +2950,7 @@ int main( int, char ** )
 
         test_fetch_missing_metadata();
 
-        test_combine_camera_name();
+        test_combine_make_model();
         test_empty_aliases();
         test_collect_aliases();
         test_get_supported_cameras( false );

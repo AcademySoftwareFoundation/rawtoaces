@@ -25,7 +25,7 @@ std::vector<std::string>
 void fix_metadata( OIIO::ImageSpec &spec );
 
 std::string
-combine_camera_name( const std::string &make, const std::string &model );
+combine_make_model( const std::string &make, const std::string &model );
 
 bool fetch_missing_metadata(
     const std::string              &input_path,

@@ -285,6 +285,11 @@ bool SpectralSolver::collect_aliases(
 
         if ( std::filesystem::exists( path ) )
         {
+            // For now we consider the aliases files optional.
+            // In a case of error, we just skip the file and process the next
+            // one. We still want to report warnings to let the user a chance
+            // to fix broken files.
+
             std::ifstream ifstream( path );
             if ( !ifstream.is_open() )
             {
@@ -293,7 +298,19 @@ bool SpectralSolver::collect_aliases(
                 continue;
             }
 
-            nlohmann::json file_data = nlohmann::json::parse( ifstream );
+            nlohmann::json file_data;
+
+            try
+            {
+                file_data = nlohmann::json::parse( ifstream );
+            }
+            catch ( const std::exception &error )
+            {
+                std::cerr << "Warning: JSON parsing of the alias file "
+                          << path.string() << " failed with error: "
+                          << error.what() << "." << std::endl;
+                continue;
+            }
 
             if ( !file_data.contains( "data" ) )
             {

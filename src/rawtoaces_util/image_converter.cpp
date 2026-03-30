@@ -1409,8 +1409,13 @@ std::vector<std::string> ImageConverter::get_supported_illuminants() const
     return result;
 }
 
+/// Combine the make and model strings together, unless they are the same,
+/// or the model name starts with the make followed by a whitespace.
+/// "Canon" + "Canon R5" = "Canon R5"
+/// "Canon R5" + "Canon R5" = "Canon R5"
+/// "Canon" + "Canon_R5" = "Canon Canon_R5"
 std::string
-combine_camera_name( const std::string &make, const std::string &model )
+combine_make_model( const std::string &make, const std::string &model )
 {
     bool has_prefix = true;
 
@@ -1453,7 +1458,7 @@ std::vector<std::string> ImageConverter::get_supported_cameras() const
         if ( data.load( file, false ) )
         {
             std::string name =
-                combine_camera_name( data.manufacturer, data.model );
+                combine_make_model( data.manufacturer, data.model );
             result.push_back( name );
         }
     }
@@ -1473,9 +1478,9 @@ std::vector<std::string> ImageConverter::get_supported_cameras() const
                 const std::string &dst_make  = dst.first;
                 const std::string &dst_model = dst.second;
                 const std::string  dst_make_model =
-                    combine_camera_name( dst_make, dst_model );
+                    combine_make_model( dst_make, dst_model );
                 const std::string src_make_model =
-                    combine_camera_name( src_make, src_model );
+                    combine_make_model( src_make, src_model );
 
                 if ( std::find(
                          result.begin(), result.end(), dst_make_model ) !=

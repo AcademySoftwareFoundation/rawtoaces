@@ -307,8 +307,9 @@ bool SpectralSolver::collect_aliases(
             catch ( const std::exception &error )
             {
                 std::cerr << "Warning: JSON parsing of the alias file "
-                          << path.string() << " failed with error: "
-                          << error.what() << "." << std::endl;
+                          << path.string()
+                          << " failed with error: " << error.what() << "."
+                          << std::endl;
                 continue;
             }
 

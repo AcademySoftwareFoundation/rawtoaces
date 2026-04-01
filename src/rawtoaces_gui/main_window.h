@@ -35,7 +35,10 @@ private slots:
     void onRemoveSelected();
     void onClearFiles();
     void onBrowseOutput();
-    void onBrowseDataDir();
+    void onAddSpectralDataFolder();
+    void onRemoveSpectralDataSelected();
+    void onMoveSpectralDataUp();
+    void onMoveSpectralDataDown();
     void onConvert();
     void onCancel();
     void onConversionFileStarted( int index, QString path );
@@ -60,7 +63,7 @@ private:
 
     QListWidget  *m_fileList      = nullptr;
     QLineEdit    *m_outputDir     = nullptr;
-    QLineEdit    *m_dataDir       = nullptr;
+    QListWidget  *m_dataDirList   = nullptr;
     QPushButton  *m_convertButton = nullptr;
     QPushButton  *m_cancelButton  = nullptr;
     QProgressBar *m_progress      = nullptr;

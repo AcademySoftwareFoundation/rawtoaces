@@ -7,6 +7,7 @@
 #include <QAction>
 #include <QApplication>
 #include <QComboBox>
+#include <QDir>
 #include <QFileDialog>
 #include <QFrame>
 #include <QFormLayout>
@@ -74,8 +75,11 @@ constexpr int kStdNumericFieldWidth = 112;
 constexpr int kSettingsTabPageMargin  = 6;
 constexpr int kSettingsSectionTailGap = 6;
 
-/// Vertical gap between collapsible blocks on Basic / Advanced tabs.
+/// Vertical gap between collapsible blocks on the settings tabs.
 constexpr int kCollapsibleTabSectionSpacing = 12;
+
+/// Space above each nested `QGroupBox` inside the LibRaw collapsible (between groups).
+constexpr int kNestedFieldGroupPadAboveTitle = 15;
 
 /// Inset around the main tab widget and the bottom Convert / progress row.
 constexpr int kCentralChromeMargin = 10;
@@ -175,6 +179,29 @@ QWidget *wrapCollapsibleSection(
     return section;
 }
 
+/// Titled `QGroupBox` nested inside another section (e.g. LibRaw). Only the
+/// **outer** top margin separates stacked groups; native title/body spacing is
+/// left to the platform style.
+QWidget *wrapFieldGroup( QWidget *body, const QString &title )
+{
+    if ( body == nullptr )
+    {
+        return nullptr;
+    }
+    auto *group = new QGroupBox( title );
+    auto *lay   = new QVBoxLayout( group );
+    lay->setSpacing( 6 );
+    lay->addWidget( body );
+    group->setSizePolicy( QSizePolicy::Preferred, QSizePolicy::Preferred );
+
+    auto *wrap     = new QWidget;
+    auto *outerLay = new QVBoxLayout( wrap );
+    outerLay->setContentsMargins( 0, kNestedFieldGroupPadAboveTitle, 0, 0 );
+    outerLay->setSpacing( 0 );
+    outerLay->addWidget( group );
+    return wrap;
+}
+
 /// Fixed pixel width for compact numeric fields. Uses setFixedWidth (not only
 /// setMaximumWidth) so e.g. QDoubleSpinBox widgets match despite different decimals.
 void setFieldMaxWidth( QWidget *widget, int widthPixels )
@@ -198,6 +225,15 @@ void polishFormLayout( QFormLayout *form )
     }
     form->setFormAlignment( Qt::AlignLeading | Qt::AlignTop );
     form->setLabelAlignment( Qt::AlignRight | Qt::AlignVCenter );
+}
+
+/// Sidebar button column for list + buttons rows (Inputs, Spectral data).
+QVBoxLayout *mountTightButtonStack( QWidget *host )
+{
+    auto *lay = new QVBoxLayout( host );
+    lay->setContentsMargins( 0, 0, 0, 0 );
+    lay->setSpacing( 6 );
+    return lay;
 }
 
 /// Rows whose field is a nested `QFormLayout` need the *outer* label top-aligned
@@ -279,7 +315,8 @@ void mountFormInWidgetFullWidth( QWidget *host, QFormLayout **outForm )
     *outForm    = new QFormLayout( inner );
     polishFormLayout( *outForm );
     inner->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Preferred );
-    outer->addWidget( inner );
+    // Top-align so short forms do not stretch to fill the host vertically.
+    outer->addWidget( inner, 0, Qt::AlignTop );
 }
 
 void addLabeledSpinRows(
@@ -312,9 +349,7 @@ flattenBatches( const std::vector<std::vector<std::string>> &batches )
     return out;
 }
 
-/// Override paths from the spectral data line edit (`;` / `:` separated).
-/// Empty field → empty vector so the library fills from env / defaults (same as
-/// not overriding spectral data paths in the converter).
+/// Split persisted spectral path override (`;` / `:`). Empty → no override.
 std::vector<std::string> spectralDatabaseDirsFromLineEdit( const QString &text )
 {
     const QString trimmed = text.trimmed();
@@ -337,6 +372,57 @@ std::vector<std::string> spectralDatabaseDirsFromLineEdit( const QString &text )
     return out;
 }
 
+std::vector<std::string> spectralDatabaseDirsFromListWidget( const QListWidget *list )
+{
+    std::vector<std::string> out;
+    if ( list == nullptr )
+    {
+        return out;
+    }
+    for ( int i = 0; i < list->count(); ++i )
+    {
+        const QString one = list->item( i )->text().trimmed();
+        if ( one.isEmpty() )
+        {
+            continue;
+        }
+        out.push_back( one.toStdString() );
+    }
+    return out;
+}
+
+QString spectralDataPathsJoinedForSettings( const QListWidget *list )
+{
+    QStringList parts;
+    if ( list == nullptr )
+    {
+        return {};
+    }
+    for ( int i = 0; i < list->count(); ++i )
+    {
+        const QString one = list->item( i )->text().trimmed();
+        if ( !one.isEmpty() )
+        {
+            parts << one;
+        }
+    }
+    return parts.join( QLatin1Char( ';' ) );
+}
+
+void populateSpectralDataListFromSettingsString(
+    QListWidget *list, const QString &saved )
+{
+    if ( list == nullptr )
+    {
+        return;
+    }
+    list->clear();
+    for ( const auto &dir: spectralDatabaseDirsFromLineEdit( saved ) )
+    {
+        list->addItem( QString::fromStdString( dir ) );
+    }
+}
+
 } // namespace
 
 MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
@@ -354,11 +440,10 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     m_fileList    = new QListWidget;
     m_fileList->setObjectName( QStringLiteral( "guiFileList" ) );
     m_fileList->setSelectionMode( QAbstractItemView::ExtendedSelection );
-    m_fileList->setMinimumHeight( 48 );
+    m_fileList->setMinimumHeight( 60 );
     m_fileList->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );
-    fileRow->addWidget( m_fileList, 1 );
-    auto *fileBtnCol = new QVBoxLayout;
-    fileBtnCol->setSpacing( 6 );
+    auto *fileBtnHost = new QWidget;
+    QVBoxLayout *const fileBtnCol = mountTightButtonStack( fileBtnHost );
     auto *addFiles  = new QPushButton( tr( "Add files…" ) );
     auto *addFolder = new QPushButton( tr( "Add folder…" ) );
     auto *removeBtn = new QPushButton( tr( "Remove" ) );
@@ -368,7 +453,9 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     fileBtnCol->addWidget( removeBtn );
     fileBtnCol->addWidget( clearBtn );
     fileBtnCol->addStretch();
-    fileRow->addLayout( fileBtnCol );
+    fileRow->setAlignment( Qt::AlignTop );
+    fileRow->addWidget( m_fileList, 1 );
+    fileRow->addWidget( fileBtnHost, 0 );
     inputLay->addLayout( fileRow, 1 );
 
     connect( addFiles, &QPushButton::clicked, this, &MainWindow::onAddFiles );
@@ -468,7 +555,7 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     m_settingsTabs->setObjectName( QStringLiteral( "guiSettingsTabs" ) );
     m_settingsTabs->setDocumentMode( true );
 
-    // --- Raw decode groups (used on Basic / Advanced tabs) ---
+    // --- LibRaw-related decode / colour controls (under Settings → Other libraw) ---
 
     auto        *rawLevels = new QWidget;
     QFormLayout *rawLay    = nullptr;
@@ -655,31 +742,85 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     m_demosaic->setMaximumWidth( kStdNumericFieldWidth * 2 );
     dmForm->addRow( tr( "Algorithm:" ), m_demosaic );
 
-    // --- Colour groups (used on Basic / Advanced tabs) ---
-    auto        *grpSpectral  = new QWidget;
+    // Spectral data: spanning row so the list gets full width (label+field pairs
+    // leave a narrow field column).
+    auto *grpSpectral = new QWidget;
+    grpSpectral->setSizePolicy(
+        QSizePolicy::Expanding, QSizePolicy::Preferred );
     QFormLayout *spectralForm = nullptr;
     mountFormInWidgetFullWidth( grpSpectral, &spectralForm );
     spectralForm->setHorizontalSpacing( 12 );
     spectralForm->setVerticalSpacing( 8 );
-    spectralForm->setFieldGrowthPolicy( QFormLayout::ExpandingFieldsGrow );
-    m_dataDir = new QLineEdit;
-    m_dataDir->setObjectName( QStringLiteral( "guiDataDir" ) );
-    m_dataDir->setPlaceholderText( tr( "Empty = default search paths" ) );
-    m_dataDir->setToolTip( tr(
-        "Override directories for camera / illuminant spectral data. "
-        "Separate multiple paths with ';' or ':'. Empty uses library defaults "
+    spectralForm->setFieldGrowthPolicy( QFormLayout::FieldsStayAtSizeHint );
+
+    m_dataDirList = new QListWidget;
+    m_dataDirList->setObjectName( QStringLiteral( "guiDataDirList" ) );
+    m_dataDirList->setSelectionMode( QAbstractItemView::ExtendedSelection );
+    m_dataDirList->setSizePolicy(
+        QSizePolicy::Expanding, QSizePolicy::Preferred );
+    m_dataDirList->setToolTip( tr(
+        "Directories for camera / illuminant spectral data. "
+        "Earlier entries are searched first. Empty uses library defaults "
         "and environment." ) );
-    auto *dataBrowse = new QPushButton( tr( "Browse…" ) );
-    auto *dataWrap   = new QWidget;
+
+    auto *spectralAddFolder = new QPushButton( tr( "Add folder…" ) );
+    auto *spectralRemove    = new QPushButton( tr( "Remove" ) );
+    auto *spectralMoveUp    = new QPushButton( tr( "Move up" ) );
+    auto *spectralMoveDown  = new QPushButton( tr( "Move down" ) );
+    auto *spectralBtnHost   = new QWidget;
+    QVBoxLayout *const spectralBtnCol = mountTightButtonStack( spectralBtnHost );
+    spectralBtnCol->addWidget( spectralAddFolder );
+    spectralBtnCol->addWidget( spectralRemove );
+    spectralBtnCol->addWidget( spectralMoveUp );
+    spectralBtnCol->addWidget( spectralMoveDown );
+    spectralBtnCol->addStretch();
+
+    auto *dataWrap = new QWidget;
     dataWrap->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Preferred );
     auto *dataHBox = new QHBoxLayout( dataWrap );
-    dataHBox->setContentsMargins( 0, 0, 0, 0 );
     dataHBox->setSpacing( 8 );
-    dataHBox->addWidget( m_dataDir, 1 );
-    dataHBox->addWidget( dataBrowse );
-    spectralForm->addRow( tr( "Data directory:" ), dataWrap );
+    dataHBox->setAlignment( Qt::AlignTop );
+    dataHBox->addWidget( m_dataDirList, 1 );
+    dataHBox->addWidget( spectralBtnHost, 0 );
+    dataHBox->setContentsMargins( 12, 0, 12, 0 );
+
+
+    auto *spectralPathsRow = new QWidget;
+    spectralPathsRow->setSizePolicy(
+        QSizePolicy::Expanding, QSizePolicy::Minimum );
+    spectralPathsRow->setContentsMargins( 12, 0, 12, 0 );
+    auto *pathsHBox = new QHBoxLayout( spectralPathsRow );
+    pathsHBox->setContentsMargins( 12, 0, 12, 0 );
+    pathsHBox->setSpacing( spectralForm->horizontalSpacing() );
+    pathsHBox->setAlignment( Qt::AlignTop );
+    auto *pathsLabel = new QLabel( tr( "Data directories:" ) );
+    pathsLabel->setAlignment( Qt::AlignRight | Qt::AlignTop );
+    pathsLabel->setBuddy( m_dataDirList );
+    pathsHBox->addWidget( pathsLabel, 0 );
+    pathsHBox->addWidget( dataWrap, 1 );
+
+    spectralForm->addRow( spectralPathsRow );
+
     connect(
-        dataBrowse, &QPushButton::clicked, this, &MainWindow::onBrowseDataDir );
+        spectralAddFolder,
+        &QPushButton::clicked,
+        this,
+        &MainWindow::onAddSpectralDataFolder );
+    connect(
+        spectralRemove,
+        &QPushButton::clicked,
+        this,
+        &MainWindow::onRemoveSpectralDataSelected );
+    connect(
+        spectralMoveUp,
+        &QPushButton::clicked,
+        this,
+        &MainWindow::onMoveSpectralDataUp );
+    connect(
+        spectralMoveDown,
+        &QPushButton::clicked,
+        this,
+        &MainWindow::onMoveSpectralDataDown );
 
     auto        *grpWb  = new QWidget;
     QFormLayout *wbForm = nullptr;
@@ -808,6 +949,31 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     matForm->addRow( tr( "Override camera make:" ), makeWrap );
     matForm->addRow( tr( "Override camera model:" ), modelWrap );
 
+    auto *librawSettingsBody = new QWidget;
+    auto *librawOuter        = new QVBoxLayout( librawSettingsBody );
+    librawOuter->setContentsMargins( 0, 0, 0, 0 );
+    // Spacing above each nested group title comes from `wrapFieldGroup`; keep
+    // zero here so it does not stack with that outer top margin.
+    librawOuter->setSpacing( 0 );
+    librawOuter->addWidget( wrapFieldGroup(
+        rawLevels,
+        tr( "Levels && exposure" )));
+    librawOuter->addWidget( wrapFieldGroup(
+        rawChroma,
+        tr( "Chromatic aberration && size" ) ) );
+    librawOuter->addWidget( wrapFieldGroup(
+        grpWb,
+        tr( "White balance" ) ) );
+    librawOuter->addWidget( wrapFieldGroup(
+        grpMat,
+        tr( "Colour matrix && camera" )) );
+    librawOuter->addWidget( wrapFieldGroup(
+        rawCrop,
+        tr( "Crop, orientation && denoise" )) );
+    librawOuter->addWidget( wrapFieldGroup(
+        rawDemo,
+        tr( "Demosaic" )) );
+
     auto        *grpTone  = new QWidget;
     QFormLayout *toneForm = nullptr;
     mountFormInWidget( grpTone, &toneForm );
@@ -916,50 +1082,34 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     m_lensFocus            = nullptr;
 #endif
 
-    // --- Tab pages: Inputs, Basic, Advanced, Logs ---
+    // --- Tab pages: Inputs, Settings, Logs ---
     auto *inputsInner = new QWidget;
     auto *inputsOuter = new QVBoxLayout( inputsInner );
     applySettingsTabPageChrome( inputsOuter );
     inputsOuter->setSpacing( kCollapsibleTabSectionSpacing );
     inputsOuter->addWidget( wrapSettingsSectionTail( inputGroup, 1 ), 1 );
-    inputsOuter->addWidget(
-        wrapCollapsibleSection( pathGroup, tr( "Output settings" ), false ), 0 );
 
-    auto *basicInner = new QWidget;
-    auto *basicOuter = new QVBoxLayout( basicInner );
-    applySettingsTabPageChrome( basicOuter );
-    basicOuter->setSpacing( kCollapsibleTabSectionSpacing );
-    basicOuter->addWidget(
-        wrapCollapsibleSection( rawLevels, tr( "Levels && exposure" ) ) );
-    basicOuter->addWidget( wrapCollapsibleSection(
-        rawChroma, tr( "Chromatic aberration && size" ) ) );
-    basicOuter->addWidget(
-        wrapCollapsibleSection( grpWb, tr( "White balance" ) ) );
-    basicOuter->addWidget(
-        wrapCollapsibleSection( grpTone, tr( "Tone && scale" ) ) );
-    basicOuter->addStretch();
-
-    auto *advancedInner = new QWidget;
-    auto *advancedOuter = new QVBoxLayout( advancedInner );
-    applySettingsTabPageChrome( advancedOuter );
-    advancedOuter->setSpacing( kCollapsibleTabSectionSpacing );
-    advancedOuter->addWidget(
+    auto *settingsInner = new QWidget;
+    auto *settingsOuter = new QVBoxLayout( settingsInner );
+    applySettingsTabPageChrome( settingsOuter );
+    settingsOuter->setSpacing( kCollapsibleTabSectionSpacing );
+    settingsOuter->addWidget(
         wrapCollapsibleSection( grpSpectral, tr( "Spectral data" ) ) );
-    advancedOuter->addWidget( wrapCollapsibleSection(
-        grpMat, tr( "Colour matrix && camera" ) ) );
-    advancedOuter->addWidget( wrapCollapsibleSection(
-        rawCrop, tr( "Crop, orientation && denoise" ) ) );
-    advancedOuter->addWidget(
-        wrapCollapsibleSection( rawDemo, tr( "Demosaic" ) ) );
+    settingsOuter->addWidget( wrapCollapsibleSection(
+        pathGroup, tr( "Output settings" ), false ), 0 );
 #ifdef RTA_GUI_HAS_LENSFUN
-    advancedOuter->addWidget( wrapCollapsibleSection(
+    settingsOuter->addWidget( wrapCollapsibleSection(
         lensFlagsBox, tr( "Lens corrections" ) ) );
-    advancedOuter->addWidget( wrapCollapsibleSection(
+    settingsOuter->addWidget( wrapCollapsibleSection(
         lensOverride, tr( "Lens metadata" ) ) );
 #endif
-    advancedOuter->addWidget( wrapCollapsibleSection(
+    settingsOuter->addWidget(
+        wrapCollapsibleSection( grpTone, tr( "Tone && scale" ) ) );
+    settingsOuter->addWidget( wrapCollapsibleSection(
         logCacheGroup, tr( "Cache" ) ) );
-    advancedOuter->addStretch();
+    settingsOuter->addWidget( wrapCollapsibleSection(
+        librawSettingsBody, tr( "Other libraw settings" ) ) );
+    settingsOuter->addStretch();
 
     auto *logsInner = new QWidget;
     auto *logsOuter = new QVBoxLayout( logsInner );
@@ -970,8 +1120,7 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     logsOuter->addWidget( m_log, 1 );
 
     m_settingsTabs->addTab( wrapScroll( inputsInner ), tr( "Inputs" ) );
-    m_settingsTabs->addTab( wrapScroll( basicInner ), tr( "Basic" ) );
-    m_settingsTabs->addTab( wrapScroll( advancedInner ), tr( "Advanced" ) );
+    m_settingsTabs->addTab( wrapScroll( settingsInner ), tr( "Settings" ) );
     m_settingsTabs->addTab( logsInner, tr( "Logs" ) );
 
     auto *runRow = new QWidget;
@@ -1120,7 +1269,7 @@ rta::util::ImageConverter::Settings MainWindow::buildSettingsFromUi() const
     s.output_dir  = m_outputDir->text().toStdString();
 
     s.database_directories =
-        spectralDatabaseDirsFromLineEdit( m_dataDir->text() );
+        spectralDatabaseDirsFromListWidget( m_dataDirList );
 
 #ifdef RTA_GUI_HAS_LENSFUN
     if ( m_lensCorrAberration != nullptr )
@@ -1300,13 +1449,71 @@ void MainWindow::onBrowseOutput()
     }
 }
 
-void MainWindow::onBrowseDataDir()
+void MainWindow::onAddSpectralDataFolder()
 {
-    const QString d = QFileDialog::getExistingDirectory( this );
-    if ( !d.isEmpty() )
+    if ( m_dataDirList == nullptr )
     {
-        m_dataDir->setText( d );
+        return;
     }
+    const QString d = QFileDialog::getExistingDirectory(
+        this,
+        tr( "Add spectral data directory" ),
+        {},
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks );
+    if ( d.isEmpty() )
+    {
+        return;
+    }
+    const QString clean = QDir::cleanPath( d );
+    for ( int i = 0; i < m_dataDirList->count(); ++i )
+    {
+        if ( QDir::cleanPath( m_dataDirList->item( i )->text() ) == clean )
+        {
+            return;
+        }
+    }
+    m_dataDirList->addItem( clean );
+}
+
+void MainWindow::onRemoveSpectralDataSelected()
+{
+    if ( m_dataDirList == nullptr )
+    {
+        return;
+    }
+    qDeleteAll( m_dataDirList->selectedItems() );
+}
+
+void MainWindow::onMoveSpectralDataUp()
+{
+    if ( m_dataDirList == nullptr )
+    {
+        return;
+    }
+    const int row = m_dataDirList->currentRow();
+    if ( row <= 0 )
+    {
+        return;
+    }
+    QListWidgetItem *const item = m_dataDirList->takeItem( row );
+    m_dataDirList->insertItem( row - 1, item );
+    m_dataDirList->setCurrentRow( row - 1 );
+}
+
+void MainWindow::onMoveSpectralDataDown()
+{
+    if ( m_dataDirList == nullptr )
+    {
+        return;
+    }
+    const int row = m_dataDirList->currentRow();
+    if ( row < 0 || row >= m_dataDirList->count() - 1 )
+    {
+        return;
+    }
+    QListWidgetItem *const item = m_dataDirList->takeItem( row );
+    m_dataDirList->insertItem( row + 1, item );
+    m_dataDirList->setCurrentRow( row + 1 );
 }
 
 void MainWindow::onConvert()
@@ -1504,10 +1711,11 @@ void MainWindow::savePreferences() const
     {
         settings.setValue( QStringLiteral( "outputDir" ), m_outputDir->text() );
     }
-    if ( m_dataDir != nullptr )
+    if ( m_dataDirList != nullptr )
     {
         settings.setValue(
-            QStringLiteral( "spectralDataOverride" ), m_dataDir->text() );
+            QStringLiteral( "spectralDataOverride" ),
+            spectralDataPathsJoinedForSettings( m_dataDirList ) );
     }
     settings.endGroup();
 
@@ -1738,8 +1946,17 @@ void MainWindow::loadPreferences()
     {
         restoreGeometry( geometry );
     }
-    const int tabIndex =
+    int tabIndex =
         settings.value( QStringLiteral( "settingsTab" ), 0 ).toInt();
+    // Was: 0 Inputs, 1 Basic, 2 Advanced, 3 Logs. Now: 0 Inputs, 1 Settings, 2 Logs.
+    if ( tabIndex >= 3 )
+    {
+        tabIndex -= 1;
+    }
+    else if ( tabIndex >= 1 )
+    {
+        tabIndex = 1;
+    }
     settings.endGroup();
 
     settings.beginGroup( QStringLiteral( "paths" ) );
@@ -1748,9 +1965,10 @@ void MainWindow::loadPreferences()
         m_outputDir->setText(
             settings.value( QStringLiteral( "outputDir" ) ).toString() );
     }
-    if ( m_dataDir != nullptr )
+    if ( m_dataDirList != nullptr )
     {
-        m_dataDir->setText(
+        populateSpectralDataListFromSettingsString(
+            m_dataDirList,
             settings.value( QStringLiteral( "spectralDataOverride" ) )
                 .toString() );
     }

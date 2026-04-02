@@ -8,6 +8,7 @@
 #include <OpenImageIO/imagebufalgo_util.h>
 #include <lensfun/lensfun.h>
 #include <assert.h>
+#include <cstdlib>
 
 namespace rta
 {
@@ -75,6 +76,10 @@ const lfModifier *modifier_from_spec(
 
         if ( !loaded_succesfully )
         {
+            // Drop failed init: avoid a leak and reset the singleton so the next
+            // call (e.g. after RAWTOACES_LENSFUNDB_PATH changes) can retry Load().
+            delete Database;
+            Database = nullptr;
             error_message =
                 "Lensfun DB not found, please provide the path to "
                 "the database directory via the "

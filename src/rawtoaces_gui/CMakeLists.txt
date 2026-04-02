@@ -17,6 +17,9 @@ target_link_libraries(rawtoaces_gui_lib PUBLIC
 target_include_directories(rawtoaces_gui_lib PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}"
 )
+target_include_directories(rawtoaces_gui_lib PRIVATE
+    $<$<BOOL:${RTA_ENABLE_LENSFUN}>:${CMAKE_SOURCE_DIR}/src/rawtoaces_util>
+)
 
 target_compile_definitions(rawtoaces_gui_lib PUBLIC
     $<$<BOOL:${RTA_ENABLE_LENSFUN}>:RTA_GUI_HAS_LENSFUN=1>

@@ -7,6 +7,8 @@
 #include <QAction>
 #include <QApplication>
 #include <QComboBox>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QDir>
 #include <QFileDialog>
 #include <QFrame>
@@ -15,6 +17,7 @@
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QKeySequence>
 #include <QListWidget>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -27,6 +30,7 @@
 #include <QSpinBox>
 #include <QDoubleSpinBox>
 #include <QCheckBox>
+#include <QGuiApplication>
 #include <QLineEdit>
 #include <QTabWidget>
 #include <QTextEdit>
@@ -35,6 +39,10 @@
 #include <QCloseEvent>
 
 #include <rawtoaces/image_converter.h>
+
+#ifdef RTA_GUI_HAS_LENSFUN
+#    include "lens_correction.h"
+#endif
 
 #include <algorithm>
 #include <vector>
@@ -54,7 +62,7 @@ QWidget *wrapCheckBoxForFormRow( QCheckBox *checkBox )
     }
     auto *host = new QWidget;
     auto *lay  = new QHBoxLayout( host );
-    lay->setContentsMargins( 0, 0, 0, 0 );
+    lay->setContentsMargins( 0, 0, 6, 0 );
     lay->setSpacing( 0 );
     lay->setAlignment( Qt::AlignVCenter );
     lay->addWidget( checkBox, 0, Qt::AlignVCenter );
@@ -231,7 +239,8 @@ void polishFormLayout( QFormLayout *form )
 QVBoxLayout *mountTightButtonStack( QWidget *host )
 {
     auto *lay = new QVBoxLayout( host );
-    lay->setContentsMargins( 0, 0, 0, 0 );
+    // Keep this 6 at the bottom to push out lower edge, otherwise on mac last button is cut off.
+    lay->setContentsMargins( 0, 0, 0, 6 );
     lay->setSpacing( 6 );
     return lay;
 }
@@ -421,6 +430,73 @@ void populateSpectralDataListFromSettingsString(
     {
         list->addItem( QString::fromStdString( dir ) );
     }
+}
+
+void addDirectoryToPathList(
+    QWidget *parent, QListWidget *list, const QString &dialogTitle )
+{
+    if ( list == nullptr )
+    {
+        return;
+    }
+    const QString d = QFileDialog::getExistingDirectory(
+        parent,
+        dialogTitle,
+        {},
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks );
+    if ( d.isEmpty() )
+    {
+        return;
+    }
+    const QString clean = QDir::cleanPath( d );
+    for ( int i = 0; i < list->count(); ++i )
+    {
+        if ( QDir::cleanPath( list->item( i )->text() ) == clean )
+        {
+            return;
+        }
+    }
+    list->addItem( clean );
+}
+
+void removeSelectedFromPathList( QListWidget *list )
+{
+    if ( list != nullptr )
+    {
+        qDeleteAll( list->selectedItems() );
+    }
+}
+
+void movePathListItemUp( QListWidget *list )
+{
+    if ( list == nullptr )
+    {
+        return;
+    }
+    const int row = list->currentRow();
+    if ( row <= 0 )
+    {
+        return;
+    }
+    QListWidgetItem *const item = list->takeItem( row );
+    list->insertItem( row - 1, item );
+    list->setCurrentRow( row - 1 );
+}
+
+void movePathListItemDown( QListWidget *list )
+{
+    if ( list == nullptr )
+    {
+        return;
+    }
+    const int row = list->currentRow();
+    if ( row < 0 || row >= list->count() - 1 )
+    {
+        return;
+    }
+    QListWidgetItem *const item = list->takeItem( row );
+    list->insertItem( row + 1, item );
+    list->setCurrentRow( row + 1 );
 }
 
 } // namespace
@@ -742,16 +818,13 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     m_demosaic->setMaximumWidth( kStdNumericFieldWidth * 2 );
     dmForm->addRow( tr( "Algorithm:" ), m_demosaic );
 
-    // Spectral data: spanning row so the list gets full width (label+field pairs
-    // leave a narrow field column).
+    // Spectral list + buttons (no inner row label — settings dialog group title).
     auto *grpSpectral = new QWidget;
     grpSpectral->setSizePolicy(
         QSizePolicy::Expanding, QSizePolicy::Preferred );
-    QFormLayout *spectralForm = nullptr;
-    mountFormInWidgetFullWidth( grpSpectral, &spectralForm );
-    spectralForm->setHorizontalSpacing( 12 );
-    spectralForm->setVerticalSpacing( 8 );
-    spectralForm->setFieldGrowthPolicy( QFormLayout::FieldsStayAtSizeHint );
+    auto *spectralBodyLay = new QVBoxLayout( grpSpectral );
+    spectralBodyLay->setContentsMargins( 0, 0, 0, 0 );
+    spectralBodyLay->setSpacing( 0 );
 
     m_dataDirList = new QListWidget;
     m_dataDirList->setObjectName( QStringLiteral( "guiDataDirList" ) );
@@ -777,29 +850,15 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
 
     auto *dataWrap = new QWidget;
     dataWrap->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Preferred );
+    dataWrap->setContentsMargins( 0, 0, 0, 0 );
     auto *dataHBox = new QHBoxLayout( dataWrap );
     dataHBox->setSpacing( 8 );
     dataHBox->setAlignment( Qt::AlignTop );
     dataHBox->addWidget( m_dataDirList, 1 );
     dataHBox->addWidget( spectralBtnHost, 0 );
-    dataHBox->setContentsMargins( 12, 0, 12, 0 );
+    dataHBox->setContentsMargins( 0, 0, 0, 0 );
 
-
-    auto *spectralPathsRow = new QWidget;
-    spectralPathsRow->setSizePolicy(
-        QSizePolicy::Expanding, QSizePolicy::Minimum );
-    spectralPathsRow->setContentsMargins( 12, 0, 12, 0 );
-    auto *pathsHBox = new QHBoxLayout( spectralPathsRow );
-    pathsHBox->setContentsMargins( 12, 0, 12, 0 );
-    pathsHBox->setSpacing( spectralForm->horizontalSpacing() );
-    pathsHBox->setAlignment( Qt::AlignTop );
-    auto *pathsLabel = new QLabel( tr( "Data directories:" ) );
-    pathsLabel->setAlignment( Qt::AlignRight | Qt::AlignTop );
-    pathsLabel->setBuddy( m_dataDirList );
-    pathsHBox->addWidget( pathsLabel, 0 );
-    pathsHBox->addWidget( dataWrap, 1 );
-
-    spectralForm->addRow( spectralPathsRow );
+    spectralBodyLay->addWidget( dataWrap );
 
     connect(
         spectralAddFolder,
@@ -821,6 +880,119 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
         &QPushButton::clicked,
         this,
         &MainWindow::onMoveSpectralDataDown );
+
+#ifdef RTA_GUI_HAS_LENSFUN
+    auto *grpLensfun = new QWidget;
+    grpLensfun->setSizePolicy(
+        QSizePolicy::Expanding, QSizePolicy::Preferred );
+    auto *lensfunBodyLay = new QVBoxLayout( grpLensfun );
+    lensfunBodyLay->setContentsMargins( 0, 0, 0, 0 );
+    lensfunBodyLay->setSpacing( 0 );
+
+    m_lensfunDirList = new QListWidget;
+    m_lensfunDirList->setObjectName( QStringLiteral( "guiLensfunDirList" ) );
+    m_lensfunDirList->setSelectionMode( QAbstractItemView::ExtendedSelection );
+    m_lensfunDirList->setSizePolicy(
+        QSizePolicy::Expanding, QSizePolicy::Preferred );
+    m_lensfunDirList->setToolTip( tr(
+        "Directories searched for Lensfun camera and lens profiles (XML). "
+        "Earlier entries are loaded first. On startup, paths from "
+        "RAWTOACES_LENSFUNDB_PATH are merged into this list and the variable "
+        "is updated to match. After editing the list, use Reload to apply "
+        "changes to the running process (otherwise the list is saved when you "
+        "quit and applied on the next launch)." ) );
+
+    auto *lfAddFolder  = new QPushButton( tr( "Add folder…" ) );
+    auto *lfRemove     = new QPushButton( tr( "Remove" ) );
+    auto *lfMoveUp     = new QPushButton( tr( "Move up" ) );
+    auto *lfMoveDown   = new QPushButton( tr( "Move down" ) );
+    auto *lfReloadDb   = new QPushButton( tr( "Reload" ) );
+    lfReloadDb->setToolTip( tr(
+        "Write the list above into RAWTOACES_LENSFUNDB_PATH for this process "
+        "and drop the cached Lensfun database so the next conversion run "
+        "reloads XML from disk." ) );
+    auto *lfBtnHost    = new QWidget;
+    QVBoxLayout *const lfBtnCol = mountTightButtonStack( lfBtnHost );
+    lfBtnCol->addWidget( lfAddFolder );
+    lfBtnCol->addWidget( lfRemove );
+    lfBtnCol->addWidget( lfMoveUp );
+    lfBtnCol->addWidget( lfMoveDown );
+    lfBtnCol->addWidget( lfReloadDb );
+    lfBtnCol->addStretch();
+
+    auto *lfDataWrap = new QWidget;
+    lfDataWrap->setSizePolicy(
+        QSizePolicy::Expanding, QSizePolicy::Preferred );
+    auto *lfHBox = new QHBoxLayout( lfDataWrap );
+    lfHBox->setSpacing( 8 );
+    lfHBox->setAlignment( Qt::AlignTop );
+    lfHBox->setContentsMargins( 0, 0, 0, 0 );
+    lfHBox->addWidget( m_lensfunDirList, 1 );
+    lfHBox->addWidget( lfBtnHost, 0 );
+
+    lensfunBodyLay->addWidget( lfDataWrap );
+
+    connect( lfAddFolder, &QPushButton::clicked, this, [this]() {
+        addDirectoryToPathList(
+            this,
+            m_lensfunDirList,
+            tr( "Add Lensfun database directory" ) );
+    } );
+    connect( lfRemove, &QPushButton::clicked, this, [this]() {
+        removeSelectedFromPathList( m_lensfunDirList );
+    } );
+    connect( lfMoveUp, &QPushButton::clicked, this, [this]() {
+        movePathListItemUp( m_lensfunDirList );
+    } );
+    connect( lfMoveDown, &QPushButton::clicked, this, [this]() {
+        movePathListItemDown( m_lensfunDirList );
+    } );
+    connect(
+        lfReloadDb, &QPushButton::clicked, this, &MainWindow::onReloadLensfunDatabase );
+#endif
+
+    // App-level options live only in this dialog so each section body has one
+    // parent. The Settings tab holds conversion UI (WB, matrix, lens flags,
+    // libraw, etc.) without re-embedding the same widgets.
+    auto *preferencesPageInner = new QWidget;
+    auto *preferencesOuterLay  = new QVBoxLayout( preferencesPageInner );
+    applySettingsTabPageChrome( preferencesOuterLay );
+    preferencesOuterLay->setSpacing( kCollapsibleTabSectionSpacing );
+    preferencesOuterLay->addWidget( wrapFieldGroup(
+        grpSpectral, tr( "Spectral data — data directories" ) ) );
+#ifdef RTA_GUI_HAS_LENSFUN
+    preferencesOuterLay->addWidget( wrapFieldGroup(
+        grpLensfun,
+        tr( "Lensfun profile directories — database roots" ) ) );
+#endif
+    preferencesOuterLay->addWidget(
+        wrapFieldGroup( logCacheGroup, tr( "Cache" ) ) );
+    preferencesOuterLay->addWidget(
+        wrapFieldGroup( logsOptionsGroup, tr( "Log output" ) ) );
+    preferencesOuterLay->addStretch();
+
+    m_preferencesDialog = new QDialog( this );
+    m_preferencesDialog->setObjectName( QStringLiteral( "guiPreferencesDialog" ) );
+    m_preferencesDialog->setWindowTitle(
+        tr( "%1 — Settings" )
+            .arg( QGuiApplication::applicationDisplayName() ) );
+    auto *prefsRootLay = new QVBoxLayout( m_preferencesDialog );
+    prefsRootLay->setContentsMargins(
+        kCentralChromeMargin,
+        0,
+        kCentralChromeMargin,
+        kCentralChromeMargin
+    );
+    prefsRootLay->setSpacing( kCentralChromeMargin );
+    prefsRootLay->addWidget( wrapScroll( preferencesPageInner ), 1 );
+    auto *prefsButtons = new QDialogButtonBox( QDialogButtonBox::Close );
+    QObject::connect(
+        prefsButtons,
+        &QDialogButtonBox::rejected,
+        m_preferencesDialog,
+        &QDialog::reject );
+    prefsRootLay->addWidget( prefsButtons );
+    m_preferencesDialog->resize( 720, 580 );
 
     auto        *grpWb  = new QWidget;
     QFormLayout *wbForm = nullptr;
@@ -962,12 +1134,6 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
         rawChroma,
         tr( "Chromatic aberration && size" ) ) );
     librawOuter->addWidget( wrapFieldGroup(
-        grpWb,
-        tr( "White balance" ) ) );
-    librawOuter->addWidget( wrapFieldGroup(
-        grpMat,
-        tr( "Colour matrix && camera" )) );
-    librawOuter->addWidget( wrapFieldGroup(
         rawCrop,
         tr( "Crop, orientation && denoise" )) );
     librawOuter->addWidget( wrapFieldGroup(
@@ -1093,10 +1259,12 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     auto *settingsOuter = new QVBoxLayout( settingsInner );
     applySettingsTabPageChrome( settingsOuter );
     settingsOuter->setSpacing( kCollapsibleTabSectionSpacing );
-    settingsOuter->addWidget(
-        wrapCollapsibleSection( grpSpectral, tr( "Spectral data" ) ) );
     settingsOuter->addWidget( wrapCollapsibleSection(
         pathGroup, tr( "Output settings" ), false ), 0 );
+    settingsOuter->addWidget(
+        wrapCollapsibleSection( grpWb, tr( "White balance" ) ) );
+    settingsOuter->addWidget( wrapCollapsibleSection(
+        grpMat, tr( "Colour matrix && camera" ) ) );
 #ifdef RTA_GUI_HAS_LENSFUN
     settingsOuter->addWidget( wrapCollapsibleSection(
         lensFlagsBox, tr( "Lens corrections" ) ) );
@@ -1106,8 +1274,6 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     settingsOuter->addWidget(
         wrapCollapsibleSection( grpTone, tr( "Tone && scale" ) ) );
     settingsOuter->addWidget( wrapCollapsibleSection(
-        logCacheGroup, tr( "Cache" ) ) );
-    settingsOuter->addWidget( wrapCollapsibleSection(
         librawSettingsBody, tr( "Other libraw settings" ) ) );
     settingsOuter->addStretch();
 
@@ -1115,8 +1281,6 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     auto *logsOuter = new QVBoxLayout( logsInner );
     applySettingsTabPageChrome( logsOuter );
     logsOuter->setSpacing( kCollapsibleTabSectionSpacing );
-    logsOuter->addWidget( wrapCollapsibleSection(
-        logsOptionsGroup, tr( "Log output settings" ), false ) );
     logsOuter->addWidget( m_log, 1 );
 
     m_settingsTabs->addTab( wrapScroll( inputsInner ), tr( "Inputs" ) );
@@ -1178,11 +1342,21 @@ MainWindow::MainWindow( QWidget *parent ) : QMainWindow( parent )
     fileMenu->addAction( tr( "Quit" ), this, &QWidget::close );
 
     auto *helpMenu = menuBar()->addMenu( tr( "Help" ) );
+    auto *prefsAction = new QAction( tr( "Settings…" ), this );
+    prefsAction->setMenuRole( QAction::PreferencesRole );
+    connect(
+        prefsAction, &QAction::triggered, this, &MainWindow::showPreferences );
+    helpMenu->addAction( prefsAction );
+    helpMenu->addSeparator();
     helpMenu->addAction( tr( "About" ), this, &MainWindow::onAbout );
 
     resize( 1100, 820 );
 
     loadPreferences();
+#ifdef RTA_GUI_HAS_LENSFUN
+    mergeProcessEnvironmentLensfunPathsIntoList();
+    writeLensfunListToProcessEnvironment();
+#endif
 }
 
 rta::util::ImageConverter::Settings MainWindow::buildSettingsFromUi() const
@@ -1622,6 +1796,107 @@ void MainWindow::onAbout()
         body );
 }
 
+void MainWindow::showPreferences()
+{
+    if ( m_preferencesDialog == nullptr )
+    {
+        return;
+    }
+    m_preferencesDialog->exec();
+}
+
+#ifdef RTA_GUI_HAS_LENSFUN
+
+namespace
+{
+QString lensfunEnvPathListSeparator()
+{
+#if defined( Q_OS_WIN )
+    return QStringLiteral( ";" );
+#else
+    return QStringLiteral( ":" );
+#endif
+}
+} // namespace
+
+void MainWindow::writeLensfunListToProcessEnvironment()
+{
+    if ( m_lensfunDirList == nullptr )
+    {
+        return;
+    }
+    QStringList parts;
+    for ( int i = 0; i < m_lensfunDirList->count(); ++i )
+    {
+        const QString one = m_lensfunDirList->item( i )->text().trimmed();
+        if ( !one.isEmpty() )
+        {
+            parts << QDir::cleanPath( one );
+        }
+    }
+    if ( parts.isEmpty() )
+    {
+        qunsetenv( "RAWTOACES_LENSFUNDB_PATH" );
+    }
+    else
+    {
+        qputenv(
+            "RAWTOACES_LENSFUNDB_PATH",
+            parts.join( lensfunEnvPathListSeparator() ).toUtf8() );
+    }
+}
+
+void MainWindow::mergeProcessEnvironmentLensfunPathsIntoList()
+{
+    if ( m_lensfunDirList == nullptr )
+    {
+        return;
+    }
+    const QByteArray raw = qgetenv( "RAWTOACES_LENSFUNDB_PATH" );
+    if ( raw.isEmpty() )
+    {
+        return;
+    }
+    const QString     envPaths = QString::fromLocal8Bit( raw );
+    const QStringList split =
+        envPaths.split( lensfunEnvPathListSeparator(), Qt::SkipEmptyParts );
+    for ( QString path: split )
+    {
+        path = path.trimmed();
+        if ( path.isEmpty() )
+        {
+            continue;
+        }
+        const QString clean = QDir::cleanPath( path );
+        bool          dup   = false;
+        for ( int i = 0; i < m_lensfunDirList->count(); ++i )
+        {
+            if ( QDir::cleanPath( m_lensfunDirList->item( i )->text() ) ==
+                 clean )
+            {
+                dup = true;
+                break;
+            }
+        }
+        if ( !dup )
+        {
+            m_lensfunDirList->addItem( clean );
+        }
+    }
+}
+
+void MainWindow::onReloadLensfunDatabase()
+{
+    writeLensfunListToProcessEnvironment();
+    rta::util::reset_database();
+    appendLog( tr(
+        "Lensfun database paths were written to RAWTOACES_LENSFUNDB_PATH and "
+        "the cached profile database was cleared; the next conversion will "
+        "reload XML from disk." ) );
+}
+
+#endif // RTA_GUI_HAS_LENSFUN
+
 namespace
 {
 constexpr auto kPrefsRootQLS       = "rawtoaces_gui";
@@ -1921,6 +2196,12 @@ void MainWindow::savePreferences() const
             QStringLiteral( "lensFocal" ), m_lensFocal->value() );
         settings.setValue(
             QStringLiteral( "lensFocus" ), m_lensFocus->value() );
+        if ( m_lensfunDirList != nullptr )
+        {
+            settings.setValue(
+                QStringLiteral( "lensfunDatabasePaths" ),
+                spectralDataPathsJoinedForSettings( m_lensfunDirList ) );
+        }
         settings.endGroup();
     }
 #endif
@@ -2265,6 +2546,13 @@ void MainWindow::loadPreferences()
             settings
                 .value( QStringLiteral( "lensFocus" ), m_lensFocus->value() )
                 .toDouble() );
+        if ( m_lensfunDirList != nullptr )
+        {
+            populateSpectralDataListFromSettingsString(
+                m_lensfunDirList,
+                settings.value( QStringLiteral( "lensfunDatabasePaths" ) )
+                    .toString() );
+        }
         settings.endGroup();
         updateLensMetadataOverrideUi();
     }

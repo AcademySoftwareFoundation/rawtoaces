@@ -19,6 +19,7 @@ class QProgressBar;
 class QTextEdit;
 class QTabWidget;
 class QCloseEvent;
+class QDialog;
 class QLabel;
 class ConversionThread;
 
@@ -46,6 +47,10 @@ private slots:
     void onConversionProgress( int done, int total );
     void onBatchFinished();
     void onAbout();
+    void showPreferences();
+#ifdef RTA_GUI_HAS_LENSFUN
+    void onReloadLensfunDatabase();
+#endif
     void updateMatrixMethodDependentUi();
     void updateWbMethodDependentUi();
     void updateBlackSaturationUi();
@@ -60,10 +65,16 @@ private:
     void                                setUiBusy( bool busy );
     void                                loadPreferences();
     void                                savePreferences() const;
+#ifdef RTA_GUI_HAS_LENSFUN
+    void mergeProcessEnvironmentLensfunPathsIntoList();
+    void writeLensfunListToProcessEnvironment();
+#endif
 
     QListWidget  *m_fileList      = nullptr;
     QLineEdit    *m_outputDir     = nullptr;
     QListWidget  *m_dataDirList   = nullptr;
+    /// Lensfun XML roots (optional); only used when built with lensfun.
+    QListWidget *m_lensfunDirList = nullptr;
     QPushButton  *m_convertButton = nullptr;
     QPushButton  *m_cancelButton  = nullptr;
     QProgressBar *m_progress      = nullptr;
@@ -118,6 +129,10 @@ private:
     QComboBox *m_verbosity       = nullptr;
 
     QPointer<ConversionThread> m_worker;
+
+    /// Spectral paths, Lensfun DB roots, cache, log verbosity (single parent —
+    /// not duplicated on the Settings tab).
+    QDialog *m_preferencesDialog = nullptr;
 
     /// Shown only when matrix method is Custom (matches `ImageConverter` usage).
     QWidget *m_customMatrixWrap  = nullptr;

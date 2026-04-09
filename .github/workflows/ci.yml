@@ -12,7 +12,7 @@ on:
 
 jobs:
   aswf:
-    name: "VFX${{ matrix.vfxyear }} ${{ matrix.compiler[0] }}"
+    name: "VFX${{ matrix.vfxyear }}"
     permissions: read-all
     uses: ./.github/workflows/build-steps.yml
     with:
@@ -25,6 +25,7 @@ jobs:
       ceres_hack: ${{ matrix.ceres_hack || 'OFF' }}
       test_install: ${{ matrix.test_install || 'ON' }}
       toolchain_file: ${{ matrix.toolchain_file }}
+      workflow_name: ${{ matrix.compiler[0] }}
       
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
@@ -53,7 +54,7 @@ jobs:
             toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
 
   build:
-    name: "${{matrix.os}} ${{matrix.c_compiler}} lensfun-${{matrix.lensfun}}"
+    name: "${{matrix.os}} ${{matrix.c_compiler}}"
     permissions: read-all
     uses: ./.github/workflows/build-steps.yml
     with:
@@ -66,6 +67,7 @@ jobs:
       build_shared_libs: ${{ matrix.build_shared_libs || 'ON' }}
       enable_lensfun: ${{ matrix.lensfun }}
       cxx_standard: 20
+      workflow_name: "lensfun-${{matrix.lensfun}}"
 
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.

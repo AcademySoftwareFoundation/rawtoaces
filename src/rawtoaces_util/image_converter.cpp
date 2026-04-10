@@ -223,6 +223,12 @@ std::vector<std::string> database_paths( const std::string &override_path = "" )
 #if defined( WIN32 ) || defined( WIN64 )
     const std::string separator    = ";";
     const std::string default_path = ".";
+#elif defined( __APPLE__ )
+    const std::string separator   = ":";
+    const std::string legacy_path = "/usr/local/include/rawtoaces/data";
+    const std::string default_path =
+        "/usr/local/share/rawtoaces/data" + separator +
+        "/opt/homebrew/share/rawtoaces/data" + separator + legacy_path;
 #else
     const std::string separator   = ":";
     const std::string legacy_path = "/usr/local/include/rawtoaces/data";

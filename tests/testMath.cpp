@@ -15,7 +15,7 @@ using namespace rta::core;
 
 void test_IsSquare()
 {
-    vector<vector<double>> a;
+    std::vector<std::vector<double>> a;
     a.resize( 2 );
     for ( int i = 0; i < 2; i++ )
         a[i].resize( 2 );
@@ -33,9 +33,9 @@ void test_AddVectors()
     double b[5] = { 5.0, 4.0, 3.0, 2.0, 1.0 };
     double c[5] = { 6.0, 6.0, 6.0, 6.0, 6.0 };
 
-    vector<double> av( a, a + 5 );
-    vector<double> bv( b, b + 5 );
-    vector<double> cv = addVectors( av, bv );
+    std::vector<double> av( a, a + 5 );
+    std::vector<double> bv( b, b + 5 );
+    std::vector<double> cv = addVectors( av, bv );
 
     for ( int i = 0; i < 5; i++ )
         OIIO_CHECK_EQUAL_THRESH( cv[i], c[i], 1e-9 );
@@ -48,9 +48,9 @@ void test_SubVectors()
     double b[5] = { 5.0, 4.0, 3.0, 2.0, 1.0 };
     double c[5] = { 0.0, 0.0, 0.0, 0.0, 0.0 };
 
-    vector<double> av( a, a + 5 );
-    vector<double> bv( b, b + 5 );
-    vector<double> cv = subVectors( av, bv );
+    std::vector<double> av( a, a + 5 );
+    std::vector<double> bv( b, b + 5 );
+    std::vector<double> cv = subVectors( av, bv );
 
     for ( int i = 0; i < 5; i++ )
         OIIO_CHECK_EQUAL_THRESH( cv[i], c[i], 1e-9 );
@@ -61,8 +61,8 @@ void test_Cross2()
     double a[2] = { 1.0, 3.0 };
     double b[2] = { 1.0, 6.5 };
 
-    vector<double> av( a, a + 2 );
-    vector<double> bv( b, b + 2 );
+    std::vector<double> av( a, a + 2 );
+    std::vector<double> bv( b, b + 2 );
 
     double cross2_test = cross2d_scalar( av, bv );
     OIIO_CHECK_EQUAL_THRESH( cross2_test, 3.50, 1e-5 );
@@ -77,12 +77,12 @@ void test_InvertVM()
                                { 1282.403375, -803.858096, 72.055546 },
                                { 613.114494, -518.860936, 72.376689 } };
 
-    vector<vector<double>> MV( 3, vector<double>( 3 ) );
+    std::vector<std::vector<double>> MV( 3, std::vector<double>( 3 ) );
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
             MV[i][j] = M[i][j];
 
-    vector<vector<double>> MV_Inverse = invertVM( MV );
+    std::vector<std::vector<double>> MV_Inverse = invertVM( MV );
 
     for ( int i = 0; i < 3; i++ )
     {
@@ -100,8 +100,8 @@ void test_InvertV()
                             1282.403375, -803.858096, 72.055546,
                             613.114494,  -518.860936, 72.376689 };
 
-    vector<double> MV( V, V + 9 );
-    vector<double> MV_Inverse = invertV( MV );
+    std::vector<double> MV( V, V + 9 );
+    std::vector<double> MV_Inverse = invertV( MV );
 
     for ( int i = 0; i < 9; i++ )
         OIIO_CHECK_EQUAL_THRESH( V_Inverse[i], MV_Inverse[i], 1e-5 );
@@ -109,10 +109,10 @@ void test_InvertV()
 
 void test_DiagV()
 {
-    double         v[3]  = { 1.0, 2.0, 3.0 };
-    double         vd[9] = { 1.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 3.0 };
-    vector<double> VV( v, v + 3 );
-    vector<double> DV = diagV( VV );
+    double              v[3]  = { 1.0, 2.0, 3.0 };
+    double              vd[9] = { 1.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 3.0 };
+    std::vector<double> VV( v, v + 3 );
+    std::vector<double> DV = diagV( VV );
 
     for ( int i = 0; i < 9; i++ )
     {
@@ -146,11 +146,11 @@ void test_TransposeVec()
                           3.0000000000,
                           4.0000000000 } };
 
-    vector<vector<double>> MV( 6, vector<double>( 3 ) );
+    std::vector<std::vector<double>> MV( 6, std::vector<double>( 3 ) );
     for ( size_t i = 0; i < 6; i++ )
         for ( size_t j = 0; j < 3; j++ )
             MV[i][j] = M[i][j];
-    vector<vector<double>> MVT = transposeVec( MV );
+    std::vector<std::vector<double>> MVT = transposeVec( MV );
 
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 6; j++ )
@@ -160,7 +160,7 @@ void test_TransposeVec()
 void test_SumVector()
 {
     double M[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
-    vector<double> MV( M, M + 10 );
+    std::vector<double> MV( M, M + 10 );
 
     double sum = sumVector( MV );
     OIIO_CHECK_EQUAL_THRESH( sum, 55.0000, 1e-5 );
@@ -172,10 +172,10 @@ void test_MulVectorElement()
     double M2[10] = { 10.0000000000, 5.0000000000, 3.3333333333, 2.5000000000,
                       2.0000000000,  1.6666666667, 1.4285714286, 1.2500000000,
                       1.1111111111,  1.0000000000 };
-    vector<double> MV1( M1, M1 + 10 );
-    vector<double> MV2( M2, M2 + 10 );
+    std::vector<double> MV1( M1, M1 + 10 );
+    std::vector<double> MV2( M2, M2 + 10 );
 
-    vector<double> MV3 = mulVectorElement( MV1, MV2 );
+    std::vector<double> MV3 = mulVectorElement( MV1, MV2 );
     for ( size_t i = 0; i < MV3.size(); i++ )
         OIIO_CHECK_EQUAL_THRESH( MV3[i], 10.0000000000, 1e-5 );
 }
@@ -196,8 +196,8 @@ void test_MulVector1()
 
     };
 
-    vector<vector<double>> MV1( 3, vector<double>( 3 ) );
-    vector<vector<double>> MV2( 3, vector<double>( 3 ) );
+    std::vector<std::vector<double>> MV1( 3, std::vector<double>( 3 ) );
+    std::vector<std::vector<double>> MV2( 3, std::vector<double>( 3 ) );
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
         {
@@ -205,7 +205,7 @@ void test_MulVector1()
             MV2[i][j] = M2[i][j];
         }
 
-    vector<vector<double>> MV3 = mulVector( MV1, MV2 );
+    std::vector<std::vector<double>> MV3 = mulVector( MV1, MV2 );
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
             OIIO_CHECK_EQUAL_THRESH( MV3[i][j], M3[i][j], 1e-5 );
@@ -220,15 +220,15 @@ void test_MulVector2()
     };
     double M2[3] = { 1.0000000000, 0.0000000000, 0.0000000000 };
 
-    vector<vector<double>> MV1( 3, vector<double>( 3 ) );
-    vector<double>         MV2( M2, M2 + 3 );
+    std::vector<std::vector<double>> MV1( 3, std::vector<double>( 3 ) );
+    std::vector<double>              MV2( M2, M2 + 3 );
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
         {
             MV1[i][j] = M1[i][j];
         }
 
-    vector<double> MV3 = mulVector( MV1, MV2 );
+    std::vector<double> MV3 = mulVector( MV1, MV2 );
     for ( int i = 0; i < 3; i++ )
         OIIO_CHECK_EQUAL_THRESH( MV3[i], M2[i], 1e-5 );
 }
@@ -239,7 +239,7 @@ void test_FindIndexInterp1()
     for ( size_t i = 0; i < sizeof( M ) / sizeof( int ); i++ )
         M[i] = static_cast<int>( i * 2 );
 
-    vector<int> MV( M, M + 100 );
+    std::vector<int> MV( M, M + 100 );
 
     int index = findIndexInterp1( 100, MV, (int)MV.size() );
     OIIO_CHECK_EQUAL( index, 50 );
@@ -285,22 +285,23 @@ void test_Interp1DLinear()
         Y0[i] = i * 3.5;
     }
 
-    vector<int>    XV0( X0, X0 + 100 );
-    vector<int>    XV1( X1, X1 + 100 );
-    vector<double> YV0( Y0, Y0 + 100 );
+    std::vector<int>    XV0( X0, X0 + 100 );
+    std::vector<int>    XV1( X1, X1 + 100 );
+    std::vector<double> YV0( Y0, Y0 + 100 );
 
-    vector<double> YV1 = interp1DLinear( XV0, XV1, YV0 );
+    std::vector<double> YV1 = interp1DLinear( XV0, XV1, YV0 );
 
     for ( size_t i = 0; i < YV1.size(); i++ )
         OIIO_CHECK_EQUAL_THRESH( YV1[i], Y1[i], 1e-5 );
 
     // Test extrapolation when X1 value is less than minimum X0 value
     {
-        vector<int>    X0_edge = { 10, 20, 30, 40 };
-        vector<int>    X1_edge = { 5 }; // Less than min(X0)
-        vector<double> Y0_edge = { 1.0, 2.0, 3.0, 4.0 };
+        std::vector<int>    X0_edge = { 10, 20, 30, 40 };
+        std::vector<int>    X1_edge = { 5 }; // Less than min(X0)
+        std::vector<double> Y0_edge = { 1.0, 2.0, 3.0, 4.0 };
 
-        vector<double> Y1_edge = interp1DLinear( X0_edge, X1_edge, Y0_edge );
+        std::vector<double> Y1_edge =
+            interp1DLinear( X0_edge, X1_edge, Y0_edge );
 
         // Expected result: extrapolation using first segment
         // slope[0] = (Y0[1] - Y0[0]) / (X0[1] - X0[0]) = (2.0 - 1.0) / (20 - 10) = 0.1
@@ -313,8 +314,8 @@ void test_Interp1DLinear()
 
 void testIDT_XytoXYZ()
 {
-    double         xy[3] = { 0.7347, 0.2653 };
-    vector<double> XYZV  = xy_to_XYZ( vector<double>( xy, xy + 2 ) );
+    double              xy[3] = { 0.7347, 0.2653 };
+    std::vector<double> XYZV  = xy_to_XYZ( std::vector<double>( xy, xy + 2 ) );
 
     for ( int i = 0; i < 3; i++ )
     {
@@ -324,9 +325,9 @@ void testIDT_XytoXYZ()
 
 void testIDT_Uvtoxy()
 {
-    double         uv[2] = { 0.7347, 0.2653 };
-    double         xy[2] = { 0.658530026, 0.158530026 };
-    vector<double> xyV   = uv_to_xy( vector<double>( uv, uv + 2 ) );
+    double              uv[2] = { 0.7347, 0.2653 };
+    double              xy[2] = { 0.658530026, 0.158530026 };
+    std::vector<double> xyV   = uv_to_xy( std::vector<double>( uv, uv + 2 ) );
 
     for ( int i = 0; i < 2; i++ )
     {
@@ -336,9 +337,9 @@ void testIDT_Uvtoxy()
 
 void testIDT_UvtoXYZ()
 {
-    double         uv[2]  = { 0.7347, 0.2653 };
-    double         XYZ[3] = { 0.658530026, 0.158530026, 0.18293995 };
-    vector<double> XYZV   = uv_to_XYZ( vector<double>( uv, uv + 2 ) );
+    double              uv[2]  = { 0.7347, 0.2653 };
+    double              XYZ[3] = { 0.658530026, 0.158530026, 0.18293995 };
+    std::vector<double> XYZV   = uv_to_XYZ( std::vector<double>( uv, uv + 2 ) );
 
     for ( int i = 0; i < 3; i++ )
     {
@@ -348,9 +349,9 @@ void testIDT_UvtoXYZ()
 
 void testIDT_XYZTouv()
 {
-    double         XYZ[3] = { 0.658530026, 0.158530026, 0.18293995 };
-    double         uv[2]  = { 0.7347, 0.2653 };
-    vector<double> uvV    = XYZ_to_uv( vector<double>( XYZ, XYZ + 3 ) );
+    double              XYZ[3] = { 0.658530026, 0.158530026, 0.18293995 };
+    double              uv[2]  = { 0.7347, 0.2653 };
+    std::vector<double> uvV = XYZ_to_uv( std::vector<double>( XYZ, XYZ + 3 ) );
 
     for ( int i = 0; i < 2; i++ )
     {
@@ -360,10 +361,10 @@ void testIDT_XYZTouv()
 
 void testIDT_GetCAT()
 {
-    vector<double> dIV( d50_white_point_XYZ, d50_white_point_XYZ + 3 );
-    vector<double> dOV( d60_white_point_XYZ, d60_white_point_XYZ + 3 );
+    std::vector<double> dIV( d50_white_point_XYZ, d50_white_point_XYZ + 3 );
+    std::vector<double> dOV( d60_white_point_XYZ, d60_white_point_XYZ + 3 );
 
-    vector<vector<double>> CAT_test = calculate_CAT( dIV, dOV );
+    std::vector<std::vector<double>> CAT_test = calculate_CAT( dIV, dOV );
 
     float CAT[3][3] = { { 0.9711790957f, -0.0217386019f, 0.0460288393f },
                         { -0.0156935400f, 1.0000112293f, 0.0183278569f },
@@ -379,11 +380,11 @@ void testIDT_GetCAT()
 
 void test_XYZtoLAB()
 {
-    vector<vector<double>> XYZ( 190, ( vector<double>( 3 ) ) );
+    std::vector<std::vector<double>> XYZ( 190, ( std::vector<double>( 3 ) ) );
     for ( size_t i = 0; i < 190; i++ )
         for ( size_t j = 0; j < 3; j++ )
             XYZ[i][j] = 116.0 / static_cast<double>( i * j + 1 );
-    vector<vector<double>> LAB_test = XYZ_to_LAB( XYZ );
+    std::vector<std::vector<double>> LAB_test = XYZ_to_LAB( XYZ );
 
     double LAB[190][3] = {
         { 549.7318794845, 39.7525650490, 2.8525942657 },
@@ -590,13 +591,13 @@ void test_XYZtoLAB()
 
 void test_GetCalcXYZt()
 {
-    vector<vector<double>> RGB( 190, ( vector<double>( 3 ) ) );
-    const double           BStart[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
+    std::vector<std::vector<double>> RGB( 190, ( std::vector<double>( 3 ) ) );
+    const double BStart[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
 
     for ( size_t i = 0; i < 190; i++ )
         for ( size_t j = 0; j < 3; j++ )
             RGB[i][j] = 10.0 / static_cast<double>( i * j + 1 );
-    vector<vector<double>> XYZ_test = getCalcXYZt( RGB, BStart );
+    std::vector<std::vector<double>> XYZ_test = getCalcXYZt( RGB, BStart );
 
     double XYZ[190][3] = {
         { 9.5264607457, 10.0000000000, 10.0882518435 },

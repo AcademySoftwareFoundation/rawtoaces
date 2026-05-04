@@ -110,83 +110,128 @@ void testIDT_XYZtoCameraWeightedMatrix()
     rta::core::Metadata metadata;
     init_metadata( metadata );
     rta::core::MetadataSolver *di = new rta::core::MetadataSolver( metadata );
-    double mirs[3]   = { 158.8461538462, 350.1400560224, 153.8461538462 };
-    double matrix[9] = { 1.0165710542,  -0.2791973987, -0.0801820653,
-                         -0.4881171650, 1.3469051835,  0.1100471308,
-                         -0.0607157824, 0.3270949763,  0.5439419519 };
+    double mirs[3]      = { 158.8461538462, 350.1400560224, 153.8461538462 };
+    double matrix[3][3] = { { 1.0165710542, -0.2791973987, -0.0801820653 },
+                            { -0.4881171650, 1.3469051835, 0.1100471308 },
+                            { -0.0607157824, 0.3270949763, 0.5439419519 } };
 
     const std::vector<double> &matrix1 =
         metadata.calibration[0].XYZ_to_RGB_matrix;
     const std::vector<double> &matrix2 =
         metadata.calibration[1].XYZ_to_RGB_matrix;
 
-    std::vector<double> result = rta::core::XYZ_to_camera_weighted_matrix(
-        mirs[0], mirs[1], mirs[2], matrix1, matrix2 );
+    std::vector<std::vector<double>> result =
+        rta::core::XYZ_to_camera_weighted_matrix(
+            mirs[0], mirs[1], mirs[2], matrix1, matrix2 );
     delete di;
 
-    for ( int i = 0; i < countSize( matrix ); i++ )
-        OIIO_CHECK_EQUAL_THRESH( result[i], matrix[i], 1e-5 );
+    OIIO_CHECK_EQUAL( result.size(), 3 );
+    for ( size_t row = 0; row < 3; row++ )
+    {
+        OIIO_CHECK_EQUAL( result[row].size(), 3 );
+        for ( size_t col = 0; col < 3; col++ )
+        {
+            OIIO_CHECK_EQUAL_THRESH( result[row][col], matrix[row][col], 1e-5 );
+        }
+    }
 }
 
-void testIDT_FindXYZtoCameraMtx()
+void check_DNG_matrix(
+    const rta::core::Metadata              &metadata,
+    std::vector<double>                    &neutralRGB,
+    bool                                    expected_result,
+    const std::vector<std::vector<double>> &expected_matrix,
+    const std::string                      &expected_output )
+{
+    std::vector<std::vector<double>> camera_to_XYZ_matrix;
+    bool                             result;
+    std::string                      stderr_output = capture_stderr( [&]() {
+        result = rta::core::find_camera_to_XYZ_matrix(
+            metadata, neutralRGB, camera_to_XYZ_matrix );
+    } );
+
+    OIIO_CHECK_EQUAL( result, expected_result );
+    if ( !expected_output.empty() )
+        OIIO_CHECK_EQUAL( stderr_output, expected_output );
+
+    if ( result )
+    {
+        OIIO_CHECK_EQUAL( camera_to_XYZ_matrix.size(), 3 );
+        for ( size_t row = 0; row < 3; row++ )
+        {
+            OIIO_CHECK_EQUAL( camera_to_XYZ_matrix[row].size(), 3 );
+            for ( size_t col = 0; col < 3; col++ )
+            {
+                OIIO_CHECK_EQUAL_THRESH(
+                    camera_to_XYZ_matrix[row][col],
+                    expected_matrix[row][col],
+                    1e-5 );
+            }
+        }
+    }
+    else
+    {
+        OIIO_CHECK_EQUAL( camera_to_XYZ_matrix.size(), 0 );
+    }
+}
+
+void testIDT_FindCameraToXYZMtx()
 {
     rta::core::Metadata metadata;
     init_metadata( metadata );
-    rta::core::MetadataSolver *di = new rta::core::MetadataSolver( metadata );
-    double neutralRGB[3] = { 0.6289999865, 1.0000000000, 0.7904000305 };
-    double matrix[9]     = { 1.0616656923,  -0.3124143737, -0.0661770211,
-                             -0.4772957633, 1.3614785395,  0.1001599918,
-                             -0.0411839968, 0.3103035015,  0.5718121924 };
-    std::vector<double> neutralRGBVector( neutralRGB, neutralRGB + 3 );
-    std::vector<double> result =
-        rta::core::find_XYZ_to_camera_matrix( metadata, neutralRGBVector );
+    std::vector<double> neutralRGB = { 0.6289999865,
+                                       1.0000000000,
+                                       0.7904000305 };
 
-    delete di;
+    std::vector<std::vector<double>> expected_matrix = {
+        { 1.0616656923, -0.3124143737, -0.0661770211 },
+        { -0.4772957633, 1.3614785395, 0.1001599918 },
+        { -0.0411839968, 0.3103035015, 0.5718121924 }
+    };
 
-    for ( int i = 0; i < countSize( matrix ); i++ )
-        OIIO_CHECK_EQUAL_THRESH( result[i], matrix[i], 1e-5 );
+    expected_matrix = rta::core::invertVM( expected_matrix );
+
+    check_DNG_matrix( metadata, neutralRGB, true, expected_matrix, "" );
 }
 
-void testIDT_FindXYZtoCameraMtx_NoIlluminant()
+void testIDT_FindCameraToXYZMtx_NoIlluminant()
 {
     rta::core::Metadata metadata;
     init_metadata( metadata );
     metadata.calibration[0].illuminant = 0;
 
     std::vector<double> neutralRGB = { 0.5, 0.5, 0.5 };
-    std::vector<double> result;
-    std::string         stderr_output = capture_stderr( [&]() {
-        result = rta::core::find_XYZ_to_camera_matrix( metadata, neutralRGB );
-    } );
 
-    const std::vector<double> &matrix =
-        metadata.calibration[0].XYZ_to_RGB_matrix;
-    OIIO_CHECK_EQUAL(
-        stderr_output, "No calibration illuminants were found.\n" );
-    OIIO_CHECK_EQUAL( result.size(), matrix.size() );
-    for ( int i = 0; i < countSize( matrix ); i++ )
-        OIIO_CHECK_EQUAL_THRESH( result[i], matrix[i], 1e-5 );
+    // The expected result is the inverse of the first camera matrix
+    auto m1 = metadata.calibration[0].XYZ_to_RGB_matrix;
+    auto m2 = rta::core::stack_rows( m1, 3 );
+    auto m3 = rta::core::invertVM( m2 );
+
+    check_DNG_matrix(
+        metadata,
+        neutralRGB,
+        true,
+        m3,
+        "No calibration illuminants were found.\n" );
 }
 
-void testIDT_FindXYZtoCameraMtx_EmptyNeutral()
+void testIDT_FindCameraToXYZMtx_EmptyNeutral()
 {
     rta::core::Metadata metadata;
     init_metadata( metadata );
 
-    std::vector<double> result;
-    std::string         stderr_output = capture_stderr( [&]() {
-        result = rta::core::find_XYZ_to_camera_matrix( metadata, {} );
-    } );
+    std::vector<double> neutralRGB = {};
 
-    const std::vector<double> &matrix =
-        metadata.calibration[0].XYZ_to_RGB_matrix;
-    OIIO_CHECK_EQUAL( stderr_output, "No neutral RGB values were found.\n" );
-    OIIO_CHECK_EQUAL( result.size(), matrix.size() );
-    for ( int i = 0; i < countSize( matrix ); i++ )
-        OIIO_CHECK_EQUAL_THRESH( result[i], matrix[i], 1e-5 );
+    // The expected result is the inverse of the first camera matrix
+    auto m1 = metadata.calibration[0].XYZ_to_RGB_matrix;
+    auto m2 = rta::core::stack_rows( m1, 3 );
+    auto m3 = rta::core::invertVM( m2 );
+
+    check_DNG_matrix(
+        metadata, neutralRGB, true, m3, "No neutral RGB values were found.\n" );
 }
 
-void testIDT_FindXYZtoCameraMtx_ExactMatchMired()
+void testIDT_FindCameraToXYZMtx_ExactMatchMired()
 {
     rta::core::Metadata metadata;
     init_metadata( metadata );
@@ -194,19 +239,41 @@ void testIDT_FindXYZtoCameraMtx_ExactMatchMired()
     metadata.calibration[1].XYZ_to_RGB_matrix = k_identity_xyz_to_rgb;
     metadata.calibration[1].illuminant        = 32768 + 10000;
 
-    std::vector<double> neutral_RGB     = { 0.97347064038736957,
-                                            1.0,
-                                            1.4953965764168315 };
-    std::vector<double> expected_matrix = k_identity_xyz_to_rgb;
+    std::vector<double> neutral_RGB = { 0.97347064038736957,
+                                        1.0,
+                                        1.4953965764168315 };
 
-    std::vector<double> result =
-        rta::core::find_XYZ_to_camera_matrix( metadata, neutral_RGB );
-
-    OIIO_CHECK_EQUAL( result.size(), expected_matrix.size() );
-    for ( int i = 0; i < countSize( expected_matrix ); i++ )
-        OIIO_CHECK_EQUAL_THRESH( result[i], expected_matrix[i], 1e-5 );
+    check_DNG_matrix(
+        metadata,
+        neutral_RGB,
+        true,
+        rta::core::stack_rows( k_identity_xyz_to_rgb, 3 ),
+        "" );
 }
 
+void testIDT_FindCameraToXYZMtx_Fail()
+{
+    std::vector<double> non_invertible_mat = { 1, 0, 0, 1, 0, 0, 1, 0, 0 };
+
+    std::vector<std::vector<double>> empty_mat;
+
+    rta::core::Metadata metadata;
+    init_metadata( metadata );
+    metadata.calibration[0].XYZ_to_RGB_matrix = non_invertible_mat;
+    metadata.calibration[1].XYZ_to_RGB_matrix = non_invertible_mat;
+    metadata.calibration[1].illuminant        = 32768 + 10000;
+
+    std::vector<double> neutral_RGB = { 0.97347064038736957,
+                                        1.0,
+                                        1.4953965764168315 };
+
+    check_DNG_matrix(
+        metadata,
+        neutral_RGB,
+        false,
+        empty_mat,
+        "Failed to find a suitable illuminant.\n" );
+}
 void testIDT_ColorTemperatureToXYZ()
 {
     double              cct    = 6500.0;
@@ -235,9 +302,9 @@ void testIDT_GetCameraXYZWhitePoint_UsesIlluminantWhenNeutralEmpty()
     init_metadata( metadata );
     metadata.neutral_RGB.clear();
 
-    std::vector<double> camera_to_XYZ;
-    std::vector<double> camera_XYZ_white_point;
-    std::string         stderr_output = capture_stderr( [&]() {
+    std::vector<std::vector<double>> camera_to_XYZ;
+    std::vector<double>              camera_XYZ_white_point;
+    std::string                      stderr_output = capture_stderr( [&]() {
         rta::core::get_camera_XYZ_matrix_and_white_point(
             metadata, camera_to_XYZ, camera_XYZ_white_point );
     } );
@@ -306,10 +373,11 @@ int main( int, char ** )
     testIDT_XYZToColorTemperature_UpperClamp();
     testIDT_XYZToColorTemperature_LowerClamp();
     testIDT_XYZtoCameraWeightedMatrix();
-    testIDT_FindXYZtoCameraMtx();
-    testIDT_FindXYZtoCameraMtx_NoIlluminant();
-    testIDT_FindXYZtoCameraMtx_EmptyNeutral();
-    testIDT_FindXYZtoCameraMtx_ExactMatchMired();
+    testIDT_FindCameraToXYZMtx();
+    testIDT_FindCameraToXYZMtx_NoIlluminant();
+    testIDT_FindCameraToXYZMtx_EmptyNeutral();
+    testIDT_FindCameraToXYZMtx_ExactMatchMired();
+    testIDT_FindCameraToXYZMtx_Fail();
     testIDT_ColorTemperatureToXYZ();
     testIDT_ColorTemperatureToXYZ_ClampHighMired();
     testIDT_GetCameraXYZWhitePoint_UsesIlluminantWhenNeutralEmpty();

@@ -1103,27 +1103,104 @@ double XYZ_to_color_temperature( const std::vector<double> &XYZ )
 /// @param matrix_end Second camera transformation matrix
 /// @return Interpolated camera transformation matrix
 /// @pre mired_start != mired_end to avoid division by zero
-std::vector<double> XYZ_to_camera_weighted_matrix(
+std::vector<std::vector<double>> XYZ_to_camera_weighted_matrix(
     const double              &mired_target,
     const double              &mired_start,
     const double              &mired_end,
     const std::vector<double> &matrix_start,
     const std::vector<double> &matrix_end )
 {
+    assert( matrix_start.size() == matrix_end.size() );
+    assert( matrix_start.size() % 3 == 0 );
+    assert( std::fabs( mired_start - mired_end ) > 1e-9 );
 
     double weight = std::max(
         0.0,
         std::min(
             1.0,
             ( mired_start - mired_target ) / ( mired_start - mired_end ) ) );
-    std::vector<double> result = subVectors( matrix_end, matrix_start );
-    scaleVector( result, weight );
-    result = addVectors( result, matrix_start );
+
+    size_t                           rows = matrix_start.size() / 3;
+    std::vector<std::vector<double>> result( rows );
+
+    for ( size_t row = 0, index = 0; row < rows; row++ )
+    {
+        result[row].resize( 3 );
+        for ( size_t col = 0; col < 3; col++ )
+        {
+            double val1      = matrix_start[index] * ( 1.0 - weight );
+            double val2      = matrix_end[index] * weight;
+            result[row][col] = val1 + val2;
+            index++;
+        }
+    }
 
     return result;
 }
 
-/// Find the optimal XYZ to camera transformation matrix using iterative optimization.
+/// Calculate the camera colour space to XYZ transform matrix.
+/// This function calls the XYZ_to_camera_weighted_matrix() and
+/// calculates the inverse matrix of its result.
+///
+/// @param mired_target Target Mired value for interpolation
+/// @param mired_start First reference Mired value (start of interpolation range)
+/// @param mired_end Second reference Mired value (end of interpolation range)
+/// @param matrix_start First camera transformation matrix
+/// @param matrix_end Second camera transformation matrix
+/// @param out_matrix Output parameter to hold the calculated matrix.
+/// @return True on success
+/// @pre mired_start != mired_end to avoid division by zero.
+/// @pre calculated XYZ to camera matrix must be inversible.
+bool camera_to_XYZ_weighted_matrix(
+    const double                     &mired_target,
+    const double                     &mired_start,
+    const double                     &mired_end,
+    const std::vector<double>        &matrix_start,
+    const std::vector<double>        &matrix_end,
+    std::vector<std::vector<double>> &out_matrix )
+{
+    auto XYZ_to_camera_matrix = XYZ_to_camera_weighted_matrix(
+        mired_target, mired_start, mired_end, matrix_start, matrix_end );
+
+    if ( std::fabs( determinant( XYZ_to_camera_matrix ) ) < 1e-9 )
+    {
+        out_matrix.resize( 0 );
+        return false;
+    }
+
+    out_matrix = invertVM( XYZ_to_camera_matrix );
+    return true;
+}
+
+/// Stack the rows of a matrix to convert from one-dimensional to
+/// two-dimensional representation.
+///
+/// @param matrix the input matrix as a one-dimensional array.
+/// @param columns the number of columns in the output matrix.
+/// @result the output matrix as a two-dimensional array.
+/// @pre the input matrix size must be divisible by the columns count.
+std::vector<std::vector<double>>
+stack_rows( const std::vector<double> &matrix, size_t columns )
+{
+    assert( matrix.size() % columns == 0 );
+
+    size_t rows = matrix.size() / columns;
+
+    std::vector<std::vector<double>> result( rows );
+    for ( size_t row = 0, ind = 0; row < rows; row++ )
+    {
+        result[row].resize( columns );
+        for ( size_t col = 0; col < columns; col++ )
+        {
+            result[row][col] = matrix[ind];
+            ind++;
+        }
+    }
+
+    return result;
+}
+
+/// Find the optimal camera to XYZ transformation matrix using iterative optimization.
 /// This function determines the best camera transformation matrix by iteratively
 /// searching through Mired values to find the one that minimizes the error between
 /// predicted and actual neutral RGB values. It uses a binary search approach with
@@ -1135,87 +1212,123 @@ std::vector<double> XYZ_to_camera_weighted_matrix(
 ///
 /// @param metadata Camera metadata containing calibration information and matrices
 /// @param neutral_RGB Reference neutral RGB values for optimization
-/// @return Optimized XYZ to camera transformation matrix
+/// @param out_matrix the output matrix to hold the calculated result.
+/// @return True on success
 /// @pre metadata must contain valid calibration data with at least two illuminants
-std::vector<double> find_XYZ_to_camera_matrix(
-    const Metadata &metadata, const std::vector<double> &neutral_RGB )
+bool find_camera_to_XYZ_matrix(
+    const Metadata                   &metadata,
+    const std::vector<double>        &neutral_RGB,
+    std::vector<std::vector<double>> &out_matrix )
 {
-
     if ( metadata.calibration[0].illuminant == 0 )
     {
         std::cerr << "No calibration illuminants were found." << std::endl;
-        return metadata.calibration[0].XYZ_to_RGB_matrix;
     }
-
-    if ( neutral_RGB.size() == 0 )
+    else if ( neutral_RGB.size() == 0 )
     {
         std::cerr << "No neutral RGB values were found." << std::endl;
-        return metadata.calibration[0].XYZ_to_RGB_matrix;
     }
-
-    double cct1 =
-        light_source_to_color_temp( metadata.calibration[0].illuminant );
-    double cct2 =
-        light_source_to_color_temp( metadata.calibration[1].illuminant );
-
-    double mir1 = kelvin_to_mired( cct1 );
-    double mir2 = kelvin_to_mired( cct2 );
-
-    double max_mired = kelvin_to_mired( 2000.0 );
-    double min_mired = kelvin_to_mired( 50000.0 );
-
-    const std::vector<double> &matrix_start =
-        metadata.calibration[0].XYZ_to_RGB_matrix;
-    const std::vector<double> &matrix_end =
-        metadata.calibration[1].XYZ_to_RGB_matrix;
-
-    double low_mired =
-        std::clamp( std::min( mir1, mir2 ), min_mired, max_mired );
-    double high_mired =
-        std::clamp( std::max( mir1, mir2 ), min_mired, max_mired );
-    double mired_step = std::max( 5.0, ( high_mired - low_mired ) / 50.0 );
-
-    double last_mired = 0.0, estimated_mired = 0.0, current_error = 0.0,
-           last_error = 0.0, smallest_error = 0.0;
-
-    double current_mired = low_mired;
-    while ( current_mired < high_mired )
+    else
     {
-        current_error =
-            current_mired -
-            kelvin_to_mired( XYZ_to_color_temperature( mulVector(
-                invertV( XYZ_to_camera_weighted_matrix(
-                    current_mired, mir1, mir2, matrix_start, matrix_end ) ),
-                neutral_RGB ) ) );
+        double cct1 =
+            light_source_to_color_temp( metadata.calibration[0].illuminant );
+        double cct2 =
+            light_source_to_color_temp( metadata.calibration[1].illuminant );
 
-        if ( std::fabs( current_error - 0.0 ) <= 1e-09 )
+        double mir1 = kelvin_to_mired( cct1 );
+        double mir2 = kelvin_to_mired( cct2 );
+
+        double max_mired = kelvin_to_mired( 2000.0 );
+        double min_mired = kelvin_to_mired( 50000.0 );
+
+        const std::vector<double> &matrix_start =
+            metadata.calibration[0].XYZ_to_RGB_matrix;
+        const std::vector<double> &matrix_end =
+            metadata.calibration[1].XYZ_to_RGB_matrix;
+
+        double low_mired =
+            std::clamp( std::min( mir1, mir2 ), min_mired, max_mired );
+        double high_mired =
+            std::clamp( std::max( mir1, mir2 ), min_mired, max_mired );
+        double mired_step = std::max( 5.0, ( high_mired - low_mired ) / 50.0 );
+
+        double last_mired = 0.0, estimated_mired = 0.0, current_error = 0.0,
+               last_error = 0.0, smallest_error = 0.0;
+
+        double current_mired = low_mired;
+        while ( current_mired < high_mired )
         {
-            estimated_mired = current_mired;
-            break;
-        }
-        if ( std::fabs( current_mired - low_mired - 0.0 ) > 1e-09 &&
-             current_error * last_error <= 0.0 )
-        {
-            estimated_mired = current_mired +
-                              ( current_error / ( current_error - last_error ) *
-                                ( current_mired - last_mired ) );
-            break;
-        }
-        if ( std::fabs( current_mired - low_mired ) <= 1e-09 ||
-             std::fabs( current_error ) < std::fabs( smallest_error ) )
-        {
-            estimated_mired = current_mired;
-            smallest_error  = current_error;
+            std::vector<std::vector<double>> camera_to_XYZ_matrix;
+            if ( !camera_to_XYZ_weighted_matrix(
+                     current_mired,
+                     mir1,
+                     mir2,
+                     matrix_start,
+                     matrix_end,
+                     camera_to_XYZ_matrix ) )
+            {
+                current_mired += mired_step;
+                continue;
+            }
+
+            auto neutral_XYZ   = mulVector( camera_to_XYZ_matrix, neutral_RGB );
+            auto neutral_CCT   = XYZ_to_color_temperature( neutral_XYZ );
+            auto neutral_mired = kelvin_to_mired( neutral_CCT );
+            current_error      = current_mired - neutral_mired;
+
+            if ( std::fabs( current_error - 0.0 ) <= 1e-09 )
+            {
+                estimated_mired = current_mired;
+                break;
+            }
+            if ( std::fabs( current_mired - low_mired - 0.0 ) > 1e-09 &&
+                 current_error * last_error <= 0.0 )
+            {
+                estimated_mired =
+                    current_mired +
+                    ( current_error / ( current_error - last_error ) *
+                      ( current_mired - last_mired ) );
+                break;
+            }
+            if ( std::fabs( current_mired - low_mired ) <= 1e-09 ||
+                 std::fabs( current_error ) < std::fabs( smallest_error ) )
+            {
+                estimated_mired = current_mired;
+                smallest_error  = current_error;
+            }
+
+            last_error = current_error;
+            last_mired = current_mired;
+
+            current_mired += mired_step;
         }
 
-        last_error = current_error;
-        last_mired = current_mired;
-
-        current_mired += mired_step;
+        if ( estimated_mired != 0.0 )
+        {
+            if ( camera_to_XYZ_weighted_matrix(
+                     estimated_mired,
+                     mir1,
+                     mir2,
+                     matrix_start,
+                     matrix_end,
+                     out_matrix ) )
+            {
+                return true;
+            }
+        }
     }
 
-    return XYZ_to_camera_weighted_matrix(
-        estimated_mired, mir1, mir2, matrix_start, matrix_end );
+    // Fallback to the first colour matrix.
+    auto XYZ_to_camera_matrix =
+        stack_rows( metadata.calibration[0].XYZ_to_RGB_matrix, 3 );
+    if ( std::fabs( determinant( XYZ_to_camera_matrix ) ) < 1e-9 )
+    {
+        std::cerr << "Failed to find a suitable illuminant." << std::endl;
+        out_matrix.resize( 0 );
+        return false;
+    }
+    out_matrix = invertVM( XYZ_to_camera_matrix );
+    return true;
 }
 
 /// Convert correlated color temperature to CIE XYZ color values.
@@ -1328,18 +1441,23 @@ std::vector<double> matrix_RGB_to_XYZ( const double chromaticities[][2] )
 /// @param metadata Camera metadata containing calibration and exposure information
 /// @param out_camera_to_XYZ_matrix Output camera to XYZ transformation matrix
 /// @param out_camera_XYZ_white_point Output camera white point in XYZ space
+/// @result true on success.
 /// @pre metadata must contain valid calibration data and neutral RGB values
-void get_camera_XYZ_matrix_and_white_point(
-    const Metadata      &metadata,
-    std::vector<double> &out_camera_to_XYZ_matrix,
-    std::vector<double> &out_camera_XYZ_white_point )
+bool get_camera_XYZ_matrix_and_white_point(
+    const Metadata                   &metadata,
+    std::vector<std::vector<double>> &out_camera_to_XYZ_matrix,
+    std::vector<double>              &out_camera_XYZ_white_point )
 {
-    out_camera_to_XYZ_matrix =
-        invertV( find_XYZ_to_camera_matrix( metadata, metadata.neutral_RGB ) );
-    assert( std::fabs( sumVector( out_camera_to_XYZ_matrix ) - 0.0 ) > 1e-09 );
 
-    scaleVector(
-        out_camera_to_XYZ_matrix, std::pow( 2.0, metadata.baseline_exposure ) );
+    if ( !find_camera_to_XYZ_matrix(
+             metadata, metadata.neutral_RGB, out_camera_to_XYZ_matrix ) )
+    {
+        return false;
+    }
+
+    double exposure_scale = std::pow( 2.0, metadata.baseline_exposure );
+    for ( auto &row: out_camera_to_XYZ_matrix )
+        scaleVector( row, exposure_scale );
 
     if ( metadata.neutral_RGB.size() > 0 )
     {
@@ -1355,21 +1473,27 @@ void get_camera_XYZ_matrix_and_white_point(
     scaleVector(
         out_camera_XYZ_white_point, 1.0 / out_camera_XYZ_white_point[1] );
     assert( sumVector( out_camera_XYZ_white_point ) != 0 );
+    return true;
 }
 
 std::vector<std::vector<double>> MetadataSolver::calculate_CAT_matrix()
 {
-    std::vector<double> deviceWhiteV( 3, 1.0 );
-    std::vector<double> camera_to_XYZ_matrix;
-    std::vector<double> camera_XYZ_white_point;
-    get_camera_XYZ_matrix_and_white_point(
-        _metadata, camera_to_XYZ_matrix, camera_XYZ_white_point );
-    std::vector<double> output_RGB_to_XYZ_matrix =
-        matrix_RGB_to_XYZ( chromaticitiesACES );
-    std::vector<double> output_XYZ_white_point =
-        mulVector( output_RGB_to_XYZ_matrix, deviceWhiteV );
-    std::vector<std::vector<double>> CAT_matrix =
-        calculate_CAT( camera_XYZ_white_point, output_XYZ_white_point );
+    std::vector<std::vector<double>> CAT_matrix;
+
+    std::vector<double>              deviceWhiteV( 3, 1.0 );
+    std::vector<std::vector<double>> camera_to_XYZ_matrix;
+    std::vector<double>              camera_XYZ_white_point;
+
+    if ( get_camera_XYZ_matrix_and_white_point(
+             _metadata, camera_to_XYZ_matrix, camera_XYZ_white_point ) )
+    {
+        std::vector<double> output_RGB_to_XYZ_matrix =
+            matrix_RGB_to_XYZ( chromaticitiesACES );
+        std::vector<double> output_XYZ_white_point =
+            mulVector( output_RGB_to_XYZ_matrix, deviceWhiteV );
+        CAT_matrix =
+            calculate_CAT( camera_XYZ_white_point, output_XYZ_white_point );
+    }
 
     return CAT_matrix;
 }

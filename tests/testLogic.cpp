@@ -20,12 +20,13 @@ void test_getCAT()
                                   { 0.0058, 1.0014, -0.0063 },
                                   { -0.00033664, -0.0010, 0.9278 } };
 
-    vector<double> src( D65, D65 + 3 );
-    vector<double> des( D60, D60 + 3 );
+    std::vector<double> src( D65, D65 + 3 );
+    std::vector<double> des( D60, D60 + 3 );
 
-    vector<vector<double>> final_Output_getCAT = calculate_CAT( src, des );
+    std::vector<std::vector<double>> final_Output_getCAT =
+        calculate_CAT( src, des );
 
-    vector<double> destination( 3, 0 );
+    std::vector<double> destination( 3, 0 );
 
     for ( int i = 0; i < 3; i++ )
         destination[i] = final_Output_getCAT[i][0] * src[0] +

@@ -10,8 +10,6 @@
 #include "mathOps.h"
 #include "define.h"
 
-using namespace ceres;
-
 namespace rta
 {
 namespace core
@@ -23,7 +21,7 @@ namespace core
 ///
 /// @param cct The correlated color temperature in Kelvin
 /// @return A vector containing [x, y] chromaticity coordinates
-vector<double> CCT_to_xy( const double &cct )
+std::vector<double> CCT_to_xy( const double &cct )
 {
     double x;
     if ( cct >= 4002.15 && cct <= 7003.77 )
@@ -62,9 +60,9 @@ void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
 
     spectrum.values.clear();
 
-    vector<int>    wavelengths, wavelengths_interpolated;
-    vector<double> s00, s10, s20, s01, s11, s21;
-    vector<double> xy = CCT_to_xy( cct );
+    std::vector<int>    wavelengths, wavelengths_interpolated;
+    std::vector<double> s00, s10, s20, s01, s11, s21;
+    std::vector<double> xy = CCT_to_xy( cct );
 
     double m0 = 0.0241 + 0.2562 * xy[0] - 0.7341 * xy[1];
     double m1 = ( -1.3515 - 1.7703 * xy[0] + 5.9114 * xy[1] ) / m0;
@@ -536,7 +534,7 @@ bool SpectralSolver::find_illuminant( const std::string &type )
     return false;
 }
 
-bool SpectralSolver::find_illuminant( const vector<double> &wb )
+bool SpectralSolver::find_illuminant( const std::vector<double> &wb )
 {
     if ( camera.data.count( "main" ) == 0 ||
          camera.data.at( "main" ).size() != 3 )
@@ -589,8 +587,9 @@ bool SpectralSolver::find_illuminant( const vector<double> &wb )
 
     for ( auto &current_illuminant: _all_illuminants )
     {
-        vector<double> wb_tmp  = _calculate_WB( camera, current_illuminant );
-        double         sse_tmp = calculate_SSE( wb_tmp, wb );
+        std::vector<double> wb_tmp =
+            _calculate_WB( camera, current_illuminant );
+        double sse_tmp = calculate_SSE( wb_tmp, wb );
 
         if ( sse_tmp < sse )
         {
@@ -842,11 +841,11 @@ bool curveFit(
     int                                     verbosity,
     std::vector<std::vector<double>>       &out_IDT_matrix )
 {
-    Problem                problem;
-    vector<vector<double>> out_LAB = XYZ_to_LAB( XYZ );
+    ceres::Problem                   problem;
+    std::vector<std::vector<double>> out_LAB = XYZ_to_LAB( XYZ );
 
-    CostFunction *cost_function =
-        new AutoDiffCostFunction<IDTOptimizationCost, ceres::DYNAMIC, 6>(
+    ceres::CostFunction *cost_function =
+        new ceres::AutoDiffCostFunction<IDTOptimizationCost, ceres::DYNAMIC, 6>(
             new IDTOptimizationCost( RGB, out_LAB ),
             int( RGB.size() * ( RGB[0].size() ) ) );
 
@@ -953,12 +952,12 @@ bool SpectralSolver::calculate_IDT_matrix()
 //	outputs:
 //      const vector< vector < double > >: _idt matrix (3 x 3)
 
-const vector<vector<double>> &SpectralSolver::get_IDT_matrix() const
+const std::vector<std::vector<double>> &SpectralSolver::get_IDT_matrix() const
 {
     return _idt_matrix;
 }
 
-const vector<double> &SpectralSolver::get_WB_multipliers() const
+const std::vector<double> &SpectralSolver::get_WB_multipliers() const
 {
     return _wb_multipliers;
 }
@@ -1001,15 +1000,16 @@ double mired_to_CCT( const double mired )
 /// @return Distance between the two points in UCS color space
 /// @pre source_uv.size() >= 2, target_uvt.size() >= 3
 double robertson_length(
-    const vector<double> &source_uv, const vector<double> &target_uvt )
+    const std::vector<double> &source_uv,
+    const std::vector<double> &target_uvt )
 {
-    double         t    = target_uvt[2];
-    double         sign = t < 0 ? -1.0 : t > 0 ? 1.0 : 0.0;
-    vector<double> slope( 2 );
+    double              t    = target_uvt[2];
+    double              sign = t < 0 ? -1.0 : t > 0 ? 1.0 : 0.0;
+    std::vector<double> slope( 2 );
     slope[0] = -sign / std::sqrt( 1 + t * t );
     slope[1] = t * slope[0];
 
-    vector<double> target_uv( target_uvt.begin(), target_uvt.begin() + 2 );
+    std::vector<double> target_uv( target_uvt.begin(), target_uvt.begin() + 2 );
     return cross2d_scalar( slope, subVectors( source_uv, target_uv ) );
 }
 
@@ -1053,18 +1053,18 @@ double light_source_to_color_temp( const unsigned short tag )
 ///
 /// @param XYZ XYZ color values [X, Y, Z]
 /// @return Correlated color temperature in Kelvin
-double XYZ_to_color_temperature( const vector<double> &XYZ )
+double XYZ_to_color_temperature( const std::vector<double> &XYZ )
 {
-    vector<double> uv                  = XYZ_to_uv( XYZ );
-    int            num_robertson_table = countSize( robertson_uvt_table );
-    int            i;
+    std::vector<double> uv                  = XYZ_to_uv( XYZ );
+    int                 num_robertson_table = countSize( robertson_uvt_table );
+    int                 i;
 
     double mired;
     double distance_this = 0.0, distance_prev = 0.0;
 
     for ( i = 0; i < num_robertson_table; i++ )
     {
-        vector<double> robertson(
+        std::vector<double> robertson(
             robertson_uvt_table[i],
             robertson_uvt_table[i] + countSize( robertson_uvt_table[i] ) );
         distance_this = robertson_length( uv, robertson );
@@ -1105,7 +1105,7 @@ double XYZ_to_color_temperature( const vector<double> &XYZ )
 /// @param matrix_end Second camera transformation matrix
 /// @return Interpolated camera transformation matrix
 /// @pre mired_start != mired_end to avoid division by zero
-vector<double> XYZ_to_camera_weighted_matrix(
+std::vector<double> XYZ_to_camera_weighted_matrix(
     const double              &mired_target,
     const double              &mired_start,
     const double              &mired_end,
@@ -1118,7 +1118,7 @@ vector<double> XYZ_to_camera_weighted_matrix(
         std::min(
             1.0,
             ( mired_start - mired_target ) / ( mired_start - mired_end ) ) );
-    vector<double> result = subVectors( matrix_end, matrix_start );
+    std::vector<double> result = subVectors( matrix_end, matrix_start );
     scaleVector( result, weight );
     result = addVectors( result, matrix_start );
 
@@ -1139,8 +1139,8 @@ vector<double> XYZ_to_camera_weighted_matrix(
 /// @param neutral_RGB Reference neutral RGB values for optimization
 /// @return Optimized XYZ to camera transformation matrix
 /// @pre metadata must contain valid calibration data with at least two illuminants
-vector<double> find_XYZ_to_camera_matrix(
-    const Metadata &metadata, const vector<double> &neutral_RGB )
+std::vector<double> find_XYZ_to_camera_matrix(
+    const Metadata &metadata, const std::vector<double> &neutral_RGB )
 {
 
     if ( metadata.calibration[0].illuminant == 0 )
@@ -1229,11 +1229,11 @@ vector<double> find_XYZ_to_camera_matrix(
 /// @param cct Correlated color temperature in Kelvin
 /// @return Vector of 3 XYZ color values [X, Y, Z]
 /// @pre cct should be in the valid range supported by the Robertson table
-vector<double> color_temperature_to_XYZ( const double &cct )
+std::vector<double> color_temperature_to_XYZ( const double &cct )
 {
 
-    double         mired = CCT_to_mired( cct );
-    vector<double> uv( 2, 1.0 );
+    double              mired = CCT_to_mired( cct );
+    std::vector<double> uv( 2, 1.0 );
 
     int num_robertson_table = countSize( robertson_uvt_table );
     int i;
@@ -1246,12 +1246,12 @@ vector<double> color_temperature_to_XYZ( const double &cct )
 
     if ( i <= 0 )
     {
-        uv = vector<double>(
+        uv = std::vector<double>(
             robertson_uvt_table[0], robertson_uvt_table[0] + 2 );
     }
     else if ( i >= num_robertson_table )
     {
-        uv = vector<double>(
+        uv = std::vector<double>(
             robertson_uvt_table[num_robertson_table - 1],
             robertson_uvt_table[num_robertson_table - 1] + 2 );
     }
@@ -1261,11 +1261,11 @@ vector<double> color_temperature_to_XYZ( const double &cct )
             ( mired - robertson_mired_table[i - 1] ) /
             ( robertson_mired_table[i] - robertson_mired_table[i - 1] );
 
-        vector<double> uv1(
+        std::vector<double> uv1(
             robertson_uvt_table[i], robertson_uvt_table[i] + 2 );
         scaleVector( uv1, weight );
 
-        vector<double> uv2(
+        std::vector<double> uv2(
             robertson_uvt_table[i - 1], robertson_uvt_table[i - 1] + 2 );
         scaleVector( uv2, 1.0 - weight );
 
@@ -1288,18 +1288,18 @@ vector<double> color_temperature_to_XYZ( const double &cct )
 /// @param chromaticities Array of 4 xy chromaticity coordinates [R, G, B, W]
 /// @return 3×3 RGB to XYZ transformation matrix as a flattened vector
 /// @pre chromaticities must contain exactly 4 xy coordinate pairs
-vector<double> matrix_RGB_to_XYZ( const double chromaticities[][2] )
+std::vector<double> matrix_RGB_to_XYZ( const double chromaticities[][2] )
 {
-    vector<double> red_XYZ =
-        xy_to_XYZ( vector<double>( chromaticities[0], chromaticities[0] + 2 ) );
-    vector<double> green_XYZ =
-        xy_to_XYZ( vector<double>( chromaticities[1], chromaticities[1] + 2 ) );
-    vector<double> blue_XYZ =
-        xy_to_XYZ( vector<double>( chromaticities[2], chromaticities[2] + 2 ) );
-    vector<double> white_XYZ =
-        xy_to_XYZ( vector<double>( chromaticities[3], chromaticities[3] + 2 ) );
+    std::vector<double> red_XYZ = xy_to_XYZ(
+        std::vector<double>( chromaticities[0], chromaticities[0] + 2 ) );
+    std::vector<double> green_XYZ = xy_to_XYZ(
+        std::vector<double>( chromaticities[1], chromaticities[1] + 2 ) );
+    std::vector<double> blue_XYZ = xy_to_XYZ(
+        std::vector<double>( chromaticities[2], chromaticities[2] + 2 ) );
+    std::vector<double> white_XYZ = xy_to_XYZ(
+        std::vector<double>( chromaticities[3], chromaticities[3] + 2 ) );
 
-    vector<double> rgb_matrix( 9 );
+    std::vector<double> rgb_matrix( 9 );
     for ( int i = 0; i < 3; i++ )
     {
         rgb_matrix[0 + i * 3] = red_XYZ[i];
@@ -1309,9 +1309,9 @@ vector<double> matrix_RGB_to_XYZ( const double chromaticities[][2] )
 
     scaleVector( white_XYZ, 1.0 / white_XYZ[1] );
 
-    vector<double> channel_gains =
+    std::vector<double> channel_gains =
         mulVector( invertV( rgb_matrix ), white_XYZ, 3 );
-    vector<double> color_matrix =
+    std::vector<double> color_matrix =
         mulVector( rgb_matrix, diagV( channel_gains ), 3 );
 
     return color_matrix;
@@ -1359,30 +1359,30 @@ void get_camera_XYZ_matrix_and_white_point(
     assert( sumVector( out_camera_XYZ_white_point ) != 0 );
 }
 
-vector<vector<double>> MetadataSolver::calculate_CAT_matrix()
+std::vector<std::vector<double>> MetadataSolver::calculate_CAT_matrix()
 {
-    vector<double>      deviceWhiteV( 3, 1.0 );
+    std::vector<double> deviceWhiteV( 3, 1.0 );
     std::vector<double> camera_to_XYZ_matrix;
     std::vector<double> camera_XYZ_white_point;
     get_camera_XYZ_matrix_and_white_point(
         _metadata, camera_to_XYZ_matrix, camera_XYZ_white_point );
-    vector<double> output_RGB_to_XYZ_matrix =
+    std::vector<double> output_RGB_to_XYZ_matrix =
         matrix_RGB_to_XYZ( chromaticitiesACES );
-    vector<double> output_XYZ_white_point =
+    std::vector<double> output_XYZ_white_point =
         mulVector( output_RGB_to_XYZ_matrix, deviceWhiteV );
-    vector<vector<double>> CAT_matrix =
+    std::vector<std::vector<double>> CAT_matrix =
         calculate_CAT( camera_XYZ_white_point, output_XYZ_white_point );
 
     return CAT_matrix;
 }
 
-vector<vector<double>> MetadataSolver::calculate_IDT_matrix()
+std::vector<std::vector<double>> MetadataSolver::calculate_IDT_matrix()
 {
     // 1. Obtains the CAT matrix for white point adaptation
-    vector<vector<double>> CAT_matrix = calculate_CAT_matrix();
+    std::vector<std::vector<double>> CAT_matrix = calculate_CAT_matrix();
 
     // 2. Converts the CAT matrix to a flattened format for matrix multiplication
-    vector<double> XYZ_D65_acesrgb( 9 ), CAT( 9 );
+    std::vector<double> XYZ_D65_acesrgb( 9 ), CAT( 9 );
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
         {
@@ -1391,10 +1391,11 @@ vector<vector<double>> MetadataSolver::calculate_IDT_matrix()
         }
 
     // 3. Multiplies the D65 ACES RGB to XYZ matrix with the CAT matrix
-    vector<double> matrix = mulVector( XYZ_D65_acesrgb, CAT, 3 );
+    std::vector<double> matrix = mulVector( XYZ_D65_acesrgb, CAT, 3 );
 
     // 4. Reshapes the result into a 3×3 transformation matrix
-    vector<vector<double>> DNG_IDT_matrix( 3, vector<double>( 3 ) );
+    std::vector<std::vector<double>> DNG_IDT_matrix(
+        3, std::vector<double>( 3 ) );
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
             DNG_IDT_matrix[i][j] = matrix[i * 3 + j];
@@ -1424,12 +1425,12 @@ vector<vector<double>> MetadataSolver::calculate_IDT_matrix()
 template <typename T>
 bool IDTOptimizationCost::operator()( const T *beta_params, T *residuals ) const
 {
-    vector<vector<T>> RGB_copy( _in_RGB.size(), vector<T>( 3 ) );
+    std::vector<std::vector<T>> RGB_copy( _in_RGB.size(), std::vector<T>( 3 ) );
     for ( size_t i = 0; i < _in_RGB.size(); i++ )
         for ( size_t j = 0; j < 3; j++ )
             RGB_copy[i][j] = T( _in_RGB[i][j] );
 
-    vector<vector<T>> out_calc_LAB =
+    std::vector<std::vector<T>> out_calc_LAB =
         XYZ_to_LAB( getCalcXYZt( RGB_copy, beta_params ) );
     for ( size_t i = 0; i < _in_RGB.size(); i++ )
         for ( size_t j = 0; j < 3; j++ )

@@ -10,9 +10,6 @@
 #include <Eigen/Core>
 #include <ceres/ceres.h>
 
-using namespace std;
-using namespace Eigen;
-
 namespace rta
 {
 namespace core
@@ -20,7 +17,7 @@ namespace core
 
 // Non-class functions
 
-template <typename T> int isSquare( const vector<vector<T>> &vm )
+template <typename T> int isSquare( const std::vector<std::vector<T>> &vm )
 {
     for ( size_t i = 0; i < vm.size(); i++ )
     {
@@ -32,10 +29,11 @@ template <typename T> int isSquare( const vector<vector<T>> &vm )
 }
 
 template <typename T>
-vector<T> addVectors( const vector<T> &vectorA, const vector<T> &vectorB )
+std::vector<T>
+addVectors( const std::vector<T> &vectorA, const std::vector<T> &vectorB )
 {
     assert( vectorA.size() == vectorB.size() );
-    vector<T> sum;
+    std::vector<T> sum;
     sum.reserve( vectorA.size() );
     std::transform(
         vectorA.begin(),
@@ -47,10 +45,11 @@ vector<T> addVectors( const vector<T> &vectorA, const vector<T> &vectorB )
 }
 
 template <typename T>
-vector<T> subVectors( const vector<T> &vectorA, const vector<T> &vectorB )
+std::vector<T>
+subVectors( const std::vector<T> &vectorA, const std::vector<T> &vectorB )
 {
     assert( vectorA.size() == vectorB.size() );
-    vector<T> diff;
+    std::vector<T> diff;
     diff.reserve( vectorA.size() );
     std::transform(
         vectorA.begin(),
@@ -72,14 +71,14 @@ vector<T> subVectors( const vector<T> &vectorA, const vector<T> &vectorB )
 /// @return Scalar cross product: x1*y2 - x2*y1
 /// @pre vectorA.size() == 2 && vectorB.size() == 2
 template <typename T>
-T cross2d_scalar( const vector<T> &vectorA, const vector<T> &vectorB )
+T cross2d_scalar( const std::vector<T> &vectorA, const std::vector<T> &vectorB )
 {
     assert( vectorA.size() == 2 && vectorB.size() == 2 );
     return vectorA[0] * vectorB[1] - vectorA[1] * vectorB[0];
 }
 
 template <typename T>
-vector<vector<T>> invertVM( const vector<vector<T>> &vMtx )
+std::vector<std::vector<T>> invertVM( const std::vector<std::vector<T>> &vMtx )
 {
     assert( isSquare( vMtx ) );
 
@@ -94,7 +93,7 @@ vector<vector<T>> invertVM( const vector<vector<T>> &vMtx )
 
     m = m.inverse();
 
-    vector<vector<T>> vMtxR( m.rows(), vector<T>( m.cols() ) );
+    std::vector<std::vector<T>> vMtxR( m.rows(), std::vector<T>( m.cols() ) );
     for ( Eigen::Index i = 0; i < m.rows(); i++ )
         for ( Eigen::Index j = 0; j < m.cols(); j++ )
             vMtxR[i][j] = m( i, j );
@@ -102,17 +101,17 @@ vector<vector<T>> invertVM( const vector<vector<T>> &vMtx )
     return vMtxR;
 }
 
-template <typename T> vector<T> invertV( const vector<T> &vMtx )
+template <typename T> std::vector<T> invertV( const std::vector<T> &vMtx )
 {
-    size_t            size = static_cast<size_t>( std::sqrt( vMtx.size() ) );
-    vector<vector<T>> tmp( size, vector<T>( size ) );
+    size_t size = static_cast<size_t>( std::sqrt( vMtx.size() ) );
+    std::vector<std::vector<T>> tmp( size, std::vector<T>( size ) );
 
     for ( size_t i = 0; i < size; i++ )
         for ( size_t j = 0; j < size; j++ )
             tmp[i][j] = vMtx[i * size + j];
 
     tmp = invertVM( tmp );
-    vector<T> result( vMtx.size() );
+    std::vector<T> result( vMtx.size() );
 
     for ( size_t i = 0; i < size; i++ )
         for ( size_t j = 0; j < size; j++ )
@@ -121,12 +120,12 @@ template <typename T> vector<T> invertV( const vector<T> &vMtx )
     return result;
 }
 
-template <typename T> vector<T> diagV( const vector<T> &vct )
+template <typename T> std::vector<T> diagV( const std::vector<T> &vct )
 {
     assert( vct.size() != 0 );
 
-    size_t    length = vct.size();
-    vector<T> vctdiag( length * length, T( 0.0 ) );
+    size_t         length = vct.size();
+    std::vector<T> vctdiag( length * length, T( 0.0 ) );
 
     for ( size_t i = 0; i < length; i++ )
     {
@@ -137,7 +136,8 @@ template <typename T> vector<T> diagV( const vector<T> &vct )
 }
 
 template <typename T>
-vector<vector<T>> transposeVec( const vector<vector<T>> &vMtx )
+std::vector<std::vector<T>>
+transposeVec( const std::vector<std::vector<T>> &vMtx )
 {
     assert( vMtx.size() != 0 && vMtx[0].size() != 0 );
 
@@ -149,7 +149,7 @@ vector<vector<T>> transposeVec( const vector<vector<T>> &vMtx )
             m( i, j ) = vMtx[i][j];
     m.transposeInPlace();
 
-    vector<vector<T>> vTran( m.rows(), vector<T>( m.cols() ) );
+    std::vector<std::vector<T>> vTran( m.rows(), std::vector<T>( m.cols() ) );
     for ( Eigen::Index i = 0; i < m.rows(); i++ )
         for ( Eigen::Index j = 0; j < m.cols(); j++ )
             vTran[i][j] = m( i, j );
@@ -157,7 +157,7 @@ vector<vector<T>> transposeVec( const vector<vector<T>> &vMtx )
     return vTran;
 }
 
-template <typename T> T sumVector( const vector<T> &vct )
+template <typename T> T sumVector( const std::vector<T> &vct )
 {
     Eigen::Matrix<T, Eigen::Dynamic, 1> v;
     v.resize( vct.size(), 1 );
@@ -167,7 +167,7 @@ template <typename T> T sumVector( const vector<T> &vct )
     return v.sum();
 }
 
-template <typename T> T sumVectorM( const vector<vector<T>> &vct )
+template <typename T> T sumVectorM( const std::vector<std::vector<T>> &vct )
 {
     size_t row = vct.size();
     size_t col = vct[0].size();
@@ -182,7 +182,7 @@ template <typename T> T sumVectorM( const vector<vector<T>> &vct )
     return v.sum();
 }
 
-template <typename T> void scaleVector( vector<T> &vct, const T scale )
+template <typename T> void scaleVector( std::vector<T> &vct, const T scale )
 {
     Eigen::Matrix<T, Eigen::Dynamic, 1> v;
     v.resize( vct.size(), 1 );
@@ -198,7 +198,8 @@ template <typename T> void scaleVector( vector<T> &vct, const T scale )
 }
 
 template <typename T>
-vector<T> mulVectorElement( const vector<T> &vct1, const vector<T> &vct2 )
+std::vector<T>
+mulVectorElement( const std::vector<T> &vct1, const std::vector<T> &vct2 )
 {
     assert( vct1.size() == vct2.size() );
 
@@ -213,13 +214,13 @@ vector<T> mulVectorElement( const vector<T> &vct1, const vector<T> &vct2 )
     }
     a1 *= a2;
 
-    vector<T> vct3( a1.data(), a1.data() + a1.rows() * a1.cols() );
+    std::vector<T> vct3( a1.data(), a1.data() + a1.rows() * a1.cols() );
 
     return vct3;
 }
 
 template <typename T>
-vector<T> mulVector( vector<T> vct1, vector<T> vct2, int k = 3 )
+std::vector<T> mulVector( std::vector<T> vct1, std::vector<T> vct2, int k = 3 )
 {
     size_t rows = vct1.size() / k;
     size_t cols = vct2.size() / k;
@@ -227,10 +228,10 @@ vector<T> mulVector( vector<T> vct1, vector<T> vct2, int k = 3 )
     assert( rows * k == vct1.size() );
     assert( k * cols == vct2.size() );
 
-    vector<T> vct3( rows * cols );
-    T        *pA = &vct1[0];
-    T        *pB = &vct2[0];
-    T        *pC = &vct3[0];
+    std::vector<T> vct3( rows * cols );
+    T             *pA = &vct1[0];
+    T             *pB = &vct2[0];
+    T             *pC = &vct3[0];
 
     for ( size_t r = 0; r < rows; r++ )
     {
@@ -247,8 +248,9 @@ vector<T> mulVector( vector<T> vct1, vector<T> vct2, int k = 3 )
 }
 
 template <typename T>
-vector<vector<T>>
-mulVector( const vector<vector<T>> &vct1, const vector<vector<T>> &vct2 )
+std::vector<std::vector<T>> mulVector(
+    const std::vector<std::vector<T>> &vct1,
+    const std::vector<std::vector<T>> &vct2 )
 {
     assert( vct1.size() != 0 && vct2.size() != 0 );
 
@@ -265,7 +267,7 @@ mulVector( const vector<vector<T>> &vct1, const vector<vector<T>> &vct2 )
 
     m3 = m1 * m2;
 
-    vector<vector<T>> vct3( m3.rows(), vector<T>( m3.cols() ) );
+    std::vector<std::vector<T>> vct3( m3.rows(), std::vector<T>( m3.cols() ) );
     for ( Eigen::Index i = 0; i < m3.rows(); i++ )
         for ( Eigen::Index j = 0; j < m3.cols(); j++ )
             vct3[i][j] = m3( i, j );
@@ -274,7 +276,8 @@ mulVector( const vector<vector<T>> &vct1, const vector<vector<T>> &vct2 )
 }
 
 template <typename T>
-vector<T> mulVector( const vector<vector<T>> &vct1, const vector<T> &vct2 )
+std::vector<T>
+mulVector( const std::vector<std::vector<T>> &vct1, const std::vector<T> &vct2 )
 {
     assert( vct1.size() != 0 && ( vct1[0] ).size() == vct2.size() );
 
@@ -290,13 +293,14 @@ vector<T> mulVector( const vector<vector<T>> &vct1, const vector<T> &vct2 )
 
     m3 = m1 * m2;
 
-    vector<T> vct3( m3.data(), m3.data() + m3.rows() * m3.cols() );
+    std::vector<T> vct3( m3.data(), m3.data() + m3.rows() * m3.cols() );
 
     return vct3;
 }
 
 template <typename T>
-vector<T> mulVector( const vector<T> &vct1, const vector<vector<T>> &vct2 )
+std::vector<T>
+mulVector( const std::vector<T> &vct1, const std::vector<std::vector<T>> &vct2 )
 {
     return mulVector( vct2, vct1 );
 }
@@ -310,10 +314,10 @@ vector<T> mulVector( const vector<T> &vct1, const vector<vector<T>> &vct2 )
 /// @return The sum of squared relative errors
 /// @pre tcp.size() == src.size()
 template <typename T>
-T calculate_SSE( const vector<T> &tcp, const vector<T> &src )
+T calculate_SSE( const std::vector<T> &tcp, const std::vector<T> &src )
 {
     assert( tcp.size() == src.size() );
-    vector<T> tmp( src.size() );
+    std::vector<T> tmp( src.size() );
 
     T sum = T( 0.0 );
     for ( size_t i = 0; i < tcp.size(); i++ )
@@ -323,7 +327,7 @@ T calculate_SSE( const vector<T> &tcp, const vector<T> &src )
 }
 
 template <typename T>
-int findIndexInterp1( T val, const vector<T> &x, size_t size )
+int findIndexInterp1( T val, const std::vector<T> &x, size_t size )
 {
     T   dist  = T( 1e9 );
     int index = -1;
@@ -342,12 +346,14 @@ int findIndexInterp1( T val, const vector<T> &x, size_t size )
 }
 
 template <typename T>
-vector<T> interp1DLinear(
-    const vector<int> &X0, const vector<int> &X1, const vector<T> &Y0 )
+std::vector<T> interp1DLinear(
+    const std::vector<int> &X0,
+    const std::vector<int> &X1,
+    const std::vector<T>   &Y0 )
 {
     assert( X0.size() == Y0.size() );
 
-    vector<T> slope, intercept, Y1;
+    std::vector<T> slope, intercept, Y1;
 
     for ( size_t i = 0; i < X0.size() - 1; i++ )
     {
@@ -370,9 +376,9 @@ vector<T> interp1DLinear(
     return Y1;
 }
 
-template <typename T> vector<T> xy_to_XYZ( const vector<T> &xy )
+template <typename T> std::vector<T> xy_to_XYZ( const std::vector<T> &xy )
 {
-    vector<T> XYZ( 3 );
+    std::vector<T> XYZ( 3 );
     XYZ[0] = xy[0];
     XYZ[1] = xy[1];
     XYZ[2] = 1 - xy[0] - xy[1];
@@ -380,10 +386,10 @@ template <typename T> vector<T> xy_to_XYZ( const vector<T> &xy )
     return XYZ;
 }
 
-template <typename T> vector<T> uv_to_xy( const vector<T> &uv )
+template <typename T> std::vector<T> uv_to_xy( const std::vector<T> &uv )
 {
-    T         xyS[] = { 3.0, 2.0 };
-    vector<T> xyScale( xyS, xyS + sizeof( xyS ) / sizeof( T ) );
+    T              xyS[] = { 3.0, 2.0 };
+    std::vector<T> xyScale( xyS, xyS + sizeof( xyS ) / sizeof( T ) );
     xyScale = mulVectorElement( xyScale, uv );
 
     T scale = 2 * uv[0] - 8 * uv[1] + 4;
@@ -392,17 +398,17 @@ template <typename T> vector<T> uv_to_xy( const vector<T> &uv )
     return xyScale;
 }
 
-template <typename T> vector<T> uv_to_XYZ( const vector<T> &uv )
+template <typename T> std::vector<T> uv_to_XYZ( const std::vector<T> &uv )
 {
     return xy_to_XYZ( uv_to_xy( uv ) );
 } // LCOV_EXCL_LINE - bug in coverage tool
 
-template <typename T> vector<T> XYZ_to_uv( const vector<T> &XYZ )
+template <typename T> std::vector<T> XYZ_to_uv( const std::vector<T> &XYZ )
 {
-    T         uvS[]   = { 4.0, 6.0 };
-    T         slice[] = { XYZ[0], XYZ[1] };
-    vector<T> uvScale( uvS, uvS + sizeof( uvS ) / sizeof( T ) );
-    vector<T> vSlice( slice, slice + sizeof( slice ) / sizeof( T ) );
+    T              uvS[]   = { 4.0, 6.0 };
+    T              slice[] = { XYZ[0], XYZ[1] };
+    std::vector<T> uvScale( uvS, uvS + sizeof( uvS ) / sizeof( T ) );
+    std::vector<T> vSlice( slice, slice + sizeof( slice ) / sizeof( T ) );
 
     uvScale = mulVectorElement( uvScale, vSlice );
 
@@ -447,13 +453,14 @@ std::vector<std::vector<T>> calculate_CAT(
 }
 
 template <typename T>
-vector<vector<T>> XYZ_to_LAB( const vector<vector<T>> &XYZ )
+std::vector<std::vector<T>> XYZ_to_LAB( const std::vector<std::vector<T>> &XYZ )
 {
     assert( !XYZ.empty() );
     assert( XYZ[0].size() == 3 );
     T add = T( 16.0 / 116.0 );
 
-    vector<vector<T>> tmpXYZ( XYZ.size(), vector<T>( 3, T( 1.0 ) ) );
+    std::vector<std::vector<T>> tmpXYZ(
+        XYZ.size(), std::vector<T>( 3, T( 1.0 ) ) );
     for ( size_t i = 0; i < XYZ.size(); i++ )
         for ( size_t j = 0; j < 3; j++ )
         {
@@ -464,7 +471,7 @@ vector<vector<T>> XYZ_to_LAB( const vector<vector<T>> &XYZ )
                 tmpXYZ[i][j] = T( k ) * tmpXYZ[i][j] + add;
         }
 
-    vector<vector<T>> outCalcLab( XYZ.size(), vector<T>( 3 ) );
+    std::vector<std::vector<T>> outCalcLab( XYZ.size(), std::vector<T>( 3 ) );
     for ( size_t i = 0; i < XYZ.size(); i++ )
     {
         outCalcLab[i][0] = T( 116.0 ) * tmpXYZ[i][1] - T( 16.0 );
@@ -476,13 +483,13 @@ vector<vector<T>> XYZ_to_LAB( const vector<vector<T>> &XYZ )
 }
 
 template <typename T>
-vector<vector<T>>
-getCalcXYZt( const vector<vector<T>> &RGB, const T beta_params[6] )
+std::vector<std::vector<T>>
+getCalcXYZt( const std::vector<std::vector<T>> &RGB, const T beta_params[6] )
 {
     assert( !RGB.empty() );
 
-    vector<vector<T>> BV( 3, vector<T>( 3 ) );
-    vector<vector<T>> M( 3, vector<T>( 3 ) );
+    std::vector<std::vector<T>> BV( 3, std::vector<T>( 3 ) );
+    std::vector<std::vector<T>> M( 3, std::vector<T>( 3 ) );
 
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
@@ -498,7 +505,8 @@ getCalcXYZt( const vector<vector<T>> &RGB, const T beta_params[6] )
     BV[2][1] = beta_params[5];
     BV[2][2] = 1.0 - beta_params[4] - beta_params[5];
 
-    vector<vector<T>> outCalcXYZt = mulVector( mulVector( RGB, BV ), M );
+    std::vector<std::vector<T>> outCalcXYZt =
+        mulVector( mulVector( RGB, BV ), M );
 
     return outCalcXYZt;
 }

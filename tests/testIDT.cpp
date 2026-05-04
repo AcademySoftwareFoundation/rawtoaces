@@ -167,7 +167,7 @@ void testIDT_LoadIlluminant()
     OIIO_CHECK_EQUAL( illuminant.type, "ISO7589" );
     OIIO_CHECK_EQUAL( illuminant["power"].shape.step, 5 );
 
-    vector<double> &illumTestData = illuminant["power"].values;
+    std::vector<double> &illumTestData = illuminant["power"].values;
     OIIO_CHECK_EQUAL( illumTestData.size(), 81 );
     for ( int i = 0; i < 81; i++ )
         OIIO_CHECK_EQUAL_THRESH( illumTestData[i], iso7589[i], 1e-5 );
@@ -775,7 +775,7 @@ void testIDT_scaleLSC()
         0.13655488148
     };
 
-    const vector<double> illumDataScaled = illuminant["power"].values;
+    const std::vector<double> illumDataScaled = illuminant["power"].values;
 
     OIIO_CHECK_EQUAL( illumDataScaled.size(), 81 );
     OIIO_CHECK_EQUAL( illuminant.type, "ISO7589" );
@@ -792,7 +792,7 @@ void testIDT_CalCM()
     rta::core::SpectralData camera;
     load_file( "camera/ARRI_D21_380_780_5.json", camera );
 
-    vector<double> CM_test = calculate_CM( camera, illuminant );
+    std::vector<double> CM_test = calculate_CM( camera, illuminant );
 
     float CM[81] = { 1.0000000000f, 1.4418439699f, 1.8703081160f };
 
@@ -808,7 +808,7 @@ void testIDT_CalWB()
     rta::core::SpectralData camera;
     load_file( "camera/Nikon_D200_380_780_5.json", camera );
 
-    vector<double> WB_test = _calculate_WB( camera, illuminant );
+    std::vector<double> WB_test = _calculate_WB( camera, illuminant );
 
     double WB[3] = { 1.1397265, 1.0000000, 2.3240151 };
     for ( size_t i = 0; i < WB_test.size(); i++ )
@@ -822,13 +822,13 @@ void testIDT_ChooseIllumSrc()
     rta::core::SpectralSolver solver( { DATA_PATH } );
     load_camera_helper( solver, "nikon", "d200", "", true, false );
 
-    float          wb[3] = { 1.0, 1.0, 1.0 };
-    vector<double> wbv( wb, wb + 3 );
+    float               wb[3] = { 1.0, 1.0, 1.0 };
+    std::vector<double> wbv( wb, wb + 3 );
     solver.find_illuminant( wbv );
 
-    const auto    &best_illuminant = solver.illuminant;
-    string         illumType_Test  = best_illuminant.type;
-    vector<double> illumData_Test  = best_illuminant["power"].values;
+    const auto         &best_illuminant = solver.illuminant;
+    std::string         illumType_Test  = best_illuminant.type;
+    std::vector<double> illumData_Test  = best_illuminant["power"].values;
 
     double illumData[81] = {
         0.0106671894, 0.0120341268, 0.0134010642, 0.0179595785, 0.0225180928,
@@ -860,13 +860,13 @@ void testIDT_ChooseIllumType()
     rta::core::SpectralSolver solver( { DATA_PATH } );
     load_camera_helper( solver, "nikon", "d200", "iso7589", true, false );
 
-    float          wb[3] = { 1.0, 1.0, 1.0 };
-    vector<double> wbv( wb, wb + 3 );
+    float               wb[3] = { 1.0, 1.0, 1.0 };
+    std::vector<double> wbv( wb, wb + 3 );
     solver.calculate_WB();
 
-    const auto    &best_illuminant = solver.illuminant;
-    string         illumType_Test  = best_illuminant.type;
-    vector<double> illumData_Test  = best_illuminant["power"].values;
+    const auto         &best_illuminant = solver.illuminant;
+    std::string         illumType_Test  = best_illuminant.type;
+    std::vector<double> illumData_Test  = best_illuminant["power"].values;
 
     double illumData[81] = {
         0.0054621953, 0.0068277441, 0.0081932929, 0.0095588417, 0.0109243905,
@@ -5279,7 +5279,7 @@ void testIDT_CalIDT()
     solver.calculate_WB();
 
     OIIO_CHECK_ASSERT( solver.calculate_IDT_matrix() );
-    vector<vector<double>> IDT_test = solver.get_IDT_matrix();
+    std::vector<std::vector<double>> IDT_test = solver.get_IDT_matrix();
 
     float IDT[3][3] = { { 1.0915120600f, -0.2516916464f, 0.1601795864f },
                         { -0.0089998772f, 1.2147199060f, -0.2057200288f },

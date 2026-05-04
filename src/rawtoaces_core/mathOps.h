@@ -400,8 +400,8 @@ template <typename T> std::vector<T> uv_to_xy( const std::vector<T> &uv )
 
 template <typename T> std::vector<T> uv_to_XYZ( const std::vector<T> &uv )
 {
-    return xy_to_XYZ( uv_to_xy( uv ) ); // LCOV_EXCL_LINE - bug in coverage tool
-}
+    return xy_to_XYZ( uv_to_xy( uv ) );
+} // LCOV_EXCL_LINE - bug in coverage tool
 
 template <typename T> std::vector<T> XYZ_to_uv( const std::vector<T> &XYZ )
 {

@@ -229,9 +229,6 @@ std::vector<T> mulVector( std::vector<T> vct1, std::vector<T> vct2, int k = 3 )
     assert( k * cols == vct2.size() );
 
     std::vector<T> vct3( rows * cols );
-    T             *pA = &vct1[0];
-    T             *pB = &vct2[0];
-    T             *pC = &vct3[0];
 
     for ( size_t r = 0; r < rows; r++ )
     {
@@ -239,7 +236,8 @@ std::vector<T> mulVector( std::vector<T> vct1, std::vector<T> vct2, int k = 3 )
         {
             for ( size_t c = 0; c < cols; c++ )
             {
-                pC[r * cols + c] += pA[r * k + cArB] * pB[cArB * cols + c];
+                vct3[r * cols + c] +=
+                    vct1[r * k + cArB] * vct2[cArB * cols + c];
             }
         }
     }

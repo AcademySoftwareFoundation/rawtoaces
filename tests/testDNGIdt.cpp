@@ -12,8 +12,8 @@
 
 void testIDT_CcttoMired()
 {
-    double cct   = 6500.0;
-    double mired = rta::core::CCT_to_mired( cct );
+    double cct_kelvin = 6500.0;
+    double mired      = rta::core::kelvin_to_mired( cct_kelvin );
     OIIO_CHECK_EQUAL_THRESH( mired, 153.8461538462, 1e-5 );
 }
 

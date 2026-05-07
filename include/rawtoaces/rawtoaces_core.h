@@ -46,10 +46,10 @@ void calculate_daylight_SPD( const int &cct, Spectrum &spectrum );
 /// Generates a blackbody curve using Planck's law for the specified correlated color temperature.
 /// The function calculates spectral power distribution across wavelengths defined by Spectrum object.
 ///
-/// @param cct Correlated colour temperature of the requested illuminant (1500-3999 Kelvin)
+/// @param kelvin Correlated colour temperature of the requested illuminant (1500-3999 Kelvin)
 /// @param spectrum Reference to a `Spectrum` object to fill with the calculated values
-/// @pre cct is in valid range for blackbody calculations (1500-3999)
-void calculate_blackbody_SPD( const int &cct, Spectrum &spectrum );
+/// @pre kelvin is in valid range for blackbody calculations (1500-3999)
+void calculate_blackbody_SPD( const int &kelvin, Spectrum &spectrum );
 
 /// Solve an input transform using spectral sensitivity curves of a camera.
 class SpectralSolver

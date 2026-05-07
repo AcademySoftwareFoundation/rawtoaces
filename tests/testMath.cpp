@@ -68,6 +68,17 @@ void test_Cross2()
     OIIO_CHECK_EQUAL_THRESH( cross2_test, 3.50, 1e-5 );
 }
 
+void test_determinant()
+{
+    std::vector<std::vector<double>> M1   = { { 1, 2 }, { 3, 4 } };
+    double                           det1 = determinant( M1 );
+    OIIO_CHECK_EQUAL( det1, -2 );
+
+    std::vector<std::vector<double>> M2   = { { 1, 2 }, { 1, 2 } };
+    double                           det2 = determinant( M2 );
+    OIIO_CHECK_EQUAL( det2, 0 );
+}
+
 void test_InvertVM()
 {
     double M[3][3]         = { { 0.0188205, 8.59E-03, 9.58E-03 },
@@ -803,6 +814,7 @@ int main( int, char ** )
     test_AddVectors();
     test_SubVectors();
     test_Cross2();
+    test_determinant();
     test_InvertVM();
     test_InvertV();
     test_DiagV();

@@ -77,6 +77,23 @@ T cross2d_scalar( const std::vector<T> &vectorA, const std::vector<T> &vectorB )
     return vectorA[0] * vectorB[1] - vectorA[1] * vectorB[0];
 }
 
+/// Calculate the determinant of a square matrix.
+///
+/// @param vMtx a matrix to calculate a determinant for
+/// @return the deternimant
+template <typename T> T determinant( const std::vector<std::vector<T>> &vMtx )
+{
+    assert( isSquare( vMtx ) );
+
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m;
+    m.resize( vMtx.size(), vMtx[0].size() );
+    for ( Eigen::Index i = 0; i < m.rows(); i++ )
+        for ( Eigen::Index j = 0; j < m.cols(); j++ )
+            m( i, j ) = vMtx[i][j];
+
+    return m.determinant();
+}
+
 template <typename T>
 std::vector<std::vector<T>> invertVM( const std::vector<std::vector<T>> &vMtx )
 {

@@ -96,9 +96,9 @@ void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
     }
 }
 
-void calculate_blackbody_SPD( const int &cct, Spectrum &spectrum )
+void calculate_blackbody_SPD( const int &kelvin, Spectrum &spectrum )
 {
-    assert( cct >= 1500 && cct < 4000 );
+    assert( kelvin >= 1500 && kelvin < 4000 );
 
     spectrum.values.clear();
 
@@ -107,7 +107,7 @@ void calculate_blackbody_SPD( const int &cct, Spectrum &spectrum )
         double lambda = wavelength / 1e9;
         double c1     = 2 * plancks_constant * ( std::pow( light_speed, 2 ) );
         double c2     = ( plancks_constant * light_speed ) /
-                    ( boltzmann_constant * lambda * cct );
+                    ( boltzmann_constant * lambda * kelvin );
         spectrum.values.push_back(
             c1 * pi / ( std::pow( lambda, 5 ) * ( std::exp( c2 ) - 1 ) ) );
     }
@@ -966,26 +966,24 @@ MetadataSolver::MetadataSolver( const core::Metadata &metadata )
     : _metadata( metadata )
 {}
 
-/// Convert Correlated Color Temperature (CCT) to Mired units.
-/// This function converts color temperature from Kelvin to Mired scale, which is
-/// commonly used in photography and lighting. Mired = 1,000,000 / CCT, providing
-/// a more perceptually uniform scale for color temperature adjustments.
+/// This function converts Kelvin to the Mired scale.
+/// Mired = 1,000,000 / Kelvin, providing a more perceptually uniform scale for color temperature adjustments.
 ///
-/// @param cct Correlated Color Temperature in Kelvin
+/// @param kelvin Temperature in Kelvin
 /// @return Color temperature in Mired units
-/// @pre cct must be positive and non-zero
-double CCT_to_mired( const double cct )
+/// @pre kelvin must be positive and non-zero
+double kelvin_to_mired( const double kelvin )
 {
-    return 1.0E06 / cct;
+    return 1.0E06 / kelvin;
 }
 
-/// Convert Mired units to Correlated Color Temperature (CCT).
+/// Convert Mired units to Kelvin.
 /// This function converts color temperature from Mired scale back to Kelvin.
 ///
 /// @param mired Color temperature in Mired units
-/// @return Correlated color temperature in Kelvin
+/// @return Color temperature in Kelvin
 /// @pre mired must be positive and non-zero
-double mired_to_CCT( const double mired )
+double mired_to_kelvin( const double mired )
 {
     return 1.0E06 / mired;
 }
@@ -1086,7 +1084,7 @@ double XYZ_to_color_temperature( const std::vector<double> &XYZ )
                 ( robertson_mired_table[i] - robertson_mired_table[i - 1] ) /
                 ( distance_prev - distance_this );
 
-    double cct = mired_to_CCT( mired );
+    double cct = mired_to_kelvin( mired );
     cct        = std::max( 2000.0, std::min( 50000.0, cct ) );
 
     return cct;
@@ -1160,11 +1158,11 @@ std::vector<double> find_XYZ_to_camera_matrix(
     double cct2 =
         light_source_to_color_temp( metadata.calibration[1].illuminant );
 
-    double mir1 = CCT_to_mired( cct1 );
-    double mir2 = CCT_to_mired( cct2 );
+    double mir1 = kelvin_to_mired( cct1 );
+    double mir2 = kelvin_to_mired( cct2 );
 
-    double max_mired = CCT_to_mired( 2000.0 );
-    double min_mired = CCT_to_mired( 50000.0 );
+    double max_mired = kelvin_to_mired( 2000.0 );
+    double min_mired = kelvin_to_mired( 50000.0 );
 
     const std::vector<double> &matrix_start =
         metadata.calibration[0].XYZ_to_RGB_matrix;
@@ -1185,7 +1183,7 @@ std::vector<double> find_XYZ_to_camera_matrix(
     {
         current_error =
             current_mired -
-            CCT_to_mired( XYZ_to_color_temperature( mulVector(
+            kelvin_to_mired( XYZ_to_color_temperature( mulVector(
                 invertV( XYZ_to_camera_weighted_matrix(
                     current_mired, mir1, mir2, matrix_start, matrix_end ) ),
                 neutral_RGB ) ) );
@@ -1232,7 +1230,7 @@ std::vector<double> find_XYZ_to_camera_matrix(
 std::vector<double> color_temperature_to_XYZ( const double &cct )
 {
 
-    double              mired = CCT_to_mired( cct );
+    double              mired = kelvin_to_mired( cct );
     std::vector<double> uv( 2, 1.0 );
 
     int num_robertson_table = countSize( robertson_uvt_table );

@@ -1798,7 +1798,7 @@ void test_idt_verbosity_level_1()
     // Calculate IDT matrix and capture stderr
     bool        success;
     std::string output =
-        capture_stderr( [&]() { success = solver.calculate_IDT_matrix(); } );
+        capture_stderr( [&]() { success = solver.calculate_transform(); } );
 
     OIIO_CHECK_ASSERT( success );
 
@@ -1846,7 +1846,7 @@ void test_idt_verbosity_level_2()
     // Calculate IDT matrix and capture stderr
     bool        success;
     std::string output =
-        capture_stderr( [&]() { success = solver.calculate_IDT_matrix(); } );
+        capture_stderr( [&]() { success = solver.calculate_transform(); } );
 
     OIIO_CHECK_ASSERT( success );
 
@@ -1854,7 +1854,7 @@ void test_idt_verbosity_level_2()
     ASSERT_NOT_CONTAINS( output, "Solver Summary" );
 
     // Verify IDT matrix was calculated successfully
-    const auto &IDT_matrix = solver.get_IDT_matrix();
+    const auto &IDT_matrix = solver.transform_matrix;
     OIIO_CHECK_EQUAL( IDT_matrix.size(), 3 );
     OIIO_CHECK_EQUAL( IDT_matrix[0].size(), 3 );
     OIIO_CHECK_EQUAL( IDT_matrix[1].size(), 3 );
@@ -1900,7 +1900,7 @@ void test_idt_verbosity_level_3()
     // Calculate IDT matrix and capture stderr
     bool        success;
     std::string output =
-        capture_stderr( [&]() { success = solver.calculate_IDT_matrix(); } );
+        capture_stderr( [&]() { success = solver.calculate_transform(); } );
 
     OIIO_CHECK_ASSERT( success );
 
@@ -1908,7 +1908,7 @@ void test_idt_verbosity_level_3()
     ASSERT_CONTAINS( output, "Solver Summary" );
 
     // Verify IDT matrix was calculated successfully
-    const auto &IDT_matrix = solver.get_IDT_matrix();
+    const auto &IDT_matrix = solver.transform_matrix;
     OIIO_CHECK_EQUAL( IDT_matrix.size(), 3 );
     OIIO_CHECK_EQUAL( IDT_matrix[0].size(), 3 );
     OIIO_CHECK_EQUAL( IDT_matrix[1].size(), 3 );
@@ -1961,7 +1961,7 @@ void test_idt_curvefit_failure_returns_false()
 
     bool        success;
     std::string output =
-        capture_stderr( [&]() { success = solver.calculate_IDT_matrix(); } );
+        capture_stderr( [&]() { success = solver.calculate_transform(); } );
 
     // Optimization should fail and return false
     OIIO_CHECK_ASSERT( !success );

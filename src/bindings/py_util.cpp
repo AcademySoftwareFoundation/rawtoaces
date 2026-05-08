@@ -6,6 +6,7 @@
 #include <nanobind/stl/vector.h>
 #include <nanobind/ndarray.h>
 #include <rawtoaces/image_converter.h>
+#include "../misc/pragma.h"
 
 using namespace rta::util;
 
@@ -24,8 +25,29 @@ void util_bindings( nanobind::module_ &m )
     image_converter.def( "process_image", &ImageConverter::process_image );
     image_converter.def(
         "get_WB_multipliers", &ImageConverter::get_WB_multipliers );
-    image_converter.def( "get_IDT_matrix", &ImageConverter::get_IDT_matrix );
-    image_converter.def( "get_CAT_matrix", &ImageConverter::get_CAT_matrix );
+    image_converter.def(
+        "get_transform_matrix", &ImageConverter::get_transform_matrix );
+
+    DISABLE_DEPRECATED_WARNINGS
+    image_converter.def( "get_IDT_matrix", []( ImageConverter &converter ) {
+        PyErr_WarnEx(
+            PyExc_DeprecationWarning,
+            "This method will be removed in v3. "
+            "Use `get_transform_matrix()`.",
+            1 );
+        return converter.get_IDT_matrix();
+    } );
+
+    image_converter.def( "get_CAT_matrix", []( ImageConverter &converter ) {
+        PyErr_WarnEx(
+            PyExc_DeprecationWarning,
+            "This method will be removed in v3. "
+            "Use `get_transform_matrix()`.",
+            1 );
+        return converter.get_CAT_matrix();
+    } );
+    ENABLE_WARNINGS
+
     image_converter.def(
         "configure",
         []( ImageConverter &converter, const std::string &input_filename ) {

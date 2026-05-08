@@ -313,16 +313,15 @@ bool solve_matrix_from_illuminant(
         return false;
     }
 
-    if ( !solver.calculate_IDT_matrix() )
+    if ( !solver.calculate_transform() )
     {
         error_message = solver.last_error_message;
         return false;
     }
 
-    const auto &matrix = solver.get_IDT_matrix();
     for ( size_t row = 0; row < 3; row++ )
         for ( size_t col = 0; col < 3; col++ )
-            cache_data[row][col] = matrix[row][col];
+            cache_data[row][col] = solver.transform_matrix[row][col];
 
     return true;
 }
@@ -391,22 +390,30 @@ bool fetch_matrix_from_illuminant(
     return true;
 }
 
-void solve_matrix_from_metadata(
-    const core::Metadata &metadata, cache::MatrixData &cache_data )
+bool solve_matrix_from_metadata(
+    const core::Metadata &metadata,
+    cache::MatrixData    &cache_data,
+    std::string          &error_message )
 {
     core::MetadataSolver solver( metadata );
-    auto                 matrix = solver.calculate_IDT_matrix();
+    if ( !solver.calculate_transform() )
+    {
+        error_message = solver.last_error_message;
+        return false;
+    }
 
     for ( size_t row = 0; row < 3; row++ )
         for ( size_t col = 0; col < 3; col++ )
-            cache_data[row][col] = matrix[row][col];
+            cache_data[row][col] = solver.transform_matrix[row][col];
+    return true;
 }
 
-void fetch_matrix_from_metadata(
+bool fetch_matrix_from_metadata(
     const core::Metadata             &metadata,
     int                               verbosity,
     bool                              disable_cache,
-    std::vector<std::vector<double>> &out_matrix )
+    std::vector<std::vector<double>> &out_matrix,
+    std::string                      &error_message )
 {
     cache::MetadataDescriptor descriptor = metadata;
 
@@ -417,9 +424,18 @@ void fetch_matrix_from_metadata(
 
     const auto &entry = matrix_from_dng_metadata_cache.fetch(
         descriptor, [&]( cache::MatrixData &cache_data ) {
-            solve_matrix_from_metadata( metadata, cache_data );
-            return true;
+            return solve_matrix_from_metadata(
+                metadata, cache_data, error_message );
         } );
+
+    bool success = entry.first;
+    if ( !success )
+    {
+        error_message =
+            "Failed to calculate transform matrix from DNG metadata. " +
+            error_message;
+        return false;
+    }
 
     const auto &matrix = entry.second;
     out_matrix.resize( 3 );
@@ -443,6 +459,7 @@ void fetch_matrix_from_metadata(
             std::cerr << std::endl;
         }
     }
+    return true;
 }
 
 } // namespace util

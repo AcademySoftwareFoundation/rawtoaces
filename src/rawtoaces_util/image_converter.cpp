@@ -516,9 +516,6 @@ bool prepare_transform_DNG(
     std::vector<std::vector<double>> &CAT_matrix,
     std::string                      &error_message )
 {
-    (void)
-        error_message; // Currently unused, but kept for consistency with prepare_transform_spectral interface
-
     // Step 1: Extract basic DNG metadata
     core::Metadata metadata;
 
@@ -586,22 +583,26 @@ bool prepare_transform_DNG(
         }
     }
 
-    // Step 4: Calculate IDT matrix using metadata solver
-    fetch_matrix_from_metadata(
-        metadata, settings.verbosity, settings.disable_cache, IDT_matrix );
-
-    // Step 5: Clear CAT matrix (not used for DNG)
+    // Step 4: Clear CAT matrix (not used for DNG)
     // Do not apply CAT for DNG
     CAT_matrix.resize( 0 );
-    return true;
+
+    // Step 5: Calculate IDT matrix using metadata solver
+    return fetch_matrix_from_metadata(
+        metadata,
+        settings.verbosity,
+        settings.disable_cache,
+        IDT_matrix,
+        error_message );
 }
 
 void prepare_transform_nonDNG(
-    std::vector<std::vector<double>> &IDT_matrix,
+    std::vector<std::vector<double>> &transform_matrix,
     std::vector<std::vector<double>> &CAT_matrix )
 {
-    // Do not apply IDT for non-DNG
-    IDT_matrix.resize( 0 );
+    rta::core::XYZD65Solver solver;
+    solver.calculate_transform();
+    transform_matrix = solver.transform_matrix;
 
     // clang-format off
     // Colour adaptation from D65 to the ACES white point
@@ -2084,13 +2085,15 @@ bool ImageConverter::configure(
                  _cat_matrix,
                  error_msg ) )
         {
-            status = Status::ConfigurationError;
-            last_error_message =
-                error_msg.empty()
-                    ? "Colour space transform has not been configured properly (spectral mode)"
-                    : error_msg;
+            status             = Status::ConfigurationError;
+            last_error_message = error_msg.empty()
+                                     ? "Colour space transform has not been "
+                                       "configured properly (spectral mode)"
+                                     : error_msg;
             return false;
         }
+
+        _transform_matrix = _idt_matrix;
 
         if ( is_spectral_white_balance )
         {
@@ -2132,15 +2135,19 @@ bool ImageConverter::configure(
                         : error_msg;
                 return false;
             }
+
+            _transform_matrix = _idt_matrix;
         }
         else
         {
-            prepare_transform_nonDNG( _idt_matrix, _cat_matrix );
+            prepare_transform_nonDNG( _transform_matrix, _cat_matrix );
+            _idt_matrix.resize( 0 );
         }
     }
     else if ( matrix_method == Settings::MatrixMethod::Adobe )
     {
-        prepare_transform_nonDNG( _idt_matrix, _cat_matrix );
+        prepare_transform_nonDNG( _transform_matrix, _cat_matrix );
+        _idt_matrix.resize( 0 );
     }
 
     if ( settings.verbosity > 1 )
@@ -2378,41 +2385,13 @@ bool ImageConverter::apply_matrix(
     if ( !roi.defined() )
         roi = dst.roi();
 
-    if ( _idt_matrix.size() )
+    if ( _transform_matrix.size() )
     {
-        success = rta::util::apply_matrix( _idt_matrix, dst, src, roi );
+        success = rta::util::apply_matrix( _transform_matrix, dst, src, roi );
         if ( !success )
         {
             status             = Status::MatrixApplicationError;
-            last_error_message = "Failed to apply IDT matrix transformation";
-            return false;
-        }
-    }
-
-    if ( _cat_matrix.size() )
-    {
-        success = rta::util::apply_matrix( _cat_matrix, dst, dst, roi );
-        if ( !success )
-        {
-            status             = Status::MatrixApplicationError;
-            last_error_message = "Failed to apply CAT matrix transformation";
-            return false;
-        }
-
-        // clang-format off
-        static const std::vector<std::vector<double>> XYZ_to_ACES = {
-            {  1.0498110175, 0.0000000000, -0.0000974845 },
-            { -0.4959030231, 1.3733130458,  0.0982400361 },
-            {  0.0000000000, 0.0000000000,  0.9912520182 }
-        };
-        // clang-format on
-
-        success = rta::util::apply_matrix( XYZ_to_ACES, dst, dst, roi );
-        if ( !success )
-        {
-            status = Status::MatrixApplicationError;
-            last_error_message =
-                "Failed to apply XYZ to ACES matrix transformation";
+            last_error_message = "Failed to apply the colour transform matrix.";
             return false;
         }
     }
@@ -2776,5 +2755,10 @@ const std::vector<std::vector<double>> &ImageConverter::get_CAT_matrix() const
     return _cat_matrix;
 }
 
+const std::vector<std::vector<double>> &
+ImageConverter::get_transform_matrix() const
+{
+    return _transform_matrix;
+}
 } //namespace util
 } //namespace rta

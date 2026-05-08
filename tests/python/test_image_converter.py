@@ -71,7 +71,10 @@ class TestImageConverter:
                 
         assert hasattr(converter, "get_CAT_matrix")
         assert callable(converter.get_CAT_matrix)
-                        
+
+        assert hasattr(converter, "get_transform_matrix")
+        assert callable(converter.get_transform_matrix)
+
         assert hasattr(converter, "get_supported_illuminants")
         assert callable(converter.get_supported_illuminants)
 
@@ -129,6 +132,7 @@ class TestImageConverter:
 
         idt = converter.get_IDT_matrix()
         cat = converter.get_CAT_matrix()
+        transform_matrix = converter.get_transform_matrix()
 
         # Older versions of OIIO fail to fetch the DNG metadata, so rawtoaces
         # picks the non-DNG path. Ideally we should restrict the supported
@@ -148,6 +152,19 @@ class TestImageConverter:
             assert abs(idt[2][0] - -0.0024498461419844484) < 0.0001
             assert abs(idt[2][1] - 0.006049712791275535) < 0.0001
             assert abs(idt[2][2] - 1.013915953697747) < 0.0001
+
+            assert len(transform_matrix[0]) == 3
+            assert abs(transform_matrix[0][0] - 1.0536466144250152) < 0.0001
+            assert abs(transform_matrix[0][1] - 0.00390441818863832) < 0.0001
+            assert abs(transform_matrix[0][2] - 0.004908450238340354) < 0.0001
+            assert len(transform_matrix[1]) == 3
+            assert abs(transform_matrix[1][0] - -0.48995621645381615) < 0.0001
+            assert abs(transform_matrix[1][1] - 1.3614787985962031) < 0.0001
+            assert abs(transform_matrix[1][2] - 0.10208447284831194) < 0.0001
+            assert len(transform_matrix[2]) == 3
+            assert abs(transform_matrix[2][0] - -0.0024498461419844484) < 0.0001
+            assert abs(transform_matrix[2][1] - 0.006049712791275535) < 0.0001
+            assert abs(transform_matrix[2][2] - 1.013915953697747) < 0.0001
         elif len(idt) == 0 and len(cat) == 3:
             assert len(cat[0]) == 3
             assert abs(cat[0][0] - 1.0097583639200136) < 0.0001
@@ -161,6 +178,19 @@ class TestImageConverter:
             assert abs(cat[2][0] - -0.00029980928869024906) < 0.0001
             assert abs(cat[2][1] - -0.0010516909063249997) < 0.0001
             assert abs(cat[2][2] - 0.9282027962747658) < 0.0001
+            
+            assert len(transform_matrix[0]) == 3
+            assert abs(transform_matrix[0][0] - 1.0600554846827632) < 0.0001
+            assert abs(transform_matrix[0][1] - 0.005267854099287872) < 0.0001
+            assert abs(transform_matrix[0][2] - -0.0158989481604843) < 0.0001
+            assert len(transform_matrix[1]) == 3
+            assert abs(transform_matrix[1][0] - -0.4957449664311829) < 0.0001
+            assert abs(transform_matrix[1][1] - 1.3748602949001116) < 0.0001
+            assert abs(transform_matrix[1][2] - 0.09044144496691488) < 0.0001
+            assert len(transform_matrix[2]) == 3
+            assert abs(transform_matrix[2][0] - -0.00029718656248931675) < 0.0001
+            assert abs(transform_matrix[2][1] - -0.0010424907334172433) < 0.0001
+            assert abs(transform_matrix[2][2] - 0.920082895106245) < 0.0001
         else:
             pytest.fail("Either IDT or CAT matrix must not be empty")
 
@@ -199,6 +229,16 @@ class TestImageConverter:
         try:
             cat = converter.get_CAT_matrix()
             assert len(cat) == 0
+        except Exception as e:
+            pytest.fail(f"Unexpected exception: {e}")
+
+    def test_converter_get_transform_matrix(self):
+        """Test uninitialised ImageConverter returns empty transform matrix"""
+        import os
+        converter = rawtoaces.ImageConverter()
+        try:
+            transform_matrix = converter.get_transform_matrix()
+            assert len(transform_matrix) == 0
         except Exception as e:
             pytest.fail(f"Unexpected exception: {e}")
 

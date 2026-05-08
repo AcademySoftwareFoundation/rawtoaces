@@ -164,6 +164,26 @@ class TestMetadataSolverBindings:
         assert abs(idt[2][2] - 1.0139159537) < 1e-5
 
 
+    def test_metadata_solver_calculate_transform(self):
+        metadata = _init_reference_metadata()
+        solver = rawtoaces.MetadataSolver(metadata)
+        success = solver.calculate_transform()
+        idt = solver.transform_matrix
+
+        assert success
+        assert len(idt) == 3
+        assert len(idt[0]) == 3
+        assert abs(idt[0][0] - 1.0536466144) < 1e-5
+        assert abs(idt[0][1] - 0.0039044182) < 1e-5
+        assert abs(idt[0][2] - 0.0049084502) < 1e-5
+        assert abs(idt[1][0] - -0.4899562165) < 1e-5
+        assert abs(idt[1][1] - 1.3614787986) < 1e-5
+        assert abs(idt[1][2] - 0.1020844728) < 1e-5
+        assert abs(idt[2][0] - -0.0024498461) < 1e-5
+        assert abs(idt[2][1] - 0.0060497128) < 1e-5
+        assert abs(idt[2][2] - 1.0139159537) < 1e-5
+
+
 class TestSpectralSolverBindings:
     def test_spectral_solver_default_constructor(self):
         solver = rawtoaces.SpectralSolver()
@@ -304,6 +324,7 @@ class TestSpectralSolverBindings:
         )
         assert solver.calculate_WB() is True
         assert solver.calculate_IDT_matrix() is True
+        assert solver.calculate_transform() is True
 
         wb = solver.get_WB_multipliers()
         idt = solver.get_IDT_matrix()

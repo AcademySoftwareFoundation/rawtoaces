@@ -76,6 +76,7 @@ add_executable (
 	Test_IDT
 	testIDT.cpp
 	test_utils.cpp
+    	../src/misc/pragma.h
 )
 
 target_link_libraries(
@@ -113,6 +114,7 @@ add_executable (
 	Test_DNGIdt
 	testDNGIdt.cpp
 	test_utils.cpp
+    	../src/misc/pragma.h
 )
 
 target_link_libraries(

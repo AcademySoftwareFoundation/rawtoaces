@@ -1044,14 +1044,16 @@ double light_source_to_color_temp( const unsigned short tag )
     return 5500.0;
 }
 
-/// Convert XYZ values to correlated color temperature using Robertson method.
-/// This function estimates the color temperature from XYZ values by interpolating
-/// between known color temperature points in CIE 1960 UCS space. It uses the Robertson
-/// method to find the closest color temperature match based on the UV coordinates.
+/// Compute correlated color temperature from XYZ values, returned in mired.
+/// This is the Robertson UV-distance interpolation that XYZ_to_color_temperature
+/// has always performed internally; exposing it lets callers that already work
+/// in mired (such as find_camera_to_XYZ_matrix) skip the Kelvin conversion.
+/// The result is unclamped here; the [2000, 50000] K clamp is applied by the
+/// XYZ_to_color_temperature wrapper.
 ///
-/// @param XYZ XYZ color values [X, Y, Z]
-/// @return Correlated color temperature in Kelvin
-double XYZ_to_color_temperature( const std::vector<double> &XYZ )
+/// @param XYZ XYZ tristimulus values [X, Y, Z]
+/// @return Color temperature in mired (10^6 / Kelvin), unclamped.
+double XYZ_to_mired( const std::vector<double> &XYZ )
 {
     std::vector<double> uv                  = XYZ_to_uv( XYZ );
     int                 num_robertson_table = countSize( robertson_uvt_table );
@@ -1084,10 +1086,24 @@ double XYZ_to_color_temperature( const std::vector<double> &XYZ )
                 ( robertson_mired_table[i] - robertson_mired_table[i - 1] ) /
                 ( distance_prev - distance_this );
 
-    double cct = mired_to_kelvin( mired );
-    cct        = std::max( 2000.0, std::min( 50000.0, cct ) );
+    return mired;
+}
 
-    return cct;
+/// Convert XYZ values to correlated color temperature using Robertson method.
+/// This function estimates the color temperature from XYZ values by interpolating
+/// between known color temperature points in CIE 1960 UCS space. It uses the Robertson
+/// method to find the closest color temperature match based on the UV coordinates.
+///
+/// The interpolation itself lives in XYZ_to_mired; this wrapper converts to
+/// Kelvin and clamps to [2000, 50000] K, which corresponds to the mired
+/// anchors at robertson_mired_table[26] and robertson_mired_table[2].
+///
+/// @param XYZ XYZ color values [X, Y, Z]
+/// @return Correlated color temperature in Kelvin, clamped to [2000, 50000].
+double XYZ_to_color_temperature( const std::vector<double> &XYZ )
+{
+    double cct = mired_to_kelvin( XYZ_to_mired( XYZ ) );
+    return std::max( 2000.0, std::min( 50000.0, cct ) );
 }
 
 /// Calculate weighted interpolation between two camera matrices based on Mired values.
@@ -1271,9 +1287,10 @@ bool find_camera_to_XYZ_matrix(
                 continue;
             }
 
+            // The loop compares errors in mired space, so use the mired
+            // helper directly and skip the Kelvin round-trip.
             auto neutral_XYZ   = mulVector( camera_to_XYZ_matrix, neutral_RGB );
-            auto neutral_CCT   = XYZ_to_color_temperature( neutral_XYZ );
-            auto neutral_mired = kelvin_to_mired( neutral_CCT );
+            auto neutral_mired = XYZ_to_mired( neutral_XYZ );
             current_error      = current_mired - neutral_mired;
 
             if ( std::fabs( current_error - 0.0 ) <= 1e-09 )

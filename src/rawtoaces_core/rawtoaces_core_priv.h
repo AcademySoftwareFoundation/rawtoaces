@@ -49,6 +49,8 @@ double robertson_length(
 
 double light_source_to_color_temp( const unsigned short tag );
 
+double XYZ_to_mired( const std::vector<double> &XYZ );
+
 double XYZ_to_color_temperature( const std::vector<double> &XYZ );
 
 std::vector<std::vector<double>> XYZ_to_camera_weighted_matrix(

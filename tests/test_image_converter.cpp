@@ -1088,6 +1088,37 @@ void test_fallback_to_metadata()
         output, "Missing the camera model name in the file metadata" );
 }
 
+void check_prepare_transform_spectral(
+    const OIIO::ImageSpec                     &image_spec,
+    const rta::util::ImageConverter::Settings &settings,
+    std::vector<double>                        WB_multipliers,
+    bool                                       expected_result,
+    const std::string                         &expected_error,
+    const std::vector<std::string>            &expected_warnings )
+{
+    bool                             success;
+    std::string                      error_message;
+    std::vector<std::vector<double>> transform_matrix;
+
+    std::string output = capture_stderr( [&]() {
+        // This should succeed and auto-detect the illuminant
+        success = prepare_transform_spectral(
+            image_spec,
+            settings,
+            WB_multipliers,
+            transform_matrix,
+            error_message );
+    } );
+
+    OIIO_CHECK_EQUAL( success, expected_result );
+    ASSERT_CONTAINS( error_message, expected_error );
+
+    for ( const auto &warning: expected_warnings )
+    {
+        ASSERT_CONTAINS( output, warning );
+    }
+}
+
 /// Tests that prepare_transform_spectral fails when no camera manufacturer information is available (should fail)
 void test_missing_camera_manufacturer()
 {
@@ -1105,27 +1136,15 @@ void test_missing_camera_manufacturer()
         SettingsBuilder().database( test_dir.get_database_path() ).build();
 
     // Test: Empty camera make via direct method call
-    std::vector<double>              WB_multipliers;
-    std::vector<std::vector<double>> IDT_matrix;
-    std::vector<std::vector<double>> CAT_matrix;
+    std::vector<double> WB_multipliers;
 
-    // Call prepare_transform_spectral - error should be in error_message parameter
-    bool        success;
-    std::string error_message;
-    success = prepare_transform_spectral(
+    check_prepare_transform_spectral(
         image_spec,
         settings,
         WB_multipliers,
-        IDT_matrix,
-        CAT_matrix,
-        error_message );
-
-    OIIO_CHECK_ASSERT( !success );
-
-    // Assert on the expected error message in the error_message parameter
-    ASSERT_CONTAINS(
-        error_message,
-        "Missing the camera manufacturer name in the file metadata" );
+        false,
+        "Missing the camera manufacturer name in the file metadata",
+        {} );
 }
 
 /// Tests that conversion fails when camera model is missing (should fail)
@@ -1298,25 +1317,15 @@ void test_illuminant_type_not_found()
             .build();
 
     // Test: Request an illuminant type that doesn't exist in the illuminant data
-    std::vector<double>              WB_multipliers;
-    std::vector<std::vector<double>> IDT_matrix;
-    std::vector<std::vector<double>> CAT_matrix;
+    std::vector<double> WB_multipliers;
 
-    // Call prepare_transform_spectral - error should be in error_message parameter
-    bool        success;
-    std::string error_message;
-    success = prepare_transform_spectral(
+    check_prepare_transform_spectral(
         image_spec,
         settings,
         WB_multipliers,
-        IDT_matrix,
-        CAT_matrix,
-        error_message );
-
-    OIIO_CHECK_ASSERT( !success );
-
-    // Assert on the expected error message in the error_message parameter
-    ASSERT_CONTAINS( error_message, "Failed to find illuminant type 'a'" );
+        false,
+        "Failed to find illuminant type 'a'",
+        {} );
 }
 
 /// Tests that invalid daylight color temperature values cause the application to exit with an error
@@ -1422,28 +1431,16 @@ void test_auto_detect_illuminant_with_wb_multipliers()
 
     // Provide WB_multipliers with size 4 to exercise the 4-channel path
     std::vector<double> WB_multipliers = { 1.5, 1.0, 1.2, 1.0 }; // 4 channels
-    std::vector<std::vector<double>> IDT_matrix;
-    std::vector<std::vector<double>> CAT_matrix;
 
-    bool        success;
-    std::string error_message;
-    std::string output = capture_stderr( [&]() {
-        // This should succeed and auto-detect the illuminant
-        success = prepare_transform_spectral(
-            image_spec,
-            settings,
-            WB_multipliers,
-            IDT_matrix,
-            CAT_matrix,
-            error_message );
-    } );
-
-    OIIO_CHECK_ASSERT( success );
-
-    // Assert on expected messages
-    ASSERT_CONTAINS( output, "Warning: Directory '" );
-    ASSERT_CONTAINS( output, "illuminant' does not exist." );
-    ASSERT_CONTAINS( output, "Found illuminant: '2000k'." );
+    check_prepare_transform_spectral(
+        image_spec,
+        settings,
+        WB_multipliers,
+        true,
+        "",
+        { "Warning: Directory '",
+          "illuminant' does not exist.",
+          "Found illuminant: '2000k'." } );
 }
 
 /// Tests that a warning is issued when a database location path points to a file instead of a directory
@@ -1478,29 +1475,15 @@ void test_database_location_not_directory_warning()
     settings.disable_cache = true;
 
     // Provide WB_multipliers
-    std::vector<double>              WB_multipliers = { 1.5, 1.0, 1.2, 1.0 };
-    std::vector<std::vector<double>> IDT_matrix;
-    std::vector<std::vector<double>> CAT_matrix;
+    std::vector<double> WB_multipliers = { 1.5, 1.0, 1.2, 1.0 };
 
-    bool        success;
-    std::string error_message;
-    std::string output = capture_stderr( [&]() {
-        // This should succeed (using the valid database path)
-        // but should warn about the file path not being a directory
-        success = prepare_transform_spectral(
-            image_spec,
-            settings,
-            WB_multipliers,
-            IDT_matrix,
-            CAT_matrix,
-            error_message );
-    } );
-
-    OIIO_CHECK_ASSERT( success );
-
-    // Assert on expected warning
-    ASSERT_CONTAINS( output, "Warning: Database location '" );
-    ASSERT_CONTAINS( output, "' is not a directory." );
+    check_prepare_transform_spectral(
+        image_spec,
+        settings,
+        WB_multipliers,
+        true,
+        "",
+        { "Warning: Database location '", "' is not a directory." } );
 
     // Clean up the test file
     std::filesystem::remove( file_path );
@@ -1535,29 +1518,15 @@ void test_database_location_missing_warning()
     settings.disable_cache = true;
 
     // Provide WB_multipliers
-    std::vector<double>              WB_multipliers = { 1.5, 1.0, 1.2, 1.0 };
-    std::vector<std::vector<double>> IDT_matrix;
-    std::vector<std::vector<double>> CAT_matrix;
+    std::vector<double> WB_multipliers = { 1.5, 1.0, 1.2, 1.0 };
 
-    bool        success;
-    std::string error_message;
-    std::string output = capture_stderr( [&]() {
-        // This should succeed (using the valid database path)
-        // but should warn about the file path not being a directory
-        success = prepare_transform_spectral(
-            image_spec,
-            settings,
-            WB_multipliers,
-            IDT_matrix,
-            CAT_matrix,
-            error_message );
-    } );
-
-    OIIO_CHECK_ASSERT( success );
-
-    // Assert on expected warning
-    ASSERT_CONTAINS( output, "Warning: Database location '" );
-    ASSERT_CONTAINS( output, "' does not exist." );
+    check_prepare_transform_spectral(
+        image_spec,
+        settings,
+        WB_multipliers,
+        true,
+        "",
+        { "Warning: Database location '", "' does not exist." } );
 }
 
 /// Tests that spectral data can be loaded using an absolute file path
@@ -1630,24 +1599,15 @@ void test_illuminant_file_load_failure()
                         .illuminant( "nonexistent_type" )
                         .build();
 
-    std::vector<double>              WB_multipliers;
-    std::vector<std::vector<double>> IDT_matrix;
-    std::vector<std::vector<double>> CAT_matrix;
+    std::vector<double> WB_multipliers;
 
-    bool        success;
-    std::string error_message;
-    success = prepare_transform_spectral(
+    check_prepare_transform_spectral(
         image_spec,
         settings,
         WB_multipliers,
-        IDT_matrix,
-        CAT_matrix,
-        error_message );
-
-    // Should fail (no matching type found), but invalid file should have been processed and skipped
-    OIIO_CHECK_ASSERT( !success );
-    ASSERT_CONTAINS(
-        error_message, "Failed to find illuminant type 'nonexistent_type'" );
+        false,
+        "Failed to find illuminant type 'nonexistent_type'",
+        {} );
 }
 
 /// Tests that invalid illuminant files are skipped when populating all illuminants for auto-detection
@@ -1991,22 +1951,15 @@ void test_illuminant_type_mismatch()
                         .illuminant( "typeC" ) // Different from typeA and typeB
                         .build();
 
-    std::vector<double>              WB_multipliers;
-    std::vector<std::vector<double>> IDT_matrix;
-    std::vector<std::vector<double>> CAT_matrix;
+    std::vector<double> WB_multipliers;
 
-    bool        success;
-    std::string error_message;
-    success = prepare_transform_spectral(
+    check_prepare_transform_spectral(
         image_spec,
         settings,
         WB_multipliers,
-        IDT_matrix,
-        CAT_matrix,
-        error_message );
-
-    OIIO_CHECK_ASSERT( !success );
-    ASSERT_CONTAINS( error_message, "Failed to find illuminant type 'typec'" );
+        false,
+        "Failed to find illuminant type 'typec'",
+        {} );
 }
 
 /// Tests that blackbody illuminant strings (e.g., "3200K") are correctly processed
@@ -2078,26 +2031,14 @@ void test_auto_detect_illuminant_from_raw_metadata()
     // Provide empty WB_multipliers to trigger extraction from raw:pre_mul
     std::vector<double>
         WB_multipliers; // Empty - will trigger raw:pre_mul extraction
-    std::vector<std::vector<double>> IDT_matrix;
-    std::vector<std::vector<double>> CAT_matrix;
 
-    bool        success;
-    std::string error_message;
-    std::string output = capture_stderr( [&]() {
-        // This should succeed and auto-detect the illuminant from raw:pre_mul
-        success = prepare_transform_spectral(
-            image_spec,
-            settings,
-            WB_multipliers,
-            IDT_matrix,
-            CAT_matrix,
-            error_message );
-    } );
-
-    OIIO_CHECK_ASSERT( success );
-
-    // Verify the "Found illuminant:" message appears
-    ASSERT_CONTAINS( output, "Found illuminant: '2000k'." );
+    check_prepare_transform_spectral(
+        image_spec,
+        settings,
+        WB_multipliers,
+        true,
+        "",
+        { "Found illuminant: '2000k'." } );
 }
 
 /// Tests that auto-detection normalizes white balance multipliers when min_val > 0 and != 1
@@ -2129,26 +2070,14 @@ void test_auto_detect_illuminant_with_normalization()
     // Provide empty WB_multipliers to trigger extraction from raw:pre_mul
     std::vector<double>
         WB_multipliers; // Empty - will trigger raw:pre_mul extraction
-    std::vector<std::vector<double>> IDT_matrix;
-    std::vector<std::vector<double>> CAT_matrix;
 
-    bool        success;
-    std::string error_message;
-    std::string output = capture_stderr( [&]() {
-        // This should succeed and auto-detect the illuminant from raw:pre_mul
-        success = prepare_transform_spectral(
-            image_spec,
-            settings,
-            WB_multipliers,
-            IDT_matrix,
-            CAT_matrix,
-            error_message );
-    } );
-
-    OIIO_CHECK_ASSERT( success );
-
-    // Verify the "Found illuminant:" message appears
-    ASSERT_CONTAINS( output, "Found illuminant: '1500k'." );
+    check_prepare_transform_spectral(
+        image_spec,
+        settings,
+        WB_multipliers,
+        true,
+        "",
+        { "Found illuminant: '1500k'." } );
 }
 
 /// Tests that prepare_transform_spectral fails when IDT matrix calculation fails
@@ -2193,28 +2122,17 @@ void test_prepare_transform_spectral_idt_calculation_fail()
         SettingsBuilder().database( test_dir.get_database_path() ).build();
 
     // Provide WB_multipliers
-    std::vector<double>              WB_multipliers = { 1.5, 1.0, 1.2 };
-    std::vector<std::vector<double>> IDT_matrix;
-    std::vector<std::vector<double>> CAT_matrix;
+    std::vector<double> WB_multipliers = { 1.5, 1.0, 1.2 };
 
-    bool        success;
-    std::string error_message;
-    success = prepare_transform_spectral(
+    check_prepare_transform_spectral(
         image_spec,
         settings,
         WB_multipliers,
-        IDT_matrix,
-        CAT_matrix,
-        error_message );
-
-    OIIO_CHECK_ASSERT( !success );
-
-    // Verify the error message about failed IDT matrix calculation
-    ASSERT_CONTAINS(
-        error_message,
+        false,
         "Failed to calculate IDT matrix from illuminant. "
         "Training data needs to be initialised prior to calling "
-        "SpectralSolver::calculate_IDT_matrix()." );
+        "SpectralSolver::calculate_IDT_matrix().",
+        {} );
 }
 
 /// Tests that conversion succeeds when all required data is present

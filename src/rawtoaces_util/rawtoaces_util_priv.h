@@ -37,8 +37,7 @@ bool prepare_transform_spectral(
     const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,
     std::vector<double>              &WB_multipliers,
-    std::vector<std::vector<double>> &IDT_matrix,
-    std::vector<std::vector<double>> &CAT_matrix,
+    std::vector<std::vector<double>> &out_transform_matrix,
     std::string                      &error_message );
 
 } // namespace util

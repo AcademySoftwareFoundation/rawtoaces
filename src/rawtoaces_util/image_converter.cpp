@@ -365,22 +365,20 @@ CameraIdentifier get_camera_identifier(
 /// This method initializes a spectral solver to find the appropriate camera data,
 /// loads training and observer spectral data, determines the illuminant (either from
 /// settings or by analyzing white balance multipliers), calculates white balance
-/// coefficients, and computes the IDT matrix. The CAT (Chromatic Adaptation Transform) matrix is not used in spectral
-/// mode as chromatic adaptation is embedded within the IDT (Input Device Transform) matrix.
+/// coefficients, and computes the IDT matrix.
 ///
 /// @param image_spec OpenImageIO image specification containing metadata
 /// @param settings ImageConverter settings including illuminant and verbosity
 /// @param WB_multipliers Output white balance multipliers (3-element vector)
-/// @param IDT_matrix Output Input Device Transform matrix (3x3 matrix)
-/// @param CAT_matrix Output Chromatic Adaptation Transform matrix (cleared in spectral mode)
+/// @param out_transform_matrix Output Input Device Transform matrix
+/// (3x3 matrix)
 /// @return true if transformation matrices were successfully prepared, false otherwise
 /// @param error_message Output parameter to capture error message if function returns false
 bool prepare_transform_spectral(
     const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,
     std::vector<double>              &WB_multipliers,
-    std::vector<std::vector<double>> &IDT_matrix,
-    std::vector<std::vector<double>> &CAT_matrix,
+    std::vector<std::vector<double>> &out_transform_matrix,
     std::string                      &error_message )
 {
     // Initialize and validate camera identification
@@ -481,17 +479,13 @@ bool prepare_transform_spectral(
         solver,
         settings.verbosity,
         settings.disable_cache,
-        IDT_matrix,
+        out_transform_matrix,
         error_message );
 
     if ( !success )
     {
         return false;
     }
-
-    // Step 7: Clear CAT matrix (not used in spectral mode)
-    // CAT is embedded in IDT in spectral mode
-    CAT_matrix.resize( 0 );
 
     return true;
 }
@@ -2051,17 +2045,6 @@ bool ImageConverter::configure(
         case Settings::MatrixMethod::Custom:
             options["raw:ColorSpace"]        = "raw";
             options["raw:use_camera_matrix"] = 0;
-
-            _idt_matrix.resize( 3 );
-            for ( int i = 0; i < 3; i++ )
-            {
-                _idt_matrix[i].resize( 3 );
-                for ( int j = 0; j < 3; j++ )
-                {
-                    _idt_matrix[i][j] =
-                        static_cast<double>( settings.custom_matrix[i][j] );
-                }
-            }
             break;
         default:
             status = Status::ConfigurationError;
@@ -2081,8 +2064,7 @@ bool ImageConverter::configure(
                  image_spec,
                  settings,
                  _wb_multipliers,
-                 _idt_matrix,
-                 _cat_matrix,
+                 _transform_matrix,
                  error_msg ) )
         {
             status             = Status::ConfigurationError;
@@ -2092,8 +2074,6 @@ bool ImageConverter::configure(
                                      : error_msg;
             return false;
         }
-
-        _transform_matrix = _idt_matrix;
 
         if ( is_spectral_white_balance )
         {
@@ -2113,41 +2093,74 @@ bool ImageConverter::configure(
         }
     }
 
-    if ( matrix_method == Settings::MatrixMethod::Metadata )
+    switch ( matrix_method )
     {
-        if ( is_DNG )
-        {
-            options["raw:use_camera_matrix"] = 1;
-            options["raw:use_camera_wb"]     = 1;
+        case Settings::MatrixMethod::Spectral:
+            // prepare_transform_spectral() has already been called above.
+            // Fill in the legacy matrices.
+            _idt_matrix = _transform_matrix;
+            _cat_matrix.resize( 0 );
+            break;
 
-            std::string error_msg;
-            if ( !prepare_transform_DNG(
-                     image_spec,
-                     settings,
-                     _idt_matrix,
-                     _cat_matrix,
-                     error_msg ) )
+        case Settings::MatrixMethod::Metadata:
+            if ( is_DNG )
             {
-                status = Status::ConfigurationError;
-                last_error_message =
-                    error_msg.empty()
-                        ? "Colour space transform has not been configured properly (metadata mode)"
-                        : error_msg;
-                return false;
-            }
+                options["raw:use_camera_matrix"] = 1;
+                options["raw:use_camera_wb"]     = 1;
 
-            _transform_matrix = _idt_matrix;
-        }
-        else
-        {
+                std::string error_msg;
+                if ( !prepare_transform_DNG(
+                         image_spec,
+                         settings,
+                         _idt_matrix,
+                         _cat_matrix,
+                         error_msg ) )
+                {
+                    status = Status::ConfigurationError;
+                    last_error_message =
+                        error_msg.empty()
+                            ? "Colour space transform has not been configured "
+                              "properly (metadata mode)"
+                            : error_msg;
+                    return false;
+                }
+
+                _transform_matrix = _idt_matrix;
+            }
+            else
+            {
+                prepare_transform_nonDNG( _transform_matrix, _cat_matrix );
+                _idt_matrix.resize( 0 );
+            }
+            break;
+
+        case Settings::MatrixMethod::Adobe:
             prepare_transform_nonDNG( _transform_matrix, _cat_matrix );
             _idt_matrix.resize( 0 );
-        }
-    }
-    else if ( matrix_method == Settings::MatrixMethod::Adobe )
-    {
-        prepare_transform_nonDNG( _transform_matrix, _cat_matrix );
-        _idt_matrix.resize( 0 );
+            break;
+
+        case Settings::MatrixMethod::Custom:
+            _transform_matrix.resize( 3 );
+            for ( size_t i = 0; i < 3; i++ )
+            {
+                _transform_matrix[i].resize( 3 );
+                for ( size_t j = 0; j < 3; j++ )
+                {
+                    _transform_matrix[i][j] =
+                        static_cast<double>( settings.custom_matrix[i][j] );
+                }
+            }
+
+            _idt_matrix = _transform_matrix;
+            _cat_matrix.resize( 0 );
+            break;
+
+            
+        default:
+            status = Status::ConfigurationError;
+            last_error_message =
+                "Matrix method has not been configured properly";
+            return false;
     }
 
     if ( settings.verbosity > 1 )

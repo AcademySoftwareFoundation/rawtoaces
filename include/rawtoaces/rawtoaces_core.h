@@ -34,9 +34,9 @@ static const std::vector<std::vector<double> > CAT_D65_to_ACES = {
 // clang-format on
 
 /// Calculate spectral power distribution (SPD) of CIE standard daylight.
-/// illuminant. The function generates the spectral power distribution for a
-/// daylight illuminant based on the requested correlated color temperature
-/// using CIE standard formulas.
+/// The function generates the spectral power distribution for a daylight
+/// illuminant based on the requested correlated color temperature using CIE
+/// standard formulas.
 ///
 /// @param cct Correlated colour temperature of the requested illuminant either
 /// in Kelvin (in range of 4000-25000), or in short form from an illuminant

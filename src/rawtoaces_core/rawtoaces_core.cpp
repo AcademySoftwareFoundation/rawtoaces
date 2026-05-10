@@ -1170,7 +1170,7 @@ bool camera_to_XYZ_weighted_matrix(
 
     if ( std::fabs( determinant( XYZ_to_camera_matrix ) ) < 1e-9 )
     {
-        error_message = "The found to XYZ to camera matrix is not inversible.";
+        error_message = "Found XYZ-to-camera matrix is not invertible.";
         out_matrix.resize( 0 );
         return false;
     }

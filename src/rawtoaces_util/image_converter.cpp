@@ -2127,12 +2127,12 @@ bool ImageConverter::configure(
             if ( is_DNG )
             {
                 options["raw:use_camera_matrix"] = 1;
-                options["raw:use_camera_wb"]     = 1;
 
                 std::string error_msg;
                 if ( !prepare_transform_DNG(
                          image_spec,
                          settings,
+                         _wb_multipliers,
                          _idt_matrix,
                          _cat_matrix,
                          error_msg ) )

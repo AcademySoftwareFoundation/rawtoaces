@@ -2155,7 +2155,6 @@ bool ImageConverter::configure(
             _cat_matrix.resize( 0 );
             break;
 
-            
         default:
             status = Status::ConfigurationError;
             last_error_message =

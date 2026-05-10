@@ -2973,6 +2973,54 @@ void test_lens_correction_type()
         rta::util::ImageConverter::Settings::LensCorrectionType::Aberration ) );
 }
 
+void test_metadata_wb_being_set()
+{
+    // Set the WB multipliers in the image spec, as if they came from an
+    // image file.
+    float           wb[4] = { 2.0f, 1.0f, 1.5f, 1.2f };
+    OIIO::ImageSpec spec;
+    spec.extra_attribs.attribute(
+        "raw:cam_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ), wb );
+
+    rta::util::ImageConverter converter;
+    converter.settings.WB_method =
+        rta::util::ImageConverter::Settings::WBMethod::Metadata;
+
+    OIIO::ParamValueList hints;
+    bool                 success        = converter.configure( spec, hints );
+    const auto          &wb_multipliers = converter.get_WB_multipliers();
+
+    OIIO_CHECK_ASSERT( success );
+    OIIO_CHECK_EQUAL( wb_multipliers.size(), 4 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[0], 2.0f, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[1], 1.0f, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[2], 1.5f, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[3], 1.2f, 1e-5 );
+}
+
+void test_custom_wb_being_set()
+{
+    rta::util::ImageConverter converter;
+    converter.settings.WB_method =
+        rta::util::ImageConverter::Settings::WBMethod::Custom;
+    converter.settings.custom_WB[0] = 2.0f;
+    converter.settings.custom_WB[1] = 1.0f;
+    converter.settings.custom_WB[2] = 1.5f;
+    converter.settings.custom_WB[3] = 1.2f;
+
+    OIIO::ImageSpec      spec;
+    OIIO::ParamValueList hints;
+    bool                 success        = converter.configure( spec, hints );
+    const auto          &wb_multipliers = converter.get_WB_multipliers();
+
+    OIIO_CHECK_ASSERT( success );
+    OIIO_CHECK_EQUAL( wb_multipliers.size(), 4 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[0], 2.0f, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[1], 1.0f, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[2], 1.5f, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[3], 1.2f, 1e-5 );
+}
+
 int main( int, char ** )
 {
     try
@@ -3086,6 +3134,9 @@ int main( int, char ** )
         test_main_output_directory_error_hint();
         test_main_error_message_without_hint();
         test_main_error_data_dir_hint();
+
+        test_metadata_wb_being_set();
+        test_custom_wb_being_set();
 
         // Tests for lens correction types
         test_lens_correction_type();

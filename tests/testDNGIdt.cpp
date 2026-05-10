@@ -340,14 +340,19 @@ void testIDT_GetCameraXYZWhitePoint_UsesIlluminantWhenNeutralEmpty()
 
 void testIDT_MatrixRGBtoXYZ()
 {
-    double XYZ[9] = { 0.952552395938, 0.000000000000, 0.000093678632,
-                      0.343966449765, 0.728166096613, -0.072132546379,
-                      0.000000000000, 0.000000000000, 1.008825184352 };
-    std::vector<double> result =
+    double XYZ[3][3] = { { 0.952552395938, 0.000000000000, 0.000093678632 },
+                         { 0.343966449765, 0.728166096613, -0.072132546379 },
+                         { 0.000000000000, 0.000000000000, 1.008825184352 } };
+    std::vector<std::vector<double>> result =
         rta::core::matrix_RGB_to_XYZ( rta::core::chromaticitiesACES );
 
-    for ( int i = 0; i < countSize( XYZ ); i++ )
-        OIIO_CHECK_EQUAL_THRESH( result[i], XYZ[i], 1e-5 );
+    OIIO_CHECK_EQUAL( result.size(), 3 );
+    for ( size_t row = 0; row < 3; row++ )
+    {
+        OIIO_CHECK_EQUAL( result[row].size(), 3 );
+        for ( size_t col = 0; col < 3; col++ )
+            OIIO_CHECK_EQUAL_THRESH( result[row][col], XYZ[row][col], 1e-5 );
+    }
 }
 
 void testIDT_GetDNGCATMatrix()

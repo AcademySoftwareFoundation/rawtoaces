@@ -1001,14 +1001,13 @@ double robertson_length(
     const std::vector<double> &source_uv,
     const std::vector<double> &target_uvt )
 {
-    double              t    = target_uvt[2];
-    double              sign = t < 0 ? -1.0 : t > 0 ? 1.0 : 0.0;
-    std::vector<double> slope( 2 );
-    slope[0] = -sign / std::sqrt( 1 + t * t );
-    slope[1] = t * slope[0];
+    double t      = target_uvt[2];
+    double sign   = t < 0 ? -1.0 : t > 0 ? 1.0 : 0.0;
+    double slope0 = -sign / std::sqrt( 1 + t * t );
+    double slope1 = t * slope0;
 
-    std::vector<double> target_uv( target_uvt.begin(), target_uvt.begin() + 2 );
-    return cross2d_scalar( slope, subVectors( source_uv, target_uv ) );
+    return slope0 * ( source_uv[1] - target_uvt[1] ) -
+           slope1 * ( source_uv[0] - target_uvt[0] );
 }
 
 /// Convert EXIF light source tag to correlated color temperature.
@@ -1372,15 +1371,14 @@ std::vector<double> color_temperature_to_XYZ( const double &cct )
             ( mired - robertson_mired_table[i - 1] ) /
             ( robertson_mired_table[i] - robertson_mired_table[i - 1] );
 
-        std::vector<double> uv1(
-            robertson_uvt_table[i], robertson_uvt_table[i] + 2 );
-        scaleVector( uv1, weight );
+        double u1 = robertson_uvt_table[i][0];
+        double v1 = robertson_uvt_table[i][1];
 
-        std::vector<double> uv2(
-            robertson_uvt_table[i - 1], robertson_uvt_table[i - 1] + 2 );
-        scaleVector( uv2, 1.0 - weight );
+        double u2 = robertson_uvt_table[i - 1][0];
+        double v2 = robertson_uvt_table[i - 1][1];
 
-        uv = addVectors( uv1, uv2 );
+        uv[0] = u1 * weight + u2 * ( 1.0 - weight );
+        uv[1] = v1 * weight + v2 * ( 1.0 - weight );
     }
 
     return uv_to_XYZ( uv );
@@ -1399,31 +1397,46 @@ std::vector<double> color_temperature_to_XYZ( const double &cct )
 /// @param chromaticities Array of 4 xy chromaticity coordinates [R, G, B, W]
 /// @return 3×3 RGB to XYZ transformation matrix as a flattened vector
 /// @pre chromaticities must contain exactly 4 xy coordinate pairs
-std::vector<double> matrix_RGB_to_XYZ( const double chromaticities[][2] )
+std::vector<std::vector<double>>
+matrix_RGB_to_XYZ( const double chromaticities[][2] )
 {
-    std::vector<double> red_XYZ = xy_to_XYZ(
-        std::vector<double>( chromaticities[0], chromaticities[0] + 2 ) );
-    std::vector<double> green_XYZ = xy_to_XYZ(
-        std::vector<double>( chromaticities[1], chromaticities[1] + 2 ) );
-    std::vector<double> blue_XYZ = xy_to_XYZ(
-        std::vector<double>( chromaticities[2], chromaticities[2] + 2 ) );
-    std::vector<double> white_XYZ = xy_to_XYZ(
-        std::vector<double>( chromaticities[3], chromaticities[3] + 2 ) );
-
-    std::vector<double> rgb_matrix( 9 );
-    for ( int i = 0; i < 3; i++ )
+    std::vector<std::vector<double>> primaries_XYZ( 4 );
+    for ( size_t i = 0; i < 4; i++ )
     {
-        rgb_matrix[0 + i * 3] = red_XYZ[i];
-        rgb_matrix[1 + i * 3] = green_XYZ[i];
-        rgb_matrix[2 + i * 3] = blue_XYZ[i];
+        std::vector<double> primary_xy = { chromaticities[i][0],
+                                           chromaticities[i][1] };
+        primaries_XYZ[i]               = xy_to_XYZ( primary_xy );
     }
 
-    scaleVector( white_XYZ, 1.0 / white_XYZ[1] );
+    std::vector<std::vector<double>> RGB_to_XYZ_matrix( 3 );
+    for ( size_t row = 0; row < 3; row++ )
+    {
+        RGB_to_XYZ_matrix[row].resize( 3 );
+
+        for ( size_t col = 0; col < 3; col++ )
+        {
+            RGB_to_XYZ_matrix[row][col] = primaries_XYZ[col][row];
+        }
+    }
+
+    auto XYZ_to_RGB_matrix = invertVM( RGB_to_XYZ_matrix );
+
+    std::vector<double> white_XYZ = { primaries_XYZ[3][0] / primaries_XYZ[3][1],
+                                      1.0,
+                                      primaries_XYZ[3][2] /
+                                          primaries_XYZ[3][1] };
 
     std::vector<double> channel_gains =
-        mulVector( invertV( rgb_matrix ), white_XYZ, 3 );
-    std::vector<double> color_matrix =
-        mulVector( rgb_matrix, diagV( channel_gains ), 3 );
+        mulVector( white_XYZ, XYZ_to_RGB_matrix );
+
+    std::vector<std::vector<double>> diag_channel_gains = {
+        { channel_gains[0], 0, 0 },
+        { 0, channel_gains[1], 0 },
+        { 0, 0, channel_gains[2] }
+    };
+
+    std::vector<std::vector<double>> color_matrix =
+        mulVector( RGB_to_XYZ_matrix, diag_channel_gains );
 
     return color_matrix;
 }
@@ -1487,7 +1500,7 @@ std::vector<std::vector<double>> MetadataSolver::calculate_CAT_matrix()
     if ( get_camera_XYZ_matrix_and_white_point(
              _metadata, camera_to_XYZ_matrix, camera_XYZ_white_point ) )
     {
-        std::vector<double> output_RGB_to_XYZ_matrix =
+        std::vector<std::vector<double>> output_RGB_to_XYZ_matrix =
             matrix_RGB_to_XYZ( chromaticitiesACES );
         std::vector<double> output_XYZ_white_point =
             mulVector( output_RGB_to_XYZ_matrix, deviceWhiteV );

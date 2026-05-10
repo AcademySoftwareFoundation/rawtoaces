@@ -26,48 +26,6 @@ void test_IsSquare()
     OIIO_CHECK_EQUAL( isSquare( a ), 0 );
 }
 
-void test_AddVectors()
-{
-
-    double a[5] = { 1.0, 2.0, 3.0, 4.0, 5.0 };
-    double b[5] = { 5.0, 4.0, 3.0, 2.0, 1.0 };
-    double c[5] = { 6.0, 6.0, 6.0, 6.0, 6.0 };
-
-    std::vector<double> av( a, a + 5 );
-    std::vector<double> bv( b, b + 5 );
-    std::vector<double> cv = addVectors( av, bv );
-
-    for ( int i = 0; i < 5; i++ )
-        OIIO_CHECK_EQUAL_THRESH( cv[i], c[i], 1e-9 );
-}
-
-void test_SubVectors()
-{
-
-    double a[5] = { 5.0, 4.0, 3.0, 2.0, 1.0 };
-    double b[5] = { 5.0, 4.0, 3.0, 2.0, 1.0 };
-    double c[5] = { 0.0, 0.0, 0.0, 0.0, 0.0 };
-
-    std::vector<double> av( a, a + 5 );
-    std::vector<double> bv( b, b + 5 );
-    std::vector<double> cv = subVectors( av, bv );
-
-    for ( int i = 0; i < 5; i++ )
-        OIIO_CHECK_EQUAL_THRESH( cv[i], c[i], 1e-9 );
-}
-
-void test_Cross2()
-{
-    double a[2] = { 1.0, 3.0 };
-    double b[2] = { 1.0, 6.5 };
-
-    std::vector<double> av( a, a + 2 );
-    std::vector<double> bv( b, b + 2 );
-
-    double cross2_test = cross2d_scalar( av, bv );
-    OIIO_CHECK_EQUAL_THRESH( cross2_test, 3.50, 1e-5 );
-}
-
 void test_determinant()
 {
     std::vector<std::vector<double>> M1   = { { 1, 2 }, { 3, 4 } };
@@ -100,34 +58,6 @@ void test_InvertVM()
         OIIO_CHECK_EQUAL_THRESH( MV_Inverse[i][0], M_Inverse[i][0], 1e-5 );
         OIIO_CHECK_EQUAL_THRESH( MV_Inverse[i][1], M_Inverse[i][1], 1e-5 );
         OIIO_CHECK_EQUAL_THRESH( MV_Inverse[i][2], M_Inverse[i][2], 1e-5 );
-    }
-}
-
-void test_InvertV()
-{
-    double V[9] = { 0.0188205, 8.59E-03,  9.58E-03, 0.0440222, 0.0166118,
-                    0.0258734, 0.1561591, 0.046321, 0.1181466 };
-    double V_Inverse[9] = { -844.264597, 631.004958,  -69.728531,
-                            1282.403375, -803.858096, 72.055546,
-                            613.114494,  -518.860936, 72.376689 };
-
-    std::vector<double> MV( V, V + 9 );
-    std::vector<double> MV_Inverse = invertV( MV );
-
-    for ( int i = 0; i < 9; i++ )
-        OIIO_CHECK_EQUAL_THRESH( V_Inverse[i], MV_Inverse[i], 1e-5 );
-}
-
-void test_DiagV()
-{
-    double              v[3]  = { 1.0, 2.0, 3.0 };
-    double              vd[9] = { 1.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 3.0 };
-    std::vector<double> VV( v, v + 3 );
-    std::vector<double> DV = diagV( VV );
-
-    for ( int i = 0; i < 9; i++ )
-    {
-        OIIO_CHECK_EQUAL_THRESH( DV[i], vd[i], 1e-5 );
     }
 }
 
@@ -175,20 +105,6 @@ void test_SumVector()
 
     double sum = sumVector( MV );
     OIIO_CHECK_EQUAL_THRESH( sum, 55.0000, 1e-5 );
-}
-
-void test_MulVectorElement()
-{
-    double M1[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
-    double M2[10] = { 10.0000000000, 5.0000000000, 3.3333333333, 2.5000000000,
-                      2.0000000000,  1.6666666667, 1.4285714286, 1.2500000000,
-                      1.1111111111,  1.0000000000 };
-    std::vector<double> MV1( M1, M1 + 10 );
-    std::vector<double> MV2( M2, M2 + 10 );
-
-    std::vector<double> MV3 = mulVectorElement( MV1, MV2 );
-    for ( size_t i = 0; i < MV3.size(); i++ )
-        OIIO_CHECK_EQUAL_THRESH( MV3[i], 10.0000000000, 1e-5 );
 }
 
 void test_MulVector1()
@@ -811,16 +727,10 @@ void test_GetCalcXYZt()
 int main( int, char ** )
 {
     test_IsSquare();
-    test_AddVectors();
-    test_SubVectors();
-    test_Cross2();
     test_determinant();
     test_InvertVM();
-    test_InvertV();
-    test_DiagV();
     test_TransposeVec();
     test_SumVector();
-    test_MulVectorElement();
     test_MulVector1();
     test_MulVector2();
     test_FindIndexInterp1();

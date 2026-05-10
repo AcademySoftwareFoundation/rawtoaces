@@ -28,55 +28,6 @@ template <typename T> int isSquare( const std::vector<std::vector<T>> &vm )
     return 1;
 }
 
-template <typename T>
-std::vector<T>
-addVectors( const std::vector<T> &vectorA, const std::vector<T> &vectorB )
-{
-    assert( vectorA.size() == vectorB.size() );
-    std::vector<T> sum;
-    sum.reserve( vectorA.size() );
-    std::transform(
-        vectorA.begin(),
-        vectorA.end(),
-        vectorB.begin(),
-        std::back_inserter( sum ),
-        std::plus<T>() );
-    return sum;
-}
-
-template <typename T>
-std::vector<T>
-subVectors( const std::vector<T> &vectorA, const std::vector<T> &vectorB )
-{
-    assert( vectorA.size() == vectorB.size() );
-    std::vector<T> diff;
-    diff.reserve( vectorA.size() );
-    std::transform(
-        vectorA.begin(),
-        vectorA.end(),
-        vectorB.begin(),
-        std::back_inserter( diff ),
-        std::minus<T>() );
-    return diff;
-}
-
-/// Calculate the 2D cross product (scalar) of two 2D vectors.
-/// This function computes the cross product of two 2D vectors, which results in a scalar
-/// value representing the signed area of the parallelogram formed by the vectors.
-/// The cross product is positive when vectorB is counterclockwise from vectorA,
-/// negative when clockwise, and zero when the vectors are collinear.
-///
-/// @param vectorA First 2D vector [x1, y1]
-/// @param vectorB Second 2D vector [x2, y2]
-/// @return Scalar cross product: x1*y2 - x2*y1
-/// @pre vectorA.size() == 2 && vectorB.size() == 2
-template <typename T>
-T cross2d_scalar( const std::vector<T> &vectorA, const std::vector<T> &vectorB )
-{
-    assert( vectorA.size() == 2 && vectorB.size() == 2 );
-    return vectorA[0] * vectorB[1] - vectorA[1] * vectorB[0];
-}
-
 /// Calculate the determinant of a square matrix.
 ///
 /// @param vMtx a matrix to calculate a determinant for
@@ -116,40 +67,6 @@ std::vector<std::vector<T>> invertVM( const std::vector<std::vector<T>> &vMtx )
             vMtxR[i][j] = m( i, j );
 
     return vMtxR;
-}
-
-template <typename T> std::vector<T> invertV( const std::vector<T> &vMtx )
-{
-    size_t size = static_cast<size_t>( std::sqrt( vMtx.size() ) );
-    std::vector<std::vector<T>> tmp( size, std::vector<T>( size ) );
-
-    for ( size_t i = 0; i < size; i++ )
-        for ( size_t j = 0; j < size; j++ )
-            tmp[i][j] = vMtx[i * size + j];
-
-    tmp = invertVM( tmp );
-    std::vector<T> result( vMtx.size() );
-
-    for ( size_t i = 0; i < size; i++ )
-        for ( size_t j = 0; j < size; j++ )
-            result[i * size + j] = tmp[i][j];
-
-    return result;
-}
-
-template <typename T> std::vector<T> diagV( const std::vector<T> &vct )
-{
-    assert( vct.size() != 0 );
-
-    size_t         length = vct.size();
-    std::vector<T> vctdiag( length * length, T( 0.0 ) );
-
-    for ( size_t i = 0; i < length; i++ )
-    {
-        vctdiag[i * length + i] = vct[i];
-    }
-
-    return vctdiag;
 }
 
 template <typename T>
@@ -212,28 +129,6 @@ template <typename T> void scaleVector( std::vector<T> &vct, const T scale )
         vct[i] = v( i, 0 );
 
     return;
-}
-
-template <typename T>
-std::vector<T>
-mulVectorElement( const std::vector<T> &vct1, const std::vector<T> &vct2 )
-{
-    assert( vct1.size() == vct2.size() );
-
-    Eigen::Array<T, Eigen::Dynamic, 1> a1, a2;
-    a1.resize( vct1.size(), 1 );
-    a2.resize( vct1.size(), 1 );
-
-    for ( Eigen::Index i = 0; i < a1.rows(); i++ )
-    {
-        a1( i, 0 ) = vct1[i];
-        a2( i, 0 ) = vct2[i];
-    }
-    a1 *= a2;
-
-    std::vector<T> vct3( a1.data(), a1.data() + a1.rows() * a1.cols() );
-
-    return vct3;
 }
 
 template <typename T>
@@ -403,14 +298,9 @@ template <typename T> std::vector<T> xy_to_XYZ( const std::vector<T> &xy )
 
 template <typename T> std::vector<T> uv_to_xy( const std::vector<T> &uv )
 {
-    T              xyS[] = { 3.0, 2.0 };
-    std::vector<T> xyScale( xyS, xyS + sizeof( xyS ) / sizeof( T ) );
-    xyScale = mulVectorElement( xyScale, uv );
-
-    T scale = 2 * uv[0] - 8 * uv[1] + 4;
-    scaleVector( xyScale, 1.0 / scale );
-
-    return xyScale;
+    T              scale  = 2 * uv[0] - 8 * uv[1] + 4;
+    std::vector<T> result = { 3.0 * uv[0] / scale, 2.0 * uv[1] / scale };
+    return result;
 }
 
 template <typename T> std::vector<T> uv_to_XYZ( const std::vector<T> &uv )
@@ -420,17 +310,9 @@ template <typename T> std::vector<T> uv_to_XYZ( const std::vector<T> &uv )
 
 template <typename T> std::vector<T> XYZ_to_uv( const std::vector<T> &XYZ )
 {
-    T              uvS[]   = { 4.0, 6.0 };
-    T              slice[] = { XYZ[0], XYZ[1] };
-    std::vector<T> uvScale( uvS, uvS + sizeof( uvS ) / sizeof( T ) );
-    std::vector<T> vSlice( slice, slice + sizeof( slice ) / sizeof( T ) );
-
-    uvScale = mulVectorElement( uvScale, vSlice );
-
-    T scale = XYZ[0] + 15 * XYZ[1] + 3 * XYZ[2];
-    scaleVector( uvScale, 1.0 / scale );
-
-    return uvScale;
+    T              scale  = XYZ[0] + 15 * XYZ[1] + 3 * XYZ[2];
+    std::vector<T> result = { 4.0 * XYZ[0] / scale, 6.0 * XYZ[1] / scale };
+    return result;
 }
 
 template <typename T>

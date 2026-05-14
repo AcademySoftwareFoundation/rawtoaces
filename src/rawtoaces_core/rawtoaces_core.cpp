@@ -15,6 +15,14 @@ namespace rta
 namespace core
 {
 
+TransformSolver::TransformSolver()
+    : transform_matrix( 3, std::vector<double>( 3, 0 ) ), verbosity( 0 )
+{
+    transform_matrix[0][0] = 1.0;
+    transform_matrix[1][1] = 1.0;
+    transform_matrix[2][2] = 1.0;
+}
+
 /// Calculate the chromaticity values (x, y) based on correlated color temperature (CCT).
 /// The function converts a correlated color temperature to CIE 1931 chromaticity coordinates
 /// using empirical formulas for different temperature ranges.
@@ -174,21 +182,8 @@ bool generate_illuminant(
 
 SpectralSolver::SpectralSolver(
     const std::vector<std::string> &search_directories )
-    : _search_directories( search_directories )
-{
-    verbosity = 0;
-    _idt_matrix.resize( 3 );
-    _wb_multipliers.resize( 3 );
-    for ( int i = 0; i < 3; i++ )
-    {
-        _idt_matrix[i].resize( 3 );
-        _wb_multipliers[i] = 1.0;
-        for ( size_t j = 0; j < 3; j++ )
-        {
-            _idt_matrix[i][j] = neutral3[i][j];
-        }
-    }
-}
+    : _search_directories( search_directories ), _wb_multipliers( 3, 1.0 )
+{}
 
 /// Scale the illuminant (Light Source) to camera sensitivity data using the maximum RGB channel.
 /// This function normalizes the illuminant spectral data by scaling it based on the camera's
@@ -869,6 +864,11 @@ bool curveFit(
 
     if ( summary.num_successful_steps )
     {
+        out_IDT_matrix.resize( 3 );
+        out_IDT_matrix[0].resize( 3 );
+        out_IDT_matrix[1].resize( 3 );
+        out_IDT_matrix[2].resize( 3 );
+
         out_IDT_matrix[0][0] = beta_params[0];
         out_IDT_matrix[0][1] = beta_params[1];
         out_IDT_matrix[0][2] = 1.0 - beta_params[0] - beta_params[1];
@@ -896,7 +896,7 @@ bool curveFit(
     return false;
 }
 
-bool SpectralSolver::calculate_IDT_matrix()
+bool SpectralSolver::calculate_transform()
 {
     if ( camera.data.count( "main" ) == 0 ||
          camera.data.at( "main" ).size() != 3 )
@@ -940,7 +940,12 @@ bool SpectralSolver::calculate_IDT_matrix()
     auto RGB = calculate_RGB( camera, _wb_multipliers, TI );
     auto XYZ = calculate_XYZ( observer, illuminant, TI );
 
-    return curveFit( RGB, XYZ, beta_params_start, verbosity, _idt_matrix );
+    return curveFit( RGB, XYZ, beta_params_start, verbosity, transform_matrix );
+}
+
+bool SpectralSolver::calculate_IDT_matrix()
+{
+    return calculate_transform();
 }
 
 //	=====================================================================
@@ -954,7 +959,7 @@ bool SpectralSolver::calculate_IDT_matrix()
 
 const std::vector<std::vector<double>> &SpectralSolver::get_IDT_matrix() const
 {
-    return _idt_matrix;
+    return transform_matrix;
 }
 
 const std::vector<double> &SpectralSolver::get_WB_multipliers() const
@@ -1156,13 +1161,15 @@ bool camera_to_XYZ_weighted_matrix(
     const double                     &mired_end,
     const std::vector<double>        &matrix_start,
     const std::vector<double>        &matrix_end,
-    std::vector<std::vector<double>> &out_matrix )
+    std::vector<std::vector<double>> &out_matrix,
+    std::string                      &error_message )
 {
     auto XYZ_to_camera_matrix = XYZ_to_camera_weighted_matrix(
         mired_target, mired_start, mired_end, matrix_start, matrix_end );
 
     if ( std::fabs( determinant( XYZ_to_camera_matrix ) ) < 1e-9 )
     {
+        error_message = "Found XYZ-to-camera matrix is not invertible.";
         out_matrix.resize( 0 );
         return false;
     }
@@ -1217,15 +1224,19 @@ stack_rows( const std::vector<double> &matrix, size_t columns )
 bool find_camera_to_XYZ_matrix(
     const Metadata                   &metadata,
     const std::vector<double>        &neutral_RGB,
-    std::vector<std::vector<double>> &out_matrix )
+    std::vector<std::vector<double>> &out_matrix,
+    std::string                      &error_message,
+    int                               verbosity )
 {
     if ( metadata.calibration[0].illuminant == 0 )
     {
-        std::cerr << "No calibration illuminants were found." << std::endl;
+        if ( verbosity > 0 )
+            std::cerr << "No calibration illuminants were found." << std::endl;
     }
     else if ( neutral_RGB.size() == 0 )
     {
-        std::cerr << "No neutral RGB values were found." << std::endl;
+        if ( verbosity > 0 )
+            std::cerr << "No neutral RGB values were found." << std::endl;
     }
     else
     {
@@ -1257,6 +1268,7 @@ bool find_camera_to_XYZ_matrix(
         double current_mired = low_mired;
         while ( current_mired < high_mired )
         {
+            std::string                      local_error_message;
             std::vector<std::vector<double>> camera_to_XYZ_matrix;
             if ( !camera_to_XYZ_weighted_matrix(
                      current_mired,
@@ -1264,7 +1276,8 @@ bool find_camera_to_XYZ_matrix(
                      mir2,
                      matrix_start,
                      matrix_end,
-                     camera_to_XYZ_matrix ) )
+                     camera_to_XYZ_matrix,
+                     local_error_message ) )
             {
                 current_mired += mired_step;
                 continue;
@@ -1304,13 +1317,21 @@ bool find_camera_to_XYZ_matrix(
 
         if ( estimated_mired != 0.0 )
         {
+            if ( verbosity > 1 )
+            {
+                std::cerr << "Found illuminant: "
+                          << int( mired_to_kelvin( estimated_mired ) ) << "k."
+                          << std::endl;
+            }
+
             if ( camera_to_XYZ_weighted_matrix(
                      estimated_mired,
                      mir1,
                      mir2,
                      matrix_start,
                      matrix_end,
-                     out_matrix ) )
+                     out_matrix,
+                     error_message ) )
             {
                 return true;
             }
@@ -1322,7 +1343,7 @@ bool find_camera_to_XYZ_matrix(
         stack_rows( metadata.calibration[0].XYZ_to_RGB_matrix, 3 );
     if ( std::fabs( determinant( XYZ_to_camera_matrix ) ) < 1e-9 )
     {
-        std::cerr << "Failed to find a suitable illuminant." << std::endl;
+        error_message = "Failed to find a suitable illuminant.";
         out_matrix.resize( 0 );
         return false;
     }
@@ -1459,11 +1480,17 @@ matrix_RGB_to_XYZ( const double chromaticities[][2] )
 bool get_camera_XYZ_matrix_and_white_point(
     const Metadata                   &metadata,
     std::vector<std::vector<double>> &out_camera_to_XYZ_matrix,
-    std::vector<double>              &out_camera_XYZ_white_point )
+    std::vector<double>              &out_camera_XYZ_white_point,
+    std::string                      &error_message,
+    int                               verbosity )
 {
 
     if ( !find_camera_to_XYZ_matrix(
-             metadata, metadata.neutral_RGB, out_camera_to_XYZ_matrix ) )
+             metadata,
+             metadata.neutral_RGB,
+             out_camera_to_XYZ_matrix,
+             error_message,
+             verbosity ) )
     {
         return false;
     }
@@ -1489,32 +1516,60 @@ bool get_camera_XYZ_matrix_and_white_point(
     return true;
 }
 
-std::vector<std::vector<double>> MetadataSolver::calculate_CAT_matrix()
+static bool calculate_DNG_CAT_matrix(
+    Metadata                         &metadata,
+    std::vector<std::vector<double>> &out_matrix,
+    std::string                      &error_message,
+    int                               verbosity )
 {
-    std::vector<std::vector<double>> CAT_matrix;
-
     std::vector<double>              deviceWhiteV( 3, 1.0 );
     std::vector<std::vector<double>> camera_to_XYZ_matrix;
     std::vector<double>              camera_XYZ_white_point;
 
     if ( get_camera_XYZ_matrix_and_white_point(
-             _metadata, camera_to_XYZ_matrix, camera_XYZ_white_point ) )
+             metadata,
+             camera_to_XYZ_matrix,
+             camera_XYZ_white_point,
+             error_message,
+             verbosity ) )
     {
         std::vector<std::vector<double>> output_RGB_to_XYZ_matrix =
             matrix_RGB_to_XYZ( chromaticitiesACES );
         std::vector<double> output_XYZ_white_point =
             mulVector( output_RGB_to_XYZ_matrix, deviceWhiteV );
-        CAT_matrix =
+        out_matrix =
             calculate_CAT( camera_XYZ_white_point, output_XYZ_white_point );
+        return true;
     }
-
-    return CAT_matrix;
+    else
+    {
+        out_matrix.resize( 0 );
+        return false;
+    }
 }
 
-std::vector<std::vector<double>> MetadataSolver::calculate_IDT_matrix()
+std::vector<std::vector<double>> MetadataSolver::calculate_CAT_matrix()
+{
+    std::vector<std::vector<double>> result;
+    calculate_DNG_CAT_matrix(
+        _metadata, result, last_error_message, verbosity );
+    return result;
+}
+
+static bool calculate_DNG_IDT_matrix(
+    Metadata                         &metadata,
+    std::vector<std::vector<double>> &out_matrix,
+    std::string                      &error_message,
+    int                               verbosity )
 {
     // 1. Obtains the CAT matrix for white point adaptation
-    std::vector<std::vector<double>> CAT_matrix = calculate_CAT_matrix();
+    std::vector<std::vector<double>> CAT_matrix;
+    if ( !calculate_DNG_CAT_matrix(
+             metadata, CAT_matrix, error_message, verbosity ) )
+    {
+        out_matrix.resize( 0 );
+        return false;
+    }
 
     // 2. Converts the CAT matrix to a flattened format for matrix multiplication
     std::vector<double> XYZ_D65_acesrgb( 9 ), CAT( 9 );
@@ -1529,16 +1584,54 @@ std::vector<std::vector<double>> MetadataSolver::calculate_IDT_matrix()
     std::vector<double> matrix = mulVector( XYZ_D65_acesrgb, CAT, 3 );
 
     // 4. Reshapes the result into a 3×3 transformation matrix
-    std::vector<std::vector<double>> DNG_IDT_matrix(
-        3, std::vector<double>( 3 ) );
+    out_matrix.resize( 3 );
     for ( size_t i = 0; i < 3; i++ )
+    {
+        out_matrix[i].resize( 3 );
         for ( size_t j = 0; j < 3; j++ )
-            DNG_IDT_matrix[i][j] = matrix[i * 3 + j];
+            out_matrix[i][j] = matrix[i * 3 + j];
+    }
 
     // 5. Validates the matrix properties (non-zero determinant)
-    assert( std::fabs( sumVectorM( DNG_IDT_matrix ) - 0.0 ) > 1e-09 );
+    assert( std::fabs( sumVectorM( out_matrix ) - 0.0 ) > 1e-09 );
+    return true;
+}
 
-    return DNG_IDT_matrix;
+std::vector<std::vector<double>> MetadataSolver::calculate_IDT_matrix()
+{
+    std::vector<std::vector<double>> result;
+    calculate_DNG_IDT_matrix(
+        _metadata, result, last_error_message, verbosity );
+    return result;
+}
+
+bool MetadataSolver::calculate_transform()
+{
+    return calculate_DNG_IDT_matrix(
+        _metadata, transform_matrix, last_error_message, verbosity );
+}
+
+bool XYZD65Solver::calculate_transform()
+{
+    // clang-format off
+    /// Colour adaptation from D65 to the ACES white point
+    static const std::vector<std::vector<double>> D65_to_ACES = {
+        {  1.0097583639200136,   0.0050178093846550, -0.0150583890923881 },
+        {  0.0036602813378778,   1.0030138169214682, -0.0059802329456400 },
+        { -0.00029980928869025, -0.0010516909063250,  0.9282027962747658 }
+    };
+
+    /// Colour space transform from XYZ D60 to ACES
+    static const std::vector<std::vector<double>> XYZ_D60_to_ACES = {
+        {  1.0498110175, 0.0000000000, -0.0000974845 },
+        { -0.4959030231, 1.3733130458,  0.0982400361 },
+        {  0.0000000000, 0.0000000000,  0.9912520182 }
+    };
+    // clang-format on
+
+    transform_matrix =
+        mulVector( XYZ_D60_to_ACES, transposeVec( D65_to_ACES ) );
+    return true;
 }
 
 /// Cost function operator for Ceres optimization of IDT matrix parameters.

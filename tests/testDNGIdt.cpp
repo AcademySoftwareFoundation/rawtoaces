@@ -9,6 +9,7 @@
 #include "../src/rawtoaces_core/mathOps.h"
 #include "../src/rawtoaces_core/rawtoaces_core_priv.h"
 #include "test_utils.h"
+#include "../src/misc/pragma.h"
 
 void testIDT_CcttoMired()
 {
@@ -141,18 +142,20 @@ void check_DNG_matrix(
     std::vector<double>                    &neutralRGB,
     bool                                    expected_result,
     const std::vector<std::vector<double>> &expected_matrix,
-    const std::string                      &expected_output )
+    const std::string                      &expected_output,
+    const std::string                      &expected_error )
 {
     std::vector<std::vector<double>> camera_to_XYZ_matrix;
     bool                             result;
+    std::string                      error_message;
     std::string                      stderr_output = capture_stderr( [&]() {
         result = rta::core::find_camera_to_XYZ_matrix(
-            metadata, neutralRGB, camera_to_XYZ_matrix );
+            metadata, neutralRGB, camera_to_XYZ_matrix, error_message, 2 );
     } );
 
     OIIO_CHECK_EQUAL( result, expected_result );
-    if ( !expected_output.empty() )
-        OIIO_CHECK_EQUAL( stderr_output, expected_output );
+    OIIO_CHECK_EQUAL( stderr_output, expected_output );
+    OIIO_CHECK_EQUAL( error_message, expected_error );
 
     if ( result )
     {
@@ -191,7 +194,13 @@ void testIDT_FindCameraToXYZMtx()
 
     expected_matrix = rta::core::invertVM( expected_matrix );
 
-    check_DNG_matrix( metadata, neutralRGB, true, expected_matrix, "" );
+    check_DNG_matrix(
+        metadata,
+        neutralRGB,
+        true,
+        expected_matrix,
+        "Found illuminant: 5317k.\n",
+        "" );
 }
 
 void testIDT_FindCameraToXYZMtx_NoIlluminant()
@@ -212,7 +221,8 @@ void testIDT_FindCameraToXYZMtx_NoIlluminant()
         neutralRGB,
         true,
         m3,
-        "No calibration illuminants were found.\n" );
+        "No calibration illuminants were found.\n",
+        "" );
 }
 
 void testIDT_FindCameraToXYZMtx_EmptyNeutral()
@@ -228,7 +238,12 @@ void testIDT_FindCameraToXYZMtx_EmptyNeutral()
     auto m3 = rta::core::invertVM( m2 );
 
     check_DNG_matrix(
-        metadata, neutralRGB, true, m3, "No neutral RGB values were found.\n" );
+        metadata,
+        neutralRGB,
+        true,
+        m3,
+        "No neutral RGB values were found.\n",
+        "" );
 }
 
 void testIDT_FindCameraToXYZMtx_ExactMatchMired()
@@ -248,6 +263,7 @@ void testIDT_FindCameraToXYZMtx_ExactMatchMired()
         neutral_RGB,
         true,
         rta::core::stack_rows( k_identity_xyz_to_rgb, 3 ),
+        "Found illuminant: 10000k.\n",
         "" );
 }
 
@@ -272,7 +288,8 @@ void testIDT_FindCameraToXYZMtx_Fail()
         neutral_RGB,
         false,
         empty_mat,
-        "Failed to find a suitable illuminant.\n" );
+        "",
+        "Failed to find a suitable illuminant." );
 }
 void testIDT_ColorTemperatureToXYZ()
 {
@@ -304,10 +321,15 @@ void testIDT_GetCameraXYZWhitePoint_UsesIlluminantWhenNeutralEmpty()
 
     std::vector<std::vector<double>> camera_to_XYZ;
     std::vector<double>              camera_XYZ_white_point;
-    std::string                      stderr_output = capture_stderr( [&]() {
-        rta::core::get_camera_XYZ_matrix_and_white_point(
-            metadata, camera_to_XYZ, camera_XYZ_white_point );
+    std::string                      error_message;
+    bool                             success;
+
+    std::string stderr_output = capture_stderr( [&]() {
+        success = rta::core::get_camera_XYZ_matrix_and_white_point(
+            metadata, camera_to_XYZ, camera_XYZ_white_point, error_message, 2 );
     } );
+
+    OIIO_CHECK_ASSERT( success );
 
     // Expect illuminant 17 fallback (normalized Y=1.0) when neutral_RGB is empty.
     std::vector<double> expected = { 1.098445424569, 1.0, 0.355920076967 };
@@ -341,8 +363,9 @@ void testIDT_GetDNGCATMatrix()
     double matrix[3][3] = { { 0.9907763427, -0.0022862289, 0.0209908807 },
                             { -0.0017882434, 0.9941341374, 0.0083008330 },
                             { 0.0003777587, 0.0015609315, 1.1063201101 } };
+    DISABLE_DEPRECATED_WARNINGS
     std::vector<std::vector<double>> result = di->calculate_CAT_matrix();
-
+    ENABLE_WARNINGS
     delete di;
 
     for ( size_t i = 0; i < 3; i++ )
@@ -358,13 +381,60 @@ void testIDT_GetDNGIDTMatrix()
     double matrix[3][3] = { { 1.0536466144, 0.0039044182, 0.0049084502 },
                             { -0.4899562165, 1.3614787986, 0.1020844728 },
                             { -0.0024498461, 0.0060497128, 1.0139159537 } };
+    DISABLE_DEPRECATED_WARNINGS
     std::vector<std::vector<double>> result = di->calculate_IDT_matrix();
-
+    ENABLE_WARNINGS
     delete di;
 
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
             OIIO_CHECK_EQUAL_THRESH( result[i][j], matrix[i][j], 1e-5 );
+}
+
+void testIDT_GetDNGTransformMatrix()
+{
+    rta::core::Metadata metadata;
+    init_metadata( metadata );
+    rta::core::MetadataSolver solver( metadata );
+    double matrix[3][3] = { { 1.0536466144, 0.0039044182, 0.0049084502 },
+                            { -0.4899562165, 1.3614787986, 0.1020844728 },
+                            { -0.0024498461, 0.0060497128, 1.0139159537 } };
+    bool   result       = solver.calculate_transform();
+    std::vector<std::vector<double>> &transform_matrix =
+        solver.transform_matrix;
+
+    OIIO_CHECK_ASSERT( result );
+    for ( size_t i = 0; i < 3; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            OIIO_CHECK_EQUAL_THRESH(
+                transform_matrix[i][j], matrix[i][j], 1e-5 );
+}
+
+void testIDT_calculate_transform_Fail()
+{
+    std::vector<double> non_invertible_mat = { 1, 0, 0, 1, 0, 0, 1, 0, 0 };
+
+    std::vector<std::vector<double>> empty_mat;
+
+    std::vector<double> neutral_RGB = { 0.97347064038736957,
+                                        1.0,
+                                        1.4953965764168315 };
+
+    rta::core::Metadata metadata;
+    init_metadata( metadata );
+    metadata.calibration[0].XYZ_to_RGB_matrix = non_invertible_mat;
+    metadata.calibration[1].XYZ_to_RGB_matrix = non_invertible_mat;
+    metadata.calibration[1].illuminant        = 32768 + 10000;
+    metadata.neutral_RGB                      = neutral_RGB;
+
+    rta::core::MetadataSolver solver( metadata );
+
+    bool success = solver.calculate_transform();
+
+    OIIO_CHECK_ASSERT( !success );
+    OIIO_CHECK_EQUAL(
+        solver.last_error_message, "Failed to find a suitable illuminant." );
+    OIIO_CHECK_EQUAL( solver.transform_matrix.size(), 0 );
 }
 
 int main( int, char ** )
@@ -389,6 +459,8 @@ int main( int, char ** )
     testIDT_MatrixRGBtoXYZ();
     testIDT_GetDNGCATMatrix();
     testIDT_GetDNGIDTMatrix();
+    testIDT_GetDNGTransformMatrix();
+    testIDT_calculate_transform_Fail();
 
     return unit_test_failures;
 }

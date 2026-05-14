@@ -48,11 +48,11 @@ void test_SpectralSolver_multipliers()
     solver.find_illuminant( white_balance );
 
     // Step 2: Solve the transform matrix.
-    solver.calculate_IDT_matrix();
+    solver.calculate_transform();
 
     // Step 3: Get the solved matrix.
     const std::vector<std::vector<double>> &solved_IDT =
-        solver.get_IDT_matrix();
+        solver.transform_matrix;
 
     // Check the results.
     const std::vector<std::vector<double>> true_IDT = {
@@ -88,11 +88,11 @@ void test_SpectralSolver_illuminant()
     const std::vector<double> &solved_WB = solver.get_WB_multipliers();
 
     // Step 4: Solve the transform matrix.
-    solver.calculate_IDT_matrix();
+    solver.calculate_transform();
 
     // Step 5: Get the solved matrix.
     const std::vector<std::vector<double>> &solved_IDT =
-        solver.get_IDT_matrix();
+        solver.transform_matrix;
 
     // Check the results.
     const std::vector<double> true_WB = { 1.79488, 1, 1.39779 };
@@ -121,8 +121,11 @@ void test_MetadataSolver()
     rta::core::MetadataSolver solver( metadata );
 
     // Step 2: Solve the transform matrix.
-    const std::vector<std::vector<double>> solved_IDT =
-        solver.calculate_IDT_matrix();
+    solver.calculate_transform();
+
+    // Step 3: Get the solved matrix.
+    const std::vector<std::vector<double>> &solved_IDT =
+        solver.transform_matrix;
 
     // Check the results.
     const std::vector<std::vector<double>> true_IDT = {

@@ -293,9 +293,9 @@ void test_fetch_matrix_from_illuminant_cache_hit()
         "cmf/cmf_1931.json", solver_expected.observer ) );
     OIIO_CHECK_ASSERT( solver_expected.find_illuminant( "D65" ) );
     OIIO_CHECK_ASSERT( solver_expected.calculate_WB() );
-    OIIO_CHECK_ASSERT( solver_expected.calculate_IDT_matrix() );
+    OIIO_CHECK_ASSERT( solver_expected.calculate_transform() );
 
-    const auto &expected = solver_expected.get_IDT_matrix();
+    const auto &expected = solver_expected.transform_matrix;
     OIIO_CHECK_EQUAL( matrix.size(), 3 );
     OIIO_CHECK_EQUAL( matrix[0].size(), 3 );
     for ( size_t row = 0; row < 3; row++ )
@@ -326,11 +326,21 @@ void test_fetch_matrix_from_metadata_cache_hit_and_values()
     init_metadata( metadata );
 
     std::vector<std::vector<double>> matrix;
+    bool                             success1;
+    bool                             success2;
+    std::string                      error_message1;
+    std::string                      error_message2;
     std::string                      output = capture_stderr( [&]() {
-        rta::util::fetch_matrix_from_metadata( metadata, 1, false, matrix );
-        rta::util::fetch_matrix_from_metadata( metadata, 1, false, matrix );
+        success1 = rta::util::fetch_matrix_from_metadata(
+            metadata, 1, false, matrix, error_message1 );
+        success2 = rta::util::fetch_matrix_from_metadata(
+            metadata, 1, false, matrix, error_message2 );
     } );
 
+    OIIO_CHECK_ASSERT( success1 );
+    OIIO_CHECK_ASSERT( success2 );
+    OIIO_CHECK_ASSERT( error_message1.empty() );
+    OIIO_CHECK_ASSERT( error_message2.empty() );
     OIIO_CHECK_EQUAL( matrix.size(), 3 );
     OIIO_CHECK_EQUAL( matrix[0].size(), 3 );
     ASSERT_CONTAINS(
@@ -341,7 +351,10 @@ void test_fetch_matrix_from_metadata_cache_hit_and_values()
     ASSERT_CONTAINS( output, "Input Device Transform (IDT) matrix:" );
 
     rta::core::MetadataSolver solver( metadata );
-    auto                      expected = solver.calculate_IDT_matrix();
+    bool                      success = solver.calculate_transform();
+    OIIO_CHECK_ASSERT( success );
+
+    auto &expected = solver.transform_matrix;
     for ( size_t row = 0; row < 3; row++ )
     {
         for ( size_t col = 0; col < 3; col++ )
@@ -350,6 +363,33 @@ void test_fetch_matrix_from_metadata_cache_hit_and_values()
                 matrix[row][col], expected[row][col], 1e-7 );
         }
     }
+}
+
+void test_fetch_matrix_from_metadata_failure_clears_output()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    std::vector<double> non_invertible_mat = { 1, 0, 0, 1, 0, 0, 1, 0, 0 };
+
+    rta::core::Metadata metadata;
+    init_metadata( metadata );
+    metadata.calibration[0].XYZ_to_RGB_matrix = non_invertible_mat;
+    metadata.calibration[1].XYZ_to_RGB_matrix = non_invertible_mat;
+
+    std::vector<std::vector<double>> matrix;
+    bool                             success;
+    std::string                      error_message;
+    std::string                      output = capture_stderr( [&]() {
+        success = rta::util::fetch_matrix_from_metadata(
+            metadata, 1, false, matrix, error_message );
+    } );
+
+    OIIO_CHECK_ASSERT( !success );
+    OIIO_CHECK_EQUAL(
+        error_message,
+        "Failed to calculate transform matrix from DNG metadata. Failed to "
+        "find a suitable illuminant." );
+    OIIO_CHECK_EQUAL( matrix.size(), 0 );
 }
 
 /// Ensures missing camera data fails during illuminant-from-WB.
@@ -432,6 +472,7 @@ int main( int, char ** )
     test_fetch_multipliers_from_illuminant_failure_clears_output();
     test_fetch_matrix_from_illuminant_cache_hit();
     test_fetch_matrix_from_metadata_cache_hit_and_values();
+    test_fetch_matrix_from_metadata_failure_clears_output();
     test_fetch_illuminant_from_multipliers_missing_camera();
     test_fetch_matrix_from_illuminant_calculate_wb_failure();
 

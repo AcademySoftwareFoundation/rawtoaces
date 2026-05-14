@@ -1564,7 +1564,7 @@ static bool calculate_DNG_IDT_matrix(
 {
     std::vector<std::vector<double>> camera_to_XYZ_matrix;
     std::vector<double>              camera_XYZ_white_point;
-    
+
     if ( get_camera_XYZ_matrix_and_white_point(
              metadata,
              camera_to_XYZ_matrix,
@@ -1572,7 +1572,7 @@ static bool calculate_DNG_IDT_matrix(
              error_message,
              verbosity ) )
     {
-        std::vector<double> deviceWhiteV( 3, 1.0 );
+        std::vector<double>              deviceWhiteV( 3, 1.0 );
         std::vector<std::vector<double>> output_RGB_to_XYZ_matrix =
             matrix_RGB_to_XYZ( chromaticitiesACES );
         std::vector<double> output_XYZ_white_point =
@@ -1587,7 +1587,7 @@ static bool calculate_DNG_IDT_matrix(
         result[0][0] = metadata.neutral_RGB[0];
         result[1][1] = metadata.neutral_RGB[1];
         result[2][2] = metadata.neutral_RGB[2];
-        
+
         result = mulVector( camera_to_XYZ_matrix, result );
         result = mulVector( CAT_matrix, transposeVec( result ) );
         result = mulVector( get_XYZ_D60_to_ACES(), transposeVec( result ) );
@@ -1595,7 +1595,7 @@ static bool calculate_DNG_IDT_matrix(
         out_matrix = result;
         return true;
     }
-    
+
     out_matrix.resize( 0 );
     return false;
 }

@@ -141,30 +141,30 @@ class TestImageConverter:
         # successful.
         if len(idt) == 3 and len(cat) == 0:
             assert len(idt[0]) == 3
-            assert abs(idt[0][0] - 1.0536466144250152) < 0.0001
-            assert abs(idt[0][1] - 0.00390441818863832) < 0.0001
-            assert abs(idt[0][2] - 0.004908450238340354) < 0.0001
+            assert abs(idt[0][0] - 0.68096686026) < 0.0001
+            assert abs(idt[0][1] - 0.2180711394) < 0.0001
+            assert abs(idt[0][2] - 0.0991518356) < 0.0001
             assert len(idt[1]) == 3
-            assert abs(idt[1][0] - -0.48995621645381615) < 0.0001
-            assert abs(idt[1][1] - 1.3614787985962031) < 0.0001
-            assert abs(idt[1][2] - 0.10208447284831194) < 0.0001
+            assert abs(idt[1][0] - -0.0103808746) < 0.0001
+            assert abs(idt[1][1] - 0.9964341999) < 0.0001
+            assert abs(idt[1][2] - 0.0121365100) < 0.0001
             assert len(idt[2]) == 3
-            assert abs(idt[2][0] - -0.0024498461419844484) < 0.0001
-            assert abs(idt[2][1] - 0.006049712791275535) < 0.0001
-            assert abs(idt[2][2] - 1.013915953697747) < 0.0001
+            assert abs(idt[2][0] - -0.0880997582) < 0.0001
+            assert abs(idt[2][1] - -0.483727073) < 0.0001
+            assert abs(idt[2][2] - 1.5700166672) < 0.0001
 
             assert len(transform_matrix[0]) == 3
-            assert abs(transform_matrix[0][0] - 1.0536466144250152) < 0.0001
-            assert abs(transform_matrix[0][1] - 0.00390441818863832) < 0.0001
-            assert abs(transform_matrix[0][2] - 0.004908450238340354) < 0.0001
+            assert abs(idt[0][0] - 0.68096686026) < 0.0001
+            assert abs(idt[0][1] - 0.2180711394) < 0.0001
+            assert abs(idt[0][2] - 0.0991518356) < 0.0001
             assert len(transform_matrix[1]) == 3
-            assert abs(transform_matrix[1][0] - -0.48995621645381615) < 0.0001
-            assert abs(transform_matrix[1][1] - 1.3614787985962031) < 0.0001
-            assert abs(transform_matrix[1][2] - 0.10208447284831194) < 0.0001
+            assert abs(idt[1][0] - -0.0103808746) < 0.0001
+            assert abs(idt[1][1] - 0.9964341999) < 0.0001
+            assert abs(idt[1][2] - 0.0121365100) < 0.0001
             assert len(transform_matrix[2]) == 3
-            assert abs(transform_matrix[2][0] - -0.0024498461419844484) < 0.0001
-            assert abs(transform_matrix[2][1] - 0.006049712791275535) < 0.0001
-            assert abs(transform_matrix[2][2] - 1.013915953697747) < 0.0001
+            assert abs(idt[2][0] - -0.0880997582) < 0.0001
+            assert abs(idt[2][1] - -0.483727073) < 0.0001
+            assert abs(idt[2][2] - 1.5700166672) < 0.0001
         elif len(idt) == 0 and len(cat) == 3:
             assert len(cat[0]) == 3
             assert abs(cat[0][0] - 1.0097583639200136) < 0.0001

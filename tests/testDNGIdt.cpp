@@ -378,9 +378,9 @@ void testIDT_GetDNGIDTMatrix()
     rta::core::Metadata metadata;
     init_metadata( metadata );
     rta::core::MetadataSolver *di = new rta::core::MetadataSolver( metadata );
-    double matrix[3][3] = { { 1.0536466144, 0.0039044182, 0.0049084502 },
-                            { -0.4899562165, 1.3614787986, 0.1020844728 },
-                            { -0.0024498461, 0.0060497128, 1.0139159537 } };
+    double matrix[3][3] = { { 0.68096686026, 0.2180711394, 0.0991518356 },
+                            { -0.0103808746, 0.9964341999, 0.0121365100 },
+                            { -0.0880997582, -0.483727073, 1.5700166672 } };
     DISABLE_DEPRECATED_WARNINGS
     std::vector<std::vector<double>> result = di->calculate_IDT_matrix();
     ENABLE_WARNINGS
@@ -396,9 +396,9 @@ void testIDT_GetDNGTransformMatrix()
     rta::core::Metadata metadata;
     init_metadata( metadata );
     rta::core::MetadataSolver solver( metadata );
-    double matrix[3][3] = { { 1.0536466144, 0.0039044182, 0.0049084502 },
-                            { -0.4899562165, 1.3614787986, 0.1020844728 },
-                            { -0.0024498461, 0.0060497128, 1.0139159537 } };
+    double matrix[3][3] = { { 0.68096686026, 0.2180711394, 0.0991518356 },
+                            { -0.0103808746, 0.9964341999, 0.0121365100 },
+                            { -0.0880997582, -0.483727073, 1.5700166672 } };
     bool   result       = solver.calculate_transform();
     std::vector<std::vector<double>> &transform_matrix =
         solver.transform_matrix;

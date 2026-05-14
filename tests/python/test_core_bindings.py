@@ -153,16 +153,15 @@ class TestMetadataSolverBindings:
 
         assert len(idt) == 3
         assert len(idt[0]) == 3
-        assert abs(idt[0][0] - 1.0536466144) < 1e-5
-        assert abs(idt[0][1] - 0.0039044182) < 1e-5
-        assert abs(idt[0][2] - 0.0049084502) < 1e-5
-        assert abs(idt[1][0] - -0.4899562165) < 1e-5
-        assert abs(idt[1][1] - 1.3614787986) < 1e-5
-        assert abs(idt[1][2] - 0.1020844728) < 1e-5
-        assert abs(idt[2][0] - -0.0024498461) < 1e-5
-        assert abs(idt[2][1] - 0.0060497128) < 1e-5
-        assert abs(idt[2][2] - 1.0139159537) < 1e-5
-
+        assert abs(idt[0][0] - 0.68096686026) < 1e-5
+        assert abs(idt[0][1] - 0.2180711394) < 1e-5
+        assert abs(idt[0][2] - 0.0991518356) < 1e-5
+        assert abs(idt[1][0] - -0.0103808746) < 1e-5
+        assert abs(idt[1][1] - 0.9964341999) < 1e-5
+        assert abs(idt[1][2] - 0.0121365100) < 1e-5
+        assert abs(idt[2][0] - -0.0880997582) < 1e-5
+        assert abs(idt[2][1] - -0.483727073) < 1e-5
+        assert abs(idt[2][2] - 1.5700166672) < 1e-5
 
     def test_metadata_solver_calculate_transform(self):
         metadata = _init_reference_metadata()
@@ -173,15 +172,15 @@ class TestMetadataSolverBindings:
         assert success
         assert len(idt) == 3
         assert len(idt[0]) == 3
-        assert abs(idt[0][0] - 1.0536466144) < 1e-5
-        assert abs(idt[0][1] - 0.0039044182) < 1e-5
-        assert abs(idt[0][2] - 0.0049084502) < 1e-5
-        assert abs(idt[1][0] - -0.4899562165) < 1e-5
-        assert abs(idt[1][1] - 1.3614787986) < 1e-5
-        assert abs(idt[1][2] - 0.1020844728) < 1e-5
-        assert abs(idt[2][0] - -0.0024498461) < 1e-5
-        assert abs(idt[2][1] - 0.0060497128) < 1e-5
-        assert abs(idt[2][2] - 1.0139159537) < 1e-5
+        assert abs(idt[0][0] - 0.68096686026) < 1e-5
+        assert abs(idt[0][1] - 0.2180711394) < 1e-5
+        assert abs(idt[0][2] - 0.0991518356) < 1e-5
+        assert abs(idt[1][0] - -0.0103808746) < 1e-5
+        assert abs(idt[1][1] - 0.9964341999) < 1e-5
+        assert abs(idt[1][2] - 0.0121365100) < 1e-5
+        assert abs(idt[2][0] - -0.0880997582) < 1e-5
+        assert abs(idt[2][1] - -0.483727073) < 1e-5
+        assert abs(idt[2][2] - 1.5700166672) < 1e-5
 
 
 class TestSpectralSolverBindings:

@@ -1579,7 +1579,7 @@ static bool calculate_DNG_IDT_matrix(
             mulVector( output_RGB_to_XYZ_matrix, deviceWhiteV );
         std::vector<std::vector<double>> CAT_matrix =
             calculate_CAT( camera_XYZ_white_point, output_XYZ_white_point );
-        
+
         // The camera_to_XYZ_matrix expects camera raw values, but the pixels
         // we get from libraw are white-balanced. Undo the white-balancing as
         // the first step.

@@ -5339,7 +5339,7 @@ void testIDT_calculate_transform()
             OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-4 );
 }
 
-/// Helper function to test that calculate_IDT_matrix returns false and prints expected error
+/// Helper function to test that calculate_transform returns false and sets expected error
 static void check_calculate_transform_matrix_error(
     rta::core::SpectralSolver &solver, const std::string &expected_error )
 {
@@ -5352,9 +5352,9 @@ static void check_calculate_transform_matrix_error(
 
 const std::string expected_error_camera_not_initialized =
     "Camera needs to be initialised prior to calling "
-    "SpectralSolver::calculate_IDT_matrix().";
+    "SpectralSolver::calculate_transform().";
 
-/// Tests that calculate_IDT_matrix returns false and prints error when camera is not initialized
+/// Tests that calculate_transform returns false and sets error when camera is not initialized
 void testIDT_calculate_transform_Camera_Not_Initialized()
 {
     std::cout << std::endl << __FUNCTION__ << std::endl;
@@ -5375,7 +5375,7 @@ void testIDT_calculate_transform_Camera_Not_Initialized()
         solver, expected_error_camera_not_initialized );
 }
 
-/// Tests that calculate_IDT_matrix returns false and prints error when camera has wrong size
+/// Tests that calculate_transform returns false and sets error when camera has wrong size
 void testIDT_calculate_transform_Camera_Wrong_Size()
 {
     std::cout << std::endl << __FUNCTION__ << std::endl;
@@ -5403,9 +5403,9 @@ void testIDT_calculate_transform_Camera_Wrong_Size()
 
 const std::string expected_error_illuminant_not_initialized =
     "Illuminant needs to be initialised prior to "
-    "calling SpectralSolver::calculate_IDT_matrix().";
+    "calling SpectralSolver::calculate_transform().";
 
-/// Tests that calculate_IDT_matrix returns false and prints error when illuminant is not initialized
+/// Tests that calculate_transform returns false and sets error when illuminant is not initialized
 void testIDT_calculate_transform_Illuminant_Not_Initialized()
 {
     std::cout << std::endl << __FUNCTION__ << std::endl;
@@ -5427,7 +5427,7 @@ void testIDT_calculate_transform_Illuminant_Not_Initialized()
         solver, expected_error_illuminant_not_initialized );
 }
 
-/// Tests that calculate_IDT_matrix returns false and prints error when illuminant has wrong size
+/// Tests that calculate_transform returns false and sets error when illuminant has wrong size
 void testIDT_calculate_transform_Illuminant_Wrong_Size()
 {
     std::cout << std::endl << __FUNCTION__ << std::endl;
@@ -5457,9 +5457,9 @@ void testIDT_calculate_transform_Illuminant_Wrong_Size()
 
 const std::string expected_error_observer_not_initialized =
     "Observer needs to be initialised prior to calling "
-    "SpectralSolver::calculate_IDT_matrix().";
+    "SpectralSolver::calculate_transform().";
 
-/// Tests that calculate_IDT_matrix returns false and prints error when observer is not initialized
+/// Tests that calculate_transform returns false and sets error when observer is not initialized
 void testIDT_calculate_transform_Observer_Not_Initialized()
 {
     std::cout << std::endl << __FUNCTION__ << std::endl;
@@ -5475,7 +5475,7 @@ void testIDT_calculate_transform_Observer_Not_Initialized()
         solver, expected_error_observer_not_initialized );
 }
 
-/// Tests that calculate_IDT_matrix returns false and prints error when observer has wrong size
+/// Tests that calculate_transform returns false and sets error when observer has wrong size
 void testIDT_calculate_transform_Observer_Wrong_Size()
 {
     std::cout << std::endl << __FUNCTION__ << std::endl;
@@ -5498,9 +5498,9 @@ void testIDT_calculate_transform_Observer_Wrong_Size()
 
 const std::string expected_error_training_data_not_initialized =
     "Training data needs to be initialised prior to "
-    "calling SpectralSolver::calculate_IDT_matrix().";
+    "calling SpectralSolver::calculate_transform().";
 
-/// Tests that calculate_IDT_matrix returns false and prints error when training data is not initialized
+/// Tests that calculate_transform returns false and sets error when training data is not initialized
 void testIDT_calculate_transform_Training_Data_Not_Initialized()
 {
     std::cout << std::endl << __FUNCTION__ << std::endl;
@@ -5516,7 +5516,7 @@ void testIDT_calculate_transform_Training_Data_Not_Initialized()
         solver, expected_error_training_data_not_initialized );
 }
 
-/// Tests that calculate_IDT_matrix returns false and prints error when training data is empty
+/// Tests that calculate_transform returns false and sets error when training data is empty
 void testIDT_calculate_transform_Training_Data_Empty()
 {
     std::cout << std::endl << __FUNCTION__ << std::endl;

@@ -2131,7 +2131,7 @@ void test_prepare_transform_spectral_idt_calculation_fail()
         false,
         "Failed to calculate IDT matrix from illuminant. "
         "Training data needs to be initialised prior to calling "
-        "SpectralSolver::calculate_IDT_matrix().",
+        "SpectralSolver::calculate_transform().",
         {} );
 }
 

@@ -903,7 +903,7 @@ bool SpectralSolver::calculate_transform()
     {
         last_error_message =
             "Camera needs to be initialised prior to calling "
-            "SpectralSolver::calculate_IDT_matrix().";
+            "SpectralSolver::calculate_transform().";
         return false;
     }
 
@@ -912,7 +912,7 @@ bool SpectralSolver::calculate_transform()
     {
         last_error_message =
             "Illuminant needs to be initialised prior to "
-            "calling SpectralSolver::calculate_IDT_matrix().";
+            "calling SpectralSolver::calculate_transform().";
         return false;
     }
 
@@ -921,7 +921,7 @@ bool SpectralSolver::calculate_transform()
     {
         last_error_message =
             "Observer needs to be initialised prior to "
-            "calling SpectralSolver::calculate_IDT_matrix().";
+            "calling SpectralSolver::calculate_transform().";
         return false;
     }
 
@@ -930,7 +930,7 @@ bool SpectralSolver::calculate_transform()
     {
         last_error_message =
             "Training data needs to be initialised prior to "
-            "calling SpectralSolver::calculate_IDT_matrix().";
+            "calling SpectralSolver::calculate_transform().";
         return false;
     }
 

@@ -43,11 +43,12 @@ bool fetch_matrix_from_illuminant(
     std::vector<std::vector<double>> &out_matrix,
     std::string                      &error_message );
 
-void fetch_matrix_from_metadata(
+bool fetch_matrix_from_metadata(
     const core::Metadata             &metadata,
     int                               verbosity,
     bool                              disable_cache,
-    std::vector<std::vector<double>> &out_matrix );
+    std::vector<std::vector<double>> &out_matrix,
+    std::string                      &error_message );
 
 } // namespace util
 } // namespace rta

@@ -5,6 +5,7 @@ nanobind_add_module( rawtoaces_bindings
     py_util.cpp py_util.h
     py_core.cpp py_core.h
     py_module.cpp
+    ../misc/pragma.h
 )
 
 target_link_libraries( rawtoaces_bindings

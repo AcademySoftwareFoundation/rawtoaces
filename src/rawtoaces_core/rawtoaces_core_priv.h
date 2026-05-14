@@ -69,11 +69,15 @@ stack_rows( const std::vector<double> &matrix, size_t columns );
 bool find_camera_to_XYZ_matrix(
     const Metadata                   &metadata,
     const std::vector<double>        &neutralRGB,
-    std::vector<std::vector<double>> &out_matrix );
+    std::vector<std::vector<double>> &out_matrix,
+    std::string                      &error_message,
+    int                               verbosity );
 
 bool get_camera_XYZ_matrix_and_white_point(
     const Metadata                   &metadata,
     std::vector<std::vector<double>> &out_camera_to_XYZ_matrix,
-    std::vector<double>              &out_camera_XYZ_white_point );
+    std::vector<double>              &out_camera_XYZ_white_point,
+    std::string                      &error_message,
+    int                               verbosity );
 } // namespace core
 } // namespace rta

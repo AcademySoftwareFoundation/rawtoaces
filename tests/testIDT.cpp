@@ -13,11 +13,14 @@
 #include <rawtoaces/rawtoaces_core.h>
 #include "../src/rawtoaces_core/rawtoaces_core_priv.h"
 #include "test_utils.h"
+#include "../src/misc/pragma.h"
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 
 void testIDT_LoadCameraSpst()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     std::filesystem::path absolutePath =
         std::filesystem::absolute( DATA_PATH "camera/ARRI_D21_380_780_5.json" );
 
@@ -132,6 +135,8 @@ void testIDT_LoadCameraSpst()
 
 void testIDT_LoadIlluminant()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     std::filesystem::path absolutePath = std::filesystem::absolute(
         DATA_PATH "illuminant/iso7589_stutung_380_780_5.json" );
 
@@ -175,6 +180,8 @@ void testIDT_LoadIlluminant()
 
 void testIDT_LoadTrainingData()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     std::filesystem::path absolutePath = std::filesystem::absolute(
         DATA_PATH "training/training_spectral.json" );
 
@@ -278,6 +285,8 @@ void testIDT_LoadTrainingData()
 
 void testIDT_LoadCMF()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     std::filesystem::path absolutePath =
         std::filesystem::absolute( DATA_PATH "cmf/cmf_1931.json" );
 
@@ -743,6 +752,8 @@ void load_file( const std::string &path, rta::core::SpectralData &data )
 
 void testIDT_scaleLSC()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::SpectralData illuminant;
     load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
 
@@ -786,6 +797,8 @@ void testIDT_scaleLSC()
 
 void testIDT_CalCM()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::SpectralData illuminant;
     load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
 
@@ -802,6 +815,8 @@ void testIDT_CalCM()
 
 void testIDT_CalWB()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::SpectralData illuminant;
     load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
 
@@ -819,6 +834,8 @@ void testIDT_CalWB()
 
 void testIDT_ChooseIllumSrc()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::SpectralSolver solver( { DATA_PATH } );
     load_camera_helper( solver, "nikon", "d200", "", true, false );
 
@@ -857,6 +874,8 @@ void testIDT_ChooseIllumSrc()
 
 void testIDT_ChooseIllumType()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::SpectralSolver solver( { DATA_PATH } );
     load_camera_helper( solver, "nikon", "d200", "iso7589", true, false );
 
@@ -895,6 +914,8 @@ void testIDT_ChooseIllumType()
 
 void testIDT_CalTI()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::SpectralData camera;
     load_file( "camera/Nikon_D200_380_780_5.json", camera );
 
@@ -4809,6 +4830,8 @@ void testIDT_CalTI()
 
 void testIDT_CalXYZ()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::SpectralData camera;
     load_file( "camera/Nikon_D200_380_780_5.json", camera );
 
@@ -5024,6 +5047,8 @@ void testIDT_CalXYZ()
 
 void testIDT_CalRGB()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::SpectralData camera;
     load_file( "camera/Nikon_D200_380_780_5.json", camera );
 
@@ -5274,12 +5299,36 @@ void testIDT_CurveFit()
 
 void testIDT_CalIDT()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     rta::core::SpectralSolver solver( { DATA_PATH } );
     load_camera_helper( solver, "arri", "d21", "iso7589", true, true );
     solver.calculate_WB();
 
+    DISABLE_DEPRECATED_WARNINGS
     OIIO_CHECK_ASSERT( solver.calculate_IDT_matrix() );
     std::vector<std::vector<double>> IDT_test = solver.get_IDT_matrix();
+    ENABLE_WARNINGS
+
+    float IDT[3][3] = { { 1.0915120600f, -0.2516916464f, 0.1601795864f },
+                        { -0.0089998772f, 1.2147199060f, -0.2057200288f },
+                        { -0.1312667887f, -0.7361633199f, 1.8674301085f } };
+
+    for ( size_t i = 0; i < 3; i++ )
+        for ( size_t j = 0; j < 3; j++ )
+            OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-4 );
+}
+
+void testIDT_calculate_transform()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    rta::core::SpectralSolver solver( { DATA_PATH } );
+    load_camera_helper( solver, "arri", "d21", "iso7589", true, true );
+    solver.calculate_WB();
+
+    OIIO_CHECK_ASSERT( solver.calculate_transform() );
+    std::vector<std::vector<double>> &IDT_test = solver.transform_matrix;
 
     float IDT[3][3] = { { 1.0915120600f, -0.2516916464f, 0.1601795864f },
                         { -0.0089998772f, 1.2147199060f, -0.2057200288f },
@@ -5291,10 +5340,10 @@ void testIDT_CalIDT()
 }
 
 /// Helper function to test that calculate_IDT_matrix returns false and prints expected error
-static void check_calculate_IDT_matrix_error(
+static void check_calculate_transform_matrix_error(
     rta::core::SpectralSolver &solver, const std::string &expected_error )
 {
-    bool        success = solver.calculate_IDT_matrix();
+    bool        success = solver.calculate_transform();
     std::string output  = solver.last_error_message;
 
     OIIO_CHECK_ASSERT( !success );
@@ -5306,10 +5355,9 @@ const std::string expected_error_camera_not_initialized =
     "SpectralSolver::calculate_IDT_matrix().";
 
 /// Tests that calculate_IDT_matrix returns false and prints error when camera is not initialized
-void testIDT_CalIDT_Camera_Not_Initialized()
+void testIDT_calculate_transform_Camera_Not_Initialized()
 {
-    std::cout << std::endl
-              << "testIDT_CalIDT_Camera_Not_Initialized()" << std::endl;
+    std::cout << std::endl << __FUNCTION__ << std::endl;
 
     rta::core::SpectralSolver solver( { DATA_PATH } );
     /// Camera is not initialized - leave it empty
@@ -5323,14 +5371,14 @@ void testIDT_CalIDT_Camera_Not_Initialized()
     OIIO_CHECK_ASSERT( result );
     /// Cannot call calculate_WB() because camera is not initialized
 
-    check_calculate_IDT_matrix_error(
+    check_calculate_transform_matrix_error(
         solver, expected_error_camera_not_initialized );
 }
 
 /// Tests that calculate_IDT_matrix returns false and prints error when camera has wrong size
-void testIDT_CalIDT_Camera_Wrong_Size()
+void testIDT_calculate_transform_Camera_Wrong_Size()
 {
-    std::cout << std::endl << "testIDT_CalIDT_Camera_Wrong_Size()" << std::endl;
+    std::cout << std::endl << __FUNCTION__ << std::endl;
 
     rta::core::SpectralSolver solver( { DATA_PATH } );
     /// Initialize camera with wrong size (2 channels instead of 3)
@@ -5349,7 +5397,7 @@ void testIDT_CalIDT_Camera_Wrong_Size()
     OIIO_CHECK_ASSERT( result );
     solver.calculate_WB();
 
-    check_calculate_IDT_matrix_error(
+    check_calculate_transform_matrix_error(
         solver, expected_error_camera_not_initialized );
 }
 
@@ -5358,10 +5406,9 @@ const std::string expected_error_illuminant_not_initialized =
     "calling SpectralSolver::calculate_IDT_matrix().";
 
 /// Tests that calculate_IDT_matrix returns false and prints error when illuminant is not initialized
-void testIDT_CalIDT_Illuminant_Not_Initialized()
+void testIDT_calculate_transform_Illuminant_Not_Initialized()
 {
-    std::cout << std::endl
-              << "testIDT_CalIDT_Illuminant_Not_Initialized()" << std::endl;
+    std::cout << std::endl << __FUNCTION__ << std::endl;
 
     rta::core::SpectralSolver solver( { DATA_PATH } );
     /// Initialize camera
@@ -5376,15 +5423,14 @@ void testIDT_CalIDT_Illuminant_Not_Initialized()
     OIIO_CHECK_ASSERT( result );
     solver.calculate_WB();
 
-    check_calculate_IDT_matrix_error(
+    check_calculate_transform_matrix_error(
         solver, expected_error_illuminant_not_initialized );
 }
 
 /// Tests that calculate_IDT_matrix returns false and prints error when illuminant has wrong size
-void testIDT_CalIDT_Illuminant_Wrong_Size()
+void testIDT_calculate_transform_Illuminant_Wrong_Size()
 {
-    std::cout << std::endl
-              << "testIDT_CalIDT_Illuminant_Wrong_Size()" << std::endl;
+    std::cout << std::endl << __FUNCTION__ << std::endl;
 
     rta::core::SpectralSolver solver( { DATA_PATH } );
     /// Initialize camera
@@ -5405,7 +5451,7 @@ void testIDT_CalIDT_Illuminant_Wrong_Size()
     OIIO_CHECK_ASSERT( result );
     solver.calculate_WB();
 
-    check_calculate_IDT_matrix_error(
+    check_calculate_transform_matrix_error(
         solver, expected_error_illuminant_not_initialized );
 }
 
@@ -5414,10 +5460,9 @@ const std::string expected_error_observer_not_initialized =
     "SpectralSolver::calculate_IDT_matrix().";
 
 /// Tests that calculate_IDT_matrix returns false and prints error when observer is not initialized
-void testIDT_CalIDT_Observer_Not_Initialized()
+void testIDT_calculate_transform_Observer_Not_Initialized()
 {
-    std::cout << std::endl
-              << "testIDT_CalIDT_Observer_Not_Initialized()" << std::endl;
+    std::cout << std::endl << __FUNCTION__ << std::endl;
 
     rta::core::SpectralSolver solver( { DATA_PATH } );
     /// Initialize camera, illuminant, but not observer
@@ -5426,15 +5471,14 @@ void testIDT_CalIDT_Observer_Not_Initialized()
     solver.observer.data.clear();
     solver.calculate_WB();
 
-    check_calculate_IDT_matrix_error(
+    check_calculate_transform_matrix_error(
         solver, expected_error_observer_not_initialized );
 }
 
 /// Tests that calculate_IDT_matrix returns false and prints error when observer has wrong size
-void testIDT_CalIDT_Observer_Wrong_Size()
+void testIDT_calculate_transform_Observer_Wrong_Size()
 {
-    std::cout << std::endl
-              << "testIDT_CalIDT_Observer_Wrong_Size()" << std::endl;
+    std::cout << std::endl << __FUNCTION__ << std::endl;
 
     rta::core::SpectralSolver solver( { DATA_PATH } );
     /// Initialize camera, illuminant
@@ -5448,7 +5492,7 @@ void testIDT_CalIDT_Observer_Wrong_Size()
     OIIO_CHECK_EQUAL( solver.observer.data["main"].size(), 2 );
     solver.calculate_WB();
 
-    check_calculate_IDT_matrix_error(
+    check_calculate_transform_matrix_error(
         solver, expected_error_observer_not_initialized );
 }
 
@@ -5457,10 +5501,9 @@ const std::string expected_error_training_data_not_initialized =
     "calling SpectralSolver::calculate_IDT_matrix().";
 
 /// Tests that calculate_IDT_matrix returns false and prints error when training data is not initialized
-void testIDT_CalIDT_Training_Data_Not_Initialized()
+void testIDT_calculate_transform_Training_Data_Not_Initialized()
 {
-    std::cout << std::endl
-              << "testIDT_CalIDT_Training_Data_Not_Initialized()" << std::endl;
+    std::cout << std::endl << __FUNCTION__ << std::endl;
 
     rta::core::SpectralSolver solver( { DATA_PATH } );
     /// Initialize camera, illuminant, observer, but not training_data
@@ -5469,15 +5512,14 @@ void testIDT_CalIDT_Training_Data_Not_Initialized()
     solver.training_data.data.clear();
     solver.calculate_WB();
 
-    check_calculate_IDT_matrix_error(
+    check_calculate_transform_matrix_error(
         solver, expected_error_training_data_not_initialized );
 }
 
 /// Tests that calculate_IDT_matrix returns false and prints error when training data is empty
-void testIDT_CalIDT_Training_Data_Empty()
+void testIDT_calculate_transform_Training_Data_Empty()
 {
-    std::cout << std::endl
-              << "testIDT_CalIDT_Training_Data_Empty()" << std::endl;
+    std::cout << std::endl << __FUNCTION__ << std::endl;
 
     rta::core::SpectralSolver solver( { DATA_PATH } );
     /// Initialize camera, illuminant, observer
@@ -5492,7 +5534,7 @@ void testIDT_CalIDT_Training_Data_Empty()
     OIIO_CHECK_EQUAL( solver.training_data.data["main"].empty(), true );
     solver.calculate_WB();
 
-    check_calculate_IDT_matrix_error(
+    check_calculate_transform_matrix_error(
         solver, expected_error_training_data_not_initialized );
 }
 
@@ -5512,14 +5554,15 @@ int main( int, char ** )
     testIDT_CalRGB();
     testIDT_CurveFit();
     testIDT_CalIDT();
-    testIDT_CalIDT_Camera_Not_Initialized();
-    testIDT_CalIDT_Camera_Wrong_Size();
-    testIDT_CalIDT_Illuminant_Not_Initialized();
-    testIDT_CalIDT_Illuminant_Wrong_Size();
-    testIDT_CalIDT_Observer_Not_Initialized();
-    testIDT_CalIDT_Observer_Wrong_Size();
-    testIDT_CalIDT_Training_Data_Not_Initialized();
-    testIDT_CalIDT_Training_Data_Empty();
+    testIDT_calculate_transform();
+    testIDT_calculate_transform_Camera_Not_Initialized();
+    testIDT_calculate_transform_Camera_Wrong_Size();
+    testIDT_calculate_transform_Illuminant_Not_Initialized();
+    testIDT_calculate_transform_Illuminant_Wrong_Size();
+    testIDT_calculate_transform_Observer_Not_Initialized();
+    testIDT_calculate_transform_Observer_Wrong_Size();
+    testIDT_calculate_transform_Training_Data_Not_Initialized();
+    testIDT_calculate_transform_Training_Data_Empty();
 
     return unit_test_failures;
 }

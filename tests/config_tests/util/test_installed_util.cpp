@@ -72,7 +72,7 @@ void test_AcesRender()
         bool result = converter.configure( pathToRaw.string(), hints );
         OIIO_CHECK_EQUAL( result, true );
 
-        auto idt = converter.get_IDT_matrix();
+        const auto &idt = converter.get_transform_matrix();
 
         double matrix[3][3] = { { 1.0536466144, 0.0039044182, 0.0049084502 },
                                 { -0.4899562165, 1.3614787986, 0.1020844728 },

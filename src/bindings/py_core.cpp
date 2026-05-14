@@ -6,6 +6,7 @@
 #include <nanobind/stl/vector.h>
 #include <rawtoaces/rawtoaces_core.h>
 #include <stdexcept>
+#include "../misc/pragma.h"
 
 using namespace rta::core;
 using namespace nanobind::literals;
@@ -74,14 +75,43 @@ void core_bindings( nanobind::module_ &m )
     bind_spectral_data( m );
     bind_metadata( m );
 
-    nanobind::class_<MetadataSolver> metadata_solver( m, "MetadataSolver" );
-    metadata_solver.def( nanobind::init<const Metadata &>() );
-    metadata_solver.def(
-        "calculate_CAT_matrix", &MetadataSolver::calculate_CAT_matrix );
-    metadata_solver.def(
-        "calculate_IDT_matrix", &MetadataSolver::calculate_IDT_matrix );
+    nanobind::class_<TransformSolver> transform_solver( m, "TransformSolver" );
+    transform_solver.def(
+        "calculate_transform", &TransformSolver::calculate_transform );
+    transform_solver.def_rw(
+        "transform_matrix", &TransformSolver::transform_matrix );
+    transform_solver.def_rw(
+        "last_error_message", &TransformSolver::last_error_message );
+    transform_solver.def_rw( "verbosity", &TransformSolver::verbosity );
 
-    nanobind::class_<SpectralSolver> spectral_solver( m, "SpectralSolver" );
+    nanobind::class_<MetadataSolver, TransformSolver> metadata_solver(
+        m, "MetadataSolver" );
+    metadata_solver.def( nanobind::init<const Metadata &>() );
+
+    DISABLE_DEPRECATED_WARNINGS
+    metadata_solver.def(
+        "calculate_CAT_matrix", []( MetadataSolver &metadata_solver ) {
+            PyErr_WarnEx(
+                PyExc_DeprecationWarning,
+                "This method will be removed in v3. "
+                "Use `calculate_transform()`.",
+                1 );
+            return metadata_solver.calculate_CAT_matrix();
+        } );
+
+    metadata_solver.def(
+        "calculate_IDT_matrix", []( MetadataSolver &metadata_solver ) {
+            PyErr_WarnEx(
+                PyExc_DeprecationWarning,
+                "This method will be removed in v3. "
+                "Use `calculate_transform()`.",
+                1 );
+            return metadata_solver.calculate_IDT_matrix();
+        } );
+    ENABLE_WARNINGS
+
+    nanobind::class_<SpectralSolver, TransformSolver> spectral_solver(
+        m, "SpectralSolver" );
     spectral_solver.def(
         nanobind::init<const std::vector<std::string> &>(),
         "search_directories"_a = std::vector<std::string>{} );
@@ -122,17 +152,33 @@ void core_bindings( nanobind::module_ &m )
         } );
     spectral_solver.def( "calculate_WB", &SpectralSolver::calculate_WB );
     spectral_solver.def(
-        "calculate_IDT_matrix", &SpectralSolver::calculate_IDT_matrix );
-    spectral_solver.def(
         "load_spectral_data", &SpectralSolver::load_spectral_data );
     spectral_solver.def(
         "get_WB_multipliers", &SpectralSolver::get_WB_multipliers );
-    spectral_solver.def( "get_IDT_matrix", &SpectralSolver::get_IDT_matrix );
     spectral_solver.def_rw( "camera", &SpectralSolver::camera );
     spectral_solver.def_rw( "illuminant", &SpectralSolver::illuminant );
     spectral_solver.def_rw( "observer", &SpectralSolver::observer );
     spectral_solver.def_rw( "training_data", &SpectralSolver::training_data );
-    spectral_solver.def_rw(
-        "last_error_message", &SpectralSolver::last_error_message );
-    spectral_solver.def_rw( "verbosity", &SpectralSolver::verbosity );
+
+    DISABLE_DEPRECATED_WARNINGS
+    spectral_solver.def(
+        "calculate_IDT_matrix", []( SpectralSolver &spectral_solver ) {
+            PyErr_WarnEx(
+                PyExc_DeprecationWarning,
+                "This method will be removed in v3. "
+                "Use `calculate_transform()`.",
+                1 );
+            return spectral_solver.calculate_IDT_matrix();
+        } );
+
+    spectral_solver.def(
+        "get_IDT_matrix", []( SpectralSolver &spectral_solver ) {
+            PyErr_WarnEx(
+                PyExc_DeprecationWarning,
+                "This method will be removed in v3. "
+                "Use `transform_matrix`.",
+                1 );
+            return spectral_solver.get_IDT_matrix();
+        } );
+    ENABLE_WARNINGS
 }

@@ -456,19 +456,37 @@ public:
     const std::vector<double> &get_WB_multipliers() const;
 
     /// Get the solved input transform matrix of the currently processed image.
-    /// The multipliers become available after calling either of the two
+    /// The matrix becomes available after calling either of the two
     /// `configure` methods.
     /// @result a reference to the matrix.
+    const std::vector<std::vector<double>> &get_transform_matrix() const;
+
+    // clang-format off
+
+    /// Get the solved input transform matrix of the currently processed image.
+    /// The matrix becomes available after calling either of the two
+    /// `configure` methods.
+    /// @result a reference to the matrix.
+    [[deprecated(
+        "This method will be removed in v3. "
+        "Use `get_transform_matrix()`" )]]
     const std::vector<std::vector<double>> &get_IDT_matrix() const;
 
     /// Get the solved chromatic adaptation transform matrix of the currently
-    /// processed image. The multipliers become available after calling either
-    /// of the two `configure` methods.
+    /// processed image.
+    /// The matrix becomes available after calling either of the two
+    /// `configure` methods.
     /// @result a reference to the matrix.
+    [[deprecated(
+        "This method will be removed in v3. "
+        "Use `get_transform_matrix()`" )]]
     const std::vector<std::vector<double>> &get_CAT_matrix() const;
+
+    // clang-format on
 
 private:
     // Solved transform of the current image.
+    std::vector<std::vector<double>> _transform_matrix;
     std::vector<std::vector<double>> _idt_matrix;
     std::vector<std::vector<double>> _cat_matrix;
     std::vector<double>              _wb_multipliers;

@@ -12,8 +12,8 @@ namespace util
 {
 
 /// Collect all files from given `paths` into batches.
-/// For each path that is a directory, entries are created in the returned batches
-/// and fill it with the file names. Invalid paths are skipped with an error message.
+/// For each path that is a directory, a batch is created in the returned vector
+/// and filled with the file names. Invalid paths are skipped with an error message.
 /// First batch is reserved for all paths that are files. If no such paths are provided,
 /// first batch will be empty.
 ///
@@ -78,7 +78,7 @@ public:
             /// the camera.
             Illuminant,
             /// Calculate white balance by averaging over a specified region of
-            /// the image. See `WB_box`. In this mode if an empty box if provided,
+            /// the image. See `WB_box`. In this mode if an empty box is provided,
             /// white balancing is done by averaging over the whole image.
             Box,
             /// Use custom white balancing multipliers. This mode is useful if
@@ -263,7 +263,7 @@ public:
 
         /// If true, treat lens correction as mandatory. The conversion will
         /// fail if any of the correction types above is requested,
-        /// but rawtoaces is unable to obtail a suitable lens model.
+        /// but rawtoaces is unable to obtain a suitable lens model.
         bool require_lens_correction = false;
 
         /// Lens manufacturer name to be used for lens correction data lookup.
@@ -316,12 +316,12 @@ public:
 
     /// Initialise the converter settings from the command line parser object.
     /// Prior to calling this, first initialise the object via
-    /// `ImageConverted::init_parser()`, and call
+    /// `ImageConverter::init_parser()`, and call
     /// `OIIO::ArgParse::parse_args()`.
     /// This method is optional, all of the settings above can be modified
     /// directly.
     /// @param arg_parser the command line parser object
-    /// @result `true` if parsed successfully
+    /// @return `true` if parsed successfully
     bool parse_parameters( const OIIO::ArgParse &arg_parser );
 
     /// Collects all camera raw formats supported by this version.
@@ -345,7 +345,7 @@ public:
     ///    Conversion hints to be passed to OIIO when reading an image file.
     ///    The list can be pre- or post- updated with other hints, unrelated to
     ///    the rawtoaces conversion.
-    /// @result
+    /// @return
     ///    `true` if configured successfully.
     bool configure(
         const std::string &input_filename, OIIO::ParamValueList &options );
@@ -360,7 +360,7 @@ public:
     ///    Conversion hints to be passed to OIIO when reading an image file.
     ///    The list can be pre- or post- updated with other hints, unrelated to
     ///    the rawtoaces conversion.
-    /// @result
+    /// @return
     ///    `true` if configured successfully.
     bool configure(
         const OIIO::ImageSpec &imageSpec, OIIO::ParamValueList &options );
@@ -379,7 +379,7 @@ public:
     /// @param src
     ///     Source image buffer, can be the same as `dst` for in-place
     ///     conversion.
-    /// @result
+    /// @return
     ///    `true` if applied successfully.
     bool
     apply_lens_correction( OIIO::ImageBuf &dst, const OIIO::ImageBuf &src );
@@ -391,7 +391,7 @@ public:
     /// @param src
     ///     Source image buffer, can be the same as `dst` for in-place
     ///     conversion.
-    /// @result
+    /// @return
     ///    `true` if applied successfully.
     bool apply_matrix(
         OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
@@ -402,7 +402,7 @@ public:
     /// @param src
     ///     Source image buffer, can be the same as `dst` for in-place
     ///     conversion.
-    /// @result
+    /// @return
     ///    `true` if applied successfully.
     bool apply_scale(
         OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
@@ -413,7 +413,7 @@ public:
     /// @param src
     ///     Source image buffer, can be the same as `dst` for in-place
     ///     conversion.
-    /// @result
+    /// @return
     ///    `true` if applied successfully.
     bool apply_crop(
         OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
@@ -424,7 +424,7 @@ public:
     ///     in-place.
     /// @param suffix
     ///     A suffix to add to the file name.
-    /// @result
+    /// @return
     ///    `true` if the file can be written, e.g. the output directory exists, or creating directories
     ///     is allowed; the file does not exist or overwriting is allowed.
     bool
@@ -435,36 +435,36 @@ public:
     ///     Full path to the file to be saved.
     /// @param buf
     ///     Image buffer to be saved.
-    /// @result
+    /// @return
     ///    `true` if saved successfully.
     bool
     save_image( const std::string &output_filename, const OIIO::ImageBuf &buf );
 
-    /// A convenience single-call method to process an image. This is equivalent to calling the following
-    /// methods sequentially: `make_output_path`->`configure`->`apply_matrix`->
-    /// `apply_scale`->`apply_crop`->`save`.
+    /// A convenience single-call method to process an image. Equivalent to
+    /// `make_output_path`, `configure`, `load_image`, optional lens correction,
+    /// `apply_matrix`, `apply_scale`, `apply_crop`, and `save_image` in sequence.
     /// @param input_filename
     ///     Full path to the file to be converted.
-    /// @result
+    /// @return
     ///    `true` if processed successfully.
     bool process_image( const std::string &input_filename );
 
     /// Get the solved white balance multipliers of the currently processed
     /// image. The multipliers become available after calling either of the
     /// two `configure` methods.
-    /// @result a reference to the multipliers vector.
+    /// @return a reference to the multipliers vector.
     const std::vector<double> &get_WB_multipliers() const;
 
     /// Get the solved input transform matrix of the currently processed image.
-    /// The multipliers become available after calling either of the two
+    /// The matrix becomes available after calling either of the two
     /// `configure` methods.
-    /// @result a reference to the matrix.
+    /// @return a reference to the matrix.
     const std::vector<std::vector<double>> &get_IDT_matrix() const;
 
     /// Get the solved chromatic adaptation transform matrix of the currently
-    /// processed image. The multipliers become available after calling either
+    /// processed image. The matrix becomes available after calling either
     /// of the two `configure` methods.
-    /// @result a reference to the matrix.
+    /// @return a reference to the matrix.
     const std::vector<std::vector<double>> &get_CAT_matrix() const;
 
 private:

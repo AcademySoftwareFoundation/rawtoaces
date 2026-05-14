@@ -56,21 +56,21 @@ class SpectralSolver
 {
 public:
     /// The camera spectral data. Can be either assigned directly, loaded
-    /// in-place place via `solver.camera.load()`, or found via
+    /// in place via `solver.camera.load()`, or found via
     /// `solver.find_camera()`.
     SpectralData camera;
 
     /// The illuminant spectral data. Can be either assigned directly, loaded
-    /// in-place place via `solver.illuminant.load()`, or found via
+    /// in place via `solver.illuminant.load()`, or found via
     /// `solver.find_illuminant()`.
     SpectralData illuminant;
 
     /// The observer spectral data. Can be either assigned directly, or loaded
-    /// in-place place via `solver.observer.load()`.
+    /// in place via `solver.observer.load()`.
     SpectralData observer;
 
     /// The training set spectral data. Can be either assigned directly, or loaded
-    /// in-place place via `solver.training_data.load()`.
+    /// in place via `solver.training_data.load()`.
     SpectralData training_data;
 
     /// Initialize SpectralSolver with database search path.

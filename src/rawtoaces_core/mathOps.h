@@ -31,7 +31,7 @@ template <typename T> int isSquare( const std::vector<std::vector<T>> &vm )
 /// Calculate the determinant of a square matrix.
 ///
 /// @param vMtx a matrix to calculate a determinant for
-/// @return the deternimant
+/// @return the determinant
 template <typename T> T determinant( const std::vector<std::vector<T>> &vMtx )
 {
     assert( isSquare( vMtx ) );

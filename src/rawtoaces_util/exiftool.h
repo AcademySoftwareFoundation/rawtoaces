@@ -16,13 +16,13 @@ namespace exiftool
 /// Fetch the metadata for the given attribute names from the image file using ExifTool, populate the
 /// fetched metadata into the given ImageSpec.
 /// @param spec
-///     Destination image buffer's header to update with the fetched metadata.
+///     Destination `ImageSpec` to update with the fetched metadata.
 /// @param path
 ///     Path to the raw image file to fetch metadata from.
 /// @param keys
 ///     List of attribute names to fetch metadata for.
 /// @param error_message
-///     A destination for any error message occured during fetching.
+///     A destination for any error message that occurred during fetching.
 /// @return
 ///    `true` if fetched successfully.
 bool fetch_metadata(

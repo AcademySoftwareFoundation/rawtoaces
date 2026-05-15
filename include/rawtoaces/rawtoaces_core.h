@@ -74,8 +74,8 @@ public:
     /// @return `true` on success.
     virtual bool calculate_transform() = 0;
 
-    /// The colour transform matrix calculated in `calculate_transform()` gets
-    /// stored here.
+    /// 3×3 colour transform matrix populated by `calculate_transform()` (starts
+    /// as identity from the base `TransformSolver` constructor).
     std::vector<std::vector<double>> transform_matrix;
 
     /// Error message from the most recent method call that returned false.
@@ -90,27 +90,28 @@ class SpectralSolver : public TransformSolver
 {
 public:
     /// The camera spectral data. Can be either assigned directly, loaded
-    /// in-place place via `solver.camera.load()`, or found via
+    /// in place via `solver.camera.load()`, or found via
     /// `solver.find_camera()`.
     SpectralData camera;
 
     /// The illuminant spectral data. Can be either assigned directly, loaded
-    /// in-place place via `solver.illuminant.load()`, or found via
+    /// in place via `solver.illuminant.load()`, or found via
     /// `solver.find_illuminant()`.
     SpectralData illuminant;
 
     /// The observer spectral data. Can be either assigned directly, or loaded
-    /// in-place place via `solver.observer.load()`.
+    /// in place via `solver.observer.load()`.
     SpectralData observer;
 
-    /// The training set spectral data. Can be either assigned directly, or
-    /// loaded in-place place via `solver.training_data.load()`.
+    /// The training set spectral data. Can be either assigned directly, or loaded
+    /// in place via `solver.training_data.load()`.
     SpectralData training_data;
 
     /// Initialize SpectralSolver with database search path.
-    /// Sets up the initial state of balance multipliers with neutral values.
-    /// Takes the database search path as an optional parameter for finding
-    /// spectral data files.
+    /// Sets white balance multipliers to neutral (1, 1, 1) and relies on the
+    /// base `TransformSolver` constructor for an identity `transform_matrix` and
+    /// zero verbosity. Takes the database search path as an optional parameter
+    /// for finding spectral data files.
     ///
     /// @param search_directories optional database search path for spectral
     /// data files
@@ -219,14 +220,16 @@ public:
         "Use `calculate_transform()`" )]]
     bool calculate_IDT_matrix();
 
-    /// Get the matrix calculated using `calculate_IDT_matrix()`.
+    /// Get the matrix from the last successful spectral solve (same data as
+    /// `transform_matrix`).
     /// This function returns a reference to the 3×3 IDT matrix that transforms
     /// camera RGB values to standardized color space. The matrix is computed by
     /// curve fitting optimization and represents the optimal color
     /// transformation for the camera under the specified illuminant conditions.
     ///
     /// @return a reference to the 3×3 IDT transformation matrix
-    /// @pre calculate_IDT_matrix() must have been called successfully
+    /// @pre `calculate_transform()` or deprecated `calculate_IDT_matrix()`
+    /// completed successfully
     [[deprecated(
         "This method will be removed in v3. "
         "Use `transform_matrix`" )]]
@@ -245,11 +248,10 @@ public:
     /// @pre white balance calculation must have been performed successfully
     const std::vector<double> &get_WB_multipliers() const;
 
-    /// Calculate an input transform matrix using curve fitting optimization.
-    /// This function computes the optimal IDT matrix by comparing camera RGB
-    /// responses with target XYZ values across all training patches.
-    /// The `camera`, `illuminant`, `observer` and `training_data` have to be
-    /// configured prior to this call.
+    /// Solve the spectral IDT via curve fitting and store the 3×3 matrix in
+    /// `transform_matrix`. Compares camera RGB responses with target XYZ values
+    /// across training patches. Requires `camera`, `illuminant`, `observer`, and
+    /// `training_data` to be configured prior to this call.
     ///
     /// @return `true` if calculated successfully, `false` otherwise
     /// @pre camera, illuminant, observer, and training_data must be properly
@@ -301,7 +303,8 @@ public:
     ///
     /// @return 3×3 Input Device Transform matrix for DNG to ACES conversion
     /// @pre _metadata must contain valid camera calibration data
-    /// @pre calculate_CAT_matrix() must return a valid CAT matrix
+    /// @note CAT is computed internally; `calculate_CAT_matrix()` does not need
+    /// to be called first.
     [[deprecated(
         "This method will be removed in v3. "
         "Use `calculate_transform()`" )]]
@@ -319,7 +322,8 @@ public:
     /// converting between different illuminant conditions, ensuring that colors
     /// look consistent across different lighting environments. Strictly
     /// speaking, this matrix is not required for image processing, as it is
-    /// embedded in the IDT, see `calculate_IDT_matrix`.
+    /// embedded in the IDT; see `calculate_transform()` or deprecated
+    /// `calculate_IDT_matrix()`.
     ///
     /// @return 3×3 Color Adaptation Transform matrix
     /// @pre _metadata must contain valid camera calibration and neutral RGB
@@ -338,6 +342,9 @@ public:
     /// transformation matrix to create a complete camera-to-ACES transformation
     /// pipeline.
     ///
+    /// On success, writes the same 3×3 matrix as deprecated `calculate_IDT_matrix()`
+    /// into `transform_matrix` and returns `true`.
+    ///
     /// @return `true` on success
     /// @pre _metadata must contain valid camera calibration data
     bool calculate_transform() override;
@@ -346,12 +353,14 @@ private:
     core::Metadata _metadata;
 };
 
-/// A basic solver for the images in XYZ colour space with D65 white point.
-/// Simply calculates a transform matrix which performs XYZ to ACES conversion
-/// with chromatic adaptation from D65 to D60.
+/// Fixed transform for XYZ data with a D65 white point: chromatic adaptation
+/// from D65 toward the ACES white point, combined with XYZ D60 to ACES.
 class XYZD65Solver : public TransformSolver
 {
 public:
+    /// Sets `transform_matrix` to the built-in D65 adaptation × XYZ D60→ACES
+    /// product. Always succeeds if invoked.
+    /// @return `true`
     bool calculate_transform() override;
 };
 

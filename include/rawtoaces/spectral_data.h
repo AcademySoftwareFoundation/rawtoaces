@@ -23,7 +23,7 @@ struct Spectrum
         /// The leftmost sample's wavelength in nanometers.
         float first = 0;
 
-        /// The leftmost sample's wavelength in nanometers.
+        /// The rightmost sample's wavelength in nanometers.
         float last = 0;
 
         /// The sampling step in nanometers.
@@ -32,7 +32,7 @@ struct Spectrum
         /// Comparison operator, mostly required for storing the `Spectrum`
         /// data in containers.
         /// @param shape another `Shape` object to compare `this` with.
-        /// @result `true` if the objects are equal.
+        /// @return `true` if the objects are equal.
         bool operator==( const Shape &shape ) const;
     } shape;
 
@@ -40,7 +40,7 @@ struct Spectrum
     /// These are the values used by rawtoaces internally.
     inline static Shape ReferenceShape = { 380, 780, 5 };
 
-    /// An empty shape. Useful for creatin a `Spectrum` objects without
+    /// An empty shape. Useful for creating `Spectrum` objects without
     /// allocating any samples.
     inline static Shape EmptyShape = { 0, 0, 0 };
 
@@ -85,11 +85,11 @@ struct Spectrum
     void reshape();
 
     /// Integrate the spectral curve.
-    /// @result the sum of all elements in `values`.
+    /// @return the sum of all elements in `values`.
     double integrate() const;
 
     /// Find the maximum element in `values`
-    /// @result the maximum element in `values`.
+    /// @return the maximum element in `values`.
     double max() const;
 };
 
@@ -133,8 +133,8 @@ struct SpectralData
     /// @param reshape if set to `true`, the data will be reshaped to the
     /// reference shape (`rta::core::Spectrum::ReferenceShape`).
     /// @param error_message an optional destination for any error
-    /// message occured during loading.
-    /// @result `true` if loaded successfully.
+    /// message that occurred during loading.
+    /// @return `true` if loaded successfully.
     bool load(
         const std::string &path,
         bool               reshape       = true,
@@ -143,9 +143,10 @@ struct SpectralData
     /// A convenience operator returning the `Spectrum` of a given channel name
     /// in the "main" data set.
     /// @param name the channel name in the "main" data set to return.
-    /// @result the `Spectrum` object corresponding to the given channel
+    /// @return the `Spectrum` object corresponding to the given channel
     /// name.
-    /// - throws: if the requested channel is not found.
+    /// @throws std::invalid_argument if the requested channel is not found
+    /// (non-const overload; the const overload requires the channel to exist).
     Spectrum       &operator[]( std::string name );
     const Spectrum &operator[]( std::string name ) const;
 
@@ -153,9 +154,9 @@ struct SpectralData
     /// in the given data set.
     /// @param set_name the set name to search for.
     /// @param channel_name the channel name to search for.
-    /// @result the `Spectrum` object reference if found.
-    /// name.
-    /// @throw if the requested channel is not found.
+    /// @return the `Spectrum` object reference if found.
+    /// @throws std::invalid_argument if the set or channel is not found
+    /// (non-const overload).
     Spectrum       &get( std::string set_name, std::string channel_name );
     const Spectrum &get( std::string set_name, std::string channel_name ) const;
 };

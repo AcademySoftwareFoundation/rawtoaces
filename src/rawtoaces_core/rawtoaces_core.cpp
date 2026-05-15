@@ -126,12 +126,12 @@ void calculate_blackbody_SPD( const int &kelvin, Spectrum &spectrum )
 /// depending on the specified type and correlated color temperature. The function
 /// automatically selects the appropriate calculation method (daylight vs blackbody).
 ///
-/// @param cct The correlated color temperature in Kelvin
+/// @param cct Correlated colour temperature: full Kelvin (daylight 4000-25000 or blackbody 1500-3999) or short daylight form (40-250, see `calculate_daylight_SPD`).
 /// @param type Type of light source (e.g. "d50", "d65", "d75", "A", "B", "C", "D50", "D65", "D75")
 /// @param is_daylight True if the light source is a daylight source, false if it is a blackbody source
 /// @param illuminant Reference to SpectralData object to fill with generated illuminant data
 /// @param error_message a destination for any potential error message.
-/// @result `true` if generated successfully.
+/// @return `true` if generated successfully.
 /// @pre cct is in valid range for the specified illuminant type
 bool generate_illuminant(
     int                cct,
@@ -903,7 +903,7 @@ bool SpectralSolver::calculate_transform()
     {
         last_error_message =
             "Camera needs to be initialised prior to calling "
-            "SpectralSolver::calculate_IDT_matrix().";
+            "SpectralSolver::calculate_transform().";
         return false;
     }
 
@@ -912,7 +912,7 @@ bool SpectralSolver::calculate_transform()
     {
         last_error_message =
             "Illuminant needs to be initialised prior to "
-            "calling SpectralSolver::calculate_IDT_matrix().";
+            "calling SpectralSolver::calculate_transform().";
         return false;
     }
 
@@ -921,7 +921,7 @@ bool SpectralSolver::calculate_transform()
     {
         last_error_message =
             "Observer needs to be initialised prior to "
-            "calling SpectralSolver::calculate_IDT_matrix().";
+            "calling SpectralSolver::calculate_transform().";
         return false;
     }
 
@@ -930,7 +930,7 @@ bool SpectralSolver::calculate_transform()
     {
         last_error_message =
             "Training data needs to be initialised prior to "
-            "calling SpectralSolver::calculate_IDT_matrix().";
+            "calling SpectralSolver::calculate_transform().";
         return false;
     }
 
@@ -1183,7 +1183,7 @@ bool camera_to_XYZ_weighted_matrix(
 ///
 /// @param matrix the input matrix as a one-dimensional array.
 /// @param columns the number of columns in the output matrix.
-/// @result the output matrix as a two-dimensional array.
+/// @return the output matrix as a two-dimensional array.
 /// @pre the input matrix size must be divisible by the columns count.
 std::vector<std::vector<double>>
 stack_rows( const std::vector<double> &matrix, size_t columns )
@@ -1475,7 +1475,7 @@ matrix_RGB_to_XYZ( const double chromaticities[][2] )
 /// @param metadata Camera metadata containing calibration and exposure information
 /// @param out_camera_to_XYZ_matrix Output camera to XYZ transformation matrix
 /// @param out_camera_XYZ_white_point Output camera white point in XYZ space
-/// @result true on success.
+/// @return true on success.
 /// @pre metadata must contain valid calibration data and neutral RGB values
 bool get_camera_XYZ_matrix_and_white_point(
     const Metadata                   &metadata,

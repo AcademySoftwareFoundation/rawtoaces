@@ -320,12 +320,12 @@ bool update_database_directories(
 /// Get camera info (with make and model) from image metadata or custom settings.
 ///
 /// Returns camera information using custom settings if provided, otherwise
-/// extracts from image metadata. Returns empty CameraInfo if required metadata is missing.
+/// extracts from image metadata. Returns an empty `CameraIdentifier` if required metadata is missing.
 ///
 /// @param spec Image specification containing metadata
 /// @param settings Converter settings with optional custom camera info
-/// @param error_message Output parameter to capture error message if function returns empty CameraIdentifier
-/// @return CameraInfo struct with make and model, or empty if unavailable
+/// @param error_message Output parameter to capture an error message if the function returns an empty `CameraIdentifier`
+/// @return `CameraIdentifier` with make and model, or empty if unavailable
 CameraIdentifier get_camera_identifier(
     const OIIO::ImageSpec          &spec,
     const ImageConverter::Settings &settings,
@@ -369,11 +369,10 @@ CameraIdentifier get_camera_identifier(
 ///
 /// @param image_spec OpenImageIO image specification containing metadata
 /// @param settings ImageConverter settings including illuminant and verbosity
-/// @param WB_multipliers Output white balance multipliers (3-element vector)
-/// @param out_transform_matrix Output Input Device Transform matrix
-/// (3x3 matrix)
-/// @return true if transformation matrices were successfully prepared, false otherwise
+/// @param WB_multipliers White balance multipliers (output; if illuminant is empty and size is 4, used as a 'raw:pre_mul' hint)
+/// @param out_transform_matrix Output transform matrix (3x3) applied by `apply_matrix`
 /// @param error_message Output parameter to capture error message if function returns false
+/// @return true if transformation matrices were successfully prepared, false otherwise
 bool prepare_transform_spectral(
     const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,
@@ -499,10 +498,11 @@ bool prepare_transform_spectral(
 ///
 /// @param image_spec OpenImageIO image specification containing DNG metadata
 /// @param settings ImageConverter settings including verbosity level
+/// @param wb_multipliers Camera white balance multipliers (e.g. from `raw:pre_mul`) used to derive neutral RGB
 /// @param IDT_matrix Output Input Device Transform matrix (3x3 matrix)
 /// @param CAT_matrix Output Chromatic Adaptation Transform matrix (cleared for DNG)
-/// @return true if transformation matrices were successfully prepared, false otherwise
 /// @param error_message Output parameter to capture error message if function returns false
+/// @return true if transformation matrices were successfully prepared, false otherwise
 bool prepare_transform_DNG(
     const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,

@@ -236,56 +236,6 @@ T calculate_SSE( const std::vector<T> &tcp, const std::vector<T> &src )
     return sum;
 }
 
-template <typename T>
-int findIndexInterp1( T val, const std::vector<T> &x, size_t size )
-{
-    T   dist  = T( 1e9 );
-    int index = -1;
-
-    for ( size_t i = 0; i < size; i++ )
-    {
-        T tmp = val - x[i];
-        if ( tmp < dist && tmp >= T( 0 ) )
-        {
-            dist  = tmp;
-            index = static_cast<int>( i );
-        }
-    }
-
-    return index;
-}
-
-template <typename T>
-std::vector<T> interp1DLinear(
-    const std::vector<int> &X0,
-    const std::vector<int> &X1,
-    const std::vector<T>   &Y0 )
-{
-    assert( X0.size() == Y0.size() );
-
-    std::vector<T> slope, intercept, Y1;
-
-    for ( size_t i = 0; i < X0.size() - 1; i++ )
-    {
-        slope.push_back( ( Y0[i + 1] - Y0[i] ) / ( X0[i + 1] - X0[i] ) );
-        intercept.push_back( Y0[i] - X0[i] * slope[i] );
-    }
-
-    slope.push_back( slope[slope.size() - 1] );
-    intercept.push_back( intercept[intercept.size() - 1] );
-
-    for ( size_t i = 0; i < X1.size(); i++ )
-    {
-        int index = findIndexInterp1( X1[i], X0, X0.size() );
-        if ( index != -1 )
-            Y1.push_back( slope[index] * X1[i] + intercept[index] );
-        else
-            Y1.push_back( slope[0] * X1[i] + intercept[0] );
-    }
-
-    return Y1;
-}
-
 template <typename T> std::vector<T> xy_to_XYZ( const std::vector<T> &xy )
 {
     std::vector<T> XYZ( 3 );

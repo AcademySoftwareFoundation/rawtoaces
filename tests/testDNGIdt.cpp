@@ -360,9 +360,12 @@ void testIDT_GetDNGCATMatrix()
     rta::core::Metadata metadata;
     init_metadata( metadata );
     rta::core::MetadataSolver *di = new rta::core::MetadataSolver( metadata );
-    double matrix[3][3] = { { 0.9907763427, -0.0022862289, 0.0209908807 },
-                            { -0.0017882434, 0.9941341374, 0.0083008330 },
-                            { 0.0003777587, 0.0015609315, 1.1063201101 } };
+    double                     matrix[3][3] = {
+        { 0.99249998682567019, -0.0029995338200207045, 0.019985821819872025 },
+        { -0.0023403202593997633, 0.99648084986598617, 0.006295370469840196 },
+        { 0.0043810803525381123, -0.0076107605403616758, 1.1122427032269608 }
+    };
+
     DISABLE_DEPRECATED_WARNINGS
     std::vector<std::vector<double>> result = di->calculate_CAT_matrix();
     ENABLE_WARNINGS
@@ -378,9 +381,12 @@ void testIDT_GetDNGIDTMatrix()
     rta::core::Metadata metadata;
     init_metadata( metadata );
     rta::core::MetadataSolver *di = new rta::core::MetadataSolver( metadata );
-    double matrix[3][3] = { { 0.68096686026, 0.2180711394, 0.0991518356 },
-                            { -0.0103808746, 0.9964341999, 0.0121365100 },
-                            { -0.0880997582, -0.483727073, 1.5700166672 } };
+    double                     matrix[3][3] = {
+        { 0.6820640403922289, 0.21830620601468764, 0.097819588932001586 },
+        { -0.010414610202425199, 0.99916462206472656, 0.0094398234395704668 },
+        { -0.088115635108323973, -0.49312503931360652, 1.5794305097175558 }
+    };
+
     DISABLE_DEPRECATED_WARNINGS
     std::vector<std::vector<double>> result = di->calculate_IDT_matrix();
     ENABLE_WARNINGS
@@ -396,10 +402,13 @@ void testIDT_GetDNGTransformMatrix()
     rta::core::Metadata metadata;
     init_metadata( metadata );
     rta::core::MetadataSolver solver( metadata );
-    double matrix[3][3] = { { 0.68096686026, 0.2180711394, 0.0991518356 },
-                            { -0.0103808746, 0.9964341999, 0.0121365100 },
-                            { -0.0880997582, -0.483727073, 1.5700166672 } };
-    bool   result       = solver.calculate_transform();
+    double                    matrix[3][3] = {
+        { 0.6820640403922289, 0.21830620601468764, 0.097819588932001586 },
+        { -0.010414610202425199, 0.99916462206472656, 0.0094398234395704668 },
+        { -0.088115635108323973, -0.49312503931360652, 1.5794305097175558 }
+    };
+
+    bool                              result = solver.calculate_transform();
     std::vector<std::vector<double>> &transform_matrix =
         solver.transform_matrix;
 

@@ -742,7 +742,8 @@ std::vector<std::vector<double>> calculate_XYZ(
         ( observer_z * illuminant_spectrum ).integrate() / y;
 
     XYZ = mulVector(
-        XYZ, calculate_CAT( source_white_point, reference_white_point ) );
+        XYZ,
+        calculate_CAT( source_white_point, reference_white_point, false ) );
 
     return XYZ;
 }
@@ -1459,9 +1460,6 @@ matrix_RGB_to_XYZ( const double chromaticities[][2] )
 /// optimization, then calculates the white point either from the neutral RGB
 /// values or from the calibration illuminant's color temperature.
 ///
-/// The function also applies baseline exposure compensation and normalizes
-/// the white point to ensure proper color scaling in the transformation pipeline.
-///
 /// @param metadata Camera metadata containing calibration and exposure information
 /// @param out_camera_to_XYZ_matrix Output camera to XYZ transformation matrix
 /// @param out_camera_XYZ_white_point Output camera white point in XYZ space
@@ -1523,8 +1521,8 @@ static bool calculate_DNG_CAT_matrix(
             matrix_RGB_to_XYZ( chromaticitiesACES );
         std::vector<double> output_XYZ_white_point =
             mulVector( output_RGB_to_XYZ_matrix, deviceWhiteV );
-        out_matrix =
-            calculate_CAT( camera_XYZ_white_point, output_XYZ_white_point );
+        out_matrix = calculate_CAT(
+            camera_XYZ_white_point, output_XYZ_white_point, true );
         return true;
     }
     else
@@ -1572,13 +1570,16 @@ static bool calculate_DNG_IDT_matrix(
              error_message,
              verbosity ) )
     {
+        assert( camera_to_XYZ_matrix.size() == 3 );
+        assert( camera_XYZ_white_point.size() == 3 );
+
         std::vector<double>              deviceWhiteV( 3, 1.0 );
         std::vector<std::vector<double>> output_RGB_to_XYZ_matrix =
             matrix_RGB_to_XYZ( chromaticitiesACES );
         std::vector<double> output_XYZ_white_point =
             mulVector( output_RGB_to_XYZ_matrix, deviceWhiteV );
-        std::vector<std::vector<double>> CAT_matrix =
-            calculate_CAT( camera_XYZ_white_point, output_XYZ_white_point );
+        std::vector<std::vector<double>> CAT_matrix = calculate_CAT(
+            camera_XYZ_white_point, output_XYZ_white_point, true );
 
         // The camera_to_XYZ_matrix expects camera raw values, but the pixels
         // we get from libraw are white-balanced. Undo the white-balancing as

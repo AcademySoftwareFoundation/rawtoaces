@@ -212,7 +212,8 @@ void testIDT_GetCAT()
     std::vector<double> dIV( d50_white_point_XYZ, d50_white_point_XYZ + 3 );
     std::vector<double> dOV( d60_white_point_XYZ, d60_white_point_XYZ + 3 );
 
-    std::vector<std::vector<double>> CAT_test = calculate_CAT( dIV, dOV );
+    std::vector<std::vector<double>> CAT_test =
+        calculate_CAT( dIV, dOV, false );
 
     float CAT[3][3] = { { 0.9711790957f, -0.0217386019f, 0.0460288393f },
                         { -0.0156935400f, 1.0000112293f, 0.0183278569f },

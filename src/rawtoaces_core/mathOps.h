@@ -277,13 +277,13 @@ std::vector<std::vector<T>> calculate_CAT(
     // clang-format off
     
     //  Color Adaptation Matrices - Bradford
-    static const std::vector<std::vector<double>> bradford = {
+    static const std::vector<std::vector<double>> Bradford = {
         {  0.8951,  0.2664, -0.1614 },
         { -0.7502,  1.7135,  0.0367 },
         {  0.0389, -0.0685,  1.0296 }
     };
     
-    static const std::vector<std::vector<double>> bradford_inv = {
+    static const std::vector<std::vector<double>> Bradford_inv = {
         {  0.98699290546671225,  -0.14705425642099007,  0.15996265166373122  },
         {  0.43230526972339445,   0.51836027153677744,  0.049291228212855594 },
         { -0.0085286645751773294, 0.040042821654084869, 0.96848669578754998  }
@@ -303,8 +303,8 @@ std::vector<std::vector<T>> calculate_CAT(
     };
     // clang-format on
 
-    const auto &M1 = use_bradford ? bradford : CAT02;
-    const auto &M2 = use_bradford ? bradford_inv : CAT02_inv;
+    const auto &M1 = use_bradford ? Bradford : CAT02;
+    const auto &M2 = use_bradford ? Bradford_inv : CAT02_inv;
 
     std::vector<double> src_white_LMS = mulVector( src_white_XYZ, M1 );
     std::vector<double> dst_white_LMS = mulVector( dst_white_XYZ, M1 );

@@ -54,9 +54,11 @@ std::vector<double> CCT_to_xy( const double &cct )
 
 void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
 {
-    int step             = static_cast<int>( spectrum.shape.step );
-    int wavelength_range = s_series[53].wl - s_series[0].wl;
-    assert( wavelength_range % step == 0 );
+    constexpr size_t count = sizeof( s_series ) / sizeof( s_series[0] );
+    assert( count == 54 );
+    assert(
+        ( s_series[1].wl - s_series[0].wl ) * ( count - 1 ) ==
+        ( s_series[53].wl - s_series[0].wl ) );
 
     double cct;
     if ( cct_input >= 40 && cct_input <= 250 )
@@ -66,42 +68,30 @@ void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
     else
         assert( false );
 
-    spectrum.values.clear();
-
-    std::vector<int>    wavelengths, wavelengths_interpolated;
-    std::vector<double> s00, s10, s20, s01, s11, s21;
     std::vector<double> xy = CCT_to_xy( cct );
 
     double m0 = 0.0241 + 0.2562 * xy[0] - 0.7341 * xy[1];
     double m1 = ( -1.3515 - 1.7703 * xy[0] + 5.9114 * xy[1] ) / m0;
     double m2 = ( 0.03000 - 31.4424 * xy[0] + 30.0717 * xy[1] ) / m0;
 
-    for ( int i = 0; i < countSize( s_series ); i++ )
+    rta::core::Spectrum::Shape src_shape = { (float)s_series[0].wl,
+                                             (float)s_series[53].wl,
+                                             (float)s_series[1].wl -
+                                                 s_series[0].wl };
+
+    rta::core::Spectrum s0( 0, src_shape );
+    rta::core::Spectrum s1( 0, src_shape );
+    rta::core::Spectrum s2( 0, src_shape );
+
+    for ( size_t i = 0; i < count; i++ )
     {
-        wavelengths.push_back( s_series[i].wl );
-        s00.push_back( s_series[i].RGB[0] );
-        s10.push_back( s_series[i].RGB[1] );
-        s20.push_back( s_series[i].RGB[2] );
+        s0.values[i] = s_series[i].RGB[0];
+        s1.values[i] = s_series[i].RGB[1] * m1;
+        s2.values[i] = s_series[i].RGB[2] * m2;
     }
 
-    int num_wavelengths = wavelength_range / step + 1;
-    for ( int i = 0; i < num_wavelengths; i++ )
-    {
-        wavelengths_interpolated.push_back( s_series[0].wl + step * i );
-    }
-
-    s01 = interp1DLinear( wavelengths, wavelengths_interpolated, s00 );
-    s11 = interp1DLinear( wavelengths, wavelengths_interpolated, s10 );
-    s21 = interp1DLinear( wavelengths, wavelengths_interpolated, s20 );
-
-    for ( int i = 0; i < num_wavelengths; i++ )
-    {
-        int wavelength = s_series[0].wl + step * i;
-        if ( wavelength >= 380 && wavelength <= 780 )
-        {
-            spectrum.values.push_back( s01[i] + m1 * s11[i] + m2 * s21[i] );
-        }
-    }
+    spectrum = s0 + s1 + s2;
+    spectrum.reshape();
 }
 
 void calculate_blackbody_SPD( const int &kelvin, Spectrum &spectrum )

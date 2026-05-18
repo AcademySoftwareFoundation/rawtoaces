@@ -86,6 +86,25 @@ void testIDT_XYZToColorTemperature()
     OIIO_CHECK_EQUAL_THRESH( cct, 5564.6648479019, 1e-5 );
 }
 
+void testIDT_XYZToMired()
+{
+    /// Same XYZ as testIDT_XYZToColorTemperature; expected mired is the
+    /// reciprocal of that test's Kelvin golden:
+    /// 1e6 / 5564.6648479019 = 179.7053420705 mired.
+    double              XYZ[3] = { 0.9731171910, 1.0174927152, 0.9498565880 };
+    std::vector<double> XYZVector( XYZ, XYZ + 3 );
+    double              mired = rta::core::XYZ_to_mired( XYZVector );
+
+    OIIO_CHECK_EQUAL_THRESH( mired, 179.7053420705, 1e-5 );
+
+    /// The wrapper and the helper must agree, so a future edit to either
+    /// one cannot drift unnoticed.
+    double cct       = rta::core::XYZ_to_color_temperature( XYZVector );
+    double cct_check = std::max(
+        2000.0, std::min( 50000.0, rta::core::mired_to_kelvin( mired ) ) );
+    OIIO_CHECK_EQUAL_THRESH( cct, cct_check, 1e-9 );
+}
+
 void testIDT_XYZToColorTemperature_UpperClamp()
 {
     /// UV exactly at the first Robertson entry should clamp to 50000K.
@@ -454,6 +473,7 @@ int main( int, char ** )
     testIDT_LightSourceToColorTemp_Extended();
     testIDT_LightSourceToColorTemp_Default();
     testIDT_XYZToColorTemperature();
+    testIDT_XYZToMired();
     testIDT_XYZToColorTemperature_UpperClamp();
     testIDT_XYZToColorTemperature_LowerClamp();
     testIDT_XYZtoCameraWeightedMatrix();

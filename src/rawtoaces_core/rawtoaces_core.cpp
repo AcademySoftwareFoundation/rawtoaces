@@ -742,7 +742,8 @@ std::vector<std::vector<double>> calculate_XYZ(
         ( observer_z * illuminant_spectrum ).integrate() / y;
 
     XYZ = mulVector(
-        XYZ, calculate_CAT( source_white_point, reference_white_point ) );
+        XYZ,
+        calculate_CAT( source_white_point, reference_white_point, false ) );
 
     return XYZ;
 }
@@ -1459,9 +1460,6 @@ matrix_RGB_to_XYZ( const double chromaticities[][2] )
 /// optimization, then calculates the white point either from the neutral RGB
 /// values or from the calibration illuminant's color temperature.
 ///
-/// The function also applies baseline exposure compensation and normalizes
-/// the white point to ensure proper color scaling in the transformation pipeline.
-///
 /// @param metadata Camera metadata containing calibration and exposure information
 /// @param out_camera_to_XYZ_matrix Output camera to XYZ transformation matrix
 /// @param out_camera_XYZ_white_point Output camera white point in XYZ space
@@ -1484,10 +1482,6 @@ bool get_camera_XYZ_matrix_and_white_point(
     {
         return false;
     }
-
-    double exposure_scale = std::pow( 2.0, metadata.baseline_exposure );
-    for ( auto &row: out_camera_to_XYZ_matrix )
-        scaleVector( row, exposure_scale );
 
     if ( metadata.neutral_RGB.size() > 0 )
     {
@@ -1527,8 +1521,8 @@ static bool calculate_DNG_CAT_matrix(
             matrix_RGB_to_XYZ( chromaticitiesACES );
         std::vector<double> output_XYZ_white_point =
             mulVector( output_RGB_to_XYZ_matrix, deviceWhiteV );
-        out_matrix =
-            calculate_CAT( camera_XYZ_white_point, output_XYZ_white_point );
+        out_matrix = calculate_CAT(
+            camera_XYZ_white_point, output_XYZ_white_point, true );
         return true;
     }
     else
@@ -1546,45 +1540,65 @@ std::vector<std::vector<double>> MetadataSolver::calculate_CAT_matrix()
     return result;
 }
 
+/// Colour space transform from XYZ D60 to ACES
+const std::vector<std::vector<double>> &get_XYZ_D60_to_ACES()
+{
+    // clang-format off
+    static const std::vector<std::vector<double>> XYZ_D60_to_ACES = {
+        {  1.0498110175, 0.0000000000, -0.0000974845 },
+        { -0.4959030231, 1.3733130458,  0.0982400361 },
+        {  0.0000000000, 0.0000000000,  0.9912520182 }
+    };
+    // clang-format on
+
+    return XYZ_D60_to_ACES;
+}
+
 static bool calculate_DNG_IDT_matrix(
     Metadata                         &metadata,
     std::vector<std::vector<double>> &out_matrix,
     std::string                      &error_message,
     int                               verbosity )
 {
-    // 1. Obtains the CAT matrix for white point adaptation
-    std::vector<std::vector<double>> CAT_matrix;
-    if ( !calculate_DNG_CAT_matrix(
-             metadata, CAT_matrix, error_message, verbosity ) )
+    std::vector<std::vector<double>> camera_to_XYZ_matrix;
+    std::vector<double>              camera_XYZ_white_point;
+
+    if ( get_camera_XYZ_matrix_and_white_point(
+             metadata,
+             camera_to_XYZ_matrix,
+             camera_XYZ_white_point,
+             error_message,
+             verbosity ) )
     {
-        out_matrix.resize( 0 );
-        return false;
+        assert( camera_to_XYZ_matrix.size() == 3 );
+        assert( camera_XYZ_white_point.size() == 3 );
+
+        std::vector<double>              deviceWhiteV( 3, 1.0 );
+        std::vector<std::vector<double>> output_RGB_to_XYZ_matrix =
+            matrix_RGB_to_XYZ( chromaticitiesACES );
+        std::vector<double> output_XYZ_white_point =
+            mulVector( output_RGB_to_XYZ_matrix, deviceWhiteV );
+        std::vector<std::vector<double>> CAT_matrix = calculate_CAT(
+            camera_XYZ_white_point, output_XYZ_white_point, true );
+
+        // The camera_to_XYZ_matrix expects camera raw values, but the pixels
+        // we get from libraw are white-balanced. Undo the white-balancing as
+        // the first step.
+        std::vector<std::vector<double>> result( 3, std::vector<double>( 3 ) );
+        result[0][0] = metadata.neutral_RGB[0];
+        result[1][1] = metadata.neutral_RGB[1];
+        result[2][2] = metadata.neutral_RGB[2];
+
+        result = mulVector( camera_to_XYZ_matrix, result );
+        result = mulVector( CAT_matrix, transposeVec( result ) );
+        result = mulVector( get_XYZ_D60_to_ACES(), transposeVec( result ) );
+
+        out_matrix = result;
+        return true;
     }
 
-    // 2. Converts the CAT matrix to a flattened format for matrix multiplication
-    std::vector<double> XYZ_D65_acesrgb( 9 ), CAT( 9 );
-    for ( size_t i = 0; i < 3; i++ )
-        for ( size_t j = 0; j < 3; j++ )
-        {
-            XYZ_D65_acesrgb[i * 3 + j] = XYZ_D65_acesrgb_3[i][j];
-            CAT[i * 3 + j]             = CAT_matrix[i][j];
-        }
-
-    // 3. Multiplies the D65 ACES RGB to XYZ matrix with the CAT matrix
-    std::vector<double> matrix = mulVector( XYZ_D65_acesrgb, CAT, 3 );
-
-    // 4. Reshapes the result into a 3×3 transformation matrix
-    out_matrix.resize( 3 );
-    for ( size_t i = 0; i < 3; i++ )
-    {
-        out_matrix[i].resize( 3 );
-        for ( size_t j = 0; j < 3; j++ )
-            out_matrix[i][j] = matrix[i * 3 + j];
-    }
-
-    // 5. Validates the matrix properties (non-zero determinant)
-    assert( std::fabs( sumVectorM( out_matrix ) - 0.0 ) > 1e-09 );
-    return true;
+    out_matrix.resize( 0 );
+    return false;
 }
 
 std::vector<std::vector<double>> MetadataSolver::calculate_IDT_matrix()
@@ -1610,17 +1624,10 @@ bool XYZD65Solver::calculate_transform()
         {  0.0036602813378778,   1.0030138169214682, -0.0059802329456400 },
         { -0.00029980928869025, -0.0010516909063250,  0.9282027962747658 }
     };
-
-    /// Colour space transform from XYZ D60 to ACES
-    static const std::vector<std::vector<double>> XYZ_D60_to_ACES = {
-        {  1.0498110175, 0.0000000000, -0.0000974845 },
-        { -0.4959030231, 1.3733130458,  0.0982400361 },
-        {  0.0000000000, 0.0000000000,  0.9912520182 }
-    };
     // clang-format on
 
     transform_matrix =
-        mulVector( XYZ_D60_to_ACES, transposeVec( D65_to_ACES ) );
+        mulVector( get_XYZ_D60_to_ACES(), transposeVec( D65_to_ACES ) );
     return true;
 }
 

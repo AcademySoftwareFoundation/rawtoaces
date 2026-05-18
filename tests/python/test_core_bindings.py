@@ -127,62 +127,46 @@ class TestMetadataBindings:
             metadata.calibration = [calibration]
         assert str(exc_info.value) == "The calibration array must contain 2 elements."
 
+def compare_mat(m1, m2):
+    assert len(m1) == len(m2)
+    for i in range(len(m1)):
+        assert len(m1[i]) == len(m2[i])
+        for j in range(len(m1[i])):
+            assert abs(m1[i][j] - m2[i][j]) < 1e-5
 
+def true_cat():
+    return  [
+        [ 0.99249998682567019, -0.0029995338200207045, 0.019985821819872025 ],
+        [ -0.0023403202593997633, 0.99648084986598617, 0.006295370469840196 ],
+        [ 0.0043810803525381123, -0.0076107605403616758, 1.1122427032269608 ]
+    ]
+    
+def true_idt():
+    return  [
+        [ 0.6820640403922289, 0.21830620601468764, 0.097819588932001586 ],
+        [ -0.010414610202425199, 0.99916462206472656, 0.0094398234395704668 ],
+        [ -0.088115635108323973, -0.49312503931360652, 1.5794305097175558 ]
+    ]
+        
 class TestMetadataSolverBindings:
     def test_metadata_solver_calculate_cat_matrix(self):
         metadata = _init_reference_metadata()
         solver = rawtoaces.MetadataSolver(metadata)
         cat = solver.calculate_CAT_matrix()
-
-        assert len(cat) == 3
-        assert len(cat[0]) == 3
-        assert abs(cat[0][0] - 0.9907763427) < 1e-5
-        assert abs(cat[0][1] - -0.0022862289) < 1e-5
-        assert abs(cat[0][2] - 0.0209908807) < 1e-5
-        assert abs(cat[1][0] - -0.0017882434) < 1e-5
-        assert abs(cat[1][1] - 0.9941341374) < 1e-5
-        assert abs(cat[1][2] - 0.0083008330) < 1e-5
-        assert abs(cat[2][0] - 0.0003777587) < 1e-5
-        assert abs(cat[2][1] - 0.0015609315) < 1e-5
-        assert abs(cat[2][2] - 1.1063201101) < 1e-5
+        compare_mat(cat, true_cat())
 
     def test_metadata_solver_calculate_idt_matrix(self):
         metadata = _init_reference_metadata()
         solver = rawtoaces.MetadataSolver(metadata)
         idt = solver.calculate_IDT_matrix()
-
-        assert len(idt) == 3
-        assert len(idt[0]) == 3
-        assert abs(idt[0][0] - 1.0536466144) < 1e-5
-        assert abs(idt[0][1] - 0.0039044182) < 1e-5
-        assert abs(idt[0][2] - 0.0049084502) < 1e-5
-        assert abs(idt[1][0] - -0.4899562165) < 1e-5
-        assert abs(idt[1][1] - 1.3614787986) < 1e-5
-        assert abs(idt[1][2] - 0.1020844728) < 1e-5
-        assert abs(idt[2][0] - -0.0024498461) < 1e-5
-        assert abs(idt[2][1] - 0.0060497128) < 1e-5
-        assert abs(idt[2][2] - 1.0139159537) < 1e-5
-
-
+        compare_mat(idt, true_idt())
+        
     def test_metadata_solver_calculate_transform(self):
         metadata = _init_reference_metadata()
         solver = rawtoaces.MetadataSolver(metadata)
         success = solver.calculate_transform()
         idt = solver.transform_matrix
-
-        assert success
-        assert len(idt) == 3
-        assert len(idt[0]) == 3
-        assert abs(idt[0][0] - 1.0536466144) < 1e-5
-        assert abs(idt[0][1] - 0.0039044182) < 1e-5
-        assert abs(idt[0][2] - 0.0049084502) < 1e-5
-        assert abs(idt[1][0] - -0.4899562165) < 1e-5
-        assert abs(idt[1][1] - 1.3614787986) < 1e-5
-        assert abs(idt[1][2] - 0.1020844728) < 1e-5
-        assert abs(idt[2][0] - -0.0024498461) < 1e-5
-        assert abs(idt[2][1] - 0.0060497128) < 1e-5
-        assert abs(idt[2][2] - 1.0139159537) < 1e-5
-
+        compare_mat(idt, true_idt())
 
 class TestSpectralSolverBindings:
     def test_spectral_solver_default_constructor(self):

@@ -2056,8 +2056,16 @@ bool ImageConverter::configure(
             options["raw:use_camera_matrix"] = 0;
             break;
         case Settings::MatrixMethod::Metadata:
-            options["raw:ColorSpace"]        = "XYZ";
-            options["raw:use_camera_matrix"] = is_DNG ? 1 : 3;
+            if ( is_DNG )
+            {
+                options["raw:ColorSpace"]        = "raw";
+                options["raw:use_camera_matrix"] = 0;
+            }
+            else
+            {
+                options["raw:ColorSpace"]        = "XYZ";
+                options["raw:use_camera_matrix"] = 3;
+            }
             break;
         case Settings::MatrixMethod::Adobe:
             options["raw:ColorSpace"]        = "XYZ";
@@ -2126,8 +2134,6 @@ bool ImageConverter::configure(
         case Settings::MatrixMethod::Metadata:
             if ( is_DNG )
             {
-                options["raw:use_camera_matrix"] = 1;
-
                 std::string error_msg;
                 if ( !prepare_transform_DNG(
                          image_spec,

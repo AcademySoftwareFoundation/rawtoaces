@@ -59,8 +59,9 @@ std::vector<std::vector<double>> XYZ_to_camera_weighted_matrix(
 
 std::vector<double> color_temperature_to_XYZ( const double &cct );
 
-std::vector<std::vector<double>>
-matrix_RGB_to_XYZ( const double chromaticities[][2] );
+bool matrix_RGB_to_XYZ(
+    const double                      chromaticities[][2],
+    std::vector<std::vector<double>> &out_matrix );
 
 std::vector<std::vector<double>>
 stack_rows( const std::vector<double> &matrix, size_t columns );

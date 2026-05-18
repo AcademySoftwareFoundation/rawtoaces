@@ -136,18 +136,19 @@ class TestImageConverter:
         # bindings, we'll just check that either of the two paths was
         # successful.
         if len(idt) == 3 and len(cat) == 0:
-            assert len(idt[0]) == 3
-            assert abs(idt[0][0] - 1.0536466144250152) < 0.0001
-            assert abs(idt[0][1] - 0.00390441818863832) < 0.0001
-            assert abs(idt[0][2] - 0.004908450238340354) < 0.0001
-            assert len(idt[1]) == 3
-            assert abs(idt[1][0] - -0.48995621645381615) < 0.0001
-            assert abs(idt[1][1] - 1.3614787985962031) < 0.0001
-            assert abs(idt[1][2] - 0.10208447284831194) < 0.0001
-            assert len(idt[2]) == 3
-            assert abs(idt[2][0] - -0.0024498461419844484) < 0.0001
-            assert abs(idt[2][1] - 0.006049712791275535) < 0.0001
-            assert abs(idt[2][2] - 1.013915953697747) < 0.0001
+            mat = [
+                [ 0.6820640403922289, 0.21830620601468764, 0.097819588932001586 ],
+                [ -0.010414610202425199, 0.99916462206472656, 0.0094398234395704668 ],
+                [ -0.088115635108323973, -0.49312503931360652, 1.5794305097175558 ]
+            ]
+            
+            assert len(idt) == 3
+            
+            for i in range(3):
+                assert len(idt[i]) == 3
+                for j in range(3):
+                    v = mat[i][j]
+                    assert abs(idt[i][j] - v) < 0.0001
         elif len(idt) == 0 and len(cat) == 3:
             assert len(cat[0]) == 3
             assert abs(cat[0][0] - 1.0097583639200136) < 0.0001

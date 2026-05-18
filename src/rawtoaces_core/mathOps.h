@@ -414,35 +414,54 @@ template <typename T> vector<T> XYZ_to_uv( const vector<T> &XYZ )
 
 template <typename T>
 std::vector<std::vector<T>> calculate_CAT(
-    const std::vector<T> &src_white_XYZ, const std::vector<T> &dst_white_XYZ )
+    const std::vector<T> &src_white_XYZ,
+    const std::vector<T> &dst_white_XYZ,
+    bool                  use_bradford )
 {
     assert( src_white_XYZ.size() == 3 );
     assert( dst_white_XYZ.size() == 3 );
 
     // clang-format off
-    // Color Adaptation Matrices - CAT02 (default)
+    
+    //  Color Adaptation Matrices - Bradford
+    static const std::vector<std::vector<double>> Bradford = {
+        {  0.8951,  0.2664, -0.1614 },
+        { -0.7502,  1.7135,  0.0367 },
+        {  0.0389, -0.0685,  1.0296 }
+    };
+    
+    static const std::vector<std::vector<double>> Bradford_inv = {
+        {  0.98699290546671225,  -0.14705425642099007,  0.15996265166373122  },
+        {  0.43230526972339445,   0.51836027153677744,  0.049291228212855594 },
+        { -0.0085286645751773294, 0.040042821654084869, 0.96848669578754998  }
+    };
+
+    // Color Adaptation Matrices - CAT02
     static const std::vector<std::vector<double>> CAT02 = {
         {  0.7328, 0.4296, -0.1624 },
         { -0.7036, 1.6975,  0.0061 },
         {  0.0030, 0.0136,  0.9834 }
     };
-    
+
     static const std::vector<std::vector<double>> CAT02_inv = {
-        {  1.0961238208355142,    -0.27886900021828726,   0.18274517938277304 },
+        {  1.0961238208355142,    -0.27886900021828726,   0.18274517938277304  },
         {  0.45436904197535921,    0.47353315430741177,   0.072097803717229125 },
-        { -0.0096276087384293551, -0.0056980312161134198, 1.0153256399545427 }
+        { -0.0096276087384293551, -0.0056980312161134198, 1.0153256399545427   }
     };
     // clang-format on
 
-    std::vector<double> src_white_LMS = mulVector( src_white_XYZ, CAT02 );
-    std::vector<double> dst_white_LMS = mulVector( dst_white_XYZ, CAT02 );
+    const auto &M1 = use_bradford ? Bradford : CAT02;
+    const auto &M2 = use_bradford ? Bradford_inv : CAT02_inv;
+
+    std::vector<double> src_white_LMS = mulVector( src_white_XYZ, M1 );
+    std::vector<double> dst_white_LMS = mulVector( dst_white_XYZ, M1 );
 
     std::vector<std::vector<double>> mat( 3, std::vector<double>( 3, 0 ) );
     for ( size_t i = 0; i < 3; i++ )
         mat[i][i] = dst_white_LMS[i] / src_white_LMS[i];
 
-    mat = mulVector( mat, transposeVec( CAT02 ) );
-    mat = mulVector( CAT02_inv, transposeVec( mat ) );
+    mat = mulVector( mat, transposeVec( M1 ) );
+    mat = mulVector( M2, transposeVec( mat ) );
     return mat;
 }
 

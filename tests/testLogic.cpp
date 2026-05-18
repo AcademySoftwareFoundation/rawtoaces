@@ -23,7 +23,8 @@ void test_getCAT()
     vector<double> src( D65, D65 + 3 );
     vector<double> des( D60, D60 + 3 );
 
-    vector<vector<double>> final_Output_getCAT = calculate_CAT( src, des );
+    std::vector<std::vector<double>> final_Output_getCAT =
+        calculate_CAT( src, des, false );
 
     vector<double> destination( 3, 0 );
 

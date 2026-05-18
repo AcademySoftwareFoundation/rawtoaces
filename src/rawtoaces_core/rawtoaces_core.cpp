@@ -787,55 +787,48 @@ std::vector<std::vector<double>> calculate_RGB(
 
 /// Cost function object for IDT matrix optimization using Ceres solver.
 /// This struct implements the objective function for curve fitting between camera RGB
-/// responses and target LAB values. It's used to find the optimal 6-parameter IDT
+/// responses and target XYZ values. It's used to find the optimal 6-parameter IDT
 /// matrix that minimizes the difference between predicted and actual color values
 /// across all training patches.
 struct IDTOptimizationCost
 {
     IDTOptimizationCost(
-        const std::vector<std::vector<double>> &RGB,
-        const std::vector<std::vector<double>> &out_LAB )
-        : _in_RGB( RGB ), _out_LAB( out_LAB )
+        const std::vector<std::vector<double>> &source_RGB,
+        const std::vector<std::vector<double>> &target_XYZ )
+        : _source_RGB( source_RGB ), _target_LAB( XYZ_to_LAB( target_XYZ ) )
     {}
 
     template <typename T>
     bool operator()( const T *beta_params, T *residuals ) const;
 
-    const std::vector<std::vector<double>> _in_RGB;
-    const std::vector<std::vector<double>> _out_LAB;
+    const std::vector<std::vector<double>> _source_RGB;
+    const std::vector<std::vector<double>> _target_LAB;
 };
 
-/// Perform curve fitting optimization to find optimal IDT matrix parameters.
-/// This function uses the Ceres optimization library to find the best 6-parameter
-/// IDT matrix that minimizes the difference between camera RGB responses and
-/// target XYZ values across all training patches. The optimization process
-/// iteratively adjusts the beta_params parameters to achieve the best color transformation.
+/// Solve a non-linear optimisation problem by minimising the cost function
+/// provided in `cost_function`.
 ///
-/// @param RGB Camera RGB responses for training patches
-/// @param XYZ Target XYZ values for training patches
-/// @param beta_params Initial 6-element parameter array for IDT matrix (modified in-place)
+/// @param cost_function The cost function to minimise.
+/// @param beta_params Parameters to solve. Must be initialised with the
+/// initial values, modified in-place.
 /// @param verbosity Verbosity level for optimization output:
 /// - 0-2: No output from solver
-/// - 3: Ceres solver full report and computed IDT matrix to stderr
+/// - 3: Ceres solver full report to stderr
 /// - 4: Additionally enables Ceres minimizer progress to stdout
-/// @param out_IDT_matrix Output IDT matrix computed from optimized parameters
 /// @return true if optimization succeeded, false otherwise
-bool curveFit(
-    const std::vector<std::vector<double>> &RGB,
-    const std::vector<std::vector<double>> &XYZ,
-    double                                 *beta_params,
-    int                                     verbosity,
-    std::vector<std::vector<double>>       &out_IDT_matrix )
+bool minimise(
+    IDTOptimizationCost *cost_function,
+    std::vector<double> &beta_params,
+    size_t               size,
+    int                  verbosity )
 {
-    ceres::Problem                   problem;
-    std::vector<std::vector<double>> out_LAB = XYZ_to_LAB( XYZ );
+    ceres::Problem problem;
 
-    ceres::CostFunction *cost_function =
+    ceres::CostFunction *ceres_cost_function =
         new ceres::AutoDiffCostFunction<IDTOptimizationCost, ceres::DYNAMIC, 6>(
-            new IDTOptimizationCost( RGB, out_LAB ),
-            int( RGB.size() * ( RGB[0].size() ) ) );
+            cost_function, int( size ) );
 
-    problem.AddResidualBlock( cost_function, NULL, beta_params );
+    problem.AddResidualBlock( ceres_cost_function, NULL, beta_params.data() );
 
     ceres::Solver::Options options;
     options.linear_solver_type        = ceres::DENSE_QR;
@@ -853,7 +846,35 @@ bool curveFit(
     if ( verbosity > 2 )
         std::cerr << summary.FullReport() << std::endl;
 
-    if ( summary.num_successful_steps )
+    return summary.num_successful_steps > 0;
+}
+
+/// Perform curve fitting optimization to find optimal IDT matrix parameters.
+/// This function uses the Ceres optimization library to find the best 6-parameter
+/// IDT matrix that minimizes the difference between camera RGB responses and
+/// target XYZ values across all training patches. The optimization process
+/// iteratively adjusts the beta_params parameters to achieve the best color transformation.
+///
+/// @param source_RGB Camera RGB responses for training patches
+/// @param target_XYZ Target XYZ values for training patches
+/// @param verbosity Verbosity level for optimization output:
+/// - 0-2: No output from solver
+/// - 3: Ceres solver full report and computed IDT matrix to stderr
+/// - 4: Additionally enables Ceres minimizer progress to stdout
+/// @param out_IDT_matrix Output IDT matrix computed from optimized parameters
+/// @return true if optimization succeeded, false otherwise
+bool curveFit(
+    const std::vector<std::vector<double>> &source_RGB,
+    const std::vector<std::vector<double>> &target_XYZ,
+    int                                     verbosity,
+    std::vector<std::vector<double>>       &out_IDT_matrix )
+{
+    auto cost_function = new IDTOptimizationCost( source_RGB, target_XYZ );
+    auto size          = source_RGB.size() * source_RGB[0].size();
+
+    std::vector<double> beta_params = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
+
+    if ( minimise( cost_function, beta_params, size, verbosity ) )
     {
         out_IDT_matrix.resize( 3 );
         out_IDT_matrix[0].resize( 3 );
@@ -925,13 +946,11 @@ bool SpectralSolver::calculate_transform()
         return false;
     }
 
-    double beta_params_start[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
-
     auto TI  = calculate_TI( illuminant, training_data );
     auto RGB = calculate_RGB( camera, _wb_multipliers, TI );
     auto XYZ = calculate_XYZ( observer, illuminant, TI );
 
-    return curveFit( RGB, XYZ, beta_params_start, verbosity, transform_matrix );
+    return curveFit( RGB, XYZ, verbosity, transform_matrix );
 }
 
 bool SpectralSolver::calculate_IDT_matrix()
@@ -1645,21 +1664,22 @@ bool XYZD65Solver::calculate_transform()
 /// @param beta_params 6-element array of IDT matrix parameters [b00, b01, b02, b10, b11, b12]
 /// @param residuals Output array of LAB differences
 /// @return true (required by Ceres interface)
-/// @pre _RGB must contain camera RGB responses
-/// @pre _outLAB must contain target LAB values
+/// @pre _source_RGB must contain camera RGB responses
+/// @pre _target_LAB must contain target LAB values
 template <typename T>
 bool IDTOptimizationCost::operator()( const T *beta_params, T *residuals ) const
 {
-    std::vector<std::vector<T>> RGB_copy( _in_RGB.size(), std::vector<T>( 3 ) );
-    for ( size_t i = 0; i < _in_RGB.size(); i++ )
+    std::vector<std::vector<T>> RGB_copy(
+        _source_RGB.size(), std::vector<T>( 3 ) );
+    for ( size_t i = 0; i < _source_RGB.size(); i++ )
         for ( size_t j = 0; j < 3; j++ )
-            RGB_copy[i][j] = T( _in_RGB[i][j] );
+            RGB_copy[i][j] = T( _source_RGB[i][j] );
 
     std::vector<std::vector<T>> out_calc_LAB =
         XYZ_to_LAB( getCalcXYZt( RGB_copy, beta_params ) );
-    for ( size_t i = 0; i < _in_RGB.size(); i++ )
+    for ( size_t i = 0; i < _source_RGB.size(); i++ )
         for ( size_t j = 0; j < 3; j++ )
-            residuals[i * 3 + j] = _out_LAB[i][j] - out_calc_LAB[i][j];
+            residuals[i * 3 + j] = _target_LAB[i][j] - out_calc_LAB[i][j];
 
     return true;
 }

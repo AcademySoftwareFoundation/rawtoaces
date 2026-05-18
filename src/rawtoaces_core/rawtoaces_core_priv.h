@@ -35,9 +35,8 @@ std::vector<std::vector<double>> calculate_RGB(
     const std::vector<Spectrum> &TI );
 
 bool curveFit(
-    const std::vector<std::vector<double>> &RGB,
-    const std::vector<std::vector<double>> &XYZ,
-    double                                 *B,
+    const std::vector<std::vector<double>> &source_RGB,
+    const std::vector<std::vector<double>> &target_XYZ,
     int                                     verbosity,
     std::vector<std::vector<double>>       &out_IDT_matrix );
 

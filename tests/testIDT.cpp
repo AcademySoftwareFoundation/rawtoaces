@@ -5282,11 +5282,9 @@ void testIDT_CurveFit()
     auto XYZ = calculate_XYZ( observer, illuminant, TI );
     auto RGB = calculate_RGB( camera, WB, TI );
 
-    double BStart[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
-
     std::vector<std::vector<double>> IDT_test( 3, std::vector<double>( 3 ) );
 
-    OIIO_CHECK_ASSERT( rta::core::curveFit( RGB, XYZ, BStart, 0, IDT_test ) );
+    OIIO_CHECK_ASSERT( rta::core::curveFit( RGB, XYZ, 0, IDT_test ) );
 
     float IDT[3][3] = { { 0.7447691479f, 0.1434200377f, 0.1118108144f },
                         { 0.0451759890f, 1.0082622042f, -0.0534381932f },

@@ -407,7 +407,7 @@ bool IDTOptimizationCost::operator()( const T *beta_params, T *residuals ) const
 /// - 3: Ceres solver full report to stderr
 /// - 4: Additionally enables Ceres minimizer progress to stdout
 /// @return true if optimization succeeded, false otherwise
-bool minimise(
+inline bool minimise(
     IDTOptimizationCost *cost_function,
     std::vector<double> &beta_params,
     size_t               size,

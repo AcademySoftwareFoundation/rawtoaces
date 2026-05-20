@@ -27,7 +27,7 @@ bool inverse(
     size_t cols = src_mat[0].size();
     if ( cols == 0 )
         return false;
-
+if (rows != cols) return false;
     Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m;
     m.resize( rows, cols );
     for ( Eigen::Index i = 0; i < m.rows(); i++ )

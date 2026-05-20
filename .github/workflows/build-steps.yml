@@ -105,15 +105,15 @@ jobs:
         shell: bash
         run: |
           bash build_scripts/${{ inputs.install_deps }}.bash
-              
+
       - name: Dependencies (aswf/ci-rawtoaces)
         if: inputs.vfxyear > 2023
         shell: bash
         run: |
           conan profile detect --force
-          conan install --requires=nlohmann_json/3.12.0 --requires=nanobind/2.9.2 --generator CMakeDeps --generator CMakeToolchain --output-folder=build_deps --build=missing
+          conan install --requires=tsl-robin-map/1.4.0 --generator CMakeDeps --generator CMakeToolchain --output-folder=build_deps --build=missing --settings compiler.cppstd=gnu17
           python -m pip install pytest
-          sudo yum install --setopt=tsflags=nodocs -y perl-Image-ExifTool lensfun-devel
+          sudo yum install --setopt=tsflags=nodocs -y perl-Image-ExifTool
     
       - name: Configure CMake
         run: >

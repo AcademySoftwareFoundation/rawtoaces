@@ -41,11 +41,11 @@ target_link_libraries ( ${RAWTOACES_UTIL_LIB}
 )
 
 if ( ${RTA_ENABLE_LENSFUN} )
-    target_include_directories(rawtoaces_util PUBLIC "${lensfun_INCLUDEDIR}/lensfun" )
-    target_compile_options ( rawtoaces_util PUBLIC ${lensfun_CFLAGS} )
-    target_link_directories(rawtoaces_util PUBLIC ${lensfun_LIBDIR} )
-    target_link_libraries(rawtoaces_util PUBLIC ${lensfun_LINK_LIBRARIES} )
-    target_link_options ( rawtoaces_util PUBLIC ${lensfun_LDFLAGS} )
+    target_include_directories(rawtoaces_util PRIVATE "${lensfun_INCLUDEDIR}" )
+    target_compile_options ( rawtoaces_util PRIVATE ${lensfun_CFLAGS} )
+    target_link_directories(rawtoaces_util PRIVATE ${lensfun_LIBDIR} )
+    target_link_libraries(rawtoaces_util PRIVATE ${lensfun_LINK_LIBRARIES} )
+    target_link_options ( rawtoaces_util PRIVATE ${lensfun_LDFLAGS} )
     target_compile_definitions(rawtoaces_util PRIVATE RTA_ENABLE_LENSFUN=1 )
 endif()
 

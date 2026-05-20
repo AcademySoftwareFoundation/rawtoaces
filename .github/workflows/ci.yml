@@ -43,13 +43,13 @@ jobs:
           - vfxyear: 2023
             container: aswf/ci-osl:2023-clang15.2
           - vfxyear: 2024
-            container: aswf/ci-rawtoaces:2024.5
+            container: aswf/ci-rawtoaces:2024.7
             toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
           - vfxyear: 2025
-            container: aswf/ci-rawtoaces:2025.4
+            container: aswf/ci-rawtoaces:2025.6
             toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
           - vfxyear: 2026
-            container: aswf/ci-rawtoaces:2026.2
+            container: aswf/ci-rawtoaces:2026.4
             cxx_standard: 20
             toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
 

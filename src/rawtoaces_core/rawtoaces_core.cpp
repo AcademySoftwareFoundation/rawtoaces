@@ -786,70 +786,6 @@ std::vector<std::vector<double>> calculate_RGB(
     return RGB;
 }
 
-/// Cost function object for IDT matrix optimization using Ceres solver.
-/// This struct implements the objective function for curve fitting between camera RGB
-/// responses and target XYZ values. It's used to find the optimal 6-parameter IDT
-/// matrix that minimizes the difference between predicted and actual color values
-/// across all training patches.
-struct IDTOptimizationCost
-{
-    IDTOptimizationCost(
-        const std::vector<std::vector<double>> &source_RGB,
-        const std::vector<std::vector<double>> &target_XYZ )
-        : _source_RGB( source_RGB ), _target_LAB( XYZ_to_LAB( target_XYZ ) )
-    {}
-
-    template <typename T>
-    bool operator()( const T *beta_params, T *residuals ) const;
-
-    const std::vector<std::vector<double>> _source_RGB;
-    const std::vector<std::vector<double>> _target_LAB;
-};
-
-/// Solve a non-linear optimisation problem by minimising the cost function
-/// provided in `cost_function`.
-///
-/// @param cost_function The cost function to minimise.
-/// @param beta_params Parameters to solve. Must be initialised with the
-/// initial values, modified in-place.
-/// @param verbosity Verbosity level for optimization output:
-/// - 0-2: No output from solver
-/// - 3: Ceres solver full report to stderr
-/// - 4: Additionally enables Ceres minimizer progress to stdout
-/// @return true if optimization succeeded, false otherwise
-bool minimise(
-    IDTOptimizationCost *cost_function,
-    std::vector<double> &beta_params,
-    size_t               size,
-    int                  verbosity )
-{
-    ceres::Problem problem;
-
-    ceres::CostFunction *ceres_cost_function =
-        new ceres::AutoDiffCostFunction<IDTOptimizationCost, ceres::DYNAMIC, 6>(
-            cost_function, int( size ) );
-
-    problem.AddResidualBlock( ceres_cost_function, NULL, beta_params.data() );
-
-    ceres::Solver::Options options;
-    options.linear_solver_type        = ceres::DENSE_QR;
-    options.parameter_tolerance       = 1e-17;
-    options.function_tolerance        = 1e-17;
-    options.min_line_search_step_size = 1e-17;
-    options.max_num_iterations        = 300;
-
-    if ( verbosity > 3 )
-        options.minimizer_progress_to_stdout = true;
-
-    ceres::Solver::Summary summary;
-    ceres::Solve( options, &problem, &summary );
-
-    if ( verbosity > 2 )
-        std::cerr << summary.FullReport() << std::endl;
-
-    return summary.num_successful_steps > 0;
-}
-
 /// Perform curve fitting optimization to find optimal IDT matrix parameters.
 /// This function uses the Ceres optimization library to find the best 6-parameter
 /// IDT matrix that minimizes the difference between camera RGB responses and
@@ -1650,40 +1586,6 @@ bool XYZD65Solver::calculate_transform()
     // clang-format on
 
     transform_matrix = product( get_XYZ_D60_to_ACES(), D65_to_ACES );
-    return true;
-}
-
-/// Cost function operator for Ceres optimization of IDT matrix parameters.
-/// This function computes the residual errors between target LAB values and
-/// calculated LAB values from camera RGB responses transformed by candidate
-/// IDT matrix parameters. It's used by the Ceres optimization library to
-/// iteratively find the optimal 6-parameter IDT matrix that minimizes
-/// color differences across all training patches.
-///
-/// The function transforms camera RGB values using candidate IDT parameters beta_params,
-/// converts the result to XYZ using ACES RGB primaries, then to LAB color space,
-/// and computes the difference from target LAB values as residuals.
-///
-/// @param beta_params 6-element array of IDT matrix parameters [b00, b01, b02, b10, b11, b12]
-/// @param residuals Output array of LAB differences
-/// @return true (required by Ceres interface)
-/// @pre _source_RGB must contain camera RGB responses
-/// @pre _target_LAB must contain target LAB values
-template <typename T>
-bool IDTOptimizationCost::operator()( const T *beta_params, T *residuals ) const
-{
-    std::vector<std::vector<T>> RGB_copy(
-        _source_RGB.size(), std::vector<T>( 3 ) );
-    for ( size_t i = 0; i < _source_RGB.size(); i++ )
-        for ( size_t j = 0; j < 3; j++ )
-            RGB_copy[i][j] = T( _source_RGB[i][j] );
-
-    std::vector<std::vector<T>> out_calc_LAB =
-        XYZ_to_LAB( getCalcXYZt( RGB_copy, beta_params ) );
-    for ( size_t i = 0; i < _source_RGB.size(); i++ )
-        for ( size_t j = 0; j < 3; j++ )
-            residuals[i * 3 + j] = _target_LAB[i][j] - out_calc_LAB[i][j];
-
     return true;
 }
 

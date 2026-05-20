@@ -5,8 +5,6 @@
 
 #include "define.h"
 
-#include <cfloat>
-
 #include <Eigen/Core>
 #include <ceres/ceres.h>
 
@@ -17,56 +15,44 @@ namespace core
 
 // Non-class functions
 
-template <typename T> int isSquare( const std::vector<std::vector<T>> &vm )
+template <typename T>
+bool inverse(
+    const std::vector<std::vector<T>> &src_mat,
+    std::vector<std::vector<T>>       &dst_mat )
 {
-    for ( size_t i = 0; i < vm.size(); i++ )
+    size_t rows = src_mat.size();
+    if ( rows == 0 )
+        return false;
+
+    size_t cols = src_mat[0].size();
+    if ( cols == 0 )
+        return false;
+if (rows != cols) return false;
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m;
+    m.resize( rows, cols );
+    for ( Eigen::Index i = 0; i < m.rows(); i++ )
     {
-        if ( vm[i].size() != vm.size() )
-            return 0;
+        if ( src_mat[i].size() != cols )
+            return false;
+
+        for ( Eigen::Index j = 0; j < m.cols(); j++ )
+            m( i, j ) = src_mat[i][j];
     }
 
-    return 1;
-}
-
-/// Calculate the determinant of a square matrix.
-///
-/// @param vMtx a matrix to calculate a determinant for
-/// @return the determinant
-template <typename T> T determinant( const std::vector<std::vector<T>> &vMtx )
-{
-    assert( isSquare( vMtx ) );
-
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m;
-    m.resize( vMtx.size(), vMtx[0].size() );
-    for ( Eigen::Index i = 0; i < m.rows(); i++ )
-        for ( Eigen::Index j = 0; j < m.cols(); j++ )
-            m( i, j ) = vMtx[i][j];
-
-    return m.determinant();
-}
-
-template <typename T>
-std::vector<std::vector<T>> invertVM( const std::vector<std::vector<T>> &vMtx )
-{
-    assert( isSquare( vMtx ) );
-
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m;
-    m.resize( vMtx.size(), vMtx[0].size() );
-    for ( Eigen::Index i = 0; i < m.rows(); i++ )
-        for ( Eigen::Index j = 0; j < m.cols(); j++ )
-            m( i, j ) = vMtx[i][j];
-
-    //    Map < Eigen::Matrix < T, Eigen::Dynamic, Eigen::Dynamic, RowMajor > > m (vMtx[0]);
-    //    m.resize(vMtx.size(), vMtx[0].size());
+    if ( std::fabs( m.determinant() ) < 1e-9 )
+        return false;
 
     m = m.inverse();
 
-    std::vector<std::vector<T>> vMtxR( m.rows(), std::vector<T>( m.cols() ) );
+    dst_mat.resize( rows );
     for ( Eigen::Index i = 0; i < m.rows(); i++ )
+    {
+        dst_mat[i].resize( cols );
         for ( Eigen::Index j = 0; j < m.cols(); j++ )
-            vMtxR[i][j] = m( i, j );
+            dst_mat[i][j] = m( i, j );
+    }
 
-    return vMtxR;
+    return true;
 }
 
 template <typename T>
@@ -131,34 +117,13 @@ template <typename T> void scaleVector( std::vector<T> &vct, const T scale )
     return;
 }
 
+/// Calculate matrix-matrix multiplication.
+///
+/// @param vct1 left side multiplicant matrix
+/// @param vct2 right side multiplicant matrix
+/// @return the matrix product
 template <typename T>
-std::vector<T> mulVector( std::vector<T> vct1, std::vector<T> vct2, int k = 3 )
-{
-    size_t rows = vct1.size() / k;
-    size_t cols = vct2.size() / k;
-
-    assert( rows * k == vct1.size() );
-    assert( k * cols == vct2.size() );
-
-    std::vector<T> vct3( rows * cols );
-
-    for ( size_t r = 0; r < rows; r++ )
-    {
-        for ( int cArB = 0; cArB < k; cArB++ )
-        {
-            for ( size_t c = 0; c < cols; c++ )
-            {
-                vct3[r * cols + c] +=
-                    vct1[r * k + cArB] * vct2[cArB * cols + c];
-            }
-        }
-    }
-
-    return vct3;
-}
-
-template <typename T>
-std::vector<std::vector<T>> mulVector(
+std::vector<std::vector<T>> product(
     const std::vector<std::vector<T>> &vct1,
     const std::vector<std::vector<T>> &vct2 )
 {
@@ -173,7 +138,7 @@ std::vector<std::vector<T>> mulVector(
             m1( i, j ) = vct1[i][j];
     for ( Eigen::Index i = 0; i < m2.rows(); i++ )
         for ( Eigen::Index j = 0; j < m2.cols(); j++ )
-            m2( i, j ) = vct2[j][i];
+            m2( i, j ) = vct2[i][j];
 
     m3 = m1 * m2;
 
@@ -185,9 +150,14 @@ std::vector<std::vector<T>> mulVector(
     return vct3;
 }
 
+/// Calculate matrix-vector multiplication.
+///
+/// @param vct1 left side multiplicant matrix
+/// @param vct2 right side multiplicant vector
+/// @return the matrix product
 template <typename T>
 std::vector<T>
-mulVector( const std::vector<std::vector<T>> &vct1, const std::vector<T> &vct2 )
+product( const std::vector<std::vector<T>> &vct1, const std::vector<T> &vct2 )
 {
     assert( vct1.size() != 0 && ( vct1[0] ).size() == vct2.size() );
 
@@ -206,13 +176,6 @@ mulVector( const std::vector<std::vector<T>> &vct1, const std::vector<T> &vct2 )
     std::vector<T> vct3( m3.data(), m3.data() + m3.rows() * m3.cols() );
 
     return vct3;
-}
-
-template <typename T>
-std::vector<T>
-mulVector( const std::vector<T> &vct1, const std::vector<std::vector<T>> &vct2 )
-{
-    return mulVector( vct2, vct1 );
 }
 
 /// Calculate the Sum of Squared Errors (SSE) between two vectors.
@@ -306,15 +269,15 @@ std::vector<std::vector<T>> calculate_CAT(
     const auto &M1 = use_bradford ? Bradford : CAT02;
     const auto &M2 = use_bradford ? Bradford_inv : CAT02_inv;
 
-    std::vector<double> src_white_LMS = mulVector( src_white_XYZ, M1 );
-    std::vector<double> dst_white_LMS = mulVector( dst_white_XYZ, M1 );
+    std::vector<double> src_white_LMS = product( M1, src_white_XYZ );
+    std::vector<double> dst_white_LMS = product( M1, dst_white_XYZ );
 
     std::vector<std::vector<double>> mat( 3, std::vector<double>( 3, 0 ) );
     for ( size_t i = 0; i < 3; i++ )
         mat[i][i] = dst_white_LMS[i] / src_white_LMS[i];
 
-    mat = mulVector( mat, transposeVec( M1 ) );
-    mat = mulVector( M2, transposeVec( mat ) );
+    mat = product( mat, M1 );
+    mat = product( M2, mat );
     return mat;
 }
 
@@ -354,27 +317,29 @@ getCalcXYZt( const std::vector<std::vector<T>> &RGB, const T beta_params[6] )
 {
     assert( !RGB.empty() );
 
-    std::vector<std::vector<T>> BV( 3, std::vector<T>( 3 ) );
-    std::vector<std::vector<T>> M( 3, std::vector<T>( 3 ) );
+    std::vector<std::vector<T>> camera_to_ACES_transposed(
+        3, std::vector<T>( 3 ) );
+    std::vector<std::vector<T>> ACES_to_XYZ_transposed(
+        3, std::vector<T>( 3 ) );
 
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
-            M[i][j] = T( acesrgb_XYZ_3[i][j] );
+            ACES_to_XYZ_transposed[j][i] = T( acesrgb_XYZ_3[i][j] );
 
-    BV[0][0] = beta_params[0];
-    BV[0][1] = beta_params[1];
-    BV[0][2] = 1.0 - beta_params[0] - beta_params[1];
-    BV[1][0] = beta_params[2];
-    BV[1][1] = beta_params[3];
-    BV[1][2] = 1.0 - beta_params[2] - beta_params[3];
-    BV[2][0] = beta_params[4];
-    BV[2][1] = beta_params[5];
-    BV[2][2] = 1.0 - beta_params[4] - beta_params[5];
+    camera_to_ACES_transposed[0][0] = beta_params[0];
+    camera_to_ACES_transposed[1][0] = beta_params[1];
+    camera_to_ACES_transposed[2][0] = 1.0 - beta_params[0] - beta_params[1];
+    camera_to_ACES_transposed[0][1] = beta_params[2];
+    camera_to_ACES_transposed[1][1] = beta_params[3];
+    camera_to_ACES_transposed[2][1] = 1.0 - beta_params[2] - beta_params[3];
+    camera_to_ACES_transposed[0][2] = beta_params[4];
+    camera_to_ACES_transposed[1][2] = beta_params[5];
+    camera_to_ACES_transposed[2][2] = 1.0 - beta_params[4] - beta_params[5];
 
-    std::vector<std::vector<T>> outCalcXYZt =
-        mulVector( mulVector( RGB, BV ), M );
+    auto calc_ACES = product( RGB, camera_to_ACES_transposed );
+    auto calc_XYZ  = product( calc_ACES, ACES_to_XYZ_transposed );
 
-    return outCalcXYZt;
+    return calc_XYZ;
 }
 
 } // namespace core

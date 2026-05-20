@@ -13,51 +13,38 @@
 
 using namespace rta::core;
 
-void test_IsSquare()
+void test_inverse_failure()
 {
-    std::vector<std::vector<double>> a;
-    a.resize( 2 );
-    for ( int i = 0; i < 2; i++ )
-        a[i].resize( 2 );
-    OIIO_CHECK_EQUAL( isSquare( a ), 1 );
-
-    for ( int i = 0; i < 2; i++ )
-        a[i].resize( 1 );
-    OIIO_CHECK_EQUAL( isSquare( a ), 0 );
+    std::vector<std::vector<double>> result;
+    // Empty
+    OIIO_CHECK_ASSERT( !inverse( {}, result ) );
+    // Empty row
+    OIIO_CHECK_ASSERT( !inverse( { {}, { 1.0 } }, result ) );
+    // Irregular
+    OIIO_CHECK_ASSERT( !inverse( { { 1.0, 2.0 }, { 1.0 } }, result ) );
+    // Non-invertible
+    OIIO_CHECK_ASSERT( !inverse( { { 1.0, 2.0 }, { 1.0, 2.0 } }, result ) );
 }
 
-void test_determinant()
+void test_inverse_success()
 {
-    std::vector<std::vector<double>> M1   = { { 1, 2 }, { 3, 4 } };
-    double                           det1 = determinant( M1 );
-    OIIO_CHECK_EQUAL( det1, -2 );
-
-    std::vector<std::vector<double>> M2   = { { 1, 2 }, { 1, 2 } };
-    double                           det2 = determinant( M2 );
-    OIIO_CHECK_EQUAL( det2, 0 );
-}
-
-void test_InvertVM()
-{
-    double M[3][3]         = { { 0.0188205, 8.59E-03, 9.58E-03 },
-                               { 0.0440222, 0.0166118, 0.0258734 },
-                               { 0.1561591, 0.046321, 0.1181466 } };
-    double M_Inverse[3][3] = { { -844.264597, 631.004958, -69.728531 },
-                               { 1282.403375, -803.858096, 72.055546 },
-                               { 613.114494, -518.860936, 72.376689 } };
+    const double( &M1 )[3][3] = XYZ_acesrgb_3;
+    const double( &M2 )[3][3] = acesrgb_XYZ_3;
 
     std::vector<std::vector<double>> MV( 3, std::vector<double>( 3 ) );
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
-            MV[i][j] = M[i][j];
+            MV[i][j] = M1[i][j];
 
-    std::vector<std::vector<double>> MV_Inverse = invertVM( MV );
+    std::vector<std::vector<double>> result;
+    OIIO_CHECK_ASSERT( inverse( MV, result ) );
 
     for ( int i = 0; i < 3; i++ )
     {
-        OIIO_CHECK_EQUAL_THRESH( MV_Inverse[i][0], M_Inverse[i][0], 1e-5 );
-        OIIO_CHECK_EQUAL_THRESH( MV_Inverse[i][1], M_Inverse[i][1], 1e-5 );
-        OIIO_CHECK_EQUAL_THRESH( MV_Inverse[i][2], M_Inverse[i][2], 1e-5 );
+        for ( int j = 0; j < 3; j++ )
+        {
+            OIIO_CHECK_EQUAL_THRESH( result[i][j], M2[i][j], 1e-5 );
+        }
     }
 }
 
@@ -107,38 +94,24 @@ void test_SumVector()
     OIIO_CHECK_EQUAL_THRESH( sum, 55.0000, 1e-5 );
 }
 
-void test_MulVector1()
+void test_mat_mat_mult()
 {
-    double M1[3][3] = { { 1.0, 0.0, 0.0 },
-                        { 0.0, 2.0, 0.0 },
-                        { 0.0, 0.0, 3.0 } };
-    double M2[3][3] = { { 1.0000000000, 0.0000000000, 0.0000000000 },
-                        { 0.0000000000, 0.5000000000, 0.0000000000 },
-                        { 0.0000000000, 0.0000000000, 0.3333333333 }
-
-    };
-    double M3[3][3] = { { 1.0000000000, 0.0000000000, 0.0000000000 },
-                        { 0.0000000000, 1.0000000000, 0.0000000000 },
-                        { 0.0000000000, 0.0000000000, 1.0000000000 }
-
-    };
-
     std::vector<std::vector<double>> MV1( 3, std::vector<double>( 3 ) );
     std::vector<std::vector<double>> MV2( 3, std::vector<double>( 3 ) );
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
         {
-            MV1[i][j] = M1[i][j];
-            MV2[i][j] = M2[i][j];
+            MV1[i][j] = XYZ_acesrgb_3[i][j];
+            MV2[i][j] = acesrgb_XYZ_3[i][j];
         }
 
-    std::vector<std::vector<double>> MV3 = mulVector( MV1, MV2 );
+    std::vector<std::vector<double>> MV3 = product( MV1, MV2 );
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
-            OIIO_CHECK_EQUAL_THRESH( MV3[i][j], M3[i][j], 1e-5 );
+            OIIO_CHECK_EQUAL_THRESH( MV3[i][j], double( i == j ), 1e-5 );
 }
 
-void test_MulVector2()
+void test_mat_vec_mult()
 {
     double M1[3][3] = { { 1.0000000000, 0.0000000000, 0.0000000000 },
                         { 0.0000000000, 0.5000000000, 0.0000000000 },
@@ -155,7 +128,7 @@ void test_MulVector2()
             MV1[i][j] = M1[i][j];
         }
 
-    std::vector<double> MV3 = mulVector( MV1, MV2 );
+    std::vector<double> MV3 = product( MV1, MV2 );
     for ( int i = 0; i < 3; i++ )
         OIIO_CHECK_EQUAL_THRESH( MV3[i], M2[i], 1e-5 );
 }
@@ -648,13 +621,12 @@ void test_GetCalcXYZt()
 
 int main( int, char ** )
 {
-    test_IsSquare();
-    test_determinant();
-    test_InvertVM();
+    test_inverse_failure();
+    test_inverse_success();
     test_TransposeVec();
     test_SumVector();
-    test_MulVector1();
-    test_MulVector2();
+    test_mat_mat_mult();
+    test_mat_vec_mult();
     testIDT_XytoXYZ();
     testIDT_Uvtoxy();
     testIDT_UvtoXYZ();

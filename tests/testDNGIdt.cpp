@@ -192,7 +192,7 @@ void testIDT_FindCameraToXYZMtx()
         { -0.0411839968, 0.3103035015, 0.5718121924 }
     };
 
-    expected_matrix = rta::core::invertVM( expected_matrix );
+    rta::core::inverse( expected_matrix, expected_matrix );
 
     check_DNG_matrix(
         metadata,
@@ -214,7 +214,9 @@ void testIDT_FindCameraToXYZMtx_NoIlluminant()
     // The expected result is the inverse of the first camera matrix
     auto m1 = metadata.calibration[0].XYZ_to_RGB_matrix;
     auto m2 = rta::core::stack_rows( m1, 3 );
-    auto m3 = rta::core::invertVM( m2 );
+
+    std::vector<std::vector<double>> m3;
+    rta::core::inverse( m2, m3 );
 
     check_DNG_matrix(
         metadata,
@@ -235,7 +237,9 @@ void testIDT_FindCameraToXYZMtx_EmptyNeutral()
     // The expected result is the inverse of the first camera matrix
     auto m1 = metadata.calibration[0].XYZ_to_RGB_matrix;
     auto m2 = rta::core::stack_rows( m1, 3 );
-    auto m3 = rta::core::invertVM( m2 );
+
+    std::vector<std::vector<double>> m3;
+    rta::core::inverse( m2, m3 );
 
     check_DNG_matrix(
         metadata,
@@ -338,14 +342,29 @@ void testIDT_GetCameraXYZWhitePoint_UsesIlluminantWhenNeutralEmpty()
         OIIO_CHECK_EQUAL_THRESH( camera_XYZ_white_point[i], expected[i], 1e-5 );
 }
 
-void testIDT_MatrixRGBtoXYZ()
+void testIDT_MatrixRGBtoXYZ_failure()
+{
+    double chromaticities[4][2] = {
+        { 1.0, 1.0 }, { 1.0, 1.0 }, { 1.0, 1.0 }, { 1.0, 1.0 }
+    };
+
+    std::vector<std::vector<double>> result;
+
+    bool success = rta::core::matrix_RGB_to_XYZ( chromaticities, result );
+    OIIO_CHECK_ASSERT( !success );
+}
+
+void testIDT_MatrixRGBtoXYZ_success()
 {
     double XYZ[3][3] = { { 0.952552395938, 0.000000000000, 0.000093678632 },
                          { 0.343966449765, 0.728166096613, -0.072132546379 },
                          { 0.000000000000, 0.000000000000, 1.008825184352 } };
-    std::vector<std::vector<double>> result =
-        rta::core::matrix_RGB_to_XYZ( rta::core::chromaticitiesACES );
 
+    std::vector<std::vector<double>> result;
+
+    bool success =
+        rta::core::matrix_RGB_to_XYZ( rta::core::chromaticitiesACES, result );
+    OIIO_CHECK_ASSERT( success );
     OIIO_CHECK_EQUAL( result.size(), 3 );
     for ( size_t row = 0; row < 3; row++ )
     {
@@ -465,7 +484,8 @@ int main( int, char ** )
     testIDT_ColorTemperatureToXYZ();
     testIDT_ColorTemperatureToXYZ_ClampHighMired();
     testIDT_GetCameraXYZWhitePoint_UsesIlluminantWhenNeutralEmpty();
-    testIDT_MatrixRGBtoXYZ();
+    testIDT_MatrixRGBtoXYZ_success();
+    testIDT_MatrixRGBtoXYZ_failure();
     testIDT_GetDNGCATMatrix();
     testIDT_GetDNGIDTMatrix();
     testIDT_GetDNGTransformMatrix();

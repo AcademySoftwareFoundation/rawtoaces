@@ -9,7 +9,8 @@
 
 #include <OpenImageIO/unittest.h>
 
-#include "../src/rawtoaces_core/mathOps.h"
+#include "../src/rawtoaces_core/core_math.h"
+#include "../src/rawtoaces_core/define.h"
 
 using namespace rta::core;
 

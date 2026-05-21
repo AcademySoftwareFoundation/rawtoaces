@@ -3,119 +3,25 @@
 
 #pragma once
 
-#include "define.h"
-
-#include <Eigen/Core>
-#include <ceres/ceres.h>
+#include <vector>
 
 namespace rta
 {
 namespace core
 {
 
-// Non-class functions
-
-template <typename T>
 bool inverse(
-    const std::vector<std::vector<T>> &src_mat,
-    std::vector<std::vector<T>>       &dst_mat )
-{
-    size_t rows = src_mat.size();
-    if ( rows == 0 )
-        return false;
+    const std::vector<std::vector<double>> &src_mat,
+    std::vector<std::vector<double>>       &dst_mat );
 
-    size_t cols = src_mat[0].size();
-    if ( rows != cols )
-        return false;
+std::vector<std::vector<double>>
+transposeVec( const std::vector<std::vector<double>> &vMtx );
 
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m;
-    m.resize( rows, cols );
-    for ( Eigen::Index i = 0; i < m.rows(); i++ )
-    {
-        if ( src_mat[i].size() != cols )
-            return false;
+double sumVector( const std::vector<double> &vct );
 
-        for ( Eigen::Index j = 0; j < m.cols(); j++ )
-            m( i, j ) = src_mat[i][j];
-    }
+double sumVectorM( const std::vector<std::vector<double>> &vct );
 
-    if ( std::fabs( m.determinant() ) < 1e-9 )
-        return false;
-
-    m = m.inverse();
-
-    dst_mat.resize( rows );
-    for ( Eigen::Index i = 0; i < m.rows(); i++ )
-    {
-        dst_mat[i].resize( cols );
-        for ( Eigen::Index j = 0; j < m.cols(); j++ )
-            dst_mat[i][j] = m( i, j );
-    }
-
-    return true;
-}
-
-template <typename T>
-std::vector<std::vector<T>>
-transposeVec( const std::vector<std::vector<T>> &vMtx )
-{
-    assert( vMtx.size() != 0 && vMtx[0].size() != 0 );
-
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m;
-    m.resize( vMtx.size(), vMtx[0].size() );
-
-    for ( Eigen::Index i = 0; i < m.rows(); i++ )
-        for ( Eigen::Index j = 0; j < m.cols(); j++ )
-            m( i, j ) = vMtx[i][j];
-    m.transposeInPlace();
-
-    std::vector<std::vector<T>> vTran( m.rows(), std::vector<T>( m.cols() ) );
-    for ( Eigen::Index i = 0; i < m.rows(); i++ )
-        for ( Eigen::Index j = 0; j < m.cols(); j++ )
-            vTran[i][j] = m( i, j );
-
-    return vTran;
-}
-
-template <typename T> T sumVector( const std::vector<T> &vct )
-{
-    Eigen::Matrix<T, Eigen::Dynamic, 1> v;
-    v.resize( vct.size(), 1 );
-    for ( Eigen::Index i = 0; i < v.rows(); i++ )
-        v( i, 0 ) = vct[i];
-
-    return v.sum();
-}
-
-template <typename T> T sumVectorM( const std::vector<std::vector<T>> &vct )
-{
-    size_t row = vct.size();
-    size_t col = vct[0].size();
-
-    Eigen::Matrix<T, Eigen::Dynamic, 1> v;
-    v.resize( row * col, 1 );
-
-    for ( size_t i = 0; i < row; i++ )
-        for ( size_t j = 0; j < col; j++ )
-            v( i * col + j ) = vct[i][j];
-
-    return v.sum();
-}
-
-template <typename T> void scaleVector( std::vector<T> &vct, const T scale )
-{
-    Eigen::Matrix<T, Eigen::Dynamic, 1> v;
-    v.resize( vct.size(), 1 );
-
-    for ( size_t i = 0; i < vct.size(); i++ )
-        v( i, 0 ) = vct[i];
-    v *= scale;
-
-    for ( size_t i = 0; i < vct.size(); i++ )
-        vct[i] = v( i, 0 );
-
-    return;
-}
+void scaleVector( std::vector<double> &vct, const double scale );
 
 /// Calculate matrix-matrix multiplication.
 ///
@@ -125,30 +31,7 @@ template <typename T> void scaleVector( std::vector<T> &vct, const T scale )
 template <typename T>
 std::vector<std::vector<T>> product(
     const std::vector<std::vector<T>> &vct1,
-    const std::vector<std::vector<T>> &vct2 )
-{
-    assert( vct1.size() != 0 && vct2.size() != 0 );
-
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m1, m2, m3;
-    m1.resize( vct1.size(), vct1[0].size() );
-    m2.resize( vct2[0].size(), vct2.size() );
-
-    for ( Eigen::Index i = 0; i < m1.rows(); i++ )
-        for ( Eigen::Index j = 0; j < m1.cols(); j++ )
-            m1( i, j ) = vct1[i][j];
-    for ( Eigen::Index i = 0; i < m2.rows(); i++ )
-        for ( Eigen::Index j = 0; j < m2.cols(); j++ )
-            m2( i, j ) = vct2[i][j];
-
-    m3 = m1 * m2;
-
-    std::vector<std::vector<T>> vct3( m3.rows(), std::vector<T>( m3.cols() ) );
-    for ( Eigen::Index i = 0; i < m3.rows(); i++ )
-        for ( Eigen::Index j = 0; j < m3.cols(); j++ )
-            vct3[i][j] = m3( i, j );
-
-    return vct3;
-}
+    const std::vector<std::vector<T>> &vct2 );
 
 /// Calculate matrix-vector multiplication.
 ///
@@ -157,26 +40,7 @@ std::vector<std::vector<T>> product(
 /// @return the matrix product
 template <typename T>
 std::vector<T>
-product( const std::vector<std::vector<T>> &vct1, const std::vector<T> &vct2 )
-{
-    assert( vct1.size() != 0 && ( vct1[0] ).size() == vct2.size() );
-
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m1, m2, m3;
-    m1.resize( vct1.size(), vct1[0].size() );
-    m2.resize( vct2.size(), 1 );
-
-    for ( Eigen::Index i = 0; i < m1.rows(); i++ )
-        for ( Eigen::Index j = 0; j < m1.cols(); j++ )
-            m1( i, j ) = vct1[i][j];
-    for ( Eigen::Index i = 0; i < m2.rows(); i++ )
-        m2( i, 0 ) = vct2[i];
-
-    m3 = m1 * m2;
-
-    std::vector<T> vct3( m3.data(), m3.data() + m3.rows() * m3.cols() );
-
-    return vct3;
-}
+product( const std::vector<std::vector<T>> &vct1, const std::vector<T> &vct2 );
 
 /// Calculate the Sum of Squared Errors (SSE) between two vectors.
 /// The SSE measures how well the calculated values (tcp) match the reference values (src).
@@ -186,259 +50,50 @@ product( const std::vector<std::vector<T>> &vct1, const std::vector<T> &vct2 )
 /// @param src The reference/source values to compare against
 /// @return The sum of squared relative errors
 /// @pre tcp.size() == src.size()
-template <typename T>
-T calculate_SSE( const std::vector<T> &tcp, const std::vector<T> &src )
-{
-    assert( tcp.size() == src.size() );
-    std::vector<T> tmp( src.size() );
+double
+calculate_SSE( const std::vector<double> &tcp, const std::vector<double> &src );
 
-    T sum = T( 0.0 );
-    for ( size_t i = 0; i < tcp.size(); i++ )
-        sum += std::pow( ( tcp[i] / src[i] - 1.0 ), T( 2.0 ) );
+std::vector<double> xy_to_XYZ( const std::vector<double> &xy );
 
-    return sum;
-}
+std::vector<double> uv_to_xy( const std::vector<double> &uv );
 
-template <typename T> std::vector<T> xy_to_XYZ( const std::vector<T> &xy )
-{
-    std::vector<T> XYZ( 3 );
-    XYZ[0] = xy[0];
-    XYZ[1] = xy[1];
-    XYZ[2] = 1 - xy[0] - xy[1];
+std::vector<double> uv_to_XYZ( const std::vector<double> &uv );
 
-    return XYZ;
-}
+std::vector<double> XYZ_to_uv( const std::vector<double> &XYZ );
 
-template <typename T> std::vector<T> uv_to_xy( const std::vector<T> &uv )
-{
-    T              scale  = 2 * uv[0] - 8 * uv[1] + 4;
-    std::vector<T> result = { 3.0 * uv[0] / scale, 2.0 * uv[1] / scale };
-    return result;
-}
-
-template <typename T> std::vector<T> uv_to_XYZ( const std::vector<T> &uv )
-{
-    return xy_to_XYZ( uv_to_xy( uv ) );
-} // LCOV_EXCL_LINE - bug in coverage tool
-
-template <typename T> std::vector<T> XYZ_to_uv( const std::vector<T> &XYZ )
-{
-    T              scale  = XYZ[0] + 15 * XYZ[1] + 3 * XYZ[2];
-    std::vector<T> result = { 4.0 * XYZ[0] / scale, 6.0 * XYZ[1] / scale };
-    return result;
-}
-
-template <typename T>
-std::vector<std::vector<T>> calculate_CAT(
-    const std::vector<T> &src_white_XYZ,
-    const std::vector<T> &dst_white_XYZ,
-    bool                  use_bradford )
-{
-    assert( src_white_XYZ.size() == 3 );
-    assert( dst_white_XYZ.size() == 3 );
-
-    // clang-format off
-    
-    //  Color Adaptation Matrices - Bradford
-    static const std::vector<std::vector<double>> Bradford = {
-        {  0.8951,  0.2664, -0.1614 },
-        { -0.7502,  1.7135,  0.0367 },
-        {  0.0389, -0.0685,  1.0296 }
-    };
-    
-    static const std::vector<std::vector<double>> Bradford_inv = {
-        {  0.98699290546671225,  -0.14705425642099007,  0.15996265166373122  },
-        {  0.43230526972339445,   0.51836027153677744,  0.049291228212855594 },
-        { -0.0085286645751773294, 0.040042821654084869, 0.96848669578754998  }
-    };
-
-    // Color Adaptation Matrices - CAT02
-    static const std::vector<std::vector<double>> CAT02 = {
-        {  0.7328, 0.4296, -0.1624 },
-        { -0.7036, 1.6975,  0.0061 },
-        {  0.0030, 0.0136,  0.9834 }
-    };
-
-    static const std::vector<std::vector<double>> CAT02_inv = {
-        {  1.0961238208355142,    -0.27886900021828726,   0.18274517938277304  },
-        {  0.45436904197535921,    0.47353315430741177,   0.072097803717229125 },
-        { -0.0096276087384293551, -0.0056980312161134198, 1.0153256399545427   }
-    };
-    // clang-format on
-
-    const auto &M1 = use_bradford ? Bradford : CAT02;
-    const auto &M2 = use_bradford ? Bradford_inv : CAT02_inv;
-
-    std::vector<double> src_white_LMS = product( M1, src_white_XYZ );
-    std::vector<double> dst_white_LMS = product( M1, dst_white_XYZ );
-
-    std::vector<std::vector<double>> mat( 3, std::vector<double>( 3, 0 ) );
-    for ( size_t i = 0; i < 3; i++ )
-        mat[i][i] = dst_white_LMS[i] / src_white_LMS[i];
-
-    mat = product( mat, M1 );
-    mat = product( M2, mat );
-    return mat;
-}
-
-template <typename T>
-std::vector<std::vector<T>> XYZ_to_LAB( const std::vector<std::vector<T>> &XYZ )
-{
-    assert( !XYZ.empty() );
-    assert( XYZ[0].size() == 3 );
-    T add = T( 16.0 / 116.0 );
-
-    std::vector<std::vector<T>> tmpXYZ(
-        XYZ.size(), std::vector<T>( 3, T( 1.0 ) ) );
-    for ( size_t i = 0; i < XYZ.size(); i++ )
-        for ( size_t j = 0; j < 3; j++ )
-        {
-            tmpXYZ[i][j] = XYZ[i][j] / ACES_white_point_XYZ[j];
-            if ( tmpXYZ[i][j] > T( e ) )
-                tmpXYZ[i][j] = ceres::pow( tmpXYZ[i][j], T( 1.0 / 3.0 ) );
-            else
-                tmpXYZ[i][j] = T( k ) * tmpXYZ[i][j] + add;
-        }
-
-    std::vector<std::vector<T>> outCalcLab( XYZ.size(), std::vector<T>( 3 ) );
-    for ( size_t i = 0; i < XYZ.size(); i++ )
-    {
-        outCalcLab[i][0] = T( 116.0 ) * tmpXYZ[i][1] - T( 16.0 );
-        outCalcLab[i][1] = T( 500.0 ) * ( tmpXYZ[i][0] - tmpXYZ[i][1] );
-        outCalcLab[i][2] = T( 200.0 ) * ( tmpXYZ[i][1] - tmpXYZ[i][2] );
-    }
-
-    return outCalcLab;
-}
+std::vector<std::vector<double>> calculate_CAT(
+    const std::vector<double> &src_white_XYZ,
+    const std::vector<double> &dst_white_XYZ,
+    bool                       use_bradford );
 
 template <typename T>
 std::vector<std::vector<T>>
-getCalcXYZt( const std::vector<std::vector<T>> &RGB, const T beta_params[6] )
-{
-    assert( !RGB.empty() );
+XYZ_to_LAB( const std::vector<std::vector<T>> &XYZ );
 
-    std::vector<std::vector<T>> camera_to_ACES_transposed(
-        3, std::vector<T>( 3 ) );
-    std::vector<std::vector<T>> ACES_to_XYZ_transposed(
-        3, std::vector<T>( 3 ) );
-
-    for ( size_t i = 0; i < 3; i++ )
-        for ( size_t j = 0; j < 3; j++ )
-            ACES_to_XYZ_transposed[j][i] = T( acesrgb_XYZ_3[i][j] );
-
-    camera_to_ACES_transposed[0][0] = beta_params[0];
-    camera_to_ACES_transposed[1][0] = beta_params[1];
-    camera_to_ACES_transposed[2][0] = 1.0 - beta_params[0] - beta_params[1];
-    camera_to_ACES_transposed[0][1] = beta_params[2];
-    camera_to_ACES_transposed[1][1] = beta_params[3];
-    camera_to_ACES_transposed[2][1] = 1.0 - beta_params[2] - beta_params[3];
-    camera_to_ACES_transposed[0][2] = beta_params[4];
-    camera_to_ACES_transposed[1][2] = beta_params[5];
-    camera_to_ACES_transposed[2][2] = 1.0 - beta_params[4] - beta_params[5];
-
-    auto calc_ACES = product( RGB, camera_to_ACES_transposed );
-    auto calc_XYZ  = product( calc_ACES, ACES_to_XYZ_transposed );
-
-    return calc_XYZ;
-}
-
-/// Cost function object for IDT matrix optimization using Ceres solver.
-/// This struct implements the objective function for curve fitting between camera RGB
-/// responses and target XYZ values. It's used to find the optimal 6-parameter IDT
-/// matrix that minimizes the difference between predicted and actual color values
-/// across all training patches.
-struct IDTOptimizationCost
-{
-    IDTOptimizationCost(
-        const std::vector<std::vector<double>> &source_RGB,
-        const std::vector<std::vector<double>> &target_XYZ )
-        : _source_RGB( source_RGB ), _target_LAB( XYZ_to_LAB( target_XYZ ) )
-    {}
-
-    template <typename T>
-    bool operator()( const T *beta_params, T *residuals ) const;
-
-    const std::vector<std::vector<double>> _source_RGB;
-    const std::vector<std::vector<double>> _target_LAB;
-};
-
-/// Cost function operator for Ceres optimization of IDT matrix parameters.
-/// This function computes the residual errors between target LAB values and
-/// calculated LAB values from camera RGB responses transformed by candidate
-/// IDT matrix parameters. It's used by the Ceres optimization library to
-/// iteratively find the optimal 6-parameter IDT matrix that minimizes
-/// color differences across all training patches.
-///
-/// The function transforms camera RGB values using candidate IDT parameters beta_params,
-/// converts the result to XYZ using ACES RGB primaries, then to LAB color space,
-/// and computes the difference from target LAB values as residuals.
-///
-/// @param beta_params 6-element array of IDT matrix parameters [b00, b01, b02, b10, b11, b12]
-/// @param residuals Output array of LAB differences
-/// @return true (required by Ceres interface)
-/// @pre _source_RGB must contain camera RGB responses
-/// @pre _target_LAB must contain target LAB values
 template <typename T>
-bool IDTOptimizationCost::operator()( const T *beta_params, T *residuals ) const
-{
-    std::vector<std::vector<T>> RGB_copy(
-        _source_RGB.size(), std::vector<T>( 3 ) );
-    for ( size_t i = 0; i < _source_RGB.size(); i++ )
-        for ( size_t j = 0; j < 3; j++ )
-            RGB_copy[i][j] = T( _source_RGB[i][j] );
+std::vector<std::vector<T>>
+getCalcXYZt( const std::vector<std::vector<T>> &RGB, const T beta_params[6] );
 
-    std::vector<std::vector<T>> out_calc_LAB =
-        XYZ_to_LAB( getCalcXYZt( RGB_copy, beta_params ) );
-    for ( size_t i = 0; i < _source_RGB.size(); i++ )
-        for ( size_t j = 0; j < 3; j++ )
-            residuals[i * 3 + j] = _target_LAB[i][j] - out_calc_LAB[i][j];
-
-    return true;
-}
-
-/// Solve a non-linear optimisation problem by minimising the cost function
-/// provided in `cost_function`.
+/// Perform curve fitting optimization to find optimal IDT matrix parameters.
+/// This function uses the Ceres optimization library to find the best
+/// 6-parameter IDT matrix that minimizes the difference between camera RGB
+/// responses and target XYZ values across all training patches.
+/// The optimization process iteratively adjusts the beta_params parameters
+/// to achieve the best color transformation.
 ///
-/// @param cost_function The cost function to minimise.
-/// @param beta_params Parameters to solve. Must be initialised with the
-/// initial values, modified in-place.
+/// @param source_RGB Camera RGB responses for training patches
+/// @param target_XYZ Target XYZ values for training patches
 /// @param verbosity Verbosity level for optimization output:
 /// - 0-2: No output from solver
-/// - 3: Ceres solver full report to stderr
+/// - 3: Ceres solver full report
 /// - 4: Additionally enables Ceres minimizer progress to stdout
+/// @param out_IDT_matrix Output IDT matrix computed from optimized parameters
 /// @return true if optimization succeeded, false otherwise
-inline bool minimise(
-    IDTOptimizationCost *cost_function,
-    std::vector<double> &beta_params,
-    size_t               size,
-    int                  verbosity )
-{
-    ceres::Problem problem;
-
-    ceres::CostFunction *ceres_cost_function =
-        new ceres::AutoDiffCostFunction<IDTOptimizationCost, ceres::DYNAMIC, 6>(
-            cost_function, int( size ) );
-
-    problem.AddResidualBlock( ceres_cost_function, NULL, beta_params.data() );
-
-    ceres::Solver::Options options;
-    options.linear_solver_type        = ceres::DENSE_QR;
-    options.parameter_tolerance       = 1e-17;
-    options.function_tolerance        = 1e-17;
-    options.min_line_search_step_size = 1e-17;
-    options.max_num_iterations        = 300;
-
-    if ( verbosity > 3 )
-        options.minimizer_progress_to_stdout = true;
-
-    ceres::Solver::Summary summary;
-    ceres::Solve( options, &problem, &summary );
-
-    if ( verbosity > 2 )
-        std::cerr << summary.FullReport() << std::endl;
-
-    return summary.num_successful_steps > 0;
-}
+bool solve_spectral_transform(
+    const std::vector<std::vector<double>> &source_RGB,
+    const std::vector<std::vector<double>> &target_XYZ,
+    int                                     verbosity,
+    std::vector<std::vector<double>>       &out_IDT_matrix );
 
 } // namespace core
 } // namespace rta

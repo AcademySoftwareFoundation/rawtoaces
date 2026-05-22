@@ -1431,6 +1431,8 @@ bool get_camera_XYZ_matrix_and_white_point(
         out_camera_XYZ_white_point = color_temperature_to_XYZ(
             light_source_to_color_temp( metadata.calibration[0].illuminant ) );
     }
+assert( out_camera_XYZ_white_point.size() == 3 );
+assert( out_camera_XYZ_white_point[1] != 0.0 );
 
     double scale = 1.0 / out_camera_XYZ_white_point[1];
     out_camera_XYZ_white_point[0] *= scale;

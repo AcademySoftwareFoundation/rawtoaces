@@ -21,6 +21,7 @@ add_library( ${RAWTOACES_CORE_LIB} ${DO_SHARED}
     rawtoaces_core_priv.h
     define.h
     core_math.h
+    core_math_priv.h
 )
 
 target_link_libraries(
@@ -34,12 +35,16 @@ if ( RTA_ENABLE_EIGEN )
     target_compile_definitions(${RAWTOACES_CORE_LIB} PRIVATE RTA_ENABLE_EIGEN=1 )
 endif ( RTA_ENABLE_EIGEN )
 
-if ( ${Ceres_VERSION_MAJOR} GREATER 1 )
-    target_link_libraries( ${RAWTOACES_CORE_LIB} PRIVATE Ceres::ceres )
-else ()
-    target_include_directories(${RAWTOACES_CORE_LIB} PRIVATE ${CERES_INCLUDE_DIRS})
-    target_link_libraries(${RAWTOACES_CORE_LIB} PRIVATE ${CERES_LIBRARIES})
-endif ()
+if ( RTA_ENABLE_CERES )
+    if ( ${Ceres_VERSION_MAJOR} GREATER 1 )
+        target_link_libraries( ${RAWTOACES_CORE_LIB} PRIVATE Ceres::ceres )
+    else ()
+        target_include_directories(${RAWTOACES_CORE_LIB} PRIVATE ${CERES_INCLUDE_DIRS})
+        target_link_libraries(${RAWTOACES_CORE_LIB} PRIVATE ${CERES_LIBRARIES})
+    endif ()
+
+    target_compile_definitions(${RAWTOACES_CORE_LIB} PRIVATE RTA_ENABLE_CERES=1 )
+endif ( RTA_ENABLE_CERES )
 
 target_include_directories( ${RAWTOACES_CORE_LIB} PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>

@@ -5,6 +5,7 @@
 
 #include <nlohmann/json.hpp>
 #include <fstream>
+#include <cmath>
 
 #include "rawtoaces_core_priv.h"
 #include "core_math.h"

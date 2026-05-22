@@ -9,10 +9,23 @@ export VCPKG_BINARY_SOURCES="clear;files,C:/vcpkg/binary-cache,readwrite"
 # Baseline is pinned in vcpkg.json. The latest hash can be found with:
 #   git ls-remote https://github.com/microsoft/vcpkg HEAD | cut -f1
 
+FEATURES=""
+
+if [ "$RTA_ENABLE_LENSFUN" == "ON" ]; then
+    FEATURES="$FEATURES --x-feature=lensfun"
+fi
+
+if [ "$RTA_ENABLE_CERES" == "ON" ]; then
+    FEATURES="$FEATURES --x-feature=ceres"
+elif  [ "$RTA_ENABLE_EIGEN" == "ON" ]; then
+    FEATURES="$FEATURES --x-feature=eigen"
+fi
+
 # Install dependencies - vcpkg will automatically use binary cache if available
 vcpkg install \
     --x-install-root="C:/vcpkg/installed" \
-    --x-manifest-root="./build_scripts"
+    --x-manifest-root="./build_scripts" \
+    $FEATURES
 
 # Install pip and pytest to the vcpkg Python
 # Since vcpkg Python doesn't include pip, install it first using ensurepip

@@ -9,7 +9,9 @@ if ( RTA_ENABLE_EIGEN )
     find_package ( Eigen3 CONFIG REQUIRED )
 endif ( RTA_ENABLE_EIGEN )
 
-find_package ( Ceres CONFIG REQUIRED )
+if ( RTA_ENABLE_CERES )
+    find_package ( Ceres CONFIG REQUIRED )
+endif ()
 
 if ( RTA_ENABLE_LENSFUN )
     find_package ( PkgConfig REQUIRED )

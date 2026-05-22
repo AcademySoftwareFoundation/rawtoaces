@@ -10,10 +10,14 @@
 #include <OpenImageIO/unittest.h>
 
 #include "../src/rawtoaces_core/core_math.h"
+#include "../src/rawtoaces_core/core_math_priv.h"
 #include "../src/rawtoaces_core/define.h"
+#include "test_utils.h"
 
 void test_inverse_failure()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     std::vector<std::vector<double>> result;
     // Empty
     OIIO_CHECK_ASSERT( !rta::core::math::inverse( {}, result ) );
@@ -22,10 +26,16 @@ void test_inverse_failure()
     // Non-invertible
     OIIO_CHECK_ASSERT( !rta::core::math::inverse(
         { { 1.0, 2.0, 3.0 }, { 1.0, 2.0, 3.0 }, { 1.0, 2.0, 3.0 } }, result ) );
+    // Non 3x3
+    OIIO_CHECK_ASSERT(
+        rta::core::math::inverse( { { 1.0, 2.0 }, { 2.0, 3.0 } }, result ) ==
+        rta::core::math::use_eigen );
 }
 
 void test_inverse_success()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     const double( &M1 )[3][3] = rta::core::XYZ_acesrgb_3;
     const double( &M2 )[3][3] = rta::core::acesrgb_XYZ_3;
 
@@ -48,6 +58,8 @@ void test_inverse_success()
 
 void test_transpose()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     double M[6][3] = {
         { 1.0, 0.0, 0.0 }, { 0.0, 2.0, 0.0 }, { 0.0, 0.0, 3.0 },
         { 1.0, 1.0, 2.0 }, { 2.0, 2.0, 3.0 }, { 3.0, 3.0, 4.0 }
@@ -85,6 +97,8 @@ void test_transpose()
 
 void test_mat_mat_mult()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     std::vector<std::vector<double>> MV1( 3, std::vector<double>( 3 ) );
     std::vector<std::vector<double>> MV2( 3, std::vector<double>( 3 ) );
     for ( size_t i = 0; i < 3; i++ )
@@ -102,6 +116,8 @@ void test_mat_mat_mult()
 
 void test_mat_vec_mult()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     double M1[3][3] = { { 1.0000000000, 0.0000000000, 0.0000000000 },
                         { 0.0000000000, 0.5000000000, 0.0000000000 },
                         { 0.0000000000, 0.0000000000, 0.3333333333 }
@@ -124,6 +140,8 @@ void test_mat_vec_mult()
 
 void testIDT_XytoXYZ()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     double              xy[3] = { 0.7347, 0.2653 };
     std::vector<double> XYZV =
         rta::core::math::xy_to_XYZ( std::vector<double>( xy, xy + 2 ) );
@@ -136,6 +154,8 @@ void testIDT_XytoXYZ()
 
 void testIDT_Uvtoxy()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     double              uv[2] = { 0.7347, 0.2653 };
     double              xy[2] = { 0.658530026, 0.158530026 };
     std::vector<double> xyV =
@@ -149,6 +169,8 @@ void testIDT_Uvtoxy()
 
 void testIDT_UvtoXYZ()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     double              uv[2]  = { 0.7347, 0.2653 };
     double              XYZ[3] = { 0.658530026, 0.158530026, 0.18293995 };
     std::vector<double> XYZV =
@@ -162,6 +184,8 @@ void testIDT_UvtoXYZ()
 
 void testIDT_XYZTouv()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     double              XYZ[3] = { 0.658530026, 0.158530026, 0.18293995 };
     double              uv[2]  = { 0.7347, 0.2653 };
     std::vector<double> uvV =
@@ -175,6 +199,8 @@ void testIDT_XYZTouv()
 
 void testIDT_GetCAT()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     std::vector<double> dIV(
         rta::core::d50_white_point_XYZ, rta::core::d50_white_point_XYZ + 3 );
     std::vector<double> dOV(
@@ -197,6 +223,8 @@ void testIDT_GetCAT()
 
 void test_XYZtoLAB()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     std::vector<std::vector<double>> XYZ( 190, ( std::vector<double>( 3 ) ) );
     for ( size_t i = 0; i < 190; i++ )
         for ( size_t j = 0; j < 3; j++ )
@@ -409,6 +437,8 @@ void test_XYZtoLAB()
 
 void test_GetCalcXYZt()
 {
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
     std::vector<std::vector<double>> RGB( 190, ( std::vector<double>( 3 ) ) );
     const double BStart[6] = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
 
@@ -616,10 +646,221 @@ void test_GetCalcXYZt()
             OIIO_CHECK_EQUAL_THRESH( XYZ_test[i][j], XYZ[i][j], 1e-5 );
 }
 
+void test_solve_linear_failure()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    std::vector<std::vector<double>> a = { { 1.0, 2.0 }, { 1.0, 2.0 } };
+    std::vector<double>              b = { 0.0, 0.0 };
+    bool result                        = rta::core::math::solve_linear( a, b );
+    OIIO_CHECK_ASSERT( !result );
+}
+
+void test_solve_linear_success()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    std::vector<std::vector<double>> a = { { 2.0, 3.0 }, { 4.0, 9.0 } };
+    std::vector<double>              b = { 6.0, 15.0 };
+    bool result                        = rta::core::math::solve_linear( a, b );
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_EQUAL( b[0], 1.5 );
+    OIIO_CHECK_EQUAL( b[1], 1 );
+}
+
+void test_change_type()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    std::vector<double> in_vec = { 1.0, 2.0, 3.0 };
+
+    auto out_vec = rta::core::math::change_type<double>( in_vec );
+    for ( size_t i = 0; i < 3; i++ )
+        OIIO_CHECK_EQUAL( out_vec[i], in_vec[i] );
+}
+
+void test_XYZ_to_LAB()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    double in_val[3][3] = { { 0.7, 0.5, 0.1 },
+                            { 0.2, 0.7, 0.0 },
+                            { 0.2, 0.3, 0.7 } };
+
+    double out_val[3][3] = { { 76.0693, 47.1017, 65.9083 },
+                             { 86.9969, -151.55, 149.995 },
+                             { 61.6542, -42.3147, -43.6942 } };
+
+    for ( size_t i = 0; i < 3; i++ )
+    {
+        double result[3];
+        rta::core::math::XYZ_to_LAB( in_val[i], result );
+
+        for ( size_t j = 0; j < 3; j++ )
+            OIIO_CHECK_EQUAL_THRESH( result[j], out_val[i][j], 1e-3 );
+    }
+}
+
+void test_XYZ_to_LAB_prime()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    double in_val[3][3] = { { 0.7, 0.5, 0.1 },
+                            { 0.2, 0.7, 0.0 },
+                            { 0.2, 0.3, 0.7 } };
+
+    double out_val[3][3] = { { 12.2759, -31.7728, -71.6664 },
+                             { 9.80923, 6.45249, -450.31 },
+                             { 17.2565, -25.6478, 4.38389 } };
+
+    for ( size_t i = 0; i < 3; i++ )
+    {
+        double result[3];
+        rta::core::math::XYZ_to_LAB_prime(
+            in_val[i], { 0.1, 0.2, 0.3 }, result );
+
+        for ( size_t j = 0; j < 3; j++ )
+            OIIO_CHECK_EQUAL_THRESH( result[j], out_val[i][j], 1e-3 );
+    }
+}
+
+void test_nonlinear_solver(
+    const std::vector<std::vector<double>> &source_RGB,
+    const std::vector<std::vector<double>> &target_XYZ,
+    double                                  threshold,
+    int                                     max_steps,
+    bool                                    expected_success,
+    const std::vector<std::vector<double>> &expected_result,
+    const std::vector<std::string>         &expected_stdout,
+    const std::vector<std::string>         &expected_stderr )
+{
+    std::vector<std::vector<double>> result;
+    bool                             success;
+
+    std::string stdout_output;
+    std::string stderr_output = capture_stderr( [&]() {
+        stdout_output = capture_stdout( [&]() {
+            success = rta::core::math::solve_spectral_transform(
+                source_RGB, target_XYZ, threshold, max_steps, 4, result );
+        } );
+    } );
+
+    OIIO_CHECK_EQUAL( success, expected_success );
+    ASSERT_CONTAINS_ALL( stdout_output, expected_stdout );
+    ASSERT_CONTAINS_ALL( stderr_output, expected_stderr );
+
+    if ( success && expected_result.size() > 0 )
+    {
+        for ( size_t i = 0; i < 3; i++ )
+            for ( size_t j = 0; j < 3; j++ )
+                OIIO_CHECK_EQUAL_THRESH(
+                    result[i][j], expected_result[i][j], 1e-6 );
+    }
+}
+
+void test_nonlinear_solver_nan()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    std::vector<std::vector<double>> source_RGB = { { NAN, 0.0, 0.0 } };
+
+    std::vector<std::vector<double>> target_XYZ = { { 1.0, 0.0, 0.0 } };
+
+    test_nonlinear_solver(
+        source_RGB,
+        target_XYZ,
+        1e-17,
+        300,
+        false,
+        {},
+        {},
+        { "FAILURE ", "Jacobian evaluation failed." } );
+}
+
+void test_nonlinear_solver_steps()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    std::vector<std::vector<double>> source_RGB = { { 1.0, 0.0, 0.0 },
+                                                    { 0.0, 1.0, 0.0 },
+                                                    { 0.0, 0.0, 1.0 } };
+
+    std::vector<std::vector<double>> target_XYZ = { { 1.0, 0.0, 0.0 },
+                                                    { 0.0, 1.0, 0.0 },
+                                                    { 0.0, 0.0, 1.0 } };
+
+    test_nonlinear_solver(
+        source_RGB,
+        target_XYZ,
+        1e-17,
+        2, // low number of iterations
+        true,
+        {},
+        {},
+        { "NO_CONVERGENCE ", "Maximum number of iterations reached." } );
+}
+
+void test_nonlinear_solver_gradient()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    std::vector<std::vector<double>> source_RGB = { { 0.0, 0.0, 0.0 } };
+
+    std::vector<std::vector<double>> target_XYZ = { { 0.0, 0.0, 0.0 } };
+
+    test_nonlinear_solver(
+        source_RGB,
+        target_XYZ,
+        1e-17,
+        300,
+        true,
+        {},
+        {},
+        { "CONVERGENCE ", "Gradient tolerance reached." } );
+}
+
+void test_nonlinear_solver_tolerance()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    std::vector<std::vector<double>> source_RGB = { { 1.0, 0.0, 0.0 },
+                                                    { 0.0, 1.0, 0.0 },
+                                                    { 0.0, 0.0, 1.0 },
+                                                    { 1.0, 1.0, 1.0 } };
+
+    std::vector<std::vector<double>> target_XYZ = { { 1.0, 0.0, 0.0 },
+                                                    { 0.0, 1.0, 0.0 },
+                                                    { 0.0, 0.0, 1.0 },
+                                                    { 1.0, 1.0, 1.0 } };
+
+    std::vector<std::vector<double>> expected_matrix = {
+        { 0.999713, 0.000067, 0.000218 },
+        { -0.475184, 1.375594, 0.099589 },
+        { -0.001995, 0.000078, 1.001918 }
+    };
+
+    test_nonlinear_solver(
+        source_RGB,
+        target_XYZ,
+        1e-17,
+        300,
+        true,
+        expected_matrix,
+        { "iter      cost      cost_change", "   0  9.998321e+04    0.00e+00" },
+        { "Solver Summary",
+          "Cost:",
+          "Initial                          9.998321e+04",
+          "Final                            3.518131e+01",
+          "Change                           9.994803e+04",
+          "Termination: ",
+          "CONVERGENCE ",
+          "Function tolerance reached." } );
+}
+
 int main( int, char ** )
 {
-    size_t steps = rta::core::math::has_eigen() ? 2 : 1;
-    for ( size_t use_eigen = 0; use_eigen < steps; use_eigen++ )
+    size_t eigen_steps = rta::core::math::has_eigen() ? 2 : 1;
+    for ( size_t use_eigen = 0; use_eigen < eigen_steps; use_eigen++ )
     {
         rta::core::math::use_eigen = use_eigen;
 
@@ -635,7 +876,26 @@ int main( int, char ** )
         testIDT_GetCAT();
         test_XYZtoLAB();
         test_GetCalcXYZt();
+
+        size_t ceres_steps = rta::core::math::has_ceres() ? 2 : 1;
+        for ( size_t use_ceres = 0; use_ceres < ceres_steps; use_ceres++ )
+        {
+            rta::core::math::use_ceres = use_ceres;
+            test_XYZ_to_LAB();
+            test_XYZ_to_LAB_prime();
+            test_nonlinear_solver_nan();
+            test_nonlinear_solver_steps();
+            test_nonlinear_solver_gradient();
+            test_nonlinear_solver_tolerance();
+        }
     }
+
+    // These don't depend on eigen or ceres, so we only test once.
+    rta::core::math::use_eigen = false;
+    rta::core::math::use_ceres = false;
+    test_change_type();
+    test_solve_linear_failure();
+    test_solve_linear_success();
 
     return unit_test_failures;
 }

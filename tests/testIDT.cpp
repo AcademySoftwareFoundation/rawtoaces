@@ -5536,6 +5536,74 @@ void testIDT_calculate_transform_Training_Data_Empty()
         solver, expected_error_training_data_not_initialized );
 }
 
+void test_compare_solvers()
+{
+    // Test that all 4 types of solver [with/without eigen] x [with/without ceres]
+    // calculate the same transform matrix.
+    // Calculates and compares the four matrices over 48 different colour
+    // temperatures.
+
+    if ( !rta::core::math::has_eigen() && !rta::core::math::has_ceres() )
+        return;
+
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    size_t eigen_steps = rta::core::math::has_eigen() ? 2 : 1;
+    size_t ceres_steps = rta::core::math::has_ceres() ? 2 : 1;
+
+    rta::core::SpectralData camera;
+    load_file( "camera/Nikon_D200_380_780_5.json", camera );
+
+    rta::core::SpectralData observer;
+    load_file( "cmf/cmf_1931.json", observer );
+
+    rta::core::SpectralData training_data;
+    load_file( "training/training_spectral.json", training_data );
+
+    std::vector<std::vector<double>> matrices[4];
+
+    for ( int cct = 1500; cct <= 25000; cct += 500 )
+    {
+        std::string cct_string = std::to_string( cct );
+
+        if ( cct < 4000 )
+            cct_string = cct_string + "K";
+        else
+            cct_string = "D" + cct_string;
+
+        for ( size_t use_eigen = 0; use_eigen < eigen_steps; use_eigen++ )
+        {
+            for ( size_t use_ceres = 0; use_ceres < ceres_steps; use_ceres++ )
+            {
+                rta::core::math::use_eigen = use_eigen;
+                rta::core::math::use_ceres = use_ceres;
+
+                rta::core::SpectralSolver solver;
+                solver.camera        = camera;
+                solver.observer      = observer;
+                solver.training_data = training_data;
+                OIIO_CHECK_ASSERT( solver.find_illuminant( cct_string ) );
+                OIIO_CHECK_ASSERT( solver.calculate_WB() );
+                OIIO_CHECK_ASSERT( solver.calculate_transform() );
+
+                size_t index    = ( use_ceres << 1 ) + use_eigen;
+                matrices[index] = solver.transform_matrix;
+
+                if ( index != 0 )
+                {
+                    const auto &mat1 = matrices[0];
+                    const auto &mat2 = matrices[index];
+
+                    for ( size_t row = 0; row < 3; row++ )
+                        for ( size_t col = 0; col < 3; col++ )
+                            OIIO_CHECK_EQUAL_THRESH(
+                                mat1[row][col], mat2[row][col], 1e-6 );
+                }
+            }
+        }
+    }
+}
+
 int main( int, char ** )
 {
     testIDT_LoadCameraSpst();
@@ -5561,6 +5629,8 @@ int main( int, char ** )
     testIDT_calculate_transform_Observer_Wrong_Size();
     testIDT_calculate_transform_Training_Data_Not_Initialized();
     testIDT_calculate_transform_Training_Data_Empty();
+
+    test_compare_solvers();
 
     return unit_test_failures;
 }

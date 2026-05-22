@@ -78,6 +78,7 @@ option( RTA_INSTALL_DATABASE "Download and install the spectral measurements dat
 option( ENABLE_COVERAGE "Enable code coverage reporting" OFF )
 option( RTA_ENABLE_LENSFUN "Use lensfun for lens correction" ON )
 option( RTA_ENABLE_EIGEN "Use Eigen for linear algebra" ON )
+option( RTA_ENABLE_CERES "Use Ceres Solver for matrix calculation" ON )
 set ( RTA_SANITISER_MODE "none" CACHE STRING "Dynamic analysis sanitiser mode ('none', 'address', 'memory', or 'thread')" )
 set ( RTA_PYTHON_VERSION ""  CACHE STRING "Python version to use" )
 

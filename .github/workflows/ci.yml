@@ -64,9 +64,10 @@ jobs:
       install_deps: install_deps_${{ matrix.os }}
       toolchain_file: ${{ matrix.toolchain_file }}
       build_shared_libs: ${{ matrix.build_shared_libs || 'ON' }}
-      workflow_name: ${{matrix.options[0]}}
-      enable_eigen: ${{ matrix.options[1] }}
-      enable_lensfun: ${{ matrix.options[2] }}
+      workflow_name:  ${{ matrix.options[0] }}
+      enable_eigen:   ${{ matrix.options[1] }}
+      enable_ceres:   ${{ matrix.options[2] }}
+      enable_lensfun: ${{ matrix.options[3] }}
       cxx_standard: 17
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
@@ -75,10 +76,11 @@ jobs:
       matrix:
         os: [ macos, ubuntu, windows ]
         options: [
-          # [ name, enable_eigen, enable_lensfun]
-          ["minimal", OFF, OFF],
-          ["eigen",   ON,  OFF],
-          ["full",    ON,  ON ]
+          # [ name, enable_eigen, enable_ceres, enable_lensfun]
+          ["minimal", 'OFF', 'OFF', 'OFF'],
+          ["eigen",   'ON',  'OFF', 'OFF'],
+          ["ceres",   'OFF', 'ON',  'OFF'],
+          ["full",    'ON',  'ON',  'ON' ]
         ]
         include:
           - os: windows

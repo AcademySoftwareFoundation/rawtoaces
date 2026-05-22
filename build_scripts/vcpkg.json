@@ -2,12 +2,24 @@
 {
     "builtin-baseline": "2b6a882f61eaa764ec3cf816e2265fe804a44cd0",
     "dependencies": [
-        "ceres",
         "nlohmann-json",
         { "name": "openimageio", "features": [ "libraw" ] },
-        "nanobind",
-        "lensfun"
+        "nanobind"
     ],
+    "features": {
+        "lensfun": {
+            "description": "use lensfun for lens correction",
+            "dependencies": ["lensfun"]
+        },
+        "eigen": {
+            "description": "use eigen for linear algebra",
+            "dependencies": ["eigen3"]
+        },
+        "ceres": {
+            "description": "use ceres in the non-linear solver",
+            "dependencies": ["ceres"]
+        }
+    },
     "overrides": [
         { "name": "eigen3", "version": "3.4.0" }
     ]

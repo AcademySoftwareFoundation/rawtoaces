@@ -4,10 +4,7 @@ set(rawtoaces_VERSION "@RAWTOACES_VERSION@")
 
 @PACKAGE_INIT@
 
-include(${CMAKE_CURRENT_LIST_DIR}/RAWTOACESTargets.cmake)
-
 include(CMakeFindDependencyMacro)
-    
 find_dependency ( OpenImageIO )
     
 if ( NOT @ENABLE_SHARED@ )
@@ -17,7 +14,11 @@ if ( NOT @ENABLE_SHARED@ )
         find_dependency ( Eigen3 )
     endif ()
     
-    find_dependency ( Ceres )
+    if ( @RTA_ENABLE_CERES@ )
+        find_dependency ( Ceres )
+    endif ()
 endif ( NOT @ENABLE_SHARED@ )
+
+include(${CMAKE_CURRENT_LIST_DIR}/RAWTOACESTargets.cmake)
 
 check_required_components(rawtoaces)

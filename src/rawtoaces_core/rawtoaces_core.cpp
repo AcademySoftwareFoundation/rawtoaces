@@ -107,7 +107,7 @@ void calculate_blackbody_SPD( const int &kelvin, Spectrum &spectrum )
         double c2     = ( plancks_constant * light_speed ) /
                     ( boltzmann_constant * lambda * kelvin );
         spectrum.values.push_back(
-            c1 * pi / ( std::pow( lambda, 5 ) * ( std::exp( c2 ) - 1 ) ) );
+            c1 * k_pi / ( std::pow( lambda, 5 ) * ( std::exp( c2 ) - 1 ) ) );
     }
 }
 

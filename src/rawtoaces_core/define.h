@@ -43,11 +43,11 @@ namespace rta
 namespace core
 {
 
-const double pi = 3.1416;
+const double k_pi = 3.1416;
 // 216.0/24389.0
-const double e = 0.008856451679;
+const double k_e = 0.008856451679;
 // (24389.0/27.0)/116.0
-const double k = 7.787037037037;
+const double k_k = 7.787037037037;
 
 // Planck's constant ([J*s] Joule-seconds)
 const double plancks_constant = 6.626176 * 1e-34;

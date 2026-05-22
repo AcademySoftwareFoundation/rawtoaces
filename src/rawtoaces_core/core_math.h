@@ -5,12 +5,20 @@
 
 #include <vector>
 
+#if defined( RTA_ENABLE_EIGEN ) && RTA_ENABLE_EIGEN
+#    define RTA_HAS_EIGEN 1
+#else
+#    define RTA_HAS_EIGEN 0
+#endif
+
 namespace rta
 {
 namespace core
 {
 namespace math
 {
+
+extern bool use_eigen;
 
 bool inverse(
     const std::vector<std::vector<double>> &src_mat,

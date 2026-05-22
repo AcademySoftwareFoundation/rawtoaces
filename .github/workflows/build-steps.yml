@@ -33,6 +33,9 @@ on:
       enable_lensfun:
         type: string
         default: 'ON'
+      enable_eigen:
+        type: string
+        default: 'ON'
       vfxyear:
         type: number
         default: 0
@@ -127,6 +130,7 @@ jobs:
           -D CMAKE_BUILD_TYPE="${{ inputs.build_type }}"
           -D ENABLE_SHARED="${{ inputs.build_shared_libs }}"
           -D RTA_ENABLE_LENSFUN="${{ inputs.enable_lensfun }}"
+          -D RTA_ENABLE_EIGEN="${{ inputs.enable_eigen }}"
           -D RTA_SANITISER_MODE="${{ inputs.sanitiser_mode }}"
           
       - name: Build

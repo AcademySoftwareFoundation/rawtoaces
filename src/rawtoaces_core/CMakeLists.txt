@@ -25,11 +25,14 @@ add_library( ${RAWTOACES_CORE_LIB} ${DO_SHARED}
 
 target_link_libraries(
     ${RAWTOACES_CORE_LIB}
-    PUBLIC
-        Eigen3::Eigen
     PRIVATE
         nlohmann_json::nlohmann_json
 )
+
+if ( RTA_ENABLE_EIGEN )
+    target_link_libraries( ${RAWTOACES_CORE_LIB} PUBLIC Eigen3::Eigen )
+    target_compile_definitions(${RAWTOACES_CORE_LIB} PRIVATE RTA_ENABLE_EIGEN=1 )
+endif ( RTA_ENABLE_EIGEN )
 
 if ( ${Ceres_VERSION_MAJOR} GREATER 1 )
     target_link_libraries( ${RAWTOACES_CORE_LIB} PUBLIC Ceres::ceres )

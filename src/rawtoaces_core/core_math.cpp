@@ -153,7 +153,6 @@ double
 calculate_SSE( const std::vector<double> &tcp, const std::vector<double> &src )
 {
     assert( tcp.size() == src.size() );
-    std::vector<double> tmp( src.size() );
 
     double sum = 0.0;
     for ( size_t i = 0; i < tcp.size(); i++ )

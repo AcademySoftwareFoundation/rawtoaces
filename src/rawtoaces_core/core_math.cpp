@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
-#pragma once
-
+#include "core_math.h"
 #include "define.h"
 
 #include <Eigen/Core>
@@ -13,12 +12,9 @@ namespace rta
 namespace core
 {
 
-// Non-class functions
-
-template <typename T>
 bool inverse(
-    const std::vector<std::vector<T>> &src_mat,
-    std::vector<std::vector<T>>       &dst_mat )
+    const std::vector<std::vector<double>> &src_mat,
+    std::vector<std::vector<double>>       &dst_mat )
 {
     size_t rows = src_mat.size();
     if ( rows == 0 )
@@ -28,7 +24,7 @@ bool inverse(
     if ( rows != cols )
         return false;
 
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m;
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> m;
     m.resize( rows, cols );
     for ( Eigen::Index i = 0; i < m.rows(); i++ )
     {
@@ -55,13 +51,12 @@ bool inverse(
     return true;
 }
 
-template <typename T>
-std::vector<std::vector<T>>
-transposeVec( const std::vector<std::vector<T>> &vMtx )
+std::vector<std::vector<double>>
+transposeVec( const std::vector<std::vector<double>> &vMtx )
 {
     assert( vMtx.size() != 0 && vMtx[0].size() != 0 );
 
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m;
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> m;
     m.resize( vMtx.size(), vMtx[0].size() );
 
     for ( Eigen::Index i = 0; i < m.rows(); i++ )
@@ -69,7 +64,8 @@ transposeVec( const std::vector<std::vector<T>> &vMtx )
             m( i, j ) = vMtx[i][j];
     m.transposeInPlace();
 
-    std::vector<std::vector<T>> vTran( m.rows(), std::vector<T>( m.cols() ) );
+    std::vector<std::vector<double>> vTran(
+        m.rows(), std::vector<double>( m.cols() ) );
     for ( Eigen::Index i = 0; i < m.rows(); i++ )
         for ( Eigen::Index j = 0; j < m.cols(); j++ )
             vTran[i][j] = m( i, j );
@@ -77,9 +73,9 @@ transposeVec( const std::vector<std::vector<T>> &vMtx )
     return vTran;
 }
 
-template <typename T> T sumVector( const std::vector<T> &vct )
+double sumVector( const std::vector<double> &vct )
 {
-    Eigen::Matrix<T, Eigen::Dynamic, 1> v;
+    Eigen::Matrix<double, Eigen::Dynamic, 1> v;
     v.resize( vct.size(), 1 );
     for ( Eigen::Index i = 0; i < v.rows(); i++ )
         v( i, 0 ) = vct[i];
@@ -87,12 +83,12 @@ template <typename T> T sumVector( const std::vector<T> &vct )
     return v.sum();
 }
 
-template <typename T> T sumVectorM( const std::vector<std::vector<T>> &vct )
+double sumVectorM( const std::vector<std::vector<double>> &vct )
 {
     size_t row = vct.size();
     size_t col = vct[0].size();
 
-    Eigen::Matrix<T, Eigen::Dynamic, 1> v;
+    Eigen::Matrix<double, Eigen::Dynamic, 1> v;
     v.resize( row * col, 1 );
 
     for ( size_t i = 0; i < row; i++ )
@@ -102,9 +98,9 @@ template <typename T> T sumVectorM( const std::vector<std::vector<T>> &vct )
     return v.sum();
 }
 
-template <typename T> void scaleVector( std::vector<T> &vct, const T scale )
+void scaleVector( std::vector<double> &vct, const double scale )
 {
-    Eigen::Matrix<T, Eigen::Dynamic, 1> v;
+    Eigen::Matrix<double, Eigen::Dynamic, 1> v;
     v.resize( vct.size(), 1 );
 
     for ( size_t i = 0; i < vct.size(); i++ )
@@ -117,11 +113,6 @@ template <typename T> void scaleVector( std::vector<T> &vct, const T scale )
     return;
 }
 
-/// Calculate matrix-matrix multiplication.
-///
-/// @param vct1 left side multiplicant matrix
-/// @param vct2 right side multiplicant matrix
-/// @return the matrix product
 template <typename T>
 std::vector<std::vector<T>> product(
     const std::vector<std::vector<T>> &vct1,
@@ -150,11 +141,6 @@ std::vector<std::vector<T>> product(
     return vct3;
 }
 
-/// Calculate matrix-vector multiplication.
-///
-/// @param vct1 left side multiplicant matrix
-/// @param vct2 right side multiplicant vector
-/// @return the matrix product
 template <typename T>
 std::vector<T>
 product( const std::vector<std::vector<T>> &vct1, const std::vector<T> &vct2 )
@@ -178,30 +164,22 @@ product( const std::vector<std::vector<T>> &vct1, const std::vector<T> &vct2 )
     return vct3;
 }
 
-/// Calculate the Sum of Squared Errors (SSE) between two vectors.
-/// The SSE measures how well the calculated values (tcp) match the reference values (src).
-/// Formula: Σ((tcp[i] / src[i] - 1)²)
-///
-/// @param tcp The calculated/target values to compare
-/// @param src The reference/source values to compare against
-/// @return The sum of squared relative errors
-/// @pre tcp.size() == src.size()
-template <typename T>
-T calculate_SSE( const std::vector<T> &tcp, const std::vector<T> &src )
+double
+calculate_SSE( const std::vector<double> &tcp, const std::vector<double> &src )
 {
     assert( tcp.size() == src.size() );
-    std::vector<T> tmp( src.size() );
+    std::vector<double> tmp( src.size() );
 
-    T sum = T( 0.0 );
+    double sum = 0.0;
     for ( size_t i = 0; i < tcp.size(); i++ )
-        sum += std::pow( ( tcp[i] / src[i] - 1.0 ), T( 2.0 ) );
+        sum += std::pow( ( tcp[i] / src[i] - 1.0 ), 2.0 );
 
     return sum;
 }
 
-template <typename T> std::vector<T> xy_to_XYZ( const std::vector<T> &xy )
+std::vector<double> xy_to_XYZ( const std::vector<double> &xy )
 {
-    std::vector<T> XYZ( 3 );
+    std::vector<double> XYZ( 3 );
     XYZ[0] = xy[0];
     XYZ[1] = xy[1];
     XYZ[2] = 1 - xy[0] - xy[1];
@@ -209,30 +187,29 @@ template <typename T> std::vector<T> xy_to_XYZ( const std::vector<T> &xy )
     return XYZ;
 }
 
-template <typename T> std::vector<T> uv_to_xy( const std::vector<T> &uv )
+std::vector<double> uv_to_xy( const std::vector<double> &uv )
 {
-    T              scale  = 2 * uv[0] - 8 * uv[1] + 4;
-    std::vector<T> result = { 3.0 * uv[0] / scale, 2.0 * uv[1] / scale };
+    double              scale  = 2 * uv[0] - 8 * uv[1] + 4;
+    std::vector<double> result = { 3.0 * uv[0] / scale, 2.0 * uv[1] / scale };
     return result;
 }
 
-template <typename T> std::vector<T> uv_to_XYZ( const std::vector<T> &uv )
+std::vector<double> uv_to_XYZ( const std::vector<double> &uv )
 {
     return xy_to_XYZ( uv_to_xy( uv ) );
 } // LCOV_EXCL_LINE - bug in coverage tool
 
-template <typename T> std::vector<T> XYZ_to_uv( const std::vector<T> &XYZ )
+std::vector<double> XYZ_to_uv( const std::vector<double> &XYZ )
 {
-    T              scale  = XYZ[0] + 15 * XYZ[1] + 3 * XYZ[2];
-    std::vector<T> result = { 4.0 * XYZ[0] / scale, 6.0 * XYZ[1] / scale };
+    double              scale  = XYZ[0] + 15 * XYZ[1] + 3 * XYZ[2];
+    std::vector<double> result = { 4.0 * XYZ[0] / scale, 6.0 * XYZ[1] / scale };
     return result;
 }
 
-template <typename T>
-std::vector<std::vector<T>> calculate_CAT(
-    const std::vector<T> &src_white_XYZ,
-    const std::vector<T> &dst_white_XYZ,
-    bool                  use_bradford )
+std::vector<std::vector<double>> calculate_CAT(
+    const std::vector<double> &src_white_XYZ,
+    const std::vector<double> &dst_white_XYZ,
+    bool                       use_bradford )
 {
     assert( src_white_XYZ.size() == 3 );
     assert( dst_white_XYZ.size() == 3 );
@@ -439,6 +416,58 @@ inline bool minimise(
 
     return summary.num_successful_steps > 0;
 }
+
+bool solve_spectral_transform(
+    const std::vector<std::vector<double>> &source_RGB,
+    const std::vector<std::vector<double>> &target_XYZ,
+    int                                     verbosity,
+    std::vector<std::vector<double>>       &out_IDT_matrix )
+{
+    auto cost_function = new IDTOptimizationCost( source_RGB, target_XYZ );
+    auto size          = source_RGB.size() * source_RGB[0].size();
+
+    std::vector<double> beta_params = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
+
+    if ( minimise( cost_function, beta_params, size, verbosity ) )
+    {
+        out_IDT_matrix.resize( 3 );
+        out_IDT_matrix[0].resize( 3 );
+        out_IDT_matrix[1].resize( 3 );
+        out_IDT_matrix[2].resize( 3 );
+
+        out_IDT_matrix[0][0] = beta_params[0];
+        out_IDT_matrix[0][1] = beta_params[1];
+        out_IDT_matrix[0][2] = 1.0 - beta_params[0] - beta_params[1];
+        out_IDT_matrix[1][0] = beta_params[2];
+        out_IDT_matrix[1][1] = beta_params[3];
+        out_IDT_matrix[1][2] = 1.0 - beta_params[2] - beta_params[3];
+        out_IDT_matrix[2][0] = beta_params[4];
+        out_IDT_matrix[2][1] = beta_params[5];
+        out_IDT_matrix[2][2] = 1.0 - beta_params[4] - beta_params[5];
+
+        return true;
+    }
+
+    return false;
+}
+
+// Explicit instantiation
+template std::vector<std::vector<double>> product<double>(
+    const std::vector<std::vector<double>> &vct1,
+    const std::vector<std::vector<double>> &vct2 );
+
+// Explicit instantiation
+template std::vector<double> product<double>(
+    const std::vector<std::vector<double>> &vct1,
+    const std::vector<double>              &vct2 );
+
+// Explicit instantiation
+template std::vector<std::vector<double>>
+XYZ_to_LAB( const std::vector<std::vector<double>> &XYZ );
+
+// Explicit instantiation
+template std::vector<std::vector<double>> getCalcXYZt(
+    const std::vector<std::vector<double>> &RGB, const double beta_params[6] );
 
 } // namespace core
 } // namespace rta

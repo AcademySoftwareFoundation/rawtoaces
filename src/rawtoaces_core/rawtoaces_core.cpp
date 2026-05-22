@@ -7,7 +7,7 @@
 #include <fstream>
 
 #include "rawtoaces_core_priv.h"
-#include "mathOps.h"
+#include "core_math.h"
 #include "define.h"
 
 namespace rta
@@ -806,28 +806,9 @@ bool curveFit(
     int                                     verbosity,
     std::vector<std::vector<double>>       &out_IDT_matrix )
 {
-    auto cost_function = new IDTOptimizationCost( source_RGB, target_XYZ );
-    auto size          = source_RGB.size() * source_RGB[0].size();
-
-    std::vector<double> beta_params = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
-
-    if ( minimise( cost_function, beta_params, size, verbosity ) )
+    if ( solve_spectral_transform(
+             source_RGB, target_XYZ, verbosity, out_IDT_matrix ) )
     {
-        out_IDT_matrix.resize( 3 );
-        out_IDT_matrix[0].resize( 3 );
-        out_IDT_matrix[1].resize( 3 );
-        out_IDT_matrix[2].resize( 3 );
-
-        out_IDT_matrix[0][0] = beta_params[0];
-        out_IDT_matrix[0][1] = beta_params[1];
-        out_IDT_matrix[0][2] = 1.0 - beta_params[0] - beta_params[1];
-        out_IDT_matrix[1][0] = beta_params[2];
-        out_IDT_matrix[1][1] = beta_params[3];
-        out_IDT_matrix[1][2] = 1.0 - beta_params[2] - beta_params[3];
-        out_IDT_matrix[2][0] = beta_params[4];
-        out_IDT_matrix[2][1] = beta_params[5];
-        out_IDT_matrix[2][2] = 1.0 - beta_params[4] - beta_params[5];
-
         if ( verbosity > 2 )
         {
             std::cerr << "The IDT matrix is ..." << std::endl;
@@ -838,7 +819,6 @@ bool curveFit(
                           << std::endl;
             }
         }
-
         return true;
     }
 

@@ -9,7 +9,7 @@
 #include <filesystem>
 #include <OpenImageIO/unittest.h>
 
-#include "../src/rawtoaces_core/mathOps.h"
+#include "../src/rawtoaces_core/core_math.h"
 #include <rawtoaces/rawtoaces_core.h>
 #include "../src/rawtoaces_core/rawtoaces_core_priv.h"
 

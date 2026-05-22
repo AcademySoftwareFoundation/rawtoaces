@@ -6,7 +6,7 @@
 
 #include <rawtoaces/rawtoaces_core.h>
 #include "../src/rawtoaces_core/define.h"
-#include "../src/rawtoaces_core/mathOps.h"
+#include "../src/rawtoaces_core/core_math.h"
 #include "../src/rawtoaces_core/rawtoaces_core_priv.h"
 #include "test_utils.h"
 #include "../src/misc/pragma.h"

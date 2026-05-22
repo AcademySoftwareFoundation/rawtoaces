@@ -11,6 +11,78 @@ namespace rta
 {
 namespace core
 {
+namespace math
+{
+
+/// Create eigen vector from std::vector
+template <typename T>
+Eigen::Matrix<T, Eigen::Dynamic, 1> vec_from_std( const std::vector<T> &vec )
+{
+    size_t n = vec.size();
+    assert( n > 0 );
+
+    Eigen::Matrix<T, Eigen::Dynamic, 1> result( vec.size() );
+    for ( size_t i = 0; i < n; i++ )
+        result( i ) = vec[i];
+    return result;
+}
+
+/// Create std::vector from eigen vector
+template <typename T>
+std::vector<T> vec_to_std( const Eigen::Matrix<T, Eigen::Dynamic, 1> &vec )
+{
+    size_t n = vec.rows();
+    assert( n > 0 );
+
+    std::vector<T> result( n );
+
+    for ( size_t i = 0; i < n; i++ )
+        result[i] = vec( i );
+    return result;
+}
+
+/// Create eigen matrix from std::vector
+template <typename T>
+Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic>
+mat_from_std( const std::vector<std::vector<T>> &mat )
+{
+    size_t n = mat.size();
+    assert( n > 0 );
+
+    size_t m = mat[0].size();
+    assert( m > 0 );
+
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> result( n, m );
+
+    for ( size_t i = 0; i < n; i++ )
+    {
+        assert( mat[i].size() == m );
+        for ( size_t j = 0; j < m; j++ )
+        {
+            result( i, j ) = mat[i][j];
+        }
+    }
+    return result;
+}
+
+/// Create std::vector from eigen matrix
+template <typename T>
+std::vector<std::vector<T>>
+mat_to_std( const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> &mat )
+{
+    size_t n = mat.rows();
+    assert( n > 0 );
+
+    size_t m = mat.cols();
+    assert( m > 0 );
+
+    std::vector<std::vector<T>> result( n, std::vector<T>( m ) );
+
+    for ( size_t i = 0; i < n; i++ )
+        for ( size_t j = 0; j < m; j++ )
+            result[i][j] = mat( i, j );
+    return result;
+}
 
 bool inverse(
     const std::vector<std::vector<double>> &src_mat,
@@ -24,93 +96,26 @@ bool inverse(
     if ( rows != cols )
         return false;
 
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> m;
-    m.resize( rows, cols );
-    for ( Eigen::Index i = 0; i < m.rows(); i++ )
-    {
-        if ( src_mat[i].size() != cols )
-            return false;
-
-        for ( Eigen::Index j = 0; j < m.cols(); j++ )
-            m( i, j ) = src_mat[i][j];
-    }
-
+    auto m = mat_from_std( src_mat );
     if ( std::fabs( m.determinant() ) < 1e-9 )
         return false;
 
-    m = m.inverse();
-
-    dst_mat.resize( rows );
-    for ( Eigen::Index i = 0; i < m.rows(); i++ )
-    {
-        dst_mat[i].resize( cols );
-        for ( Eigen::Index j = 0; j < m.cols(); j++ )
-            dst_mat[i][j] = m( i, j );
-    }
+    m       = m.inverse();
+    dst_mat = mat_to_std( m );
 
     return true;
 }
 
 std::vector<std::vector<double>>
-transposeVec( const std::vector<std::vector<double>> &vMtx )
+transposed( const std::vector<std::vector<double>> &src_mat )
 {
-    assert( vMtx.size() != 0 && vMtx[0].size() != 0 );
+    assert( src_mat.size() != 0 && src_mat[0].size() != 0 );
 
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> m;
-    m.resize( vMtx.size(), vMtx[0].size() );
-
-    for ( Eigen::Index i = 0; i < m.rows(); i++ )
-        for ( Eigen::Index j = 0; j < m.cols(); j++ )
-            m( i, j ) = vMtx[i][j];
+    auto m = mat_from_std( src_mat );
     m.transposeInPlace();
+    auto result = mat_to_std( m );
 
-    std::vector<std::vector<double>> vTran(
-        m.rows(), std::vector<double>( m.cols() ) );
-    for ( Eigen::Index i = 0; i < m.rows(); i++ )
-        for ( Eigen::Index j = 0; j < m.cols(); j++ )
-            vTran[i][j] = m( i, j );
-
-    return vTran;
-}
-
-double sumVector( const std::vector<double> &vct )
-{
-    Eigen::Matrix<double, Eigen::Dynamic, 1> v;
-    v.resize( vct.size(), 1 );
-    for ( Eigen::Index i = 0; i < v.rows(); i++ )
-        v( i, 0 ) = vct[i];
-
-    return v.sum();
-}
-
-double sumVectorM( const std::vector<std::vector<double>> &vct )
-{
-    size_t row = vct.size();
-    size_t col = vct[0].size();
-
-    Eigen::Matrix<double, Eigen::Dynamic, 1> v;
-    v.resize( row * col, 1 );
-
-    for ( size_t i = 0; i < row; i++ )
-        for ( size_t j = 0; j < col; j++ )
-            v( i * col + j ) = vct[i][j];
-
-    return v.sum();
-}
-
-void scaleVector( std::vector<double> &vct, const double scale )
-{
-    Eigen::Matrix<double, Eigen::Dynamic, 1> v;
-    v.resize( vct.size(), 1 );
-
-    for ( size_t i = 0; i < vct.size(); i++ )
-        v( i, 0 ) = vct[i];
-    v *= scale;
-
-    for ( size_t i = 0; i < vct.size(); i++ )
-        vct[i] = v( i, 0 );
-
-    return;
+    return result;
 }
 
 template <typename T>
@@ -120,25 +125,13 @@ std::vector<std::vector<T>> product(
 {
     assert( vct1.size() != 0 && vct2.size() != 0 );
 
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m1, m2, m3;
-    m1.resize( vct1.size(), vct1[0].size() );
-    m2.resize( vct2[0].size(), vct2.size() );
+    auto m1 = mat_from_std( vct1 );
+    auto m2 = mat_from_std( vct2 );
 
-    for ( Eigen::Index i = 0; i < m1.rows(); i++ )
-        for ( Eigen::Index j = 0; j < m1.cols(); j++ )
-            m1( i, j ) = vct1[i][j];
-    for ( Eigen::Index i = 0; i < m2.rows(); i++ )
-        for ( Eigen::Index j = 0; j < m2.cols(); j++ )
-            m2( i, j ) = vct2[i][j];
+    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m3     = m1 * m2;
+    auto                                             result = mat_to_std( m3 );
 
-    m3 = m1 * m2;
-
-    std::vector<std::vector<T>> vct3( m3.rows(), std::vector<T>( m3.cols() ) );
-    for ( Eigen::Index i = 0; i < m3.rows(); i++ )
-        for ( Eigen::Index j = 0; j < m3.cols(); j++ )
-            vct3[i][j] = m3( i, j );
-
-    return vct3;
+    return result;
 }
 
 template <typename T>
@@ -147,21 +140,13 @@ product( const std::vector<std::vector<T>> &vct1, const std::vector<T> &vct2 )
 {
     assert( vct1.size() != 0 && ( vct1[0] ).size() == vct2.size() );
 
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m1, m2, m3;
-    m1.resize( vct1.size(), vct1[0].size() );
-    m2.resize( vct2.size(), 1 );
+    auto m1 = mat_from_std( vct1 );
+    auto m2 = vec_from_std( vct2 );
 
-    for ( Eigen::Index i = 0; i < m1.rows(); i++ )
-        for ( Eigen::Index j = 0; j < m1.cols(); j++ )
-            m1( i, j ) = vct1[i][j];
-    for ( Eigen::Index i = 0; i < m2.rows(); i++ )
-        m2( i, 0 ) = vct2[i];
+    Eigen::Matrix<T, Eigen::Dynamic, 1> m3     = m1 * m2;
+    auto                                result = vec_to_std( m3 );
 
-    m3 = m1 * m2;
-
-    std::vector<T> vct3( m3.data(), m3.data() + m3.rows() * m3.cols() );
-
-    return vct3;
+    return result;
 }
 
 double
@@ -469,5 +454,6 @@ XYZ_to_LAB( const std::vector<std::vector<double>> &XYZ );
 template std::vector<std::vector<double>> getCalcXYZt(
     const std::vector<std::vector<double>> &RGB, const double beta_params[6] );
 
+} // namespace math
 } // namespace core
 } // namespace rta

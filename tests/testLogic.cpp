@@ -5,8 +5,6 @@
 
 #include "../src/rawtoaces_core/core_math.h"
 
-using namespace rta::core;
-
 // This is a unit test to check the proper functioning of different logic in different functions.
 
 // To test the validity of getCAT function
@@ -24,7 +22,7 @@ void test_getCAT()
     std::vector<double> des( D60, D60 + 3 );
 
     std::vector<std::vector<double>> final_Output_getCAT =
-        calculate_CAT( src, des, false );
+        rta::core::math::calculate_CAT( src, des, false );
 
     std::vector<double> destination( 3, 0 );
 

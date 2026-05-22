@@ -100,7 +100,7 @@ void testIDT_XYZToColorTemperature_LowerClamp()
 {
     /// UV slightly above the Robertson table should clamp to 2000K.
     std::vector<double> XYZ =
-        rta::core::uv_to_XYZ( std::vector<double>{ 0.34, 0.361 } );
+        rta::core::math::uv_to_XYZ( std::vector<double>{ 0.34, 0.361 } );
     double cct = rta::core::XYZ_to_color_temperature( XYZ );
 
     OIIO_CHECK_EQUAL_THRESH( cct, 2000.0, 1e-5 );
@@ -192,7 +192,7 @@ void testIDT_FindCameraToXYZMtx()
         { -0.0411839968, 0.3103035015, 0.5718121924 }
     };
 
-    rta::core::inverse( expected_matrix, expected_matrix );
+    rta::core::math::inverse( expected_matrix, expected_matrix );
 
     check_DNG_matrix(
         metadata,
@@ -216,7 +216,7 @@ void testIDT_FindCameraToXYZMtx_NoIlluminant()
     auto m2 = rta::core::stack_rows( m1, 3 );
 
     std::vector<std::vector<double>> m3;
-    rta::core::inverse( m2, m3 );
+    rta::core::math::inverse( m2, m3 );
 
     check_DNG_matrix(
         metadata,
@@ -239,7 +239,7 @@ void testIDT_FindCameraToXYZMtx_EmptyNeutral()
     auto m2 = rta::core::stack_rows( m1, 3 );
 
     std::vector<std::vector<double>> m3;
-    rta::core::inverse( m2, m3 );
+    rta::core::math::inverse( m2, m3 );
 
     check_DNG_matrix(
         metadata,
@@ -311,7 +311,7 @@ void testIDT_ColorTemperatureToXYZ_ClampHighMired()
     const double        cct    = 200.0;
     std::vector<double> result = rta::core::color_temperature_to_XYZ( cct );
     std::vector<double> expected =
-        rta::core::uv_to_XYZ( std::vector<double>{ 0.33724, 0.36051 } );
+        rta::core::math::uv_to_XYZ( std::vector<double>{ 0.33724, 0.36051 } );
 
     for ( int i = 0; i < countSize( expected ); i++ )
         OIIO_CHECK_EQUAL_THRESH( result[i], expected[i], 1e-5 );

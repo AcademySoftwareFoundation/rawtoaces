@@ -9,19 +9,15 @@ namespace rta
 {
 namespace core
 {
+namespace math
+{
 
 bool inverse(
     const std::vector<std::vector<double>> &src_mat,
     std::vector<std::vector<double>>       &dst_mat );
 
 std::vector<std::vector<double>>
-transposeVec( const std::vector<std::vector<double>> &vMtx );
-
-double sumVector( const std::vector<double> &vct );
-
-double sumVectorM( const std::vector<std::vector<double>> &vct );
-
-void scaleVector( std::vector<double> &vct, const double scale );
+transposed( const std::vector<std::vector<double>> &src_mat );
 
 /// Calculate matrix-matrix multiplication.
 ///
@@ -95,5 +91,6 @@ bool solve_spectral_transform(
     int                                     verbosity,
     std::vector<std::vector<double>>       &out_IDT_matrix );
 
+} // namespace math
 } // namespace core
 } // namespace rta

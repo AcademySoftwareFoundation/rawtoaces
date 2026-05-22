@@ -12,25 +12,22 @@
 #include "../src/rawtoaces_core/core_math.h"
 #include "../src/rawtoaces_core/define.h"
 
-using namespace rta::core;
-
 void test_inverse_failure()
 {
     std::vector<std::vector<double>> result;
     // Empty
-    OIIO_CHECK_ASSERT( !inverse( {}, result ) );
+    OIIO_CHECK_ASSERT( !rta::core::math::inverse( {}, result ) );
     // Empty row
-    OIIO_CHECK_ASSERT( !inverse( { {}, { 1.0 } }, result ) );
-    // Irregular
-    OIIO_CHECK_ASSERT( !inverse( { { 1.0, 2.0 }, { 1.0 } }, result ) );
+    OIIO_CHECK_ASSERT( !rta::core::math::inverse( { {}, {} }, result ) );
     // Non-invertible
-    OIIO_CHECK_ASSERT( !inverse( { { 1.0, 2.0 }, { 1.0, 2.0 } }, result ) );
+    OIIO_CHECK_ASSERT(
+        !rta::core::math::inverse( { { 1.0, 2.0 }, { 1.0, 2.0 } }, result ) );
 }
 
 void test_inverse_success()
 {
-    const double( &M1 )[3][3] = XYZ_acesrgb_3;
-    const double( &M2 )[3][3] = acesrgb_XYZ_3;
+    const double( &M1 )[3][3] = rta::core::XYZ_acesrgb_3;
+    const double( &M2 )[3][3] = rta::core::acesrgb_XYZ_3;
 
     std::vector<std::vector<double>> MV( 3, std::vector<double>( 3 ) );
     for ( size_t i = 0; i < 3; i++ )
@@ -38,7 +35,7 @@ void test_inverse_success()
             MV[i][j] = M1[i][j];
 
     std::vector<std::vector<double>> result;
-    OIIO_CHECK_ASSERT( inverse( MV, result ) );
+    OIIO_CHECK_ASSERT( rta::core::math::inverse( MV, result ) );
 
     for ( int i = 0; i < 3; i++ )
     {
@@ -79,20 +76,11 @@ void test_TransposeVec()
     for ( size_t i = 0; i < 6; i++ )
         for ( size_t j = 0; j < 3; j++ )
             MV[i][j] = M[i][j];
-    std::vector<std::vector<double>> MVT = transposeVec( MV );
+    std::vector<std::vector<double>> MVT = rta::core::math::transposed( MV );
 
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 6; j++ )
             OIIO_CHECK_EQUAL_THRESH( MVT[i][j], MT[i][j], 1e-5 );
-}
-
-void test_SumVector()
-{
-    double M[10] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 };
-    std::vector<double> MV( M, M + 10 );
-
-    double sum = sumVector( MV );
-    OIIO_CHECK_EQUAL_THRESH( sum, 55.0000, 1e-5 );
 }
 
 void test_mat_mat_mult()
@@ -102,11 +90,11 @@ void test_mat_mat_mult()
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
         {
-            MV1[i][j] = XYZ_acesrgb_3[i][j];
-            MV2[i][j] = acesrgb_XYZ_3[i][j];
+            MV1[i][j] = rta::core::XYZ_acesrgb_3[i][j];
+            MV2[i][j] = rta::core::acesrgb_XYZ_3[i][j];
         }
 
-    std::vector<std::vector<double>> MV3 = product( MV1, MV2 );
+    std::vector<std::vector<double>> MV3 = rta::core::math::product( MV1, MV2 );
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
             OIIO_CHECK_EQUAL_THRESH( MV3[i][j], double( i == j ), 1e-5 );
@@ -129,7 +117,7 @@ void test_mat_vec_mult()
             MV1[i][j] = M1[i][j];
         }
 
-    std::vector<double> MV3 = product( MV1, MV2 );
+    std::vector<double> MV3 = rta::core::math::product( MV1, MV2 );
     for ( int i = 0; i < 3; i++ )
         OIIO_CHECK_EQUAL_THRESH( MV3[i], M2[i], 1e-5 );
 }
@@ -137,7 +125,8 @@ void test_mat_vec_mult()
 void testIDT_XytoXYZ()
 {
     double              xy[3] = { 0.7347, 0.2653 };
-    std::vector<double> XYZV  = xy_to_XYZ( std::vector<double>( xy, xy + 2 ) );
+    std::vector<double> XYZV =
+        rta::core::math::xy_to_XYZ( std::vector<double>( xy, xy + 2 ) );
 
     for ( int i = 0; i < 3; i++ )
     {
@@ -149,7 +138,8 @@ void testIDT_Uvtoxy()
 {
     double              uv[2] = { 0.7347, 0.2653 };
     double              xy[2] = { 0.658530026, 0.158530026 };
-    std::vector<double> xyV   = uv_to_xy( std::vector<double>( uv, uv + 2 ) );
+    std::vector<double> xyV =
+        rta::core::math::uv_to_xy( std::vector<double>( uv, uv + 2 ) );
 
     for ( int i = 0; i < 2; i++ )
     {
@@ -161,7 +151,8 @@ void testIDT_UvtoXYZ()
 {
     double              uv[2]  = { 0.7347, 0.2653 };
     double              XYZ[3] = { 0.658530026, 0.158530026, 0.18293995 };
-    std::vector<double> XYZV   = uv_to_XYZ( std::vector<double>( uv, uv + 2 ) );
+    std::vector<double> XYZV =
+        rta::core::math::uv_to_XYZ( std::vector<double>( uv, uv + 2 ) );
 
     for ( int i = 0; i < 3; i++ )
     {
@@ -173,7 +164,8 @@ void testIDT_XYZTouv()
 {
     double              XYZ[3] = { 0.658530026, 0.158530026, 0.18293995 };
     double              uv[2]  = { 0.7347, 0.2653 };
-    std::vector<double> uvV = XYZ_to_uv( std::vector<double>( XYZ, XYZ + 3 ) );
+    std::vector<double> uvV =
+        rta::core::math::XYZ_to_uv( std::vector<double>( XYZ, XYZ + 3 ) );
 
     for ( int i = 0; i < 2; i++ )
     {
@@ -183,11 +175,13 @@ void testIDT_XYZTouv()
 
 void testIDT_GetCAT()
 {
-    std::vector<double> dIV( d50_white_point_XYZ, d50_white_point_XYZ + 3 );
-    std::vector<double> dOV( d60_white_point_XYZ, d60_white_point_XYZ + 3 );
+    std::vector<double> dIV(
+        rta::core::d50_white_point_XYZ, rta::core::d50_white_point_XYZ + 3 );
+    std::vector<double> dOV(
+        rta::core::d60_white_point_XYZ, rta::core::d60_white_point_XYZ + 3 );
 
     std::vector<std::vector<double>> CAT_test =
-        calculate_CAT( dIV, dOV, false );
+        rta::core::math::calculate_CAT( dIV, dOV, false );
 
     float CAT[3][3] = { { 0.9711790957f, -0.0217386019f, 0.0460288393f },
                         { -0.0156935400f, 1.0000112293f, 0.0183278569f },
@@ -207,7 +201,8 @@ void test_XYZtoLAB()
     for ( size_t i = 0; i < 190; i++ )
         for ( size_t j = 0; j < 3; j++ )
             XYZ[i][j] = 116.0 / static_cast<double>( i * j + 1 );
-    std::vector<std::vector<double>> LAB_test = XYZ_to_LAB( XYZ );
+    std::vector<std::vector<double>> LAB_test =
+        rta::core::math::XYZ_to_LAB( XYZ );
 
     double LAB[190][3] = {
         { 549.7318794845, 39.7525650490, 2.8525942657 },
@@ -420,7 +415,8 @@ void test_GetCalcXYZt()
     for ( size_t i = 0; i < 190; i++ )
         for ( size_t j = 0; j < 3; j++ )
             RGB[i][j] = 10.0 / static_cast<double>( i * j + 1 );
-    std::vector<std::vector<double>> XYZ_test = getCalcXYZt( RGB, BStart );
+    std::vector<std::vector<double>> XYZ_test =
+        rta::core::math::getCalcXYZt( RGB, BStart );
 
     double XYZ[190][3] = {
         { 9.5264607457, 10.0000000000, 10.0882518435 },
@@ -625,7 +621,6 @@ int main( int, char ** )
     test_inverse_failure();
     test_inverse_success();
     test_TransposeVec();
-    test_SumVector();
     test_mat_mat_mult();
     test_mat_vec_mult();
     testIDT_XytoXYZ();

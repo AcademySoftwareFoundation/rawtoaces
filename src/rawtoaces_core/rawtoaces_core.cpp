@@ -574,7 +574,7 @@ bool SpectralSolver::find_illuminant( const std::vector<double> &wb )
     {
         std::vector<double> wb_tmp =
             _calculate_WB( camera, current_illuminant );
-        double sse_tmp = calculate_SSE( wb_tmp, wb );
+        double sse_tmp = math::calculate_SSE( wb_tmp, wb );
 
         if ( sse_tmp < sse )
         {
@@ -742,9 +742,9 @@ std::vector<std::vector<double>> calculate_XYZ(
         ( observer_z * illuminant_spectrum ).integrate() / y;
 
     auto CAT_matrix =
-        calculate_CAT( source_white_point, reference_white_point, false );
+        math::calculate_CAT( source_white_point, reference_white_point, false );
 
-    XYZ = product( XYZ, transposeVec( CAT_matrix ) );
+    XYZ = math::product( XYZ, math::transposed( CAT_matrix ) );
 
     return XYZ;
 }
@@ -806,7 +806,7 @@ bool curveFit(
     int                                     verbosity,
     std::vector<std::vector<double>>       &out_IDT_matrix )
 {
-    if ( solve_spectral_transform(
+    if ( math::solve_spectral_transform(
              source_RGB, target_XYZ, verbosity, out_IDT_matrix ) )
     {
         if ( verbosity > 2 )
@@ -984,7 +984,7 @@ double light_source_to_color_temp( const unsigned short tag )
 /// @return Correlated color temperature in Kelvin
 double XYZ_to_color_temperature( const std::vector<double> &XYZ )
 {
-    std::vector<double> uv                  = XYZ_to_uv( XYZ );
+    std::vector<double> uv                  = math::XYZ_to_uv( XYZ );
     int                 num_robertson_table = countSize( robertson_uvt_table );
     int                 i;
 
@@ -1094,7 +1094,7 @@ bool camera_to_XYZ_weighted_matrix(
     auto XYZ_to_camera_matrix = XYZ_to_camera_weighted_matrix(
         mired_target, mired_start, mired_end, matrix_start, matrix_end );
 
-    if ( !inverse( XYZ_to_camera_matrix, out_matrix ) )
+    if ( !math::inverse( XYZ_to_camera_matrix, out_matrix ) )
     {
         error_message = "Found XYZ-to-camera matrix is not invertible.";
         out_matrix.resize( 0 );
@@ -1209,7 +1209,8 @@ bool find_camera_to_XYZ_matrix(
                 continue;
             }
 
-            auto neutral_XYZ   = product( camera_to_XYZ_matrix, neutral_RGB );
+            auto neutral_XYZ =
+                math::product( camera_to_XYZ_matrix, neutral_RGB );
             auto neutral_CCT   = XYZ_to_color_temperature( neutral_XYZ );
             auto neutral_mired = kelvin_to_mired( neutral_CCT );
             current_error      = current_mired - neutral_mired;
@@ -1267,7 +1268,7 @@ bool find_camera_to_XYZ_matrix(
     // Fallback to the first colour matrix.
     auto XYZ_to_camera_matrix =
         stack_rows( metadata.calibration[0].XYZ_to_RGB_matrix, 3 );
-    if ( !inverse( XYZ_to_camera_matrix, out_matrix ) )
+    if ( !math::inverse( XYZ_to_camera_matrix, out_matrix ) )
     {
         error_message = "Failed to find a suitable illuminant.";
         out_matrix.resize( 0 );
@@ -1327,7 +1328,7 @@ std::vector<double> color_temperature_to_XYZ( const double &cct )
         uv[1] = v1 * weight + v2 * ( 1.0 - weight );
     }
 
-    return uv_to_XYZ( uv );
+    return math::uv_to_XYZ( uv );
 }
 
 /// Calculate RGB to XYZ transformation matrix from chromaticity coordinates.
@@ -1353,7 +1354,7 @@ bool matrix_RGB_to_XYZ(
     {
         std::vector<double> primary_xy = { chromaticities[i][0],
                                            chromaticities[i][1] };
-        primaries_XYZ[i]               = xy_to_XYZ( primary_xy );
+        primaries_XYZ[i]               = math::xy_to_XYZ( primary_xy );
     }
 
     std::vector<std::vector<double>> RGB_to_XYZ_matrix( 3 );
@@ -1368,7 +1369,7 @@ bool matrix_RGB_to_XYZ(
     }
 
     std::vector<std::vector<double>> XYZ_to_RGB_matrix;
-    if ( !inverse( RGB_to_XYZ_matrix, XYZ_to_RGB_matrix ) )
+    if ( !math::inverse( RGB_to_XYZ_matrix, XYZ_to_RGB_matrix ) )
         return false;
 
     std::vector<double> white_XYZ = { primaries_XYZ[3][0] / primaries_XYZ[3][1],
@@ -1376,7 +1377,8 @@ bool matrix_RGB_to_XYZ(
                                       primaries_XYZ[3][2] /
                                           primaries_XYZ[3][1] };
 
-    std::vector<double> channel_gains = product( XYZ_to_RGB_matrix, white_XYZ );
+    std::vector<double> channel_gains =
+        math::product( XYZ_to_RGB_matrix, white_XYZ );
 
     std::vector<std::vector<double>> diag_channel_gains = {
         { channel_gains[0], 0, 0 },
@@ -1384,7 +1386,7 @@ bool matrix_RGB_to_XYZ(
         { 0, 0, channel_gains[2] }
     };
 
-    out_matrix = product( RGB_to_XYZ_matrix, diag_channel_gains );
+    out_matrix = math::product( RGB_to_XYZ_matrix, diag_channel_gains );
 
     return true;
 }
@@ -1422,7 +1424,7 @@ bool get_camera_XYZ_matrix_and_white_point(
     if ( metadata.neutral_RGB.size() > 0 )
     {
         out_camera_XYZ_white_point =
-            product( out_camera_to_XYZ_matrix, metadata.neutral_RGB );
+            math::product( out_camera_to_XYZ_matrix, metadata.neutral_RGB );
     }
     else
     {
@@ -1430,9 +1432,13 @@ bool get_camera_XYZ_matrix_and_white_point(
             light_source_to_color_temp( metadata.calibration[0].illuminant ) );
     }
 
-    scaleVector(
-        out_camera_XYZ_white_point, 1.0 / out_camera_XYZ_white_point[1] );
-    assert( sumVector( out_camera_XYZ_white_point ) != 0 );
+    assert( out_camera_XYZ_white_point.size() == 3 );
+    assert( out_camera_XYZ_white_point[1] != 0.0 );
+
+    double scale = 1.0 / out_camera_XYZ_white_point[1];
+    out_camera_XYZ_white_point[0] *= scale;
+    out_camera_XYZ_white_point[2] *= scale;
+    out_camera_XYZ_white_point[1] = 1.0;
     return true;
 }
 
@@ -1457,8 +1463,8 @@ static bool calculate_DNG_CAT_matrix(
         if ( matrix_RGB_to_XYZ( chromaticitiesACES, output_RGB_to_XYZ_matrix ) )
         {
             std::vector<double> output_XYZ_white_point =
-                product( output_RGB_to_XYZ_matrix, deviceWhiteV );
-            out_matrix = calculate_CAT(
+                math::product( output_RGB_to_XYZ_matrix, deviceWhiteV );
+            out_matrix = math::calculate_CAT(
                 camera_XYZ_white_point, output_XYZ_white_point, true );
             return true;
         }
@@ -1514,8 +1520,8 @@ static bool calculate_DNG_IDT_matrix(
         if ( matrix_RGB_to_XYZ( chromaticitiesACES, output_RGB_to_XYZ_matrix ) )
         {
             std::vector<double> output_XYZ_white_point =
-                product( output_RGB_to_XYZ_matrix, deviceWhiteV );
-            std::vector<std::vector<double>> CAT_matrix = calculate_CAT(
+                math::product( output_RGB_to_XYZ_matrix, deviceWhiteV );
+            std::vector<std::vector<double>> CAT_matrix = math::calculate_CAT(
                 camera_XYZ_white_point, output_XYZ_white_point, true );
 
             // The camera_to_XYZ_matrix expects camera raw values, but the
@@ -1527,9 +1533,9 @@ static bool calculate_DNG_IDT_matrix(
             result[1][1] = metadata.neutral_RGB[1];
             result[2][2] = metadata.neutral_RGB[2];
 
-            result = product( camera_to_XYZ_matrix, result );
-            result = product( CAT_matrix, result );
-            result = product( get_XYZ_D60_to_ACES(), result );
+            result = math::product( camera_to_XYZ_matrix, result );
+            result = math::product( CAT_matrix, result );
+            result = math::product( get_XYZ_D60_to_ACES(), result );
 
             out_matrix = result;
             return true;
@@ -1565,7 +1571,7 @@ bool XYZD65Solver::calculate_transform()
     };
     // clang-format on
 
-    transform_matrix = product( get_XYZ_D60_to_ACES(), D65_to_ACES );
+    transform_matrix = math::product( get_XYZ_D60_to_ACES(), D65_to_ACES );
     return true;
 }
 

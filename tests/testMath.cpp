@@ -618,7 +618,8 @@ void test_GetCalcXYZt()
 
 int main( int, char ** )
 {
-    for ( size_t use_eigen = 0; use_eigen < RTA_HAS_EIGEN + 1; use_eigen++ )
+    size_t steps = rta::core::math::has_eigen() ? 2 : 1;
+    for ( size_t use_eigen = 0; use_eigen < steps; use_eigen++ )
     {
         rta::core::math::use_eigen = use_eigen;
 

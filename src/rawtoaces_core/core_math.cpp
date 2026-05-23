@@ -4,9 +4,12 @@
 #include "core_math.h"
 #include "define.h"
 
-#if RTA_HAS_EIGEN
+#if defined( RTA_ENABLE_EIGEN ) && RTA_ENABLE_EIGEN
 #    include <Eigen/Core>
-#endif // RTA_HAS_EIGEN
+#    define RTA_HAS_EIGEN 1
+#else
+#    define RTA_HAS_EIGEN 0
+#endif
 
 #include <ceres/ceres.h>
 
@@ -19,6 +22,11 @@ namespace math
 
 // Enabled by default
 bool use_eigen = RTA_HAS_EIGEN;
+
+bool has_eigen()
+{
+    return RTA_HAS_EIGEN;
+}
 
 void check_eigen()
 {

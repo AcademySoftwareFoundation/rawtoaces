@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.16)
 
 # Enable coverage for all test targets if coverage is enabled
 if( ENABLE_COVERAGE AND COVERAGE_SUPPORTED )

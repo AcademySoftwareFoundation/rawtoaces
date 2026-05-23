@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.16)
 project( RAWTOACES )
 
 if( NOT DEFINED CMAKE_CXX_STANDARD )
@@ -78,6 +78,7 @@ option( RTA_BUILD_TESTS "Build unit tests" ON )
 option( RTA_INSTALL_DATABASE "Download and install the spectral measurements database" ON )
 option( ENABLE_COVERAGE "Enable code coverage reporting" OFF )
 option( RTA_ENABLE_LENSFUN "Use lensfun for lens correction" ON )
+option( RTA_BUILD_GUI "Build Qt 6 GUI application (rawtoaces_gui)" OFF )
 set ( RTA_SANITISER_MODE "none" CACHE STRING "Dynamic analysis sanitiser mode ('none', 'address', 'memory', or 'thread')" )
 
 if ( ENABLE_SHARED )
@@ -102,12 +103,19 @@ add_subdirectory("src/${RAWTOACES_CORE_LIB}")
 add_subdirectory("src/${RAWTOACES_UTIL_LIB}")
 add_subdirectory("src/rawtoaces")
 
+if ( RTA_BUILD_TESTS )
+    enable_testing()
+endif()
+
+if ( RTA_BUILD_GUI )
+    add_subdirectory("src/rawtoaces_gui")
+endif()
+
 if ( RTA_BUILD_PYTHON_BINDINGS )
     add_subdirectory(src/bindings)
 endif ( RTA_BUILD_PYTHON_BINDINGS )
 
 if ( RTA_BUILD_TESTS )
-    enable_testing()
     add_subdirectory(tests)
 endif ( RTA_BUILD_TESTS )
 

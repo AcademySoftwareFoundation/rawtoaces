@@ -4,7 +4,13 @@
 #include "core_math.h"
 #include "define.h"
 
-#include <Eigen/Core>
+#if defined( RTA_ENABLE_EIGEN ) && RTA_ENABLE_EIGEN
+#    include <Eigen/Core>
+#    define RTA_HAS_EIGEN 1
+#else
+#    define RTA_HAS_EIGEN 0
+#endif
+
 #include <ceres/ceres.h>
 
 namespace rta
@@ -13,6 +19,34 @@ namespace core
 {
 namespace math
 {
+
+// Enabled by default
+bool use_eigen = RTA_HAS_EIGEN;
+
+bool has_eigen()
+{
+    return RTA_HAS_EIGEN;
+}
+
+void check_eigen()
+{
+#if !RTA_HAS_EIGEN
+    if ( use_eigen )
+    {
+        static bool reported = false;
+        if ( !reported )
+        {
+            std::cerr << "The library was built without Eigen support. "
+                      << "The built-in linear algebra implementation "
+                      << "will be used instead. " << std::endl;
+            reported = true;
+        }
+        use_eigen = false;
+    }
+#endif // !RTA_HAS_EIGEN
+}
+
+#if RTA_HAS_EIGEN
 
 /// Create eigen vector from std::vector
 template <typename T>
@@ -84,6 +118,8 @@ mat_to_std( const Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> &mat )
     return result;
 }
 
+#endif // RTA_HAS_EIGEN
+
 bool inverse(
     const std::vector<std::vector<double>> &src_mat,
     std::vector<std::vector<double>>       &dst_mat )
@@ -96,12 +132,70 @@ bool inverse(
     if ( rows != cols )
         return false;
 
-    auto m = mat_from_std( src_mat );
-    if ( std::fabs( m.determinant() ) < 1e-9 )
-        return false;
+#if RTA_HAS_EIGEN
+    if ( use_eigen )
+    {
+        auto m = mat_from_std( src_mat );
+        if ( std::fabs( m.determinant() ) < 1e-9 )
+            return false;
 
-    m       = m.inverse();
-    dst_mat = mat_to_std( m );
+        m       = m.inverse();
+        dst_mat = mat_to_std( m );
+    }
+    else
+#endif // RTA_HAS_EIGEN
+    {
+
+        check_eigen();
+
+        // Currently only supporting 3x3 matrices.
+        if ( rows != 3 )
+            return false;
+
+        double a = src_mat[0][0];
+        double b = src_mat[0][1];
+        double c = src_mat[0][2];
+        double d = src_mat[1][0];
+        double e = src_mat[1][1];
+        double f = src_mat[1][2];
+        double g = src_mat[2][0];
+        double h = src_mat[2][1];
+        double i = src_mat[2][2];
+
+        double A = e * i - f * h;
+        double B = f * g - d * i;
+        double C = d * h - e * g;
+
+        double determinant = A * a + B * b + C * c;
+        if ( std::fabs( determinant ) < 1e-9 )
+            return false;
+
+        double scale = 1.0 / determinant;
+
+        double D = c * h - b * i;
+        double E = a * i - c * g;
+        double F = b * g - a * h;
+        double G = b * f - c * e;
+        double H = c * d - a * f;
+        double I = a * e - b * d;
+
+        dst_mat.resize( 3 );
+
+        dst_mat[0].resize( 3 );
+        dst_mat[0][0] = A * scale;
+        dst_mat[0][1] = D * scale;
+        dst_mat[0][2] = G * scale;
+
+        dst_mat[1].resize( 3 );
+        dst_mat[1][0] = B * scale;
+        dst_mat[1][1] = E * scale;
+        dst_mat[1][2] = H * scale;
+
+        dst_mat[2].resize( 3 );
+        dst_mat[2][0] = C * scale;
+        dst_mat[2][1] = F * scale;
+        dst_mat[2][2] = I * scale;
+    }
 
     return true;
 }
@@ -109,11 +203,34 @@ bool inverse(
 std::vector<std::vector<double>>
 transposed( const std::vector<std::vector<double>> &src_mat )
 {
-    assert( src_mat.size() != 0 && src_mat[0].size() != 0 );
+    size_t rows = src_mat.size();
+    assert( rows > 0 );
 
-    auto m = mat_from_std( src_mat );
-    m.transposeInPlace();
-    auto result = mat_to_std( m );
+    size_t cols = src_mat[0].size();
+    assert( cols > 0 );
+
+    std::vector<std::vector<double>> result;
+
+#if RTA_HAS_EIGEN
+    if ( use_eigen )
+    {
+        auto m = mat_from_std( src_mat );
+        m.transposeInPlace();
+        result = mat_to_std( m );
+    }
+    else
+#endif // RTA_HAS_EIGEN
+    {
+        check_eigen();
+
+        result.resize( cols );
+        for ( size_t i = 0; i < cols; i++ )
+        {
+            result[i].resize( rows );
+            for ( size_t j = 0; j < rows; j++ )
+                result[i][j] = src_mat[j][i];
+        }
+    }
 
     return result;
 }
@@ -123,13 +240,52 @@ std::vector<std::vector<T>> product(
     const std::vector<std::vector<T>> &vct1,
     const std::vector<std::vector<T>> &vct2 )
 {
-    assert( vct1.size() != 0 && vct2.size() != 0 );
+    size_t rows1 = vct1.size();
+    assert( rows1 > 0 );
 
-    auto m1 = mat_from_std( vct1 );
-    auto m2 = mat_from_std( vct2 );
+    size_t cols1 = vct1[0].size();
+    assert( rows1 > 0 );
 
-    Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m3     = m1 * m2;
-    auto                                             result = mat_to_std( m3 );
+    size_t rows2 [[maybe_unused]] = vct2.size();
+    assert( rows2 > 0 );
+
+    size_t cols2 = vct2[0].size();
+    assert( cols2 > 0 );
+
+    assert( cols1 == rows2 );
+
+    std::vector<std::vector<T>> result;
+
+#if RTA_HAS_EIGEN
+    if ( use_eigen )
+    {
+        auto m1 = mat_from_std( vct1 );
+        auto m2 = mat_from_std( vct2 );
+
+        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> m3 = m1 * m2;
+
+        result = mat_to_std( m3 );
+    }
+    else
+#endif // RTA_HAS_EIGEN
+    {
+        check_eigen();
+
+        result.resize( rows1 );
+
+        for ( size_t i = 0; i < rows1; i++ )
+        {
+            result[i].resize( cols2 );
+
+            for ( size_t j = 0; j < cols2; j++ )
+            {
+                result[i][j] = T( 0.0 );
+
+                for ( size_t k = 0; k < cols1; k++ )
+                    result[i][j] += vct1[i][k] * vct2[k][j];
+            }
+        }
+    }
 
     return result;
 }
@@ -138,13 +294,44 @@ template <typename T>
 std::vector<T>
 product( const std::vector<std::vector<T>> &vct1, const std::vector<T> &vct2 )
 {
-    assert( vct1.size() != 0 && ( vct1[0] ).size() == vct2.size() );
+    size_t rows1 = vct1.size();
+    assert( rows1 > 0 );
 
-    auto m1 = mat_from_std( vct1 );
-    auto m2 = vec_from_std( vct2 );
+    size_t cols1 = vct1[0].size();
+    assert( rows1 > 0 );
 
-    Eigen::Matrix<T, Eigen::Dynamic, 1> m3     = m1 * m2;
-    auto                                result = vec_to_std( m3 );
+    size_t rows2 [[maybe_unused]] = vct2.size();
+    assert( rows2 > 0 );
+
+    assert( cols1 == rows2 );
+
+    std::vector<T> result;
+
+#if RTA_HAS_EIGEN
+    if ( use_eigen )
+    {
+        auto m1 = mat_from_std( vct1 );
+        auto m2 = vec_from_std( vct2 );
+
+        Eigen::Matrix<T, Eigen::Dynamic, 1> m3 = m1 * m2;
+
+        result = vec_to_std( m3 );
+    }
+    else
+#endif // RTA_HAS_EIGEN
+    {
+        check_eigen();
+
+        result.resize( rows1 );
+
+        for ( size_t i = 0; i < rows1; i++ )
+        {
+            result[i] = T( 0.0 );
+
+            for ( size_t j = 0; j < cols1; j++ )
+                result[i] += vct1[i][j] * vct2[j];
+        }
+    }
 
     return result;
 }
@@ -255,10 +442,10 @@ std::vector<std::vector<T>> XYZ_to_LAB( const std::vector<std::vector<T>> &XYZ )
         for ( size_t j = 0; j < 3; j++ )
         {
             tmpXYZ[i][j] = XYZ[i][j] / ACES_white_point_XYZ[j];
-            if ( tmpXYZ[i][j] > T( e ) )
+            if ( tmpXYZ[i][j] > T( k_e ) )
                 tmpXYZ[i][j] = ceres::pow( tmpXYZ[i][j], T( 1.0 / 3.0 ) );
             else
-                tmpXYZ[i][j] = T( k ) * tmpXYZ[i][j] + add;
+                tmpXYZ[i][j] = T( k_k ) * tmpXYZ[i][j] + add;
         }
 
     std::vector<std::vector<T>> outCalcLab( XYZ.size(), std::vector<T>( 3 ) );

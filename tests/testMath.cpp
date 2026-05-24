@@ -20,8 +20,8 @@ void test_inverse_failure()
     // Empty row
     OIIO_CHECK_ASSERT( !rta::core::math::inverse( { {}, {} }, result ) );
     // Non-invertible
-    OIIO_CHECK_ASSERT(
-        !rta::core::math::inverse( { { 1.0, 2.0 }, { 1.0, 2.0 } }, result ) );
+    OIIO_CHECK_ASSERT( !rta::core::math::inverse(
+        { { 1.0, 2.0, 3.0 }, { 1.0, 2.0, 3.0 }, { 1.0, 2.0, 3.0 } }, result ) );
 }
 
 void test_inverse_success()
@@ -46,7 +46,7 @@ void test_inverse_success()
     }
 }
 
-void test_TransposeVec()
+void test_transpose()
 {
     double M[6][3] = {
         { 1.0, 0.0, 0.0 }, { 0.0, 2.0, 0.0 }, { 0.0, 0.0, 3.0 },
@@ -618,18 +618,24 @@ void test_GetCalcXYZt()
 
 int main( int, char ** )
 {
-    test_inverse_failure();
-    test_inverse_success();
-    test_TransposeVec();
-    test_mat_mat_mult();
-    test_mat_vec_mult();
-    testIDT_XytoXYZ();
-    testIDT_Uvtoxy();
-    testIDT_UvtoXYZ();
-    testIDT_XYZTouv();
-    testIDT_GetCAT();
-    test_XYZtoLAB();
-    test_GetCalcXYZt();
+    size_t steps = rta::core::math::has_eigen() ? 2 : 1;
+    for ( size_t use_eigen = 0; use_eigen < steps; use_eigen++ )
+    {
+        rta::core::math::use_eigen = use_eigen;
+
+        test_inverse_failure();
+        test_inverse_success();
+        test_transpose();
+        test_mat_mat_mult();
+        test_mat_vec_mult();
+        testIDT_XytoXYZ();
+        testIDT_Uvtoxy();
+        testIDT_UvtoXYZ();
+        testIDT_XYZTouv();
+        testIDT_GetCAT();
+        test_XYZtoLAB();
+        test_GetCalcXYZt();
+    }
 
     return unit_test_failures;
 }

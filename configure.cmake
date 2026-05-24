@@ -4,7 +4,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_INSTALL_PREFIX}/share/CMake"
 
 find_package ( nlohmann_json CONFIG REQUIRED )
 find_package ( OpenImageIO   CONFIG REQUIRED )
-find_package ( Eigen3        CONFIG REQUIRED )
+
+if ( RTA_ENABLE_EIGEN )
+    find_package ( Eigen3 CONFIG REQUIRED )
+endif ( RTA_ENABLE_EIGEN )
 
 if (RTA_CENTOS7_CERES_HACK)
     find_package ( Ceres MODULE REQUIRED )

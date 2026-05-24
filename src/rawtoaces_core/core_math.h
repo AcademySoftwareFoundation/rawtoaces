@@ -12,6 +12,10 @@ namespace core
 namespace math
 {
 
+extern bool use_eigen;
+
+bool has_eigen();
+
 bool inverse(
     const std::vector<std::vector<double>> &src_mat,
     std::vector<std::vector<double>>       &dst_mat );

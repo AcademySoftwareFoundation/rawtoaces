@@ -10,7 +10,7 @@ include(CMakeFindDependencyMacro)
 
 if ( @RTA_ENABLE_EIGEN@ )
     find_dependency ( Eigen3 )
-endif
+endif ()
 find_dependency ( Ceres )
 find_dependency ( OpenImageIO )
 

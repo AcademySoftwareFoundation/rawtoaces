@@ -1,4 +1,17 @@
-Release 2.1.0 (March ?? 2026) -- compared to 2.0.0
+Release 2.1.1 (June ?? 2026) -- compared to 2.1.0
+--------------------------------------------------------
+
+
+**This version is API-compatible and ABI-compatible with the previous version.**
+
+### Changes:
+
+- *fix*: fix colour tint when processing DNG images [#280](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/280)
+- *fix*: allow custom white-balancing weights in DNG mode [#272](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/272)
+- *fix*: fix default orientation and box white balance [#268](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/268)
+- *fix*: add homebrew location to default DB search path [#264](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/264)
+
+Release 2.1.0 (March 18 2026) -- compared to 2.0.0
 --------------------------------------------------------
 
 

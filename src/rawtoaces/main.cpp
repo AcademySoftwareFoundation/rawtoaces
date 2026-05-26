@@ -40,7 +40,7 @@ void update_error_message( std::string &error_message )
 int main( int argc, const char *argv[] )
 {
 #ifndef WIN32
-    putenv( (char *)"TZ=UTC" );
+    setenv( "TZ", "UTC", 1 );
 #else
     _putenv( (char *)"TZ=UTC" );
 #endif

@@ -11,25 +11,13 @@
 cmake_minimum_required(VERSION 3.10)
 project( rawtoaces_config_test )
 
-
-# Until we get some of these modules into the upstream packages, put them here
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../../cmake/modules/")
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_INSTALL_PREFIX}/share/CMake")
-
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_compile_options ( /W0 )
     add_compile_options ( /utf-8 )
     add_compile_definitions( NOMINMAX )
 endif()
 
-# the Ceres::ceres alias in not getting defined on the config side
-find_package ( Ceres       CONFIG REQUIRED )
-find_package ( OpenImageIO CONFIG REQUIRED )
-
-# Windows build seems to expose nlohmann_json as dependency?
-find_package ( nlohmann_json CONFIG REQUIRED )
-
-find_package ( RAWTOACES   CONFIG REQUIRED )
+find_package ( RAWTOACES CONFIG REQUIRED )
 
 enable_testing()
 add_subdirectory(core)

@@ -57,7 +57,7 @@ void calculate_daylight_SPD( const int &cct_input, Spectrum &spectrum )
     constexpr size_t count = sizeof( s_series ) / sizeof( s_series[0] );
     assert( count == 54 );
     assert(
-        ( s_series[1].wl - s_series[0].wl ) * ( count - 1 ) ==
+        ( s_series[1].wl - s_series[0].wl ) * (int)( count - 1 ) ==
         ( s_series[53].wl - s_series[0].wl ) );
 
     double cct;

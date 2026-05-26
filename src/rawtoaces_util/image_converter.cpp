@@ -1979,12 +1979,9 @@ bool ImageConverter::configure(
             bool is_empty_box = settings.WB_box[2] == 0 ||
                                 settings.WB_box[3] == 0;
 
-            if ( is_empty_box )
-            {
-                // use whole image (auto white balancing)
-                options["raw:use_auto_wb"] = 1;
-            }
-            else
+            options["raw:use_auto_wb"] = 1;
+
+            if ( !is_empty_box )
             {
                 int32_t WB_box[4];
                 for ( int i = 0; i < 4; i++ )

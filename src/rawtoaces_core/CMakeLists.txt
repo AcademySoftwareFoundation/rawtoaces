@@ -30,15 +30,15 @@ target_link_libraries(
 )
 
 if ( RTA_ENABLE_EIGEN )
-    target_link_libraries( ${RAWTOACES_CORE_LIB} PUBLIC Eigen3::Eigen )
+    target_link_libraries( ${RAWTOACES_CORE_LIB} PRIVATE Eigen3::Eigen )
     target_compile_definitions(${RAWTOACES_CORE_LIB} PRIVATE RTA_ENABLE_EIGEN=1 )
 endif ( RTA_ENABLE_EIGEN )
 
 if ( ${Ceres_VERSION_MAJOR} GREATER 1 )
-    target_link_libraries( ${RAWTOACES_CORE_LIB} PUBLIC Ceres::ceres )
+    target_link_libraries( ${RAWTOACES_CORE_LIB} PRIVATE Ceres::ceres )
 else ()
-    target_include_directories(${RAWTOACES_CORE_LIB} PUBLIC ${CERES_INCLUDE_DIRS})
-    target_link_libraries(${RAWTOACES_CORE_LIB} PUBLIC ${CERES_LIBRARIES})
+    target_include_directories(${RAWTOACES_CORE_LIB} PRIVATE ${CERES_INCLUDE_DIRS})
+    target_link_libraries(${RAWTOACES_CORE_LIB} PRIVATE ${CERES_LIBRARIES})
 endif ()
 
 target_include_directories( ${RAWTOACES_CORE_LIB} PUBLIC

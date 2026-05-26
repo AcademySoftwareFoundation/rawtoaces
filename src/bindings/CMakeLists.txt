@@ -34,8 +34,5 @@ set_target_properties( rawtoaces_bindings PROPERTIES
 
 install(
     TARGETS rawtoaces_bindings
-    EXPORT RAWTOACESTargets
     LIBRARY DESTINATION ${INSTALL_LIB_DIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    PUBLIC_HEADER DESTINATION include/rawtoaces
 )

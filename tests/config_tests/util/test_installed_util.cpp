@@ -8,9 +8,9 @@
 #endif
 
 #include <filesystem>
-#include <OpenImageIO/unittest.h>
-
 #include <rawtoaces/image_converter.h>
+
+#include <OpenImageIO/unittest.h>
 
 void test_AcesRender()
 {

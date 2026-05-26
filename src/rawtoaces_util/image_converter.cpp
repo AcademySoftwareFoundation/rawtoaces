@@ -1011,11 +1011,11 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
 
     arg_parser.arg( "--flip" )
         .help(
-            "If not 0, override the orientation specified in the metadata. "
+            "If not -1, override the orientation specified in the metadata. "
             "1..8 correspond to EXIF orientation codes "
-            "(3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.)" )
+            "(0 = none, 3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.)" )
         .metavar( "VAL" )
-        .defaultval( 0 )
+        .defaultval( -1 )
         .action( OIIO::ArgParse::store<int>() );
 
     arg_parser.arg( "--denoise-threshold" )
@@ -1904,12 +1904,9 @@ bool ImageConverter::configure(
             bool is_empty_box = settings.WB_box[2] == 0 ||
                                 settings.WB_box[3] == 0;
 
-            if ( is_empty_box )
-            {
-                // use whole image (auto white balancing)
-                options["raw:use_auto_wb"] = 1;
-            }
-            else
+            options["raw:use_auto_wb"] = 1;
+
+            if ( !is_empty_box )
             {
                 int32_t WB_box[4];
                 for ( int i = 0; i < 4; i++ )

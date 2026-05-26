@@ -188,10 +188,10 @@ public:
         /// 0 = clip, 1 = unclip, 2 = blend, 3..9 = rebuild.
         int highlight_mode = 0;
 
-        /// If not 0, override the orientation specified in the metadata.
+        /// If not -1, override the orientation specified in the metadata.
         /// 1..8 correspond to EXIF orientation codes
-        /// (3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.)
-        int flip = 0;
+        /// (0 = none, 3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.)
+        int flip = -1;
 
         /// Apply custom crop. If not specified (all values are zeroes),
         /// the default crop is applied, which should match the crop of the

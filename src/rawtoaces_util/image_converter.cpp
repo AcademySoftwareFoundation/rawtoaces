@@ -1006,11 +1006,11 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
 
     arg_parser.arg( "--flip" )
         .help(
-            "If not 0, override the orientation specified in the metadata. "
+            "If not -1, override the orientation specified in the metadata. "
             "1..8 correspond to EXIF orientation codes "
-            "(3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.)" )
+            "(0 = none, 3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.)" )
         .metavar( "VAL" )
-        .defaultval( 0 )
+        .defaultval( -1 )
         .action( OIIO::ArgParse::store<int>() );
 
     arg_parser.arg( "--denoise-threshold" )

@@ -121,9 +121,9 @@ ImageConverter
 
     .. py:attribute:: int flip
 
-      If not 0, override the orientation specified in the metadata.
+      If not -1, override the orientation specified in the metadata.
       1..8 correspond to EXIF orientation codes
-      (3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.)
+      (0 = none, 3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.)
 
     .. py:attribute:: float denoise_threshold
 

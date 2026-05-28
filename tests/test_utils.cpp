@@ -15,6 +15,8 @@
 #include <ctime>
 #include <nlohmann/json.hpp>
 
+#include "test_data_helpers.h"
+
 /// RAII helper class to capture stderr output for testing
 class StderrCapture
 {
@@ -223,6 +225,46 @@ std::string TestDirectory::create_test_data_file(
             "test_" + type + "_" + std::to_string( ++file_counter ) + ".json";
     }
     std::string file_path = target_dir + "/" + filename;
+
+    if ( !index_main_override.has_value() && !data_main_override.has_value() )
+    {
+        rta::core::SpectralData data;
+
+        if ( type == "training" )
+        {
+            data = create_hypothetical_training_data();
+            save_spectral_json( data, file_path );
+            return file_path;
+        }
+        else if ( type == "cmf" )
+        {
+            data = create_hypothetical_observer();
+            save_spectral_json( data, file_path );
+            return file_path;
+        }
+        else if ( type == "camera" )
+        {
+            if ( header_data.contains( "manufacturer" ) &&
+                 header_data.contains( "model" ) )
+            {
+                auto make  = header_data["manufacturer"];
+                auto model = header_data["model"];
+                data       = create_hypothetical_camera( make, model );
+                save_spectral_json( data, file_path );
+                return file_path;
+            }
+        }
+        else if ( type == "illuminant" )
+        {
+            if ( header_data.contains( "type" ) )
+            {
+                auto illuminant_type = header_data["type"];
+                data = create_hypothetical_illuminant( illuminant_type );
+                save_spectral_json( data, file_path );
+                return file_path;
+            }
+        }
+    }
 
     // Create minimal JSON structure with only what's actually used
     nlohmann::json json_data;

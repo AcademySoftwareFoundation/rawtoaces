@@ -5,10 +5,12 @@
 
 #include <rawtoaces/spectral_data.h>
 
+// The make and model parameters only affect the metadata, not the curves shape.
 rta::core::SpectralData create_hypothetical_camera(
     const std::string &make  = "TEST_CAMERA_MAKE",
     const std::string &model = "TEST_CAMERA_MODEL" );
 
+// The type parameter only affects the metadata, not the curve shape.
 rta::core::SpectralData
 create_hypothetical_illuminant( const std::string &type = "TEST_ILLUMINANT" );
 

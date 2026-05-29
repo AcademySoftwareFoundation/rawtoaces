@@ -7,11 +7,12 @@
 #include <fstream>
 
 // Parametric spectral curve in the form of Gaussian function with asymmetric
-// shape: f(x) = a * exp( 1 / ((x - b)/2c)^2 ) )
+// shape: f(x) = a * exp( - (x - b)^2 / 2c^2 ) )
 // Where:
-//    a - amplitude
-//    b - central wavelength
-//    c - shape, c = c1 to the left of the central wavelength, c2 otherwise.
+//    a - maximum value
+//    b - wavelength at peak
+//    c - shape, c = c1 to the left of the peak, c2 otherwise.
+//    HWHM is roughly 1.177 * c
 struct SpectralCurve
 {
     const char *name;
@@ -186,6 +187,7 @@ void save_spectral_json(
         }
         json_data["spectral_data"]["data"][set_name]  = json_spectral_data;
         json_data["spectral_data"]["index"][set_name] = channels;
+        json_data["spectral_data"]["units"]           = "relative";
     }
 
     std::ofstream file( filename );

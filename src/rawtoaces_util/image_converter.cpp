@@ -223,6 +223,12 @@ std::vector<std::string> database_paths( const std::string &override_path = "" )
 #if defined( WIN32 ) || defined( WIN64 )
     const std::string separator    = ";";
     const std::string default_path = ".";
+#elif defined( __APPLE__ )
+    const std::string separator   = ":";
+    const std::string legacy_path = "/usr/local/include/rawtoaces/data";
+    const std::string default_path =
+        "/usr/local/share/rawtoaces/data" + separator +
+        "/opt/homebrew/share/rawtoaces/data" + separator + legacy_path;
 #else
     const std::string separator   = ":";
     const std::string legacy_path = "/usr/local/include/rawtoaces/data";
@@ -506,6 +512,7 @@ bool prepare_transform_spectral(
 bool prepare_transform_DNG(
     const OIIO::ImageSpec            &image_spec,
     const ImageConverter::Settings   &settings,
+    const std::vector<double>        &wb_multipliers,
     std::vector<std::vector<double>> &IDT_matrix,
     std::vector<std::vector<double>> &CAT_matrix,
     std::string                      &error_message )
@@ -520,15 +527,30 @@ bool prepare_transform_DNG(
         image_spec.get_float_attribute( "raw:dng:baseline_exposure" ) );
 
     // Step 2: Extract neutral RGB values from camera multipliers
-    metadata.neutral_RGB.resize( 3 );
-
-    auto attr = image_spec.find_attribute(
-        "raw:cam_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
-    if ( attr )
+    if ( wb_multipliers.size() == 4 )
     {
-        for ( int i = 0; i < 3; i++ )
-            metadata.neutral_RGB[i] =
-                1.0 / static_cast<double>( attr->get_float_indexed( i ) );
+        double r  = wb_multipliers[0];
+        double g  = wb_multipliers[1];
+        double b  = wb_multipliers[2];
+        double g2 = wb_multipliers[3];
+
+        if ( std::abs( g2 ) > 1e-9 )
+        {
+            g = ( g + g2 ) * 0.5;
+        }
+
+        assert( std::abs( r ) > 1e-9 );
+        assert( std::abs( g ) > 1e-9 );
+        assert( std::abs( b ) > 1e-9 );
+
+        metadata.neutral_RGB.resize( 3 );
+        metadata.neutral_RGB[0] = 1.0 / r;
+        metadata.neutral_RGB[1] = 1.0 / g;
+        metadata.neutral_RGB[2] = 1.0 / b;
+    }
+    else
+    {
+        metadata.neutral_RGB.resize( 0 );
     }
 
     // Step 3: Extract calibration data for two illuminants
@@ -989,11 +1011,11 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
 
     arg_parser.arg( "--flip" )
         .help(
-            "If not 0, override the orientation specified in the metadata. "
+            "If not -1, override the orientation specified in the metadata. "
             "1..8 correspond to EXIF orientation codes "
-            "(3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.)" )
+            "(0 = none, 3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.)" )
         .metavar( "VAL" )
-        .defaultval( 0 )
+        .defaultval( -1 )
         .action( OIIO::ArgParse::store<int>() );
 
     arg_parser.arg( "--denoise-threshold" )
@@ -1818,8 +1840,13 @@ bool ImageConverter::configure(
             settings.chromatic_aberration );
     }
 
-    bool is_DNG =
-        image_spec.extra_attribs.find( "raw:dng:version" )->get_int() > 0;
+    bool is_DNG                = false;
+    auto dng_version_attribute = image_spec.find_attribute(
+        "raw:dng:version", OIIO::TypeDesc( OIIO::TypeDesc::INT ) );
+    if ( dng_version_attribute )
+    {
+        is_DNG = dng_version_attribute->get_int() > 0;
+    }
 
     bool require_spectral =
         settings.WB_method == Settings::WBMethod::Illuminant ||
@@ -1877,12 +1904,9 @@ bool ImageConverter::configure(
             bool is_empty_box = settings.WB_box[2] == 0 ||
                                 settings.WB_box[3] == 0;
 
-            if ( is_empty_box )
-            {
-                // use whole image (auto white balancing)
-                options["raw:use_auto_wb"] = 1;
-            }
-            else
+            options["raw:use_auto_wb"] = 1;
+
+            if ( !is_empty_box )
             {
                 int32_t WB_box[4];
                 for ( int i = 0; i < 4; i++ )
@@ -1954,8 +1978,16 @@ bool ImageConverter::configure(
             options["raw:use_camera_matrix"] = 0;
             break;
         case Settings::MatrixMethod::Metadata:
-            options["raw:ColorSpace"]        = "XYZ";
-            options["raw:use_camera_matrix"] = is_DNG ? 1 : 3;
+            if ( is_DNG )
+            {
+                options["raw:ColorSpace"]        = "raw";
+                options["raw:use_camera_matrix"] = 0;
+            }
+            else
+            {
+                options["raw:ColorSpace"]        = "XYZ";
+                options["raw:use_camera_matrix"] = 3;
+            }
             break;
         case Settings::MatrixMethod::Adobe:
             options["raw:ColorSpace"]        = "XYZ";
@@ -2029,12 +2061,12 @@ bool ImageConverter::configure(
         if ( is_DNG )
         {
             options["raw:use_camera_matrix"] = 1;
-            options["raw:use_camera_wb"]     = 1;
 
             std::string error_msg;
             if ( !prepare_transform_DNG(
                      image_spec,
                      settings,
+                     _wb_multipliers,
                      _idt_matrix,
                      _cat_matrix,
                      error_msg ) )

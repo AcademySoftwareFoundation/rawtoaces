@@ -218,7 +218,7 @@ A help message with a description of all command line options can be obtained by
         --highlight-mode VAL            0 = clip, 1 = unclip, 2 = blend, 3..9 = rebuild. (default: 0)
         --crop-box X Y W H              Apply custom crop. If not present, the default crop is applied, which should match the crop of the in-camera JPEG.
         --crop-mode STR                 Cropping mode. Supported options: 'none' (write out the full sensor area), 'soft' (write out full image, mark the crop as the display window), 'hard' (write out only the crop area). (default: soft)
-        --flip VAL                      If not 0, override the orientation specified in the metadata. 1..8 correspond to EXIF orientation codes (3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.) (default: 0)
+        --flip VAL                      If not -1, override the orientation specified in the metadata. 1..8 correspond to EXIF orientation codes (0 = none, 3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.) (default: -1)
         --denoise-threshold VAL         Wavelet denoising threshold (default: 0)
         --demosaic STR                  Demosaicing algorithm. Supported options: 'linear', 'VNG', 'PPG', 'AHD', 'DCB', 'AHD-Mod', 'AFD', 'VCD', 'Mixed', 'LMMSE', 'AMaZE', 'DHT', 'AAHD', 'AHD'. (default: AHD)
     Benchmarking and debugging:

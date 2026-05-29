@@ -414,10 +414,15 @@ void test_database_paths_default()
     OIIO_CHECK_EQUAL( paths.empty(), false );
 
 // On Unix systems, should have both new and legacy paths
-#ifdef WIN32
+#if defined( WIN32 )
     // On Windows, should have just the current directory
     OIIO_CHECK_EQUAL( paths.size(), 1 );
     OIIO_CHECK_EQUAL( paths[0], "." );
+#elif defined( __APPLE__ )
+    OIIO_CHECK_EQUAL( paths.size(), 3 );
+    OIIO_CHECK_EQUAL( paths[0], "/usr/local/share/rawtoaces/data" );
+    OIIO_CHECK_EQUAL( paths[1], "/opt/homebrew/share/rawtoaces/data" );
+    OIIO_CHECK_EQUAL( paths[2], "/usr/local/include/rawtoaces/data" );
 #else
     OIIO_CHECK_EQUAL( paths.size(), 2 );
     OIIO_CHECK_EQUAL( paths[0], "/usr/local/share/rawtoaces/data" );
@@ -1283,6 +1288,60 @@ void test_database_location_not_directory_warning()
 
     // Clean up the test file
     std::filesystem::remove( file_path );
+}
+
+/// Tests that a warning is issued when a database location path does not exist.
+void test_database_location_missing_warning()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    // Create test directory
+    TestFixture fixture;
+    auto       &test_dir =
+        fixture.with_camera( "Blackmagic", "Cinema Camera" ).build();
+
+    std::filesystem::path directory_path =
+        std::filesystem::temp_directory_path() / "missing_directory";
+
+    // Create a mock ImageSpec with camera metadata
+    auto image_spec =
+        ImageSpecBuilder().camera( "Blackmagic", "Cinema Camera" ).build();
+
+    // Configure settings with missing directory as database location
+    ImageConverter::Settings settings;
+    settings.database_directories = { directory_path.string(),
+                                      test_dir.get_database_path() };
+    settings.illuminant           = ""; // Empty to trigger auto-detection
+    settings.verbosity            = 1;
+
+    // Make sure the transform is not in the cache, otherwise DB look up
+    // will no be triggered.
+    settings.disable_cache = true;
+
+    // Provide WB_multipliers
+    std::vector<double>              WB_multipliers = { 1.5, 1.0, 1.2, 1.0 };
+    std::vector<std::vector<double>> IDT_matrix;
+    std::vector<std::vector<double>> CAT_matrix;
+
+    bool        success;
+    std::string error_message;
+    std::string output = capture_stderr( [&]() {
+        // This should succeed (using the valid database path)
+        // but should warn about the file path not being a directory
+        success = prepare_transform_spectral(
+            image_spec,
+            settings,
+            WB_multipliers,
+            IDT_matrix,
+            CAT_matrix,
+            error_message );
+    } );
+
+    OIIO_CHECK_ASSERT( success );
+
+    // Assert on expected warning
+    ASSERT_CONTAINS( output, "Warning: Database location '" );
+    ASSERT_CONTAINS( output, "' does not exist." );
 }
 
 /// Tests that spectral data can be loaded using an absolute file path
@@ -2698,6 +2757,54 @@ void test_lens_correction_type()
         rta::util::ImageConverter::Settings::LensCorrectionType::Aberration ) );
 }
 
+void test_metadata_wb_being_set()
+{
+    // Set the WB multipliers in the image spec, as if they came from an
+    // image file.
+    float           wb[4] = { 2.0f, 1.0f, 1.5f, 1.2f };
+    OIIO::ImageSpec spec;
+    spec.extra_attribs.attribute(
+        "raw:cam_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ), wb );
+
+    rta::util::ImageConverter converter;
+    converter.settings.WB_method =
+        rta::util::ImageConverter::Settings::WBMethod::Metadata;
+
+    OIIO::ParamValueList hints;
+    bool                 success        = converter.configure( spec, hints );
+    const auto          &wb_multipliers = converter.get_WB_multipliers();
+
+    OIIO_CHECK_ASSERT( success );
+    OIIO_CHECK_EQUAL( wb_multipliers.size(), 4 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[0], 2.0f, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[1], 1.0f, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[2], 1.5f, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[3], 1.2f, 1e-5 );
+}
+
+void test_custom_wb_being_set()
+{
+    rta::util::ImageConverter converter;
+    converter.settings.WB_method =
+        rta::util::ImageConverter::Settings::WBMethod::Custom;
+    converter.settings.custom_WB[0] = 2.0f;
+    converter.settings.custom_WB[1] = 1.0f;
+    converter.settings.custom_WB[2] = 1.5f;
+    converter.settings.custom_WB[3] = 1.2f;
+
+    OIIO::ImageSpec      spec;
+    OIIO::ParamValueList hints;
+    bool                 success        = converter.configure( spec, hints );
+    const auto          &wb_multipliers = converter.get_WB_multipliers();
+
+    OIIO_CHECK_ASSERT( success );
+    OIIO_CHECK_EQUAL( wb_multipliers.size(), 4 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[0], 2.0f, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[1], 1.0f, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[2], 1.5f, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( wb_multipliers[3], 1.2f, 1e-5 );
+}
+
 int main( int, char ** )
 {
     try
@@ -2756,6 +2863,7 @@ int main( int, char ** )
         test_invalid_blackbody_cct_exits();
         test_auto_detect_illuminant_with_wb_multipliers();
         test_database_location_not_directory_warning();
+        test_database_location_missing_warning();
         test_load_spectral_data_absolute_path();
         test_illuminant_file_load_failure();
         test_illuminant_type_mismatch();
@@ -2803,6 +2911,9 @@ int main( int, char ** )
         test_main_output_directory_error_hint();
         test_main_error_message_without_hint();
         test_main_error_data_dir_hint();
+
+        test_metadata_wb_being_set();
+        test_custom_wb_being_set();
 
         // Tests for lens correction types
         test_lens_correction_type();

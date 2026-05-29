@@ -21,6 +21,8 @@ add_executable (
 	Test_usage_example_core
 	usage_example_core.cpp
     test_utils.cpp
+    test_data_helpers.cpp
+    test_data_helpers.h
 )
 
 target_link_libraries(
@@ -39,6 +41,8 @@ add_test ( NAME Test_usage_example_core COMMAND Test_usage_example_core )
 add_executable (
 	Test_usage_example_util
 	usage_example_util.cpp
+    test_data_helpers.cpp
+    test_data_helpers.h
 )
 
 target_link_libraries(
@@ -46,6 +50,8 @@ target_link_libraries(
     PUBLIC
         ${RAWTOACES_UTIL_LIB}
         OpenImageIO::OpenImageIO
+    PRIVATE
+        nlohmann_json::nlohmann_json
 )
 
 setup_test_coverage(Test_usage_example_util)
@@ -56,6 +62,8 @@ add_executable (
 	Test_SpectralData
 	test_SpectralData.cpp
 	test_utils.cpp
+    test_data_helpers.cpp
+    test_data_helpers.h
 )
 
 target_link_libraries(
@@ -76,7 +84,9 @@ add_executable (
 	Test_IDT
 	testIDT.cpp
 	test_utils.cpp
-    	../src/misc/pragma.h
+    test_data_helpers.cpp
+    test_data_helpers.h
+    ../src/misc/pragma.h
 )
 
 target_link_libraries(
@@ -114,7 +124,9 @@ add_executable (
 	Test_DNGIdt
 	testDNGIdt.cpp
 	test_utils.cpp
-    	../src/misc/pragma.h
+    test_data_helpers.cpp
+    test_data_helpers.h
+    ../src/misc/pragma.h
 )
 
 target_link_libraries(
@@ -186,6 +198,8 @@ add_executable (
 	Test_UsageTimer
 	testUsageTimer.cpp
 	test_utils.cpp
+    test_data_helpers.cpp
+    test_data_helpers.h
 )
 
 target_link_libraries(
@@ -206,6 +220,8 @@ add_executable (
     Test_Cache
     testCache.cpp
     test_utils.cpp
+    test_data_helpers.cpp
+    test_data_helpers.h
 )
 
 target_link_libraries(
@@ -226,6 +242,8 @@ add_executable (
     Test_Exiftool
     testExiftool.cpp
     test_utils.cpp
+    test_data_helpers.cpp
+    test_data_helpers.h
 )
 
 target_link_libraries(
@@ -248,6 +266,8 @@ if ( RTA_ENABLE_LENSFUN )
         Test_LensCorrection
         testLensCorrection.cpp
         test_utils.cpp
+        test_data_helpers.cpp
+        test_data_helpers.h
     )
 
     target_link_libraries(
@@ -270,6 +290,8 @@ add_executable (
     Test_ColourTransforms
     testColourTransforms.cpp
     test_utils.cpp
+    test_data_helpers.cpp
+    test_data_helpers.h
 )
 
 target_link_libraries(
@@ -291,6 +313,8 @@ add_executable (
 	test_image_converter.cpp
 	test_utils.cpp
 	test_utils_image_converter.cpp
+	test_data_helpers.cpp
+	test_data_helpers.h
 )
 
 target_link_libraries(

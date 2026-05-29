@@ -1440,7 +1440,7 @@ void test_auto_detect_illuminant_with_wb_multipliers()
         "",
         { "Warning: Directory '",
           "illuminant' does not exist.",
-          "Found illuminant: '2000k'." } );
+          "Found illuminant: 'd60'." } );
 }
 
 /// Tests that a warning is issued when a database location path points to a file instead of a directory
@@ -2038,7 +2038,7 @@ void test_auto_detect_illuminant_from_raw_metadata()
         WB_multipliers,
         true,
         "",
-        { "Found illuminant: '2000k'." } );
+        { "Found illuminant: 'd60'." } );
 }
 
 /// Tests that auto-detection normalizes white balance multipliers when min_val > 0 and != 1
@@ -2077,7 +2077,7 @@ void test_auto_detect_illuminant_with_normalization()
         WB_multipliers,
         true,
         "",
-        { "Found illuminant: '1500k'." } );
+        { "Found illuminant: 'd55'." } );
 }
 
 /// Tests that prepare_transform_spectral fails when IDT matrix calculation fails

@@ -2542,11 +2542,12 @@ bool ImageConverter::make_output_path(
 
             new_directory = old_directory / new_directory;
 
-            if ( !std::filesystem::exists( new_directory ) )
+        std::error_code dir_ec;
+        if ( !std::filesystem::exists( new_directory, dir_ec ) )
+        {
+            if ( settings.create_dirs )
             {
-                if ( settings.create_dirs )
-                {
-                    if ( !std::filesystem::create_directory( new_directory ) )
+                if ( !std::filesystem::create_directory( new_directory, dir_ec ) )
                     {
                         status             = Status::OutputDirectoryError;
                         last_error_message = "Failed to create directory: '" +
@@ -2565,7 +2566,7 @@ bool ImageConverter::make_output_path(
             temp_path = std::filesystem::absolute( new_directory / filename );
         }
 
-        if ( !settings.overwrite && std::filesystem::exists( temp_path ) )
+        if ( !settings.overwrite && std::filesystem::exists( temp_path, dir_ec ) )
         {
             status = Status::FileExists;
             last_error_message =
@@ -2643,24 +2644,23 @@ bool ImageConverter::process_image( const std::string &input_filename )
         return false;
     }
 
-    // Validate input file exists
-    // Wrap in try-catch to handle filesystem exceptions on Windows
-    try
+    // Validate input file exists using non-throwing error_code overload
+    std::error_code ec;
+    if ( !std::filesystem::exists( input_filename, ec ) )
     {
-        if ( !std::filesystem::exists( input_filename ) )
+        if ( ec )
+        {
+            status = Status::FilesystemError;
+            last_error_message =
+                std::string( "Filesystem error while checking input file '" ) +
+                input_filename + "': " + ec.message();
+        }
+        else
         {
             status = Status::InputFileNotFound;
             last_error_message =
                 "Input file does not exist: '" + input_filename + "'.";
-            return false;
         }
-    }
-    catch ( const std::filesystem::filesystem_error &e )
-    {
-        status = Status::FilesystemError;
-        last_error_message =
-            std::string( "Filesystem error while checking input file '" ) +
-            input_filename + "': " + e.what();
         return false;
     }
 

@@ -93,6 +93,8 @@ void util_bindings( nanobind::module_ &m )
     settings.def_rw(
         "demosaic_algorithm", &ImageConverter::Settings::demosaic_algorithm );
     settings.def_rw(
+        "bad_pixels_path", &ImageConverter::Settings::bad_pixels_path );
+    settings.def_rw(
         "database_directories",
         &ImageConverter::Settings::database_directories );
     settings.def_rw( "overwrite", &ImageConverter::Settings::overwrite );

@@ -365,7 +365,10 @@ class TestSettings:
                                         
         converter.settings.demosaic_algorithm = "AHD"
         assert converter.settings.demosaic_algorithm == "AHD"
-                                        
+
+        converter.settings.bad_pixels_path = "test_path"
+        assert converter.settings.bad_pixels_path == "test_path"
+
         converter.settings.database_directories = ["dir1", "dir2"]
         assert converter.settings.database_directories == ["dir1", "dir2"]
                                         

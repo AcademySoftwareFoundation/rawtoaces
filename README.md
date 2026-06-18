@@ -15,7 +15,8 @@
 5. [Usage](#usage)
 6. [Known Issues](#known-issues)
 7. [Installation for Redhat](#installation-for-redhat)
-8. [License](#license)
+8. [Community](#community)
+9. [License](#license)
 
 ## Introduction
 The RAW to ACES Utility or `rawtoaces`, is a software package that converts digital camera RAW files to ACES container files containing image data encoded according to the Academy Color Encoding Specification (ACES) as specified in [SMPTE 2065-1](https://pub.smpte.org/pub/st2065-1/st2065-1-2021.pdf).  This is accomplished through one of two methods.
@@ -34,6 +35,7 @@ The source code contains the following:
 * [`cmake/`](./cmake) - CMake modules for locating dependencies (e.g., `libraw`)
 * [`config/`](./config) - CMake configuration files
 * [`docs/`](./docs) - Credits and changes information
+* [`CONTRIBUTING.md`](./CONTRIBUTING.md), [`GOVERNANCE.md`](./GOVERNANCE.md), [`SECURITY.md`](./SECURITY.md), and [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) - Project policies at the repository root
 * [`include/`](./include) - Public header files for the `rawtoaces` library
 * [`src/`](./src) - Source code for the core library, utility library, and the command line tool
 * [`unittest/`](./unittest) - Unit tests for `rawtoaces`
@@ -338,3 +340,14 @@ For a list of currently known issues see the [issues list](https://github.com/Ac
 ## Installation for Redhat
 
 Please follow the steps given in the docx files RAWtoACES_CentOS7.docx and RAWtoACES_CentOS7_noyum.docx with yum and without yum respectively.
+
+## Community
+
+rawtoaces is a project of the [Academy Software Foundation](https://www.aswf.io/).
+
+* [Contributing](CONTRIBUTING.md)
+* [Governance](GOVERNANCE.md)
+* [Security policy](SECURITY.md)
+* [Code of conduct](CODE_OF_CONDUCT.md)
+* [rawtoaces-discussion mail list](https://lists.aswf.io/g/rawtoaces-discussion)
+* `#rawtoaces` channel on [ASWF Slack](https://slack.aswf.io/)

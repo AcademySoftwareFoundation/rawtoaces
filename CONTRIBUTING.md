@@ -85,7 +85,7 @@ open source software best practice policies of the Linux Foundation.
 
 ### License
 
-rawtoaces is licensed under the [Apache-2.0](LICENSE.md)
+rawtoaces is licensed under the [Apache-2.0](LICENSE)
 license. Contributions to the library should abide by that standard
 license.
 
@@ -120,7 +120,7 @@ and [individual CLAs](https://docs.linuxfoundation.org/lfx/easycla/v2-current/co
 Every commit must be signed off.  That is, every commit log message
 must include a “`Signed-off-by`” line (generated, for example, with
 “`git commit --signoff`”), indicating that the committer wrote the
-code and has the right to release it under the [Apache-2.0](LICENSE.md)
+code and has the right to release it under the [Apache-2.0](LICENSE)
 license. See https://github.com/AcademySoftwareFoundation/tac/blob/main/process/contributing.md#contribution-sign-off for more information on this requirement.
 
 ## Development Workflow
@@ -215,7 +215,7 @@ who may discuss, offer constructive feedback, request changes, or approve
 the work.
 
 6. Upon receiving the required number of committer approvals (as
-outlined in [Required Approvals](#required-approvals)), a committer
+outlined in [Code Review and Required Approvals](#code-review-and-required-approvals)), a committer
 other than the PR contributor may merge changes into the ``main``
 branch.
 
@@ -280,7 +280,7 @@ All new source files should begin with a copyright and license stating:
 ### Formatting
 
 The coding style of the library source code is enforced via Clang format, with
-the configuration defined in [.clang-format](../.github/.clang-format).
+the configuration defined in [.clang-format](.clang-format).
 
 One of the CI test matrix entries runs clang-format and fails if any
 diffs were generated (that is, if any of your code did not 100% conform to

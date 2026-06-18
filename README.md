@@ -35,7 +35,7 @@ The source code contains the following:
 * [`cmake/`](./cmake) - CMake modules for locating dependencies (e.g., `libraw`)
 * [`config/`](./config) - CMake configuration files
 * [`docs/`](./docs) - Credits and changes information
-* [`CONTRIBUTING.md`](./CONTRIBUTING.md), [`GOVERNANCE.md`](./GOVERNANCE.md), [`SECURITY.md`](./SECURITY.md), and [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) - Project policies at the repository root
+* [`CONTRIBUTING.md`](./CONTRIBUTING.md), [`SECURITY.md`](./SECURITY.md), and [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) - Project policies at the repository root
 * [`include/`](./include) - Public header files for the `rawtoaces` library
 * [`src/`](./src) - Source code for the core library, utility library, and the command line tool
 * [`unittest/`](./unittest) - Unit tests for `rawtoaces`
@@ -346,7 +346,6 @@ Please follow the steps given in the docx files RAWtoACES_CentOS7.docx and RAWto
 rawtoaces is a project of the [Academy Software Foundation](https://www.aswf.io/).
 
 * [Contributing](CONTRIBUTING.md)
-* [Governance](GOVERNANCE.md)
 * [Security policy](SECURITY.md)
 * [Code of conduct](CODE_OF_CONDUCT.md)
 * [rawtoaces-discussion mail list](https://lists.aswf.io/g/rawtoaces-discussion)

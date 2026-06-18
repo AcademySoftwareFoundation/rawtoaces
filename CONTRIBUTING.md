@@ -10,9 +10,11 @@ explains our contribution process and procedures:
 * [Versioning Policy](#Versioning-Policy)
 
 For a description of the roles and responsibilities of the various
-members of the rawtoaces community, see [GOVERNANCE.md](GOVERNANCE.md) and the
-project's [Technical
-Charter](https://github.com/AcademySoftwareFoundation/foundation/blob/main/project_charters/rawtoaces_charter.pdf).
+members of the rawtoaces community, see the rawtoaces project's [Technical
+Charter](https://github.com/AcademySoftwareFoundation/foundation/blob/main/project_charters/rawtoaces_charter.pdf). Briefly,
+a "contributor" is anyone who submits content to the project, a
+"committer" reviews and approves such submissions, and the "Technical
+Steering Committee" provides general project oversight and governance.
 
 ## Getting Information
 

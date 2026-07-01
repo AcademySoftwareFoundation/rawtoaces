@@ -9,11 +9,7 @@ if ( RTA_ENABLE_EIGEN )
     find_package ( Eigen3 CONFIG REQUIRED )
 endif ( RTA_ENABLE_EIGEN )
 
-if (RTA_CENTOS7_CERES_HACK)
-    find_package ( Ceres MODULE REQUIRED )
-else ()
-    find_package ( Ceres CONFIG REQUIRED )
-endif ()
+find_package ( Ceres CONFIG REQUIRED )
 
 if ( RTA_ENABLE_LENSFUN )
     find_package ( PkgConfig REQUIRED )
@@ -28,7 +24,11 @@ if (RTA_BUILD_PYTHON_BINDINGS)
         set( DEV_MODULE Development.Module )
     endif ()
 
-    find_package ( Python 3.8 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED )
+    if ( RTA_PYTHON_VERSION STREQUAL "" )
+        find_package ( Python 3.8 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED )
+    else ()
+        find_package ( Python ${RTA_PYTHON_VERSION} EXACT COMPONENTS Interpreter ${DEV_MODULE} REQUIRED )
+    endif()
 
     execute_process (
         COMMAND "${Python_EXECUTABLE}" -m nanobind --cmake_dir

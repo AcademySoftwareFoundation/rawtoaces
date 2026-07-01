@@ -24,7 +24,7 @@ on:
         default: 'Release'
       install_deps:
         type: string
-        default: 'install_deps_yum'
+        default: 'install_deps_aswf'
       toolchain_file:
         type: string
       build_shared_libs:
@@ -39,18 +39,15 @@ on:
       vfxyear:
         type: number
         default: 0
-      ceres_hack:
-        type: string
-        default: 'OFF'
-      test_install:
-        type: string
-        default: 'ON'
       sanitiser_mode:
         type: string
         default: 'none'
       workflow_name:
         type: string
         default: 'CI Steps'
+      python_version:
+        type: string
+        default: ''
       
 
 permissions: read-all
@@ -69,32 +66,11 @@ jobs:
 
     steps:
           
-      - name: Install nodejs20glibc2.17 - VFX2022 only
-        if: inputs.vfxyear == 2022
-        run: |
-          curl --silent https://unofficial-builds.nodejs.org/download/release/v20.18.1/node-v20.18.1-linux-x64-glibc-217.tar.xz | tar -xJ --strip-components 1 -C /node20217 -f -
-          
       - name: "Checkout"
-        if: inputs.vfxyear != 2022
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: '0'
 
-      - name: "Checkout (VFX 2022)"
-        if: inputs.vfxyear == 2022
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          fetch-depth: '0'
-        env:
-          ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-
-      - name: Yum config - VFX2022 only
-        if: inputs.vfxyear == 2022
-        shell: bash
-        run: |
-          yum-config-manager --disable centos-sclo-rh || true
-          sed -i 's,^mirrorlist=,#,; s,^#baseurl=http://mirror\.centos\.org/centos/$releasever,baseurl=https://vault.centos.org/7.9.2009,' /etc/yum.repos.d/CentOS-Base.repo
-          
       - name: Cache vcpkg binary cache
         if: inputs.runner == 'windows-latest'
         uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
@@ -106,26 +82,15 @@ jobs:
             vcpkg-binary-cache-${{ runner.os }}-
             
       - name: Dependencies
-        if: inputs.vfxyear < 2024
         shell: bash
         run: |
           bash build_scripts/${{ inputs.install_deps }}.bash
-
-      - name: Dependencies (aswf/ci-rawtoaces)
-        if: inputs.vfxyear > 2023
-        shell: bash
-        run: |
-          conan profile detect --force
-          conan install --requires=tsl-robin-map/1.4.0 --generator CMakeDeps --generator CMakeToolchain --output-folder=build_deps --build=missing --settings compiler.cppstd=gnu17
-          python -m pip install pytest
-          sudo yum install --setopt=tsflags=nodocs -y perl-Image-ExifTool
     
       - name: Configure CMake
         run: >
           cmake 
           -B build 
           -S .
-          -D RTA_CENTOS7_CERES_HACK=${{ inputs.ceres_hack }}
           -D CMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
           -D CMAKE_CXX_STANDARD=${{ inputs.cxx_standard }}
           -D CMAKE_TOOLCHAIN_FILE="${{ inputs.toolchain_file }}"
@@ -134,6 +99,7 @@ jobs:
           -D RTA_ENABLE_LENSFUN="${{ inputs.enable_lensfun }}"
           -D RTA_ENABLE_EIGEN="${{ inputs.enable_eigen }}"
           -D RTA_SANITISER_MODE="${{ inputs.sanitiser_mode }}"
+          -D RTA_PYTHON_VERSION="${{ inputs.python_version }}"
           
       - name: Build
         # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
@@ -152,12 +118,10 @@ jobs:
           --output-on-failure
 
       - name: Install
-        if: inputs.test_install == 'ON'
         run: >
           cmake --install build
       
       - name: Configure config_tests
-        if: inputs.test_install == 'ON'
         run: >
           cmake
           -B build_config_test
@@ -168,12 +132,10 @@ jobs:
           -D CMAKE_BUILD_TYPE=${{ inputs.build_type }}
 
       - name: Build config_tests
-        if: inputs.test_install == 'ON'
         run: >
           cmake --build build_config_test --config ${{ inputs.build_type }}
           
       - name: Test config_tests
-        if: inputs.test_install == 'ON'
         run: >
           ctest
           --build-config ${{ inputs.build_type }}

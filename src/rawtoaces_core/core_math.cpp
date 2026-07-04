@@ -586,7 +586,10 @@ template <typename T> struct is_same<T, T>
     static const bool value = true;
 };
 
+// (6/29)^3, used in lab_F() and lab_F_prime().
 constexpr double v_6_29__3 = 6.0 * 6.0 * 6.0 / 29.0 / 29.0 / 29.0;
+
+// (29/6)^2, used in lab_F() and lab_F_prime().
 constexpr double v_29_6__2 = 29.0 * 29.0 / 6.0 / 6.0;
 
 // The non-linear perceptual function of the XYZ to LAB conversion.

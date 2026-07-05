@@ -22,36 +22,35 @@ jobs:
       cxx_compiler: ${{ matrix.cxx_compiler[1] }}
       cxx_standard: ${{ matrix.cxx_standard || 17 }}
       vfxyear: ${{ matrix.vfxyear || 0 }}
-      ceres_hack: ${{ matrix.ceres_hack || 'OFF' }}
-      test_install: ${{ matrix.test_install || 'ON' }}
-      toolchain_file: ${{ matrix.toolchain_file }}
+      toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
       workflow_name: ${{ matrix.compiler[0] }}
+      python_version: ${{ matrix.python_version }}
       
     strategy:
       # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
       fail-fast: false
       
       matrix:
-        vfxyear: [ 2022, 2023, 2024, 2025, 2026 ]
+        vfxyear: [ 2023, 2024, 2025, 2026, 2027 ]
         compiler: [ [gcc, g++], [clang, clang++] ]
         include:
-          - vfxyear: 2022
-            container: aswf/ci-osl:2022-clang14.1
-            container_volumes: '["/node20217:/node20217:rw,rshared", "/node20217:/__e/node20:ro,rshared]"]'
-            ceres_hack: 'ON'
-            test_install: 'OFF'
           - vfxyear: 2023
-            container: aswf/ci-osl:2023-clang15.2
+            container: aswf/ci-rawtoaces:2023.4
+            python_version: '3.10.20'
           - vfxyear: 2024
-            container: aswf/ci-rawtoaces:2024.7
-            toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
+            container: aswf/ci-rawtoaces:2024.8
+            python_version: '3.11.15'
           - vfxyear: 2025
-            container: aswf/ci-rawtoaces:2025.6
-            toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
+            container: aswf/ci-rawtoaces:2025.7
+            python_version: '3.11.15'
           - vfxyear: 2026
-            container: aswf/ci-rawtoaces:2026.4
+            container: aswf/ci-rawtoaces:2026.5
+            python_version: '3.13.14'
             cxx_standard: 20
-            toolchain_file: "/__w/rawtoaces/rawtoaces/build_deps/conan_toolchain.cmake"
+          - vfxyear: 2027
+            container: aswf/ci-rawtoaces:2027.0
+            python_version: '3.13.14'
+            cxx_standard: 20
 
   build:
     name: "${{matrix.os}} ${{matrix.c_compiler}}"

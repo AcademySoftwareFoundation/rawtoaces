@@ -11,13 +11,13 @@ export VCPKG_BINARY_SOURCES="clear;files,C:/vcpkg/binary-cache,readwrite"
 
 FEATURES=""
 
-if [ "$RTA_ENABLE_LENSFUN" == "ON" ]; then
+if [ "$RTA_ENABLE_LENSFUN" != "OFF" ]; then
     FEATURES="$FEATURES --x-feature=lensfun"
 fi
 
-if [ "$RTA_ENABLE_CERES" == "ON" ]; then
+if [ "$RTA_ENABLE_CERES" != "OFF" ]; then
     FEATURES="$FEATURES --x-feature=ceres"
-elif  [ "$RTA_ENABLE_EIGEN" == "ON" ]; then
+elif  [ "$RTA_ENABLE_EIGEN" != "OFF" ]; then
     FEATURES="$FEATURES --x-feature=eigen"
 fi
 

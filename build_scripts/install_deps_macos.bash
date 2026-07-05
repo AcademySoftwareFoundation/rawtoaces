@@ -11,17 +11,17 @@ brew install \
     robin-map \
     exiftool
 
-if [ "$RTA_ENABLE_EIGEN" == "ON" ];
+if [ "$RTA_ENABLE_EIGEN" != "OFF" ];
 then
     brew install eigen
 fi
 
-if [ "$RTA_ENABLE_CERES" == "ON" ];
+if [ "$RTA_ENABLE_CERES" != "OFF" ];
 then
     brew install ceres-solver
 fi
 
-if [ "$RTA_ENABLE_LENSFUN" == "ON" ];
+if [ "$RTA_ENABLE_LENSFUN" != "OFF" ];
 then
     brew install lensfun
 fi

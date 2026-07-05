@@ -10,19 +10,19 @@ time sudo apt-get -q -f install -y \
     openimageio-tools libopenimageio-dev \
     exiftool \
 
-if [ "$RTA_ENABLE_EIGEN" == "ON" ];
+if [ "$RTA_ENABLE_EIGEN" != "OFF" ];
 then
     time sudo apt-get -q -f install -y \
         libeigen3-dev
 fi
 
-if [ "$RTA_ENABLE_CERES" == "ON" ];
+if [ "$RTA_ENABLE_CERES" != "OFF" ];
 then
     time sudo apt-get -q -f install -y \
         libceres-dev
 fi
 
-if [ "$RTA_ENABLE_LENSFUN" == "ON" ];
+if [ "$RTA_ENABLE_LENSFUN" != "OFF" ];
 then
     time sudo apt-get -q -f install -y \
         liblensfun-dev \

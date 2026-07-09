@@ -57,12 +57,11 @@ To build `rawtoaces` you would need to satisfy these dependencies:
 | `nanobind`       | `2.2.0`    | nanobind is a small binding library that exposes C++ types in Python and vice versa. | [nanobind installation](https://nanobind.readthedocs.io/en/latest/installing.html) |
 | `lensfun`        | `0.3.2`    | Lensfun itself is a library for correcting several lens artefacts and a database for storing lens profiles. | [lensfun installation](https://lensfun.github.io/development/) |
 
-.. note::
-
-   There is an experimental mode allowing to build rawtoaces without requiring Eigen and/or Ceres. In order to do so, please provide these
-   parameters to cmake: `-D RTA_ENABLE_EIGEN=OFF -D RTA_ENABLE_CERES=OFF`. If both dependencies are disabled, there is no need to install
-   Eigen and Ceres. Note that Eigen is a transient dependency of Ceres, so if Eigen is disabled in rawtoaces, but Ceres isn't, you still
-   need to install Eigen.
+> [!NOTE] 
+> There is an experimental mode allowing to build rawtoaces without requiring Eigen and/or Ceres. In order to do so, please provide these
+> parameters to cmake: `-D RTA_ENABLE_EIGEN=OFF -D RTA_ENABLE_CERES=OFF`. If both dependencies are disabled, there is no need to install
+> Eigen and Ceres. Note that Eigen is a transient dependency of Ceres, so if Eigen is disabled in rawtoaces, but Ceres isn't, you still
+> need to install Eigen.
 
 ### MacOS
 

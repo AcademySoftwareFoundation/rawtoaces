@@ -152,6 +152,12 @@ endif ()
 ##   Install RAWTOACES.pc
 
 if ( PKG_CONFIG_FOUND )
+  if ( RTA_ENABLE_CERES )
+    set ( RTA_PC_CERES_LIB "-lCeres" )
+  else ()
+    set ( RTA_PC_CERES_LIB "" )
+  endif ()
+
   configure_file(config/RAWTOACES.pc.in "${PROJECT_BINARY_DIR}/RAWTOACES.pc" @ONLY)
   install( FILES "${PROJECT_BINARY_DIR}/RAWTOACES.pc" DESTINATION lib/pkgconfig COMPONENT dev )
 endif()

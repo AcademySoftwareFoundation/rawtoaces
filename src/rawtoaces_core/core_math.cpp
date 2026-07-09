@@ -3,15 +3,24 @@
 
 #include "core_math.h"
 #include "define.h"
+#include <assert.h>
+#include <cmath>
 
 #if defined( RTA_ENABLE_EIGEN ) && RTA_ENABLE_EIGEN
 #    include <Eigen/Core>
+#    include <Eigen/Dense>
+#    include <Eigen/QR>
 #    define RTA_HAS_EIGEN 1
 #else
 #    define RTA_HAS_EIGEN 0
 #endif
 
-#include <ceres/ceres.h>
+#if defined( RTA_ENABLE_CERES ) && RTA_ENABLE_CERES
+#    include <ceres/ceres.h>
+#    define RTA_HAS_CERES 1
+#else
+#    define RTA_HAS_CERES 0
+#endif
 
 namespace rta
 {
@@ -20,12 +29,20 @@ namespace core
 namespace math
 {
 
-// Enabled by default
+// Enabled by default if Eigen is available.
 bool use_eigen = RTA_HAS_EIGEN;
+
+// Enabled by default if Ceres is available.
+bool use_ceres = RTA_HAS_CERES;
 
 bool has_eigen()
 {
     return RTA_HAS_EIGEN;
+}
+
+bool has_ceres()
+{
+    return RTA_HAS_CERES;
 }
 
 void check_eigen()
@@ -44,6 +61,24 @@ void check_eigen()
         use_eigen = false;
     }
 #endif // !RTA_HAS_EIGEN
+}
+
+void check_ceres()
+{
+#if !RTA_HAS_CERES
+    if ( use_ceres )
+    {
+        static bool reported = false;
+        if ( !reported )
+        {
+            std::cerr << "The library was built without Ceres-solver support. "
+                      << "The build-in solver will be used instead."
+                      << std::endl;
+            reported = true;
+        }
+        use_ceres = false;
+    }
+#endif // !RTA_HAS_CERES
 }
 
 #if RTA_HAS_EIGEN
@@ -443,7 +478,18 @@ std::vector<std::vector<T>> XYZ_to_LAB( const std::vector<std::vector<T>> &XYZ )
         {
             tmpXYZ[i][j] = XYZ[i][j] / ACES_white_point_XYZ[j];
             if ( tmpXYZ[i][j] > T( k_e ) )
-                tmpXYZ[i][j] = ceres::pow( tmpXYZ[i][j], T( 1.0 / 3.0 ) );
+            {
+#if RTA_HAS_CERES
+                if ( use_ceres )
+                {
+                    tmpXYZ[i][j] = ceres::pow( tmpXYZ[i][j], T( 1.0 / 3.0 ) );
+                }
+                else
+#endif // RTA_HAS_CERES
+                {
+                    tmpXYZ[i][j] = std::pow( tmpXYZ[i][j], T( 1.0 / 3.0 ) );
+                }
+            }
             else
                 tmpXYZ[i][j] = T( k_k ) * tmpXYZ[i][j] + add;
         }
@@ -490,6 +536,199 @@ getCalcXYZt( const std::vector<std::vector<T>> &RGB, const T beta_params[6] )
     return calc_XYZ;
 }
 
+// Change the base type of a vector of numbers.
+template <typename T_dst, typename T_src>
+std::vector<T_dst> change_type( const std::vector<T_src> &vec )
+{
+    std::vector<T_dst> result( vec.size() );
+    std::transform(
+        vec.begin(), vec.end(), result.begin(), []( const T_src &v ) {
+            return T_dst( v );
+        } );
+    return result;
+}
+
+// Change the base type of a matrix of numbers.
+template <typename T_dst, typename T_src>
+std::vector<std::vector<T_dst>>
+change_type( const std::vector<std::vector<T_src>> &mat )
+{
+    std::vector<std::vector<T_dst>> result( mat.size() );
+    std::transform(
+        mat.begin(),
+        mat.end(),
+        result.begin(),
+        []( const std::vector<T_src> &v ) { return change_type<T_dst>( v ); } );
+    return result;
+}
+
+// Explicit no-op specialisation when double->double conversion requested.
+template <> std::vector<double> change_type( const std::vector<double> &vec )
+{
+    return vec;
+}
+
+// Explicit no-op specialisation when double->double conversion requested.
+template <>
+std::vector<std::vector<double>>
+change_type( const std::vector<std::vector<double>> &mat )
+{
+    return mat;
+}
+
+template <typename T, typename U> struct is_same
+{
+    static const bool value = false;
+};
+
+template <typename T> struct is_same<T, T>
+{
+    static const bool value = true;
+};
+
+// (6/29)^3, used in lab_F() and lab_F_prime().
+constexpr double v_6_29__3 = 6.0 * 6.0 * 6.0 / 29.0 / 29.0 / 29.0;
+
+// (29/6)^2, used in lab_F() and lab_F_prime().
+constexpr double v_29_6__2 = 29.0 * 29.0 / 6.0 / 6.0;
+
+// The non-linear perceptual function of the XYZ to LAB conversion.
+template <typename T> T lab_F( T arg )
+{
+    if ( arg > v_6_29__3 )
+    {
+#if RTA_HAS_CERES
+        constexpr bool is_ceres = !is_same<T, double>::value;
+        if constexpr ( is_ceres )
+        {
+            return ceres::pow( arg, T( 1.0 / 3.0 ) );
+        }
+        else
+#endif // RTA_HAS_CERES
+        {
+            return std::pow( arg, T( 1.0 / 3.0 ) );
+        }
+    }
+    else
+        return arg * v_29_6__2 / 3.0 + 4.0 / 29.0;
+}
+
+// The derivative of `lab_F`, see above.
+// (lab_F(arg))' = lab_F'(arg) * arg'
+template <typename T> T lab_F_prime( T arg, T arg_prime )
+{
+    if ( arg > v_6_29__3 )
+    {
+#if RTA_HAS_CERES
+        constexpr bool is_ceres = !is_same<T, double>::value;
+        if constexpr ( is_ceres )
+        {
+            // LCOV_EXCL_START
+            // This code is never executed, as Ceres calculates its own
+            // derivatives. We can not remove this branching
+            // completely, the compiler will complain about this function
+            // called in Ceres mode. Could have put `return 0` here, but having
+            // the correct code looks tidier.
+            return T( 1.0 / 3.0 ) * ceres::pow( arg, -2.0 / 3.0 ) * arg_prime;
+            // LCOV_EXCL_STOP
+        }
+        else
+#endif // RTA_HAS_CERES
+        {
+            return T( 1.0 / 3.0 ) * std::pow( arg, -2.0 / 3.0 ) * arg_prime;
+        }
+    }
+    else
+        return arg_prime * v_29_6__2 / 3.0;
+}
+
+// XYZ to LAB conversion.
+// The input XYZ value must be pre-normalised to the white point.
+template <typename T> void XYZ_to_LAB( const T ( &in )[3], T ( &out )[3] )
+{
+    out[0] = T( 116.0 ) * lab_F( in[1] ) - T( 16.0 );
+    out[1] = T( 500.0 ) * ( lab_F( in[0] ) - lab_F( in[1] ) );
+    out[2] = T( 200.0 ) * ( lab_F( in[1] ) - lab_F( in[2] ) );
+}
+
+// The derivative of the `XYZ_to_LAB` function, see above.
+template <typename T>
+void XYZ_to_LAB_prime(
+    const T ( &arg )[3], const T ( &arg_prime )[3], T ( &out )[3] )
+{
+    out[0] = T( 116.0 ) * lab_F_prime( arg[1], arg_prime[1] );
+    out[1] = T( 500.0 ) * ( lab_F_prime( arg[0], arg_prime[0] ) -
+                            lab_F_prime( arg[1], arg_prime[1] ) );
+    out[2] = T( 200.0 ) * ( lab_F_prime( arg[1], arg_prime[1] ) -
+                            lab_F_prime( arg[2], arg_prime[2] ) );
+}
+
+/// Solve a system of linear equations using Gauss elimination.
+bool solve_linear( std::vector<std::vector<double>> &a, std::vector<double> &b )
+{
+    size_t n = a.size();
+    assert( n > 0 );
+    assert( a[0].size() == n );
+    assert( b.size() == n );
+
+    for ( size_t i = 0; i < n; i++ )
+    {
+        double max_val = a[i][i];
+        size_t pivot   = i;
+
+        for ( size_t j = i; j < n; j++ )
+        {
+            double v = std::abs( a[j][i] );
+            if ( v > max_val )
+            {
+                max_val = v;
+                pivot   = j;
+            }
+        }
+
+        if ( max_val == 0 )
+            return false;
+
+        if ( pivot != i )
+        {
+            std::swap( a[i], a[pivot] );
+            std::swap( b[i], b[pivot] );
+        }
+
+        double scale = 1.0 / a[i][i];
+        for ( size_t k = i + 1; k < n; k++ )
+        {
+            a[i][k] *= scale;
+        }
+        a[i][i] = 1.0;
+        b[i] *= scale;
+
+        for ( size_t j = i + 1; j < n; j++ )
+        {
+            if ( a[j][i] != 0 )
+            {
+                double local_scale = -a[j][i];
+                for ( size_t k = i; k < n; k++ )
+                {
+                    a[j][k] += a[i][k] * local_scale;
+                }
+                b[j] += b[i] * local_scale;
+            }
+        }
+    }
+
+    for ( size_t i = n - 1; i > 0; i-- )
+    {
+        for ( size_t j = 0; j < i; j++ )
+        {
+            double scale = -a[j][i];
+            b[j] += b[i] * scale;
+        }
+    }
+
+    return true;
+}
+
 /// Cost function object for IDT matrix optimization using Ceres solver.
 /// This struct implements the objective function for curve fitting between camera RGB
 /// responses and target XYZ values. It's used to find the optimal 6-parameter IDT
@@ -504,7 +743,10 @@ struct IDTOptimizationCost
     {}
 
     template <typename T>
-    bool operator()( const T *beta_params, T *residuals ) const;
+    bool operator()(
+        const T                     *beta_params,
+        T                           *residuals,
+        std::vector<std::vector<T>> *jacobian = nullptr ) const;
 
     const std::vector<std::vector<double>> _source_RGB;
     const std::vector<std::vector<double>> _target_LAB;
@@ -527,23 +769,119 @@ struct IDTOptimizationCost
 /// @pre _source_RGB must contain camera RGB responses
 /// @pre _target_LAB must contain target LAB values
 template <typename T>
-bool IDTOptimizationCost::operator()( const T *beta_params, T *residuals ) const
+bool IDTOptimizationCost::operator()(
+    const T                     *beta_params,
+    T                           *residuals,
+    std::vector<std::vector<T>> *jacobian ) const
 {
-    std::vector<std::vector<T>> RGB_copy(
-        _source_RGB.size(), std::vector<T>( 3 ) );
-    for ( size_t i = 0; i < _source_RGB.size(); i++ )
-        for ( size_t j = 0; j < 3; j++ )
-            RGB_copy[i][j] = T( _source_RGB[i][j] );
+    size_t n = _source_RGB.size();
+    assert( n > 0 );
 
-    std::vector<std::vector<T>> out_calc_LAB =
-        XYZ_to_LAB( getCalcXYZt( RGB_copy, beta_params ) );
-    for ( size_t i = 0; i < _source_RGB.size(); i++ )
+    std::vector<std::vector<T>> source_rgb =
+        change_type<T, double>( _source_RGB );
+    std::vector<std::vector<T>> target_lab =
+        change_type<T, double>( _target_LAB );
+
+    const T                    *B = beta_params;
+    const T                     T1( 1.0 );
+    std::vector<std::vector<T>> mat_idt_transposed = {
+        { B[0], B[2], B[4] },
+        { B[1], B[3], B[5] },
+        { T1 - B[0] - B[1], T1 - B[2] - B[3], T1 - B[4] - B[5] }
+    };
+
+    std::vector<std::vector<T>> mat_out_to_xyz_transposed(
+        3, std::vector<T>( 3 ) );
+    for ( size_t i = 0; i < 3; i++ )
+    {
         for ( size_t j = 0; j < 3; j++ )
-            residuals[i * 3 + j] = _target_LAB[i][j] - out_calc_LAB[i][j];
+        {
+            mat_out_to_xyz_transposed[i][j] = T( acesrgb_XYZ_3[j][i] );
+        }
+    }
+
+    std::vector<std::vector<T>> rgb_W = { { T1, T1, T1 } };
+
+    std::vector<std::vector<T>> out_rgb =
+        product( source_rgb, mat_idt_transposed );
+    std::vector<std::vector<T>> out_xyz =
+        product( out_rgb, mat_out_to_xyz_transposed );
+    std::vector<std::vector<T>> xyz_W =
+        product( rgb_W, mat_out_to_xyz_transposed );
+
+    for ( size_t i = 0; i < n; i++ )
+    {
+        T xyz1[3] = { out_xyz[i][0], out_xyz[i][1], out_xyz[i][2] };
+
+        for ( size_t j = 0; j < 3; j++ )
+        {
+            xyz1[j] /= xyz_W[0][j];
+        }
+
+        T lab1[3];
+        T lab2[3] = { T( target_lab[i][0] ),
+                      T( target_lab[i][1] ),
+                      T( target_lab[i][2] ) };
+
+        XYZ_to_LAB( xyz1, lab1 );
+
+        residuals[i * 3 + 0] = lab1[0] - lab2[0];
+        residuals[i * 3 + 1] = lab1[1] - lab2[1];
+        residuals[i * 3 + 2] = lab1[2] - lab2[2];
+
+        if ( jacobian != nullptr )
+        {
+            // Partial derivatives of the out_rgb with regards to the IDT
+            // matrix variables (x)
+
+            // Ro = x0*(Rs-Bs) + x1*(Gs-Bs) + Rw*Bs
+            // Go = x2*(Rs-Bs) + x3*(Gs-Bs) + Gw*Bs
+            // Bo = x4*(Rs-Bs) + x5*(Gs-Bs) + Bw*Bs
+
+            // Ro_ = (Rs-Bs) when j == 0, 0 otherwise
+            // Ro_ = (Gs-Bs) when j == 1, 0 otherwise
+            // Go_ = (Rs-Bs) when j == 2, 0 otherwise
+            // Go_ = (Gs-Bs) when j == 3, 0 otherwise
+            // Bo_ = (Rs-Bs) when j == 4, 0 otherwise
+            // Bo_ = (Gs-Bs) when j == 5, 0 otherwise
+
+            T &Rs = source_rgb[i][0];
+            T &Gs = source_rgb[i][1];
+            T &Bs = source_rgb[i][2];
+
+            std::vector<std::vector<T>> out_rgb_ = {
+                { Rs - Bs, T( 0 ), T( 0 ) }, { Gs - Bs, T( 0 ), T( 0 ) },
+                { T( 0 ), Rs - Bs, T( 0 ) }, { T( 0 ), Gs - Bs, T( 0 ) },
+                { T( 0 ), T( 0 ), Rs - Bs }, { T( 0 ), T( 0 ), Gs - Bs },
+            };
+
+            // Partial derivatives of the out_xyz with regards to the IDT
+            // matrix variables (x), which is just the out_to_xyz matrix
+            // applied to out_rgb_.
+            std::vector<std::vector<T>> out_xyz_ =
+                product( out_rgb_, mat_out_to_xyz_transposed );
+
+            for ( size_t j = 0; j < 6; j++ )
+            {
+                T xyz_[3] = { out_xyz_[j][0] / xyz_W[0][0],
+                              out_xyz_[j][1] / xyz_W[0][1],
+                              out_xyz_[j][2] / xyz_W[0][2] };
+
+                T lab_[3];
+                XYZ_to_LAB_prime( xyz1, xyz_, lab_ );
+
+                for ( size_t c = 0; c < 3; c++ )
+                {
+                    ( *jacobian )[i * 3 + c][j] = T( lab_[c] );
+                }
+            }
+        }
+    }
 
     return true;
 }
 
+#if RTA_HAS_CERES
 /// Solve a non-linear optimisation problem by minimising the cost function
 /// provided in `cost_function`.
 ///
@@ -555,10 +893,12 @@ bool IDTOptimizationCost::operator()( const T *beta_params, T *residuals ) const
 /// - 3: Ceres solver full report to stderr
 /// - 4: Additionally enables Ceres minimizer progress to stdout
 /// @return true if optimization succeeded, false otherwise
-inline bool minimise(
+inline bool minimise_ceres(
     IDTOptimizationCost *cost_function,
     std::vector<double> &beta_params,
     size_t               size,
+    double               error_threshold,
+    size_t               max_steps,
     int                  verbosity )
 {
     ceres::Problem problem;
@@ -571,10 +911,10 @@ inline bool minimise(
 
     ceres::Solver::Options options;
     options.linear_solver_type        = ceres::DENSE_QR;
-    options.parameter_tolerance       = 1e-17;
-    options.function_tolerance        = 1e-17;
-    options.min_line_search_step_size = 1e-17;
-    options.max_num_iterations        = 300;
+    options.parameter_tolerance       = error_threshold;
+    options.function_tolerance        = error_threshold;
+    options.min_line_search_step_size = error_threshold;
+    options.max_num_iterations        = (int)max_steps;
 
     if ( verbosity > 3 )
         options.minimizer_progress_to_stdout = true;
@@ -587,10 +927,175 @@ inline bool minimise(
 
     return summary.num_successful_steps > 0;
 }
+#endif // RTA_HAS_CERES
+
+void print_summary(
+    const std::string &status,
+    double             initial_cost,
+    double             final_cost,
+    size_t             steps )
+{
+    std::cerr << std::scientific;
+    std::cerr << "Solver Summary (built-in solver)" << std::endl;
+    std::cerr << std::endl;
+    std::cerr << "Cost:" << std::endl;
+    std::cerr << "Initial " << std::right << std::setw( 37 ) << initial_cost
+              << std::endl;
+    std::cerr << "Final   " << std::right << std::setw( 37 ) << final_cost
+              << std::endl;
+    std::cerr << "Change  " << std::right << std::setw( 37 )
+              << initial_cost - final_cost << std::endl;
+    std::cerr << std::endl;
+    std::cerr << "Minimizer iterations " << std::right << std::setw( 24 )
+              << steps << std::endl;
+    std::cerr << std::endl;
+    std::cerr << "Termination:     " << status << std::endl;
+    std::cerr << std::endl;
+}
+
+inline bool minimise_builtin(
+    IDTOptimizationCost *cost_function,
+    std::vector<double> &beta_params,
+    size_t               size,
+    double               error_threshold,
+    size_t               max_steps,
+    int                  verbosity )
+{
+    assert( cost_function != nullptr );
+
+    bool        result = true;
+    std::string status;
+
+    size_t step         = 0;
+    double prev_cost    = 0;
+    double initial_cost = 0;
+
+    std::vector<std::vector<double>> jacobian(
+        size, std::vector<double>( 6, 0 ) );
+    std::vector<double> residuals( size, 0 );
+
+    while ( true )
+    {
+        if ( step == max_steps )
+        {
+            status = "NO_CONVERGENCE (Maximum number of iterations reached.)";
+            break;
+        }
+
+        double *B = beta_params.data();
+
+        // The cost function currently always returns true.
+        bool cost_result = ( *cost_function )( B, residuals.data(), &jacobian );
+        assert( cost_result );
+        (void)cost_result;
+
+        double new_cost = 0;
+        for ( auto &i: residuals )
+        {
+            new_cost += i * i;
+        }
+
+        if ( std::isnan( new_cost ) )
+        {
+            result = false;
+            status =
+                "FAILURE "
+                "(Initial residual and Jacobian evaluation failed.)";
+            break;
+        }
+
+        new_cost *= 0.5;
+
+        if ( step == 0 )
+        {
+            prev_cost    = new_cost;
+            initial_cost = new_cost;
+        }
+
+        auto J_t = transposed( jacobian );
+        auto A   = product( J_t, jacobian );
+        auto b   = product( J_t, residuals );
+
+        // Solve A * x = b to find the gradient
+
+#if RTA_HAS_EIGEN
+        if ( use_eigen )
+        {
+            Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> A_mat =
+                mat_from_std( A );
+            Eigen::Matrix<double, Eigen::Dynamic, 1> b_vec = vec_from_std( b );
+            Eigen::Matrix<double, Eigen::Dynamic, 1> x =
+                A_mat.colPivHouseholderQr().solve( b_vec );
+            b = vec_to_std( x );
+        }
+        else
+#endif //RTA_HAS_EIGEN
+        {
+            if ( !solve_linear( A, b ) )
+            {
+                for ( auto &v: b )
+                {
+                    v = 0.0;
+                }
+            }
+        }
+
+        double grad = 0;
+        for ( const auto &v: b )
+        {
+            grad = std::max( grad, std::fabs( v ) );
+        }
+
+        if ( grad < error_threshold )
+        {
+            status = "CONVERGENCE (Gradient tolerance reached.)";
+            break;
+        }
+
+        for ( size_t i = 0; i < 6; i++ )
+        {
+            beta_params[i] -= b[i];
+        }
+
+        if ( verbosity > 3 )
+        {
+            if ( step == 0 )
+            {
+                std::cout << "iter      cost      cost_change" << std::endl;
+            }
+
+            std::cout << std::setw( 4 ) << step << std::setw( 0 ) << " "
+                      << " " << std::right << std::setw( 12 )
+                      << std::setprecision( 6 ) << std::scientific << new_cost
+                      << " " << std::right << std::setw( 11 )
+                      << std::setprecision( 2 ) << std::scientific
+                      << prev_cost - new_cost << std::endl;
+        }
+
+        if ( step > 0 && ( std::abs( prev_cost - new_cost ) <
+                           prev_cost * error_threshold ) )
+        {
+            status = "CONVERGENCE (Function tolerance reached.)";
+            break;
+        }
+        prev_cost = new_cost;
+
+        step++;
+    }
+
+    delete cost_function;
+    if ( verbosity > 2 )
+    {
+        print_summary( status, initial_cost, prev_cost, step );
+    }
+    return result;
+}
 
 bool solve_spectral_transform(
     const std::vector<std::vector<double>> &source_RGB,
     const std::vector<std::vector<double>> &target_XYZ,
+    double                                  error_threshold,
+    size_t                                  max_steps,
     int                                     verbosity,
     std::vector<std::vector<double>>       &out_IDT_matrix )
 {
@@ -599,7 +1104,33 @@ bool solve_spectral_transform(
 
     std::vector<double> beta_params = { 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
 
-    if ( minimise( cost_function, beta_params, size, verbosity ) )
+    bool success = false;
+
+#if RTA_HAS_CERES
+    if ( use_ceres )
+    {
+        success = minimise_ceres(
+            cost_function,
+            beta_params,
+            size,
+            error_threshold,
+            max_steps,
+            verbosity );
+    }
+    else
+#endif // RTA_HAS_CERES
+    {
+        check_ceres();
+        success = minimise_builtin(
+            cost_function,
+            beta_params,
+            size,
+            error_threshold,
+            max_steps,
+            verbosity );
+    }
+
+    if ( success )
     {
         out_IDT_matrix.resize( 3 );
         out_IDT_matrix[0].resize( 3 );
@@ -622,6 +1153,16 @@ bool solve_spectral_transform(
     return false;
 }
 
+bool solve_spectral_transform(
+    const std::vector<std::vector<double>> &source_RGB,
+    const std::vector<std::vector<double>> &target_XYZ,
+    int                                     verbosity,
+    std::vector<std::vector<double>>       &out_IDT_matrix )
+{
+    return solve_spectral_transform(
+        source_RGB, target_XYZ, 1e-17, 300, verbosity, out_IDT_matrix );
+}
+
 // Explicit instantiation
 template std::vector<std::vector<double>> product<double>(
     const std::vector<std::vector<double>> &vct1,
@@ -639,6 +1180,15 @@ XYZ_to_LAB( const std::vector<std::vector<double>> &XYZ );
 // Explicit instantiation
 template std::vector<std::vector<double>> getCalcXYZt(
     const std::vector<std::vector<double>> &RGB, const double beta_params[6] );
+
+// Explicit instantiation
+template void XYZ_to_LAB( const double ( &in )[3], double ( &out )[3] );
+
+// Explicit instantiation
+template void XYZ_to_LAB_prime(
+    const double ( &arg )[3],
+    const double ( &arg_prime )[3],
+    double ( &out )[3] );
 
 } // namespace math
 } // namespace core

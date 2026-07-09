@@ -19,6 +19,10 @@ jobs:
     
     - name: Install OS dependencies
       shell: bash
+      env:
+        RTA_ENABLE_LENSFUN: 'ON'
+        RTA_ENABLE_EIGEN: 'ON'
+        RTA_ENABLE_CERES: 'ON'
       run: |
         bash build_scripts/install_deps_macos.bash
     

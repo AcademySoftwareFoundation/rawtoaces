@@ -146,6 +146,11 @@ add_test ( NAME Test_DNGIdt COMMAND Test_DNGIdt )
 add_executable (
 	Test_Math
 	testMath.cpp
+ 
+    # for testing stderr
+    test_data_helpers.cpp
+    test_data_helpers.h
+    test_utils.cpp
 )
 
 target_link_libraries(
@@ -153,6 +158,8 @@ target_link_libraries(
     PUBLIC
         ${RAWTOACES_CORE_LIB}
         OpenImageIO::OpenImageIO
+    PRIVATE
+        nlohmann_json::nlohmann_json
 )
 
 setup_test_coverage(Test_Math)

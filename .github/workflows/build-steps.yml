@@ -36,6 +36,9 @@ on:
       enable_eigen:
         type: string
         default: 'ON'
+      enable_ceres:
+        type: string
+        default: 'ON'
       vfxyear:
         type: number
         default: 0
@@ -80,8 +83,12 @@ jobs:
             vcpkg-binary-cache-${{ runner.os }}-${{ hashFiles('build_scripts/vcpkg.json') }}
           restore-keys: |
             vcpkg-binary-cache-${{ runner.os }}-
-            
+
       - name: Dependencies
+        env:
+          RTA_ENABLE_LENSFUN: '${{inputs.enable_lensfun}}'
+          RTA_ENABLE_EIGEN: '${{inputs.enable_eigen}}'
+          RTA_ENABLE_CERES: '${{inputs.enable_ceres}}'
         shell: bash
         run: |
           bash build_scripts/${{ inputs.install_deps }}.bash
@@ -98,6 +105,7 @@ jobs:
           -D ENABLE_SHARED="${{ inputs.build_shared_libs }}"
           -D RTA_ENABLE_LENSFUN="${{ inputs.enable_lensfun }}"
           -D RTA_ENABLE_EIGEN="${{ inputs.enable_eigen }}"
+          -D RTA_ENABLE_CERES="${{ inputs.enable_ceres }}"
           -D RTA_SANITISER_MODE="${{ inputs.sanitiser_mode }}"
           -D RTA_PYTHON_VERSION="${{ inputs.python_version }}"
           

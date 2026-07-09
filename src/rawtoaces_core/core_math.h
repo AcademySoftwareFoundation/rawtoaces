@@ -12,9 +12,21 @@ namespace core
 namespace math
 {
 
+// Set to `true` in order to use the Eigen implementation of linear algebra.
+// For use in the unit tests only.
 extern bool use_eigen;
 
+// Set to `true` in order to use the Ceres implementation of non-linear solver.
+// For use in the unit tests only.
+extern bool use_ceres;
+
+// Runtime check for the library being built with Eigen support.
+// For use in the unit tests only.
 bool has_eigen();
+
+// Runtime check for the library being built with Ceres support.
+// For use in the unit tests only.
+bool has_ceres();
 
 bool inverse(
     const std::vector<std::vector<double>> &src_mat,

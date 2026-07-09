@@ -8,7 +8,7 @@
 # Usage: 
 #    cmake -S . -B build -D rawtoaces_DIR=PATH_TO_INSTALL_DIR 
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 project( rawtoaces_config_test )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")

@@ -78,6 +78,7 @@ option( RTA_INSTALL_DATABASE "Download and install the spectral measurements dat
 option( ENABLE_COVERAGE "Enable code coverage reporting" OFF )
 option( RTA_ENABLE_LENSFUN "Use lensfun for lens correction" ON )
 option( RTA_ENABLE_EIGEN "Use Eigen for linear algebra" ON )
+option( RTA_ENABLE_CERES "Use Ceres Solver for matrix calculation" ON )
 set ( RTA_SANITISER_MODE "none" CACHE STRING "Dynamic analysis sanitiser mode ('none', 'address', 'memory', or 'thread')" )
 set ( RTA_PYTHON_VERSION ""  CACHE STRING "Python version to use" )
 
@@ -151,6 +152,12 @@ endif ()
 ##   Install RAWTOACES.pc
 
 if ( PKG_CONFIG_FOUND )
+  if ( RTA_ENABLE_CERES )
+    set ( RTA_PC_CERES_LIB "-lCeres" )
+  else ()
+    set ( RTA_PC_CERES_LIB "" )
+  endif ()
+
   configure_file(config/RAWTOACES.pc.in "${PROJECT_BINARY_DIR}/RAWTOACES.pc" @ONLY)
   install( FILES "${PROJECT_BINARY_DIR}/RAWTOACES.pc" DESTINATION lib/pkgconfig COMPONENT dev )
 endif()

@@ -587,15 +587,15 @@ template <typename T> struct is_same<T, T>
 };
 
 // (6/29)^3, used in lab_F() and lab_F_prime().
-constexpr double v_6_29__3 = 6.0 * 6.0 * 6.0 / 29.0 / 29.0 / 29.0;
+constexpr double v_6_29_3 = 6.0 * 6.0 * 6.0 / 29.0 / 29.0 / 29.0;
 
 // (29/6)^2, used in lab_F() and lab_F_prime().
-constexpr double v_29_6__2 = 29.0 * 29.0 / 6.0 / 6.0;
+constexpr double v_29_6_2 = 29.0 * 29.0 / 6.0 / 6.0;
 
 // The non-linear perceptual function of the XYZ to LAB conversion.
 template <typename T> T lab_F( T arg )
 {
-    if ( arg > v_6_29__3 )
+    if ( arg > v_6_29_3 )
     {
 #if RTA_HAS_CERES
         constexpr bool is_ceres = !is_same<T, double>::value;
@@ -610,14 +610,14 @@ template <typename T> T lab_F( T arg )
         }
     }
     else
-        return arg * v_29_6__2 / 3.0 + 4.0 / 29.0;
+        return arg * v_29_6_2 / 3.0 + 4.0 / 29.0;
 }
 
 // The derivative of `lab_F`, see above.
 // (lab_F(arg))' = lab_F'(arg) * arg'
 template <typename T> T lab_F_prime( T arg, T arg_prime )
 {
-    if ( arg > v_6_29__3 )
+    if ( arg > v_6_29_3 )
     {
 #if RTA_HAS_CERES
         constexpr bool is_ceres = !is_same<T, double>::value;
@@ -639,7 +639,7 @@ template <typename T> T lab_F_prime( T arg, T arg_prime )
         }
     }
     else
-        return arg_prime * v_29_6__2 / 3.0;
+        return arg_prime * v_29_6_2 / 3.0;
 }
 
 // XYZ to LAB conversion.

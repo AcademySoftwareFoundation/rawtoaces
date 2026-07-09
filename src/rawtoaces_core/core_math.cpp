@@ -678,7 +678,7 @@ bool solve_linear( std::vector<std::vector<double>> &a, std::vector<double> &b )
 
         for ( size_t j = i; j < n; j++ )
         {
-            double v = std::abs( a[i][j] );
+            double v = std::abs( a[j][i] );
             if ( v > max_val )
             {
                 max_val = v;

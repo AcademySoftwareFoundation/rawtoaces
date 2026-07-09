@@ -668,6 +668,23 @@ void test_solve_linear_success()
     OIIO_CHECK_EQUAL( b[1], 1 );
 }
 
+void test_solve_linear_pivot()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    // Row 0 has a valid col-0 pivot (2.0) but a larger value in col 1 (100.0).
+    // Partial pivoting must search column 0, not row 0, or elimination breaks.
+    // Ax = b, solution x = [1, 1]:
+    //   2x + 100y = 102
+    //   0x +   1y = 1
+    std::vector<std::vector<double>> a = { { 2.0, 100.0 }, { 0.0, 1.0 } };
+    std::vector<double>              b = { 102.0, 1.0 };
+    bool result                        = rta::core::math::solve_linear( a, b );
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_EQUAL( b[0], 1.0 );
+    OIIO_CHECK_EQUAL( b[1], 1.0 );
+}
+
 void test_change_type()
 {
     std::cout << std::endl << __FUNCTION__ << std::endl;
@@ -896,6 +913,7 @@ int main( int, char ** )
     test_change_type();
     test_solve_linear_failure();
     test_solve_linear_success();
+    test_solve_linear_pivot();
 
     return unit_test_failures;
 }

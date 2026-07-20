@@ -14,6 +14,7 @@ by first name.
 - Miaoqi Zhu (@miaoqi)
 - Mikael Sundell (@mikaelsundell)
 - Pavan Madduri (@pmady)
+- Pramila Jangid (@pramilajangid)
 - Rémi Achard (@remia)
 - Reto (@retokromer)
 - Scott Dyer (@scottdyer)

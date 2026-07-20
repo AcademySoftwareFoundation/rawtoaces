@@ -7,8 +7,8 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set( RAWTOACES_MAJOR_VERSION 2 )
-set( RAWTOACES_MINOR_VERSION 1 )
-set( RAWTOACES_PATCH_VERSION 1 )
+set( RAWTOACES_MINOR_VERSION 2 )
+set( RAWTOACES_PATCH_VERSION 0 )
 set( RAWTOACES_VERSION ${RAWTOACES_MAJOR_VERSION}.${RAWTOACES_MINOR_VERSION}.${RAWTOACES_PATCH_VERSION} )
 
 set(RAWTOACES_CORE_LIB "rawtoaces_core")
@@ -177,7 +177,7 @@ if ( RTA_INSTALL_DATABASE )
     FetchContent_Declare(
         rawtoaces_data
         GIT_REPOSITORY https://github.com/AcademySoftwareFoundation/rawtoaces-data
-        GIT_TAG 265e0038826572439d23934120f4bc69c19933e3 # v1.0.0
+        GIT_TAG 5cfa53707b053594b2d0d48e8019fb56e6582d6c # v1.1.0-RC
     )
 
     FetchContent_MakeAvailable(rawtoaces_data)

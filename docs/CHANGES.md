@@ -1,3 +1,37 @@
+Release 2.2.0 (July 25 2026) -- compared to 2.1.1
+--------------------------------------------------------
+
+
+**This version is API-compatible but not ABI-compatible with the previous versions.**
+
+### MAIN CHANGES:
+
+* Implements camera aliases, so multiple camera models sharing the same sensor can be processed using the same spectral sensitivity measurements.
+* Implements a custom matrix solver, making the dependency on Eigen and Ceres optional.
+
+### API changes:
+- deprecates rta::util::ImageConverter::get_IDT_matrix()
+- deprecates rta::util::ImageConverter::get_CAT_matrix()
+- adds rta::util::ImageConverter::get_transform_matrix()
+- adds a new class rta::core::TransformSolver as the base class for rta::core::SpectralSolver and rta::core::MetadataSolver
+- deprecates rta::core::SpectralSolver::calculate_IDT_matrix()
+- deprecates rta::core::SpectralSolver::get_IDT_matrix()
+- deprecates rta::core::MetadataSolver::calculate_IDT_matrix()
+- deprecates rta::core::MetadataSolver::calculate_CAT_matrix()
+- adds a new class rta::core::XYZD65Solver
+
+### All changes:
+
+- *feat*: implement camera aliases [#262](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/262)
+- *refactor*: implement a non-linear solver, making the dependency on Eigen and Ceres optional [#290](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/290), [#302](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/302)
+- *refactor*: refactor the math code in rawtoaces_core: [#265](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/265), [#269](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/269), [#267](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/267), [#270](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/270), [#271](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/271), [#282](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/282), [#283](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/283), [#285](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/285), [#285](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/286), [#287](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/287), [#288](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/288), [#289](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/289), [#291](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/291)
+- *doc*: publish versioned documentation [#261](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/261)
+- *doc*: various documentation fixes [#279](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/279), [#297](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/297), [#300](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/300)
+- *tests*: synthetic spectral curves for testing [#293](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/293)
+- *analysis*: fix static analysis errors [#266](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/266)
+- *CI*: various CI fixes and maintenance [#263](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/263), [#284](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/284), [#298](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/298), [#303](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/303), [#304](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/304), [#306](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/306)
+- *admin*: signed releases [#305](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/305)
+
 Release 2.1.1 (June 8 2026) -- compared to 2.1.0
 --------------------------------------------------------
 

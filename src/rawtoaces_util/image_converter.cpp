@@ -2627,7 +2627,7 @@ bool ImageConverter::save_image(
     return true;
 }
 
-bool ImageConverter::process_image( const std::string &input_filename )
+bool ImageConverter::check_input( const std::string &input_filename )
 {
     // Early validation: check if input file exists and is valid
     if ( input_filename.empty() )
@@ -2658,7 +2658,18 @@ bool ImageConverter::process_image( const std::string &input_filename )
         return false;
     }
 
+    return true;
+}
+
+bool ImageConverter::process_image( const std::string &input_filename )
+{
+    if ( !check_input( input_filename ) )
+    {
+        return false;
+    }
+
     std::string output_filename = input_filename;
+
     if ( !make_output_path( output_filename ) )
     {
         return false;

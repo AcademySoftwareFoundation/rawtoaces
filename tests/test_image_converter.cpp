@@ -2464,8 +2464,7 @@ void test_last_error_message_file_not_found()
 }
 void test_check_input_empty_filename()
 {
-    std::cout << std::endl
-              << "test_check_input_empty_filename()" << std::endl;
+    std::cout << std::endl << "test_check_input_empty_filename()" << std::endl;
 
     ImageConverter converter;
     bool           result = converter.check_input( "" );
@@ -2478,12 +2477,11 @@ void test_check_input_empty_filename()
 }
 void test_check_input_file_not_found()
 {
-    std::cout << std::endl
-              << "test_check_input_file_not_found()" << std::endl;
+    std::cout << std::endl << "test_check_input_file_not_found()" << std::endl;
 
     ImageConverter converter;
     std::string    nonexistent_file = "nonexistent_file_12345.dng";
-    bool           result = converter.check_input( nonexistent_file );
+    bool           result           = converter.check_input( nonexistent_file );
 
     OIIO_CHECK_ASSERT( !result );
     OIIO_CHECK_ASSERT(

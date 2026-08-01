@@ -27,6 +27,11 @@ void fix_metadata( OIIO::ImageSpec &spec );
 std::string
 combine_make_model( const std::string &make, const std::string &model );
 
+bool check_input(
+    const std::string      &input_filename,
+    ImageConverter::Status &status,
+    std::string             &error_message );
+
 bool fetch_missing_metadata(
     const std::string              &input_path,
     const ImageConverter::Settings &settings,

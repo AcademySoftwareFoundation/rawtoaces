@@ -447,7 +447,6 @@ public:
     ///     Full path to the file to be converted.
     /// @return
     ///    `true` if processed successfully.
-    bool check_input( const std::string &input_filename );
     bool process_image( const std::string &input_filename );
 
     /// Get the solved white balance multipliers of the currently processed

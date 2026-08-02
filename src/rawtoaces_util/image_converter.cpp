@@ -2630,7 +2630,7 @@ bool ImageConverter::save_image(
 bool check_input(
     const std::string      &input_filename,
     ImageConverter::Status &status,
-    std::string             &error_message )
+    std::string            &error_message )
 {
     // Early validation: check if input file exists and is valid
     if ( input_filename.empty() )

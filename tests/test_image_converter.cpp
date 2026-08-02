@@ -2447,9 +2447,9 @@ void test_last_error_message_file_not_found()
     std::cout << std::endl
               << "test_last_error_message_file_not_found()" << std::endl;
 
-    std::string             nonexistent_file = "nonexistent_file_12345.dng";
-    ImageConverter::Status  status;
-    std::string             error_message;
+    std::string            nonexistent_file = "nonexistent_file_12345.dng";
+    ImageConverter::Status status;
+    std::string            error_message;
     bool result = check_input( nonexistent_file, status, error_message );
 
     OIIO_CHECK_ASSERT( !result );

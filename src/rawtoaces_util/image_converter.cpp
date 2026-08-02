@@ -2627,13 +2627,16 @@ bool ImageConverter::save_image(
     return true;
 }
 
-bool ImageConverter::process_image( const std::string &input_filename )
+bool check_input(
+    const std::string      &input_filename,
+    ImageConverter::Status &status,
+    std::string            &error_message )
 {
     // Early validation: check if input file exists and is valid
     if ( input_filename.empty() )
     {
-        status             = Status::EmptyInputFilename;
-        last_error_message = "Empty input filename provided.";
+        status        = ImageConverter::Status::EmptyInputFilename;
+        error_message = "Empty input filename provided.";
         return false;
     }
 
@@ -2643,22 +2646,33 @@ bool ImageConverter::process_image( const std::string &input_filename )
     {
         if ( !std::filesystem::exists( input_filename ) )
         {
-            status = Status::InputFileNotFound;
-            last_error_message =
+            status = ImageConverter::Status::InputFileNotFound;
+            error_message =
                 "Input file does not exist: '" + input_filename + "'.";
             return false;
         }
     }
     catch ( const std::filesystem::filesystem_error &e )
     {
-        status = Status::FilesystemError;
-        last_error_message =
+        status = ImageConverter::Status::FilesystemError;
+        error_message =
             std::string( "Filesystem error while checking input file '" ) +
             input_filename + "': " + e.what();
         return false;
     }
 
+    return true;
+}
+
+bool ImageConverter::process_image( const std::string &input_filename )
+{
+    if ( !check_input( input_filename, status, last_error_message ) )
+    {
+        return false;
+    }
+
     std::string output_filename = input_filename;
+
     if ( !make_output_path( output_filename ) )
     {
         return false;

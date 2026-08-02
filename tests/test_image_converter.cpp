@@ -2432,14 +2432,13 @@ void test_last_error_message_empty_filename()
     std::cout << std::endl
               << "test_last_error_message_empty_filename()" << std::endl;
 
-    ImageConverter converter;
-    bool           result = converter.process_image( "" );
+    ImageConverter::Status status;
+    std::string            error_message;
+    bool                   result = check_input( "", status, error_message );
 
     OIIO_CHECK_ASSERT( !result );
-    OIIO_CHECK_ASSERT(
-        converter.status == ImageConverter::Status::EmptyInputFilename );
-    OIIO_CHECK_EQUAL(
-        converter.last_error_message, "Empty input filename provided." );
+    OIIO_CHECK_ASSERT( status == ImageConverter::Status::EmptyInputFilename );
+    OIIO_CHECK_EQUAL( error_message, "Empty input filename provided." );
 }
 
 /// Tests that last_error_message is set when input file does not exist
@@ -2448,21 +2447,17 @@ void test_last_error_message_file_not_found()
     std::cout << std::endl
               << "test_last_error_message_file_not_found()" << std::endl;
 
-    ImageConverter converter;
-    std::string    nonexistent_file = "nonexistent_file_12345.dng";
-    bool           result = converter.process_image( nonexistent_file );
+    std::string            nonexistent_file = "nonexistent_file_12345.dng";
+    ImageConverter::Status status;
+    std::string            error_message;
+    bool result = check_input( nonexistent_file, status, error_message );
 
     OIIO_CHECK_ASSERT( !result );
-    OIIO_CHECK_ASSERT(
-        converter.status == ImageConverter::Status::InputFileNotFound );
+    OIIO_CHECK_ASSERT( status == ImageConverter::Status::InputFileNotFound );
+    OIIO_CHECK_EQUAL( error_message.find( "Input file does not exist" ), 0 );
     OIIO_CHECK_EQUAL(
-        converter.last_error_message.find( "Input file does not exist" ), 0 );
-    OIIO_CHECK_EQUAL(
-        converter.last_error_message.find( nonexistent_file ) !=
-            std::string::npos,
-        true );
+        error_message.find( nonexistent_file ) != std::string::npos, true );
 }
-
 /// Tests that last_error_message is set when output file already exists and overwrite is false
 void test_last_error_message_file_exists()
 {

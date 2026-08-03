@@ -65,14 +65,15 @@ def build_docs(worktree: Path, output_dir: Path, release_name: str | None) -> No
     output_dir.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
 
-    run(["doxygen", "Doxyfile"], cwd=docs_dir, env=env)
+    src_dir = worktree / "src"
+    run(["doxygen", "docs/Doxyfile"], cwd=src_dir, env=env)
 
     sphinx_command = [
         "sphinx-build",
         "-b",
         "html",
         "-D",
-        "breathe_projects.rawtoaces=doxygen/xml",
+        "breathe_projects.rawtoaces=../doxygen/xml",
     ]
 
     if release_name is not None:

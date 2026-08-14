@@ -212,6 +212,12 @@ public:
         /// 'DHT', 'AAHD', 'AHD'.
         std::string demosaic_algorithm = "AHD";
 
+        /// A path to the file containing a list of bad bixels in libraw format:
+        /// a plain text where each line describes a single bad pixel using
+        /// three numbers separated by whitespace for the column, row and UNIX
+        /// timestamp.
+        std::string bad_pixels_path;
+
         //----------------------------------------------------------------------
         // Global config:
 

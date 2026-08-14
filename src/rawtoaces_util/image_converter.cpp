@@ -1028,6 +1028,11 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
         .defaultval( "AHD" )
         .action( OIIO::ArgParse::store() );
 
+    arg_parser.arg( "--bad-pixels-path" )
+        .help( "Path to a file describing bad pixels in the libraw format." )
+        .metavar( "STR" )
+        .action( OIIO::ArgParse::store() );
+
     arg_parser.separator( "Benchmarking and debugging:" );
 
     arg_parser.arg( "--list-formats" )
@@ -1351,6 +1356,7 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     settings.use_timing       = arg_parser["use-timing"].get<int>();
     settings.disable_cache    = arg_parser["disable-cache"].get<int>();
     settings.disable_exiftool = arg_parser["disable-exiftool"].get<int>();
+    settings.bad_pixels_path  = arg_parser["bad-pixels-path"].get();
 
 #if ( RTA_ENABLE_LENSFUN )
     std::string lens_correction = arg_parser["lens-correction"].get();
@@ -1897,6 +1903,7 @@ bool ImageConverter::configure(
     options["raw:HighlightMode"]      = settings.highlight_mode;
     options["raw:Demosaic"]           = settings.demosaic_algorithm;
     options["raw:threshold"]          = settings.denoise_threshold;
+    options["raw:bad_pixels"]         = settings.bad_pixels_path;
 
     if ( settings.crop_box[2] != 0 && settings.crop_box[3] != 0 )
     {

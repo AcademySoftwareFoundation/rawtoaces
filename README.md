@@ -233,6 +233,7 @@ A help message with a description of all command line options can be obtained by
         --flip VAL                      If not -1, override the orientation specified in the metadata. 1..8 correspond to EXIF orientation codes (0 = none, 3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.) (default: -1)
         --denoise-threshold VAL         Wavelet denoising threshold (default: 0)
         --demosaic STR                  Demosaicing algorithm. Supported options: 'linear', 'VNG', 'PPG', 'AHD', 'DCB', 'AHD-Mod', 'AFD', 'VCD', 'Mixed', 'LMMSE', 'AMaZE', 'DHT', 'AAHD', 'AHD'. (default: AHD)
+        --bad-pixels-path STR           Path to a file describing bad pixels in the libraw format.
     Benchmarking and debugging:
         --list-formats                  Shows the list of formats supported for RAW processing.
         --list-cameras                  Shows the list of cameras supported in spectral mode.

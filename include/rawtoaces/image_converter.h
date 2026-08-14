@@ -235,6 +235,9 @@ public:
         /// The directory to write the output files to.
         std::string output_dir;
 
+        /// Output file compression type.
+        std::string compression;
+
         //----------------------------------------------------------------------
         // Lens correction:
 

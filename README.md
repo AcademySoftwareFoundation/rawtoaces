@@ -197,8 +197,8 @@ A help message with a description of all command line options can be obtained by
         --version                       Print version and exit
         --wb-method STR                 White balance method. Supported options: metadata, illuminant, box, custom. (default: metadata)
         --mat-method STR                IDT matrix calculation method. Supported options: auto, spectral, metadata, Adobe, custom. (default: auto)
-        --illuminant STR                Illuminant for white balancing. (default = D55)
-        --wb-box X Y W H                Box to use for white balancing. (default = (0,0,0,0) - full image)
+        --illuminant STR                Illuminant for white balancing. (default: D55)
+        --wb-box X Y W H                Box to use for white balancing. (default: (0,0,0,0) - full image)
         --custom-wb R G B G             Custom white balance multipliers.
         --custom-mat Rr Rg Rb Gr Gg Gb Br Bg Bb
                                         Custom camera RGB to XYZ matrix.
@@ -219,6 +219,7 @@ A help message with a description of all command line options can be obtained by
         --data-dir STR                  Directory containing rawtoaces spectral sensitivity and illuminant data files. Overrides the default search path and the RAWTOACES_DATA_PATH environment variable.
         --output-dir STR                The directory to write the output files to. This gets applied to every input directory, so it is better to be used with a single input directory.
         --create-dirs                   Create output directories if they don't exist.
+        --compression STR               Output file compression type. Supported options: none, rle, zip, zips, piz, pxr24, b44, b44a, dwaa, dwab, htj2k256, htj2k32. (default: none)
         --disable-cache                 Disable the colour space transform cache.
     Raw conversion options:
         --auto-bright                   Enable automatic exposure adjustment.

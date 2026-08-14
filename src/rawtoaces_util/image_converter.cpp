@@ -802,13 +802,13 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
         .action( OIIO::ArgParse::store() );
 
     arg_parser.arg( "--illuminant" )
-        .help( "Illuminant for white balancing. (default = D55)" )
+        .help( "Illuminant for white balancing. (default: D55)" )
         .metavar( "STR" )
         .action( OIIO::ArgParse::store() );
 
     arg_parser.arg( "--wb-box" )
         .help(
-            "Box to use for white balancing. (default = (0,0,0,0) - full "
+            "Box to use for white balancing. (default: (0,0,0,0) - full "
             "image)" )
         .nargs( 4 )
         .metavar( "X Y W H" )
@@ -939,6 +939,14 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
     arg_parser.arg( "--create-dirs" )
         .help( "Create output directories if they don't exist." )
         .action( OIIO::ArgParse::store_true() );
+
+    arg_parser.arg( "--compression" )
+        .help(
+            "Output file compression type. Supported options: none, rle, "
+            "zip, zips, piz, pxr24, b44, b44a, dwaa, dwab, htj2k256, htj2k32. "
+            "(default: none)" )
+        .metavar( "STR" )
+        .action( OIIO::ArgParse::store() );
 
     arg_parser.separator( "Raw conversion options:" );
 
@@ -1349,6 +1357,8 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
 
     settings.scale             = arg_parser["scale"].get<float>();
     settings.denoise_threshold = arg_parser["denoise-threshold"].get<float>();
+
+    settings.compression = arg_parser["compression"].get();
 
     settings.overwrite        = arg_parser["overwrite"].get<int>();
     settings.create_dirs      = arg_parser["create-dirs"].get<int>();
@@ -2600,13 +2610,27 @@ bool ImageConverter::save_image(
 
     OIIO::ImageSpec image_spec = buf.spec();
     image_spec.set_format( OIIO::TypeDesc::HALF );
-    image_spec["acesImageContainerFlag"] = 1;
-    image_spec["compression"]            = "none";
     image_spec.attribute(
         "chromaticities",
         OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 8 ),
         chromaticities );
     image_spec["oiio:ColorSpace"] = "lin_ap0_scene";
+
+    const auto &compression = settings.compression;
+    if ( compression.empty() || compression == "none" )
+    {
+        image_spec["acesImageContainerFlag"] = 1;
+        image_spec["compression"]            = "none";
+    }
+    else
+    {
+        image_spec["acesImageContainerFlag"] = 0;
+        image_spec["compression"]            = compression;
+
+        std::cerr << "Warning: The ST2065-4 standard does not allow compressed "
+                  << "files. The output file is not AcesContainer-compliant."
+                  << std::endl;
+    }
 
     auto image_output = OIIO::ImageOutput::create( "exr" );
     bool result       = image_output->open( output_filename, image_spec );

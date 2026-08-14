@@ -380,7 +380,10 @@ class TestSettings:
                                         
         converter.settings.output_dir = "output_dir"
         assert converter.settings.output_dir == "output_dir"
-                                        
+
+        converter.settings.compression = "zip"
+        assert converter.settings.compression == "zip"
+
         converter.settings.use_timing = True
         assert converter.settings.use_timing == True
                                                 

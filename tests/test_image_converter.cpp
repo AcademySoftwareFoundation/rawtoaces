@@ -2934,6 +2934,30 @@ void test_custom_wb_being_set()
     OIIO_CHECK_EQUAL_THRESH( wb_multipliers[3], 1.2f, 1e-5 );
 }
 
+void test_compression_warning()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    if ( OIIO::openimageio_version() < 30000 )
+        return;
+
+    ImageConverter converter;
+    converter.settings.overwrite   = true;
+    converter.settings.compression = "zip";
+
+    std::string test_file = std::filesystem::absolute( dng_test_file ).string();
+
+    bool result;
+    auto output = capture_stderr(
+        [&]() { result = converter.process_image( test_file ); } );
+
+    OIIO_CHECK_ASSERT( result );
+    ASSERT_CONTAINS(
+        output,
+        "Warning: The ST2065-4 standard does not allow "
+        "compressed files" );
+}
+
 int main( int, char ** )
 {
     try
@@ -3053,6 +3077,9 @@ int main( int, char ** )
 
         // Tests for lens correction types
         test_lens_correction_type();
+
+        // Test compression warning.
+        test_compression_warning();
     }
     catch ( const std::exception &e )
     {

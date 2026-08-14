@@ -100,6 +100,7 @@ void util_bindings( nanobind::module_ &m )
     settings.def_rw( "overwrite", &ImageConverter::Settings::overwrite );
     settings.def_rw( "create_dirs", &ImageConverter::Settings::create_dirs );
     settings.def_rw( "output_dir", &ImageConverter::Settings::output_dir );
+    settings.def_rw( "compression", &ImageConverter::Settings::compression );
     settings.def_rw( "use_timing", &ImageConverter::Settings::use_timing );
     settings.def_rw( "verbosity", &ImageConverter::Settings::verbosity );
 

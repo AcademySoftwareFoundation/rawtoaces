@@ -97,24 +97,41 @@ struct Spectrum
 /// [rawtoaces-data](https://github.com/AcademySoftwareFoundation/rawtoaces-data).
 struct SpectralData
 {
-    /// Header data
+    /// Manufacturer of the device being tested.
     std::string manufacturer;
+    /// Model of the device being tested.
     std::string model;
+    /// Type of the spectral dataset.
     std::string type;
+    /// Description of the spectral dataset.
     std::string description;
+    /// Creator of the document, e.g. company, individual, laboratory, etc.
     std::string document_creator;
+    /// Generated unique identifier for the document, e.g. SHA256.
     std::string unique_identifier;
+    /// Measurement equipment used to test the device.
     std::string measurement_equipment;
+    /// Laboratory or company that performed the measurements.
     std::string laboratory;
+    /// Document creation date expressed as per RFC 3339 - Date and Time on the
+    /// Internet: Timestamps, e.g. `2017-01-01T12:00:00Z`.
     std::string creation_date;
+    /// Additional information for the spectral dataset.
     std::string comments;
+    /// Usage license of the document, e.g. "CC-BY-NC-ND".
     std::string license;
 
-    // Spectral data
+    /// Unit or quantity of measurement for the spectral dataset.
     std::string units;
+    /// Reflection geometry attributes as per CIE 15:2004.
+    /// Required if units is reflectance.
     std::string reflection_geometry;
+    /// Transmission geometry attributes as per CIE 15:2004.
+    /// Required if units is transmittance.
     std::string transmission_geometry;
+    /// Spectro-radiometer full-width at half-maximum bandwidth in nm.
     std::string bandwidth_FWHM;
+    /// Whether bandwidth correction has been applied to the spectral data.
     std::string bandwidth_corrected;
 
     /// A spectral channel, contains a channel name and the corresponding

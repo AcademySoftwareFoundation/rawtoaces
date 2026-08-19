@@ -27,7 +27,7 @@ if(DOXYGEN_FOUND AND SPHINX_EXECUTABLE)
 
     # Sphinx target - generates HTML documentation
     add_custom_target(sphinx
-        COMMAND ${SPHINX_EXECUTABLE}
+	${SPHINX_EXECUTABLE}
             -b html
             -c ${CMAKE_CURRENT_SOURCE_DIR}
             -D breathe_projects.rawtoaces=${CMAKE_BINARY_DIR}/src/docs/doxygen/xml

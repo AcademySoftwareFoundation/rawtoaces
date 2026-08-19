@@ -13,15 +13,20 @@ namespace util
 
 /// Collect all files from given `paths` into batches.
 /// For each path that is a directory, a batch is created in the returned vector
-/// and filled with the file names. Invalid paths are skipped with an error message.
-/// First batch is reserved for all paths that are files. If no such paths are provided,
-/// first batch will be empty.
+/// and filled with the file names. Invalid paths are skipped with an error
+/// message.
+///
+/// First batch is reserved for all paths that are individual files. If no such
+/// paths are provided, the first batch will be empty.
 ///
 /// @param paths vector of paths to files or directories to process.
 /// @return vector of batches, where each batch contains files from one input path.
 std::vector<std::vector<std::string>>
 collect_image_files( const std::vector<std::string> &paths );
 
+/// The ImageConverter class is the main interface for converting RAW images to
+/// ACES format. It provides a high-level API that handles the entire conversion
+/// pipeline.
 class ImageConverter
 {
 public:
@@ -94,6 +99,7 @@ public:
         enum class MatrixMethod
         {
             /// Automatically choose the best available matrix method.
+            ///
             /// - If spectral sensitivity data for the camera is available,
             ///   use `Spectral`.
             /// - Otherwise, fall back to `Metadata`.
@@ -135,6 +141,7 @@ public:
         /// An illuminant to use for white balancing and/or colour matrix
         /// calculation. Only used when `WB_method` ==
         /// `WBMethod::Illuminant` and `matrix_method` == `MatrixMethod::Spectral`.
+        ///
         /// An illuminant can be provided as a black body correlated colour
         /// temperature, like `3200K`; or a D-series illuminant, like `D56`;
         /// or any other illuminant, in such case it must be present in the data

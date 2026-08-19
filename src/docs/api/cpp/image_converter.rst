@@ -39,19 +39,3 @@ Basic Usage
 
    // Process an image
    bool success = converter.process_image("input.dng");
-
-Class Reference
----------------
-
-ImageConverter Class
-^^^^^^^^^^^^^^^^^^^^
-
-.. doxygenclass:: rta::util::ImageConverter
-   :members:
-   :protected-members:
-   :undoc-members:
-
-Utility Functions
------------------
-
-.. doxygenfunction:: rta::util::collect_image_files

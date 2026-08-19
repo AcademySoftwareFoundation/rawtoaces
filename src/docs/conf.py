@@ -23,11 +23,16 @@ release = '2.0.0'
 extensions = [
     'breathe',
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.napoleon',
     'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
+    'sphinx_autodoc_typehints',
     'sphinx_rtd_theme',
+    'sphinx_multiversion',
     'myst_parser',
-    'sphinx_tabs.tabs'
+    'sphinx_tabs.tabs',
+    'enum_tools.autoenum'
 ]
 
 templates_path = ['_templates']
@@ -41,6 +46,12 @@ source_suffix = {
 
 # The master toctree document.
 master_doc = 'index'
+
+# Autodoc needs to import the rawtoaces module to read the docstrings.
+# Adding the path to the module stub to the search path.
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path('.', 'api', 'python').resolve()))
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

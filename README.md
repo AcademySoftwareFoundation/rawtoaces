@@ -359,6 +359,8 @@ rawtoaces is a project of the [Academy Software Foundation](https://www.aswf.io/
 
 * [Documentation](https://rawtoaces.readthedocs.io/en/latest/)
 * [Contributing](CONTRIBUTING.md)
+* [AI Policy](docs/AI_Policy.md) decribes our policies on AI coding
+  assistance tools.
 * [Security policy](SECURITY.md)
 * [Code of conduct](CODE_OF_CONDUCT.md)
 * [rawtoaces-discussion mail list](https://lists.aswf.io/g/rawtoaces-discussion)

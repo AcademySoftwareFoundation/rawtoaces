@@ -1030,8 +1030,7 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
     arg_parser.arg( "--demosaic" )
         .help(
             "Demosaicing algorithm. Supported options: 'linear', 'VNG', 'PPG', "
-            "'AHD', 'DCB', 'AHD-Mod', 'AFD', 'VCD', 'Mixed', 'LMMSE', 'AMaZE', "
-            "'DHT', 'AAHD', 'AHD'." )
+            "'AHD', 'DCB', 'DHT', 'AAHD'." )
         .metavar( "STR" )
         .defaultval( "AHD" )
         .action( OIIO::ArgParse::store() );
@@ -1322,10 +1321,9 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     }
 
     auto demosaic_algorithm = arg_parser["demosaic"].get();
-    static std::set<std::string> demosaic_algorithms = {
-        "linear", "VNG",   "PPG",   "AHD",   "DCB", "AHD-Mod", "AFD",
-        "VCD",    "Mixed", "LMMSE", "AMaZE", "DHT", "AAHD",    "AHD"
-    };
+    static std::set<std::string> demosaic_algorithms = { "linear", "VNG", "PPG",
+                                                         "AHD",    "DCB", "DHT",
+                                                         "AAHD" };
 
     if ( demosaic_algorithms.count( demosaic_algorithm ) != 1 )
     {

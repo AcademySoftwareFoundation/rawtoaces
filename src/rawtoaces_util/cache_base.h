@@ -63,9 +63,9 @@ template <class Descriptor, class Data> class Cache
 public:
     Cache( const std::string &cache_name = "default" ) : name( cache_name ) {}
 
-    const std::pair<bool, Data> &fetch(
-        const Descriptor                        &descriptor,
-        const std::function<bool( Data &data )> &func )
+    std::shared_ptr<const Data> fetch(
+        const Descriptor                                   &descriptor,
+        const std::function<std::shared_ptr<const Data>()> &func )
     {
         if ( disabled )
         {
@@ -73,25 +73,26 @@ public:
             {
                 std::cerr << "Cache (" << name << "): disabled." << std::endl;
             }
-            _map.clear();
+            return func();
         }
-        else
+
+        if ( verbosity > 0 )
         {
+            std::cerr << "Cache (" << name << "): searching for an entry ["
+                      << descriptor << "]." << std::endl;
+        }
 
-            if ( verbosity > 0 )
-            {
-                std::cerr << "Cache (" << name << "): searching for an entry ["
-                          << descriptor << "]." << std::endl;
-            }
-
+        // Check if the requested entry is already in cache.
+        while ( true )
+        {
+            std::unique_lock<std::mutex> lock( _mutex );
             for ( auto iter = _map.begin(); iter != _map.end(); ++iter )
             {
                 if ( std::get<0>( *iter ) == descriptor )
                 {
                     if ( iter != _map.begin() )
                     {
-                        _map.splice(
-                            _map.begin(), _map, iter, std::next( iter ) );
+                        _map.splice( _map.begin(), _map, iter );
                     }
 
                     if ( verbosity > 0 )
@@ -103,23 +104,47 @@ public:
                 }
             }
 
-            if ( _map.size() == capacity )
+            // Not found in cache. Check if the requested entry is being
+            // calculated in another thread.
+            auto iter = find_pending( descriptor );
+            if ( iter == _pending_keys.end() )
             {
-                _map.pop_back();
+                // Not found. Break out of the loop and calculate a new entry.
+                _pending_keys.push_back( descriptor );
+                break;
             }
 
-            if ( verbosity > 0 )
-            {
-                std::cerr << "Cache (" << name
-                          << "): not found. Calculating a new entry."
-                          << std::endl;
-            }
+            // The requested cache entry is being calculated by another thread.
+            // Wait on this thread until the cache is modified and try again.
+            _condition_variable.wait( lock );
         }
 
-        auto &entry        = _map.emplace_front();
-        entry.first        = descriptor;
-        entry.second.first = func( entry.second.second );
-        return entry.second;
+        if ( verbosity > 0 )
+        {
+            std::cerr << "Cache (" << name
+                      << "): not found. Calculating a new entry." << std::endl;
+        }
+
+        auto cached_object = func();
+
+        std::lock_guard<std::mutex> lock( _mutex );
+        auto                       &entry = _map.emplace_front();
+        entry.first                       = descriptor;
+        entry.second                      = cached_object;
+
+        // If the cache has exceeded the max capacity, remove the oldest entry.
+        if ( _map.size() > capacity )
+        {
+            _map.pop_back();
+        }
+
+        // Remove from the list of entries being processed and
+        // notify other threads that the cache has been updated.
+        auto iter = find_pending( descriptor );
+        _pending_keys.erase( iter );
+        _condition_variable.notify_all();
+
+        return cached_object;
     };
 
     bool        disabled  = false;
@@ -128,7 +153,24 @@ public:
     std::string name      = "default";
 
 private:
-    std::list<std::pair<Descriptor, std::pair<bool, Data>>> _map;
+    std::list<std::pair<Descriptor, std::shared_ptr<const Data>>> _map;
+    std::list<Descriptor>                                         _pending_keys;
+
+    std::mutex              _mutex;
+    std::condition_variable _condition_variable;
+
+    typename std::list<Descriptor>::iterator
+    find_pending( const Descriptor &descriptor )
+    {
+        for ( auto i = _pending_keys.begin(); i != _pending_keys.end(); i++ )
+        {
+            if ( *i == descriptor )
+            {
+                return i;
+            }
+        }
+        return _pending_keys.end();
+    }
 };
 
 } // namespace cache

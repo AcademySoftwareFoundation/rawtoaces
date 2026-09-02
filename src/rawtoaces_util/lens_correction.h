@@ -13,19 +13,19 @@ namespace rta
 namespace util
 {
 
-std::pair<bool, const OIIO::ImageBuf &> fetch_vignette_map(
+std::shared_ptr<const OIIO::ImageBuf> fetch_vignette_map(
     const OIIO::ImageSpec &spec,
     int                    verbosity,
     bool                   disable_cache,
     std::string           &error_message );
 
-std::pair<bool, const OIIO::ImageBuf &> fetch_distortion_map(
+std::shared_ptr<const OIIO::ImageBuf> fetch_distortion_map(
     const OIIO::ImageSpec &spec,
     int                    verbosity,
     bool                   disable_cache,
     std::string           &error_message );
 
-std::pair<bool, const OIIO::ImageBuf &> fetch_aberration_map(
+std::shared_ptr<const OIIO::ImageBuf> fetch_aberration_map(
     const OIIO::ImageSpec &spec,
     int                    verbosity,
     bool                   disable_cache,
@@ -85,23 +85,14 @@ bool apply_aberration_map(
     bool                  disable_cache,
     std::string          &error_message );
 
-bool solve_vignette_map(
-    const OIIO::ImageSpec &spec,
-    bool                   inverse,
-    OIIO::ImageBuf        &buffer,
-    std::string           &error_message );
+std::shared_ptr<const OIIO::ImageBuf> solve_vignette_map(
+    const OIIO::ImageSpec &spec, bool inverse, std::string &error_message );
 
-bool solve_distortion_map(
-    const OIIO::ImageSpec &spec,
-    bool                   inverse,
-    OIIO::ImageBuf        &buffer,
-    std::string           &error_message );
+std::shared_ptr<const OIIO::ImageBuf> solve_distortion_map(
+    const OIIO::ImageSpec &spec, bool inverse, std::string &error_message );
 
-bool solve_aberration_map(
-    const OIIO::ImageSpec &spec,
-    bool                   inverse,
-    OIIO::ImageBuf        &cache_data,
-    std::string           &error_message );
+std::shared_ptr<const OIIO::ImageBuf> solve_aberration_map(
+    const OIIO::ImageSpec &spec, bool inverse, std::string &error_message );
 
 void reset_database();
 

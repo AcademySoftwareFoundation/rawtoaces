@@ -233,7 +233,7 @@ A help message with a description of all command line options can be obtained by
         --crop-mode STR                 Cropping mode. Supported options: 'none' (write out the full sensor area), 'soft' (write out full image, mark the crop as the display window), 'hard' (write out only the crop area). (default: soft)
         --flip VAL                      If not -1, override the orientation specified in the metadata. 1..8 correspond to EXIF orientation codes (0 = none, 3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.) (default: -1)
         --denoise-threshold VAL         Wavelet denoising threshold (default: 0)
-        --demosaic STR                  Demosaicing algorithm. Supported options: 'linear', 'VNG', 'PPG', 'AHD', 'DCB', 'AHD-Mod', 'AFD', 'VCD', 'Mixed', 'LMMSE', 'AMaZE', 'DHT', 'AAHD', 'AHD'. (default: AHD)
+        --demosaic STR                  Demosaicing algorithm. Supported options: 'linear', 'VNG', 'PPG', 'AHD', 'DCB', 'DHT', 'AAHD'. (default: AHD)
         --bad-pixels-path STR           Path to a file describing bad pixels in the libraw format.
     Benchmarking and debugging:
         --list-formats                  Shows the list of formats supported for RAW processing.

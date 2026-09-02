@@ -137,7 +137,7 @@ ImageConverter
 
       Demosaicing algorithm. Supported options::
         
-       linear VNG PPG AHD DCB AHD-Mod AFD VCD Mixed LMMSE AMaZE DHT AAHD AHD'
+       linear VNG PPG AHD DCB DHT AAHD
 
     .. py:attribute:: list[str] database_directories
 

@@ -188,21 +188,20 @@ const lfModifier *modifier_from_spec(
     return mod;
 }
 
-bool solve_vignette_map(
-    const OIIO::ImageSpec &spec,
-    bool                   inverse,
-    cache::ImageBufData   &cache_data,
-    std::string           &error_message )
+std::shared_ptr<const OIIO::ImageBuf> solve_vignette_map(
+    const OIIO::ImageSpec &spec, bool inverse, std::string &error_message )
 {
-    int             nthreads = 1;
-    OIIO::ImageBuf &dst      = cache_data;
-    dst.reset( spec );
+    int nthreads = 0;
 
     const lfModifier *modifier =
         modifier_from_spec( spec, inverse, true, false, false, error_message );
 
     if ( modifier == nullptr )
-        return false;
+        return nullptr;
+
+    auto            result = std::make_shared<OIIO::ImageBuf>();
+    OIIO::ImageBuf &dst    = *result.get();
+    dst.reset( spec );
 
     OIIO::ImageBufAlgo::parallel_image(
         dst.roi(), nthreads, [&]( OIIO::ROI roi ) {
@@ -241,10 +240,10 @@ bool solve_vignette_map(
         } );
 
     delete modifier;
-    return true;
+    return result;
 }
 
-std::pair<bool, const OIIO::ImageBuf &> fetch_vignette_map(
+std::shared_ptr<const OIIO::ImageBuf> fetch_vignette_map(
     const OIIO::ImageSpec &spec,
     int                    verbosity,
     bool                   disable_cache,
@@ -256,9 +255,9 @@ std::pair<bool, const OIIO::ImageBuf &> fetch_vignette_map(
     vignette_cache.disabled  = disable_cache;
     vignette_cache.verbosity = verbosity;
 
-    const std::pair<bool, OIIO::ImageBuf> &result =
-        vignette_cache.fetch( descriptor, [&]( OIIO::ImageBuf &buffer ) {
-            return solve_vignette_map( spec, false, buffer, error_message );
+    std::shared_ptr<const OIIO::ImageBuf> result =
+        vignette_cache.fetch( descriptor, [&]() {
+            return solve_vignette_map( spec, false, error_message );
         } );
 
     return result;
@@ -324,21 +323,22 @@ bool apply_vignette_map(
         aperture,
         focus_distance );
 
-    const auto &result =
+    const auto result =
         fetch_vignette_map( spec, verbosity, disable_cache, error_message );
-    bool        success      = result.first;
-    const auto &vignette_map = result.second;
 
-    if ( !success )
+    if ( !result )
     {
         error_message = "Failed to create the vignette map. " + error_message;
         return false;
     }
 
+    const auto &vignette_map = *result.get();
+
 #if OIIO_VERSION < OIIO_MAKE_VERSION( 3, 1, 0 )
-    success = OIIO::ImageBufAlgo::mul( dst_buffer, src_buffer, vignette_map );
+    bool success =
+        OIIO::ImageBufAlgo::mul( dst_buffer, src_buffer, vignette_map );
 #else
-    success =
+    bool      success =
         OIIO::ImageBufAlgo::scale( dst_buffer, src_buffer, vignette_map, {} );
 #endif
     if ( !success )
@@ -350,25 +350,24 @@ bool apply_vignette_map(
     return true;
 }
 
-bool solve_distortion_map(
-    const OIIO::ImageSpec &spec,
-    bool                   inverse,
-    cache::ImageBufData   &cache_data,
-    std::string           &error_message )
+std::shared_ptr<const OIIO::ImageBuf> solve_distortion_map(
+    const OIIO::ImageSpec &spec, bool inverse, std::string &error_message )
 {
-    int             nthreads = 1;
-    OIIO::ImageBuf &dst      = cache_data;
-    dst.reset( spec );
+    int nthreads = 0;
 
     const lfModifier *modifier =
         modifier_from_spec( spec, inverse, false, true, false, error_message );
 
     if ( modifier == nullptr )
-        return false;
+        return nullptr;
 
     const float offsets[2] = { (float)spec.full_x, (float)spec.full_y };
 
     const float scales[2] = { 1.0f / spec.full_width, 1.0f / spec.full_height };
+
+    std::shared_ptr<OIIO::ImageBuf> result = std::make_shared<OIIO::ImageBuf>();
+    OIIO::ImageBuf                 &dst    = *result.get();
+    dst.reset( spec );
 
     OIIO::ImageBufAlgo::parallel_image(
         dst.roi(), nthreads, [&]( OIIO::ROI roi ) {
@@ -401,10 +400,10 @@ bool solve_distortion_map(
         } );
 
     delete modifier;
-    return true;
+    return result;
 }
 
-std::pair<bool, const OIIO::ImageBuf &> fetch_distortion_map(
+std::shared_ptr<const OIIO::ImageBuf> fetch_distortion_map(
     const OIIO::ImageSpec &spec,
     int                    verbosity,
     bool                   disable_cache,
@@ -416,10 +415,9 @@ std::pair<bool, const OIIO::ImageBuf &> fetch_distortion_map(
     distortion_cache.disabled  = disable_cache;
     distortion_cache.verbosity = verbosity;
 
-    const std::pair<bool, OIIO::ImageBuf> &result =
-        distortion_cache.fetch( descriptor, [&]( OIIO::ImageBuf &buffer ) {
-            return solve_distortion_map( spec, false, buffer, error_message );
-        } );
+    const auto result = distortion_cache.fetch( descriptor, [&]() {
+        return solve_distortion_map( spec, false, error_message );
+    } );
 
     return result;
 }
@@ -447,12 +445,10 @@ bool apply_distortion_map(
         lens_model,
         focal_length );
 
-    const auto &result =
+    const auto result =
         fetch_distortion_map( spec, verbosity, disable_cache, error_message );
-    bool        success        = result.first;
-    const auto &distortion_map = result.second;
 
-    if ( !success )
+    if ( !result )
     {
         error_message = "Failed to create the distortion map. " + error_message;
         return false;
@@ -465,7 +461,9 @@ bool apply_distortion_map(
 
     OIIO::ImageBuf temp_buffer( spec );
 
-    success = OIIO::ImageBufAlgo::st_warp(
+    const auto &distortion_map = *result.get();
+
+    bool success = OIIO::ImageBufAlgo::st_warp(
         temp_buffer,
         src_buffer,
         distortion_map,
@@ -487,21 +485,16 @@ bool apply_distortion_map(
     return true;
 }
 
-bool solve_aberration_map(
-    const OIIO::ImageSpec &spec,
-    bool                   inverse,
-    cache::ImageBufData   &cache_data,
-    std::string           &error_message )
+std::shared_ptr<const OIIO::ImageBuf> solve_aberration_map(
+    const OIIO::ImageSpec &spec, bool inverse, std::string &error_message )
 {
-    int             nthreads = 0;
-    OIIO::ImageBuf &dst      = cache_data;
-    dst.reset( spec );
+    int nthreads = 0;
 
     const lfModifier *modifier =
         modifier_from_spec( spec, inverse, false, false, true, error_message );
 
     if ( modifier == nullptr )
-        return false;
+        return nullptr;
 
     const float offsets[6] = { (float)spec.full_x, (float)spec.full_y,
                                (float)spec.full_x, (float)spec.full_y,
@@ -512,6 +505,10 @@ bool solve_aberration_map(
         1.0f / spec.full_width, 1.0f / spec.full_height,
         1.0f / spec.full_width, 1.0f / spec.full_height,
     };
+
+    std::shared_ptr<OIIO::ImageBuf> result = std::make_shared<OIIO::ImageBuf>();
+    OIIO::ImageBuf                 &dst    = *result.get();
+    dst.reset( spec );
 
     OIIO::ImageBufAlgo::parallel_image(
         dst.roi(), nthreads, [&]( OIIO::ROI roi ) {
@@ -545,10 +542,10 @@ bool solve_aberration_map(
         } );
 
     delete modifier;
-    return true;
+    return result;
 }
 
-std::pair<bool, const OIIO::ImageBuf &> fetch_aberration_map(
+std::shared_ptr<const OIIO::ImageBuf> fetch_aberration_map(
     const OIIO::ImageSpec &spec,
     int                    verbosity,
     bool                   disable_cache,
@@ -560,10 +557,9 @@ std::pair<bool, const OIIO::ImageBuf &> fetch_aberration_map(
     aberration_cache.disabled  = disable_cache;
     aberration_cache.verbosity = verbosity;
 
-    const std::pair<bool, OIIO::ImageBuf> &result =
-        aberration_cache.fetch( descriptor, [&]( OIIO::ImageBuf &buffer ) {
-            return solve_aberration_map( spec, false, buffer, error_message );
-        } );
+    const auto result = aberration_cache.fetch( descriptor, [&]() {
+        return solve_aberration_map( spec, false, error_message );
+    } );
 
     return result;
 }
@@ -589,17 +585,17 @@ bool apply_aberration_map(
         lens_model,
         focal_length );
 
-    const auto &result =
+    const auto entry =
         fetch_aberration_map( spec, verbosity, disable_cache, error_message );
-    bool        success        = result.first;
-    const auto &aberration_map = result.second;
 
-    if ( !success )
+    if ( !entry )
     {
         error_message =
             "Failed to create the chromatic aberration map. " + error_message;
         return false;
     }
+
+    const auto &aberration_map = *entry.get();
 
     if ( dst_buffer.initialized() )
         spec = dst_buffer.spec();
@@ -612,10 +608,10 @@ bool apply_aberration_map(
 
     for ( int i = 0; i < spec.nchannels; i++ )
     {
-        int s_chan  = ( i * 2 ) % 6;
-        roi.chbegin = i;
-        roi.chend   = i + 1;
-        success     = OIIO::ImageBufAlgo::st_warp(
+        int s_chan   = ( i * 2 ) % 6;
+        roi.chbegin  = i;
+        roi.chend    = i + 1;
+        bool success = OIIO::ImageBufAlgo::st_warp(
             temp_buffer,
             src_buffer,
             aberration_map,

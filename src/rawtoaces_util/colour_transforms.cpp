@@ -100,13 +100,13 @@ bool configure_spectral_solver(
     return true;
 }
 
-bool solve_illuminant_from_multipliers(
-    const std::string          &camera_make,
-    const std::string          &camera_model,
-    const std::vector<double>  &wb_multipliers,
-    core::SpectralSolver       &solver,
-    cache::IlluminantAndWBData &cache_data,
-    std::string                &error_message )
+std::shared_ptr<const cache::IlluminantAndWBData>
+solve_illuminant_from_multipliers(
+    const std::string         &camera_make,
+    const std::string         &camera_model,
+    const std::vector<double> &wb_multipliers,
+    core::SpectralSolver      &solver,
+    std::string               &error_message )
 {
     if ( !configure_spectral_solver(
              solver,
@@ -117,15 +117,18 @@ bool solve_illuminant_from_multipliers(
              false,
              error_message ) )
     {
-        return false;
+        return nullptr;
     }
 
     if ( !solver.find_illuminant( wb_multipliers ) )
     {
         error_message =
             "Failed to find illuminant from white balance multipliers.";
-        return false;
+        return nullptr;
     }
+
+    auto  result     = std::make_shared<cache::IlluminantAndWBData>();
+    auto &cache_data = *result.get();
 
     const auto &multipliers = solver.get_WB_multipliers();
     cache_data.first        = solver.illuminant.type;
@@ -134,7 +137,7 @@ bool solve_illuminant_from_multipliers(
     cache_data.second[2]    = multipliers[2];
 
     error_message = "";
-    return true;
+    return result;
 }
 
 bool fetch_illuminant_from_multipliers(
@@ -160,43 +163,44 @@ bool fetch_illuminant_from_multipliers(
     illuminant_from_WB_cache.disabled  = disable_cache;
 
     std::string solve_error;
-    const auto &entry = illuminant_from_WB_cache.fetch(
-        descriptor, [&]( cache::IlluminantAndWBData &cache_data ) {
+    const auto  cache_entry = illuminant_from_WB_cache.fetch(
+        descriptor,
+
+        [&]() {
             return solve_illuminant_from_multipliers(
                 camera_make,
                 camera_model,
                 wb_multipliers,
                 solver,
-                cache_data,
                 solve_error );
         } );
 
-    bool success = entry.first;
-    if ( !success && !solve_error.empty() )
+    if ( !cache_entry )
     {
-        error_message = solve_error;
-    }
-
-    if ( success )
-    {
-        out_illuminant = entry.second.first;
-
-        if ( verbosity > 0 )
+        if ( !solve_error.empty() )
         {
-            std::cerr << "Found illuminant: '" << out_illuminant << "'."
-                      << std::endl;
+            error_message = solve_error;
         }
+        return false;
     }
-    return success;
+
+    out_illuminant = cache_entry.get()->first;
+    if ( verbosity > 0 )
+    {
+        std::cerr << "Found illuminant: '" << out_illuminant << "'."
+                  << std::endl;
+    }
+
+    return true;
 }
 
-bool solve_multipliers_from_illuminant(
-    const std::string           &camera_make,
-    const std::string           &camera_model,
-    const std::string           &in_illuminant,
-    core::SpectralSolver        &solver,
-    cache::WBFromIlluminantData &cache_data,
-    std::string                 &error_message )
+std::shared_ptr<const cache::WBFromIlluminantData>
+solve_multipliers_from_illuminant(
+    const std::string    &camera_make,
+    const std::string    &camera_model,
+    const std::string    &in_illuminant,
+    core::SpectralSolver &solver,
+    std::string          &error_message )
 {
     if ( !configure_spectral_solver(
              solver,
@@ -207,15 +211,18 @@ bool solve_multipliers_from_illuminant(
              false,
              error_message ) )
     {
-        return false;
+        return nullptr;
     }
 
     if ( !solver.calculate_WB() )
     {
         error_message = "Failed to calculate white balance multipliers. " +
                         solver.last_error_message;
-        return false;
+        return nullptr;
     }
+
+    auto  result     = std::make_shared<cache::WBFromIlluminantData>();
+    auto &cache_data = *result.get();
 
     const auto &multipliers = solver.get_WB_multipliers();
     cache_data[0]           = multipliers[0];
@@ -223,7 +230,7 @@ bool solve_multipliers_from_illuminant(
     cache_data[2]           = multipliers[2];
 
     error_message = "";
-    return true;
+    return result;
 }
 
 bool fetch_multipliers_from_illuminant(
@@ -245,18 +252,12 @@ bool fetch_multipliers_from_illuminant(
     WB_from_illuminant_cache.disabled  = disable_cache;
 
     std::string solve_error;
-    const auto &entry = WB_from_illuminant_cache.fetch(
-        descriptor, [&]( cache::WBFromIlluminantData &cache_data ) {
-            return solve_multipliers_from_illuminant(
-                camera_make,
-                camera_model,
-                in_illuminant,
-                solver,
-                cache_data,
-                solve_error );
-        } );
+    auto cache_entry = WB_from_illuminant_cache.fetch( descriptor, [&]() {
+        return solve_multipliers_from_illuminant(
+            camera_make, camera_model, in_illuminant, solver, solve_error );
+    } );
 
-    bool success = entry.first;
+    bool success( cache_entry );
     if ( !success && !solve_error.empty() )
     {
         error_message = solve_error;
@@ -265,9 +266,9 @@ bool fetch_multipliers_from_illuminant(
     if ( success )
     {
         out_multipliers.resize( 3 );
-        out_multipliers[0] = entry.second[0];
-        out_multipliers[1] = entry.second[1];
-        out_multipliers[2] = entry.second[2];
+        out_multipliers[0] = cache_entry.get()->at( 0 );
+        out_multipliers[1] = cache_entry.get()->at( 1 );
+        out_multipliers[2] = cache_entry.get()->at( 2 );
 
         if ( verbosity > 0 )
         {
@@ -287,12 +288,11 @@ bool fetch_multipliers_from_illuminant(
     return success;
 }
 
-bool solve_matrix_from_illuminant(
+std::shared_ptr<const cache::MatrixData> solve_matrix_from_illuminant(
     const std::string    &camera_make,
     const std::string    &camera_model,
     const std::string    &in_illuminant,
     core::SpectralSolver &solver,
-    cache::MatrixData    &cache_data,
     std::string          &error_message )
 {
     if ( !configure_spectral_solver(
@@ -304,26 +304,30 @@ bool solve_matrix_from_illuminant(
              true,
              error_message ) )
     {
-        return false;
+        return nullptr;
     }
 
     if ( !solver.calculate_WB() )
     {
         error_message = solver.last_error_message;
-        return false;
+        return nullptr;
     }
 
     if ( !solver.calculate_transform() )
     {
         error_message = solver.last_error_message;
-        return false;
+        return nullptr;
     }
+
+    auto result = std::make_shared<cache::MatrixData>();
+
+    cache::MatrixData &cache_data = *result.get();
 
     for ( size_t row = 0; row < 3; row++ )
         for ( size_t col = 0; col < 3; col++ )
             cache_data[row][col] = solver.transform_matrix[row][col];
 
-    return true;
+    return result;
 }
 
 bool fetch_matrix_from_illuminant(
@@ -345,26 +349,24 @@ bool fetch_matrix_from_illuminant(
     matrix_from_illuminant_cache.verbosity = verbosity;
     matrix_from_illuminant_cache.disabled  = disable_cache;
 
-    const auto &entry = matrix_from_illuminant_cache.fetch(
-        descriptor, [&]( cache::MatrixData &cache_data ) {
+    const auto cache_entry =
+        matrix_from_illuminant_cache.fetch( descriptor, [&]() {
             return solve_matrix_from_illuminant(
                 camera_make,
                 camera_model,
                 in_illuminant,
                 solver,
-                cache_data,
                 error_message );
         } );
 
-    bool success = entry.first;
-    if ( !success )
+    if ( !cache_entry )
     {
         error_message =
             "Failed to calculate IDT matrix from illuminant. " + error_message;
         return false;
     }
 
-    const auto &matrix = entry.second;
+    const auto &matrix = *cache_entry.get();
     out_matrix.resize( 3 );
     for ( size_t row = 0; row < 3; row++ )
     {
@@ -390,22 +392,22 @@ bool fetch_matrix_from_illuminant(
     return true;
 }
 
-bool solve_matrix_from_metadata(
-    const core::Metadata &metadata,
-    cache::MatrixData    &cache_data,
-    std::string          &error_message )
+std::shared_ptr<const cache::MatrixData> solve_matrix_from_metadata(
+    const core::Metadata &metadata, std::string &error_message )
 {
     core::MetadataSolver solver( metadata );
     if ( !solver.calculate_transform() )
     {
         error_message = solver.last_error_message;
-        return false;
+        return nullptr;
     }
 
+    auto  result     = std::make_shared<cache::MatrixData>();
+    auto &cache_data = *( result.get() );
     for ( size_t row = 0; row < 3; row++ )
         for ( size_t col = 0; col < 3; col++ )
             cache_data[row][col] = solver.transform_matrix[row][col];
-    return true;
+    return result;
 }
 
 bool fetch_matrix_from_metadata(
@@ -422,13 +424,12 @@ bool fetch_matrix_from_metadata(
     matrix_from_dng_metadata_cache.verbosity = verbosity;
     matrix_from_dng_metadata_cache.disabled  = disable_cache;
 
-    const auto &entry = matrix_from_dng_metadata_cache.fetch(
-        descriptor, [&]( cache::MatrixData &cache_data ) {
-            return solve_matrix_from_metadata(
-                metadata, cache_data, error_message );
+    const auto &entry =
+        matrix_from_dng_metadata_cache.fetch( descriptor, [&]() {
+            return solve_matrix_from_metadata( metadata, error_message );
         } );
 
-    bool success = entry.first;
+    bool success( entry );
     if ( !success )
     {
         error_message =
@@ -437,7 +438,7 @@ bool fetch_matrix_from_metadata(
         return false;
     }
 
-    const auto &matrix = entry.second;
+    const auto &matrix = *entry.get();
     out_matrix.resize( 3 );
     for ( size_t row = 0; row < 3; row++ )
     {

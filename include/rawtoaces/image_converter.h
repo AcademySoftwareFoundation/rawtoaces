@@ -208,8 +208,7 @@ public:
         float scale = 1.0f;
 
         /// Demosaicing algorithm. Supported options: 'linear', 'VNG', 'PPG',
-        /// 'AHD', 'DCB', 'AHD-Mod', 'AFD', 'VCD', 'Mixed', 'LMMSE', 'AMaZE',
-        /// 'DHT', 'AAHD', 'AHD'.
+        /// 'AHD', 'DCB', 'DHT', 'AAHD.
         std::string demosaic_algorithm = "AHD";
 
         /// A path to the file containing a list of bad bixels in libraw format:

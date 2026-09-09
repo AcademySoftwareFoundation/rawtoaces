@@ -7,6 +7,7 @@ breathe>=4.35
 myst-parser>=2.0
 sphinx_tabs>=3.0
 sphinx-multiversion
+sphinx-autodoc-typehints
 sphinx_toolbox
 enum_tools
 autodoc

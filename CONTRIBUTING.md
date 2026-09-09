@@ -357,7 +357,7 @@ The following command builds the documentation for all released versions:
 
 Updating Python documentation currently requires a few manual steps:
 - Make sure that the docstrings in the python documentation in 
-  `./src/docs/api/python/` are up to date.
+  `./src/bindings/*.cpp` are up to date.
 - Build the code.
 - Either navigate to the directory where the built python module is located, 
   or make sure that its location is in `PYTHONPATH`.

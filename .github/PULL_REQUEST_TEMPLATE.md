@@ -20,6 +20,9 @@
 <!-- Put an 'x' in the boxes as you complete the checklist items -->
 
 - [ ] I have read the [contribution guidelines](https://github.com/AcademySoftwareFoundation/rawtoaces/blob/main/CONTRIBUTING.md).
+- [ ] I have read the [Policy on AI Coding Assistants](https://github.com/AcademySoftwareFoundation/rawtoaces/blob/main/docs/AI_Policy.md)
+  and if I used AI coding assistants, I have an `Assisted-by: TOOL / MODEL`
+  line in the pull request description above.
 - [ ] I have updated the documentation, if applicable. (Check if there is no
   need to update the documentation, for example if this is a bug fix that
   doesn't change the API.)

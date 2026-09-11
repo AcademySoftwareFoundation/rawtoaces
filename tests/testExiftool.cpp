@@ -4,9 +4,14 @@
 #ifdef WIN32
 #    define WIN32_LEAN_AND_MEAN
 #    include <windows.h>
+#else
+#    include <csignal>
+#    include <fstream>
+#    include <sys/resource.h>
 #endif
 
 #include "../src/rawtoaces_util/exiftool.h"
+#include "../src/rawtoaces_util/rawtoaces_util_priv.h"
 
 #include "test_utils.h"
 #include <OpenImageIO/unittest.h>
@@ -88,6 +93,95 @@ void testExiftool_bad_key()
     std::string output = check( false, { "bad_key" } );
     ASSERT_CONTAINS( output, "Exiftool: unknown key " );
 }
+
+void testExiftool_execute_success()
+{
+    std::cout << "\n" << __FUNCTION__ << "\n";
+
+    std::stringstream output;
+    OIIO_CHECK_ASSERT( rta::util::exiftool::execute( "echo hello", output ) );
+    ASSERT_CONTAINS( output.str(), "hello" );
+}
+
+void testExiftool_execute_failure_with_output()
+{
+    std::cout << "\n" << __FUNCTION__ << "\n";
+
+    // Output on stdout must not turn a failing command into a success.
+    std::stringstream output;
+    OIIO_CHECK_ASSERT(
+        !rta::util::exiftool::execute( "echo hello && exit 3", output ) );
+}
+
+void testExiftool_execute_missing_binary()
+{
+    std::cout << "\n" << __FUNCTION__ << "\n";
+
+    std::stringstream output;
+    OIIO_CHECK_ASSERT(
+        !rta::util::exiftool::execute( "rawtoaces_no_such_binary", output ) );
+}
+
+#if !defined( WIN32 ) && !defined( WIN64 )
+void testExiftool_execute_sigchld_ignored()
+{
+    std::cout << "\n" << __FUNCTION__ << "\n";
+
+    // A host process that ignores SIGCHLD makes pclose() return -1, the
+    // command still has to count as successful when it produced output.
+    auto              previous = signal( SIGCHLD, SIG_IGN );
+    std::stringstream output;
+    bool success = rta::util::exiftool::execute( "echo hello", output );
+    signal( SIGCHLD, previous );
+
+    OIIO_CHECK_ASSERT( success );
+    ASSERT_CONTAINS( output.str(), "hello" );
+}
+
+void testExiftool_tool_failure_message()
+{
+    std::cout << "\n" << __FUNCTION__ << "\n";
+
+    // exiftool ran but failed on the file: the message must say so rather
+    // than suggest the binary was not found.
+    TestDirectory         test_dir;
+    std::filesystem::path script =
+        std::filesystem::path( test_dir.path() ) / "exiftool";
+    {
+        std::ofstream out( script );
+        out << "#!/bin/sh\necho 'FileName: fake.NEF'\nexit 1\n";
+    }
+    std::filesystem::permissions( script, std::filesystem::perms::owner_all );
+    set_env_var( "RAWTOACES_EXIFTOOL_PATH", script.string().c_str() );
+
+    OIIO::ImageSpec spec;
+    std::string     output;
+    bool            success = rta::util::exiftool::fetch_metadata(
+        spec, test_file, { "cameraMake" }, output );
+
+    OIIO_CHECK_ASSERT( !success );
+    ASSERT_CONTAINS( output, "Exiftool failed to read" );
+}
+
+void testExiftool_execute_popen_failure()
+{
+    std::cout << "\n" << __FUNCTION__ << "\n";
+
+    // With no file descriptors left popen() cannot create its pipe and
+    // returns NULL, which has to be reported as a failure, not crash.
+    struct rlimit saved;
+    OIIO_CHECK_EQUAL( getrlimit( RLIMIT_NOFILE, &saved ), 0 );
+    struct rlimit tight = saved;
+    tight.rlim_cur      = 3;
+    OIIO_CHECK_EQUAL( setrlimit( RLIMIT_NOFILE, &tight ), 0 );
+    std::stringstream output;
+    bool success = rta::util::exiftool::execute( "echo hello", output );
+    OIIO_CHECK_EQUAL( setrlimit( RLIMIT_NOFILE, &saved ), 0 );
+
+    OIIO_CHECK_ASSERT( !success );
+    OIIO_CHECK_EQUAL( output.str(), "" );
+}
+#endif
 
 std::string make_test_file(
     bool write_camera_model,
@@ -181,6 +275,14 @@ int main( int, char ** )
     testExiftool_tool_in_env();
     testExiftool_tool_in_path();
     testExiftool_bad_key();
+    testExiftool_execute_success();
+    testExiftool_execute_failure_with_output();
+    testExiftool_execute_missing_binary();
+#if !defined( WIN32 ) && !defined( WIN64 )
+    testExiftool_execute_sigchld_ignored();
+    testExiftool_tool_failure_message();
+    testExiftool_execute_popen_failure();
+#endif
 
     test_focus_distance();
 

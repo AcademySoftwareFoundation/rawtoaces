@@ -77,33 +77,34 @@ static const std::vector<double> k_identity_xyz_to_rgb = { 1.0, 0.0, 0.0,
                                                            0.0, 1.0, 0.0,
                                                            0.0, 0.0, 1.0 };
 
-void testIDT_XYZToColorTemperature()
+void testIDT_XYZToMired()
 {
+    /// Well inside the clamped range: 179.7053420705 mired is 5564.6648479019K.
     double              XYZ[3] = { 0.9731171910, 1.0174927152, 0.9498565880 };
     std::vector<double> XYZVector( XYZ, XYZ + 3 );
-    double              cct = rta::core::XYZ_to_color_temperature( XYZVector );
+    double              mired = rta::core::XYZ_to_mired( XYZVector );
 
-    OIIO_CHECK_EQUAL_THRESH( cct, 5564.6648479019, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( mired, 179.7053420705, 1e-5 );
 }
 
-void testIDT_XYZToColorTemperature_UpperClamp()
+void testIDT_XYZToMired_LowerClamp()
 {
-    /// UV exactly at the first Robertson entry should clamp to 50000K.
+    /// UV exactly at the first Robertson entry should clamp to 20 mired (50000K).
     const double        huge_cct = 1.0e16;
-    std::vector<double> XYZ = rta::core::color_temperature_to_XYZ( huge_cct );
-    double              cct = rta::core::XYZ_to_color_temperature( XYZ );
+    std::vector<double> XYZ   = rta::core::color_temperature_to_XYZ( huge_cct );
+    double              mired = rta::core::XYZ_to_mired( XYZ );
 
-    OIIO_CHECK_EQUAL_THRESH( cct, 50000.0, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( mired, 20.0, 1e-5 );
 }
 
-void testIDT_XYZToColorTemperature_LowerClamp()
+void testIDT_XYZToMired_UpperClamp()
 {
-    /// UV slightly above the Robertson table should clamp to 2000K.
+    /// UV just past the last Robertson entry should clamp to 500 mired (2000K).
     std::vector<double> XYZ =
         rta::core::math::uv_to_XYZ( std::vector<double>{ 0.34, 0.361 } );
-    double cct = rta::core::XYZ_to_color_temperature( XYZ );
+    double mired = rta::core::XYZ_to_mired( XYZ );
 
-    OIIO_CHECK_EQUAL_THRESH( cct, 2000.0, 1e-5 );
+    OIIO_CHECK_EQUAL_THRESH( mired, 500.0, 1e-5 );
 }
 
 void testIDT_XYZtoCameraWeightedMatrix()
@@ -472,9 +473,9 @@ int main( int, char ** )
     testIDT_LightSourceToColorTemp();
     testIDT_LightSourceToColorTemp_Extended();
     testIDT_LightSourceToColorTemp_Default();
-    testIDT_XYZToColorTemperature();
-    testIDT_XYZToColorTemperature_UpperClamp();
-    testIDT_XYZToColorTemperature_LowerClamp();
+    testIDT_XYZToMired();
+    testIDT_XYZToMired_LowerClamp();
+    testIDT_XYZToMired_UpperClamp();
     testIDT_XYZtoCameraWeightedMatrix();
     testIDT_FindCameraToXYZMtx();
     testIDT_FindCameraToXYZMtx_NoIlluminant();

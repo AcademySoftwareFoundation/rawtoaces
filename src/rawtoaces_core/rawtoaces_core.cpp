@@ -976,14 +976,15 @@ double light_source_to_color_temp( const unsigned short tag )
     return 5500.0;
 }
 
-/// Convert XYZ values to correlated color temperature using Robertson method.
-/// This function estimates the color temperature from XYZ values by interpolating
-/// between known color temperature points in CIE 1960 UCS space. It uses the Robertson
-/// method to find the closest color temperature match based on the UV coordinates.
+/// Estimate the correlated color temperature of XYZ values using the Robertson
+/// method, interpolating between the known points in CIE 1960 UCS space.
+/// The result is in mired rather than Kelvin, as both the Robertson table and
+/// the DNG solver work in mired, which avoids converting to Kelvin and back.
 ///
 /// @param XYZ XYZ color values [X, Y, Z]
-/// @return Correlated color temperature in Kelvin
-double XYZ_to_color_temperature( const std::vector<double> &XYZ )
+/// @return Correlated color temperature in mired, clamped to 20-500
+///         (50000K-2000K)
+double XYZ_to_mired( const std::vector<double> &XYZ )
 {
     std::vector<double> uv                  = math::XYZ_to_uv( XYZ );
     int                 num_robertson_table = countSize( robertson_uvt_table );
@@ -1016,10 +1017,9 @@ double XYZ_to_color_temperature( const std::vector<double> &XYZ )
                 ( robertson_mired_table[i] - robertson_mired_table[i - 1] ) /
                 ( distance_prev - distance_this );
 
-    double cct = mired_to_kelvin( mired );
-    cct        = std::max( 2000.0, std::min( 50000.0, cct ) );
-
-    return cct;
+    // Clamp to the temperature range the DNG solver searches within.
+    return std::clamp(
+        mired, kelvin_to_mired( 50000.0 ), kelvin_to_mired( 2000.0 ) );
 }
 
 /// Calculate weighted interpolation between two camera matrices based on Mired values.
@@ -1212,8 +1212,7 @@ bool find_camera_to_XYZ_matrix(
 
             auto neutral_XYZ =
                 math::product( camera_to_XYZ_matrix, neutral_RGB );
-            auto neutral_CCT   = XYZ_to_color_temperature( neutral_XYZ );
-            auto neutral_mired = kelvin_to_mired( neutral_CCT );
+            auto neutral_mired = XYZ_to_mired( neutral_XYZ );
             current_error      = current_mired - neutral_mired;
 
             if ( std::fabs( current_error - 0.0 ) <= 1e-09 )

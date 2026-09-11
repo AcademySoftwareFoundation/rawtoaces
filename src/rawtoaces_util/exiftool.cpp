@@ -102,6 +102,27 @@ bool execute( const std::string &command, std::stringstream &stream )
     return success && !empty;
 }
 
+/// Quote a path for the shell that popen() runs the command with, so
+/// spaces and characters like ( ) or $ in it are passed through as is.
+static std::string quote_path( const std::string &path )
+{
+#if defined( WIN32 ) || defined( WIN64 )
+    return "\"" + path + "\"";
+#else
+    // Single quotes take everything literally. An embedded single quote is
+    // written as '\'' (close, escaped quote, reopen).
+    std::string result = "'";
+    for ( char c: path )
+    {
+        if ( c == '\'' )
+            result += "'\\''";
+        else
+            result += c;
+    }
+    return result + "'";
+#endif
+}
+
 bool perform_exiftool_call(
     const std::string                  &exiftool_path,
     const std::string                  &image_path,
@@ -110,7 +131,7 @@ bool perform_exiftool_call(
     std::map<std::string, std::string> &parsed_data,
     std::string                        &error_message )
 {
-    std::string command = exiftool_path + " -S";
+    std::string command = quote_path( exiftool_path ) + " -S";
 
     if ( no_formatting )
     {
@@ -150,7 +171,16 @@ bool perform_exiftool_call(
         }
     }
 
-    command += " " + image_path;
+    // "--" ends the options, so a relative path starting with "-" is still
+    // a file name to exiftool.
+    command += " -- " + quote_path( image_path );
+
+#if defined( WIN32 ) || defined( WIN64 )
+    // cmd.exe strips the first and the last quote of the line it is given
+    // when there are more than two; an extra pair around the whole line
+    // keeps the ones around the paths.
+    command = "\"" + command + "\"";
+#endif
 
     std::stringstream stream;
     if ( !execute( command, stream ) )

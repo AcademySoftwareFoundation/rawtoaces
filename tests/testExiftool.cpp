@@ -8,6 +8,8 @@
 
 #include "../src/rawtoaces_util/exiftool.h"
 
+#include <filesystem>
+
 #include "test_utils.h"
 #include <OpenImageIO/unittest.h>
 
@@ -174,6 +176,59 @@ void test_focus_distance()
     }
 }
 
+void testExiftool_path_with_spaces()
+{
+    std::cout << "\n" << __FUNCTION__ << "\n";
+
+    set_exiftool_path( false, true );
+
+    // Spaces, an apostrophe and parentheses in the names, the way photo
+    // managers and browsers produce them.
+    TestDirectory         test_dir;
+    std::filesystem::path dir =
+        std::filesystem::path( test_dir.path() ) / "dir with spaces";
+    std::filesystem::create_directories( dir );
+    std::filesystem::path file = dir / "Battery's Park (1).NEF";
+    std::filesystem::copy_file(
+        test_file, file, std::filesystem::copy_options::overwrite_existing );
+
+    OIIO::ImageSpec spec;
+    std::string     output;
+    bool            success = rta::util::exiftool::fetch_metadata(
+        spec, file.string(), { "cameraMake", "cameraModel" }, output );
+
+    OIIO_CHECK_ASSERT( success );
+    OIIO_CHECK_EQUAL( output, "" );
+    OIIO_CHECK_EQUAL(
+        spec.get_string_attribute( "cameraMake" ), "NIKON CORPORATION" );
+    OIIO_CHECK_EQUAL(
+        spec.get_string_attribute( "cameraModel" ), "NIKON D200" );
+}
+
+void testExiftool_path_leading_dash()
+{
+    std::cout << "\n" << __FUNCTION__ << "\n";
+
+    set_exiftool_path( false, true );
+
+    // A relative path starting with "-" looks like an option to exiftool.
+    // It has to be relative to trigger that, so the copy goes into the
+    // working directory.
+    std::filesystem::path file = "-Battery Park.NEF";
+    std::filesystem::copy_file(
+        test_file, file, std::filesystem::copy_options::overwrite_existing );
+
+    OIIO::ImageSpec spec;
+    std::string     output;
+    bool            success = rta::util::exiftool::fetch_metadata(
+        spec, file.string(), { "cameraMake" }, output );
+    std::filesystem::remove( file );
+
+    OIIO_CHECK_ASSERT( success );
+    OIIO_CHECK_EQUAL(
+        spec.get_string_attribute( "cameraMake" ), "NIKON CORPORATION" );
+}
+
 int main( int, char ** )
 {
     testExiftool_tool_not_found();
@@ -183,6 +238,8 @@ int main( int, char ** )
     testExiftool_bad_key();
 
     test_focus_distance();
+    testExiftool_path_with_spaces();
+    testExiftool_path_leading_dash();
 
     return unit_test_failures;
 }

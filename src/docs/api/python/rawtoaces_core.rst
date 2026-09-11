@@ -25,17 +25,17 @@ Data model summary
 
 The core bindings expose four classes:
 
-- :py:class:`Metadata`: container for DNG-style calibration/neutral metadata.
-- :py:class:`MetadataSolver`: solves CAT/IDT using :py:class:`Metadata`.
-- :py:class:`SpectralData`: spectral JSON container/loader.
-- :py:class:`SpectralSolver`: solves WB/IDT using spectral datasets.
+- :py:class:`rawtoaces.Metadata`: container for DNG-style calibration/neutral metadata.
+- :py:class:`rawtoaces.MetadataSolver`: solves CAT/IDT using :py:class:`rawtoaces.Metadata`.
+- :py:class:`rawtoaces.SpectralData`: spectral JSON container/loader.
+- :py:class:`rawtoaces.SpectralSolver`: solves WB/IDT using spectral datasets.
 
 
 Metadata workflow
 -----------------
 
-Use :py:class:`MetadataSolver` when you already have DNG metadata values and do
-not need spectral database lookup.
+Use :py:class:`rawtoaces.MetadataSolver` when you already have DNG metadata
+values and do not need spectral database lookup.
 
 Minimal example:
 
@@ -69,69 +69,11 @@ Minimal example:
   cat = solver.calculate_CAT_matrix()   # 3x3 list[list[float]]
   idt = solver.calculate_IDT_matrix()   # 3x3 list[list[float]]
 
-
-.. py:class:: Metadata
-
-  Metadata container used by :py:class:`MetadataSolver`.
-  Corresponds to :cpp:class:`rta::core::Metadata`.
-
-  .. py:class:: Calibration
-
-    Per-illuminant calibration data.
-    Corresponds to :cpp:class:`rta::core::Metadata::Calibration`.
-
-    .. py:attribute:: int illuminant
-
-      EXIF illuminant tag (for example ``17`` tungsten, ``21`` D65).
-
-    .. py:attribute:: list[float] camera_calibration_matrix
-
-      Optional camera calibration matrix values.
-
-    .. py:attribute:: list[float] XYZ_to_RGB_matrix
-
-      Flattened 3x3 XYZ-to-camera matrix (9 values).
-
-  .. py:attribute:: list[Calibration] calibration
-
-    Exactly two calibration entries are required.
-
-    .. note::
-
-      Assigning any list length other than 2 raises ``ValueError``.
-
-  .. py:attribute:: list[float] neutral_RGB
-
-    Neutral RGB values from metadata.
-
-  .. py:attribute:: float baseline_exposure
-
-    Baseline exposure value from metadata.
-
-
-.. py:class:: MetadataSolver
-
-  Solver for DNG-style metadata transforms.
-  Corresponds to :cpp:class:`rta::core::MetadataSolver`.
-
-  .. py:method:: MetadataSolver(Metadata)
-
-    Construct from :py:class:`Metadata`.
-
-  .. py:method:: list[list[float]] calculate_CAT_matrix()
-
-    Calculate a 3x3 chromatic adaptation transform matrix.
-
-  .. py:method:: list[list[float]] calculate_IDT_matrix()
-
-    Calculate a 3x3 input device transform matrix.
-
-
 Spectral workflow
 -----------------
 
-Use :py:class:`SpectralSolver` for full spectral solving from camera and
-illuminant spectral data.
+Use :py:class:`rawtoaces.SpectralSolver` for full spectral solving from camera
+and illuminant spectral data.
 
 Typical sequence:
 
@@ -186,102 +128,21 @@ Finding a standard illuminant best matching the given white-balancing multiplier
       raise RuntimeError(solver.last_error_message)
 
 
-.. py:class:: SpectralData
+Spectral Data
+-------------
 
-  Minimal spectral data container exposed for
-  :py:class:`SpectralSolver` workflows.
-  Corresponds to :cpp:class:`rta::core::SpectralData`.
+The :py:class:`rawtoaces.SpectralData` class is a minimal spectral data container exposed
+for :py:class:`rawtoaces.SpectralSolver` workflows.
+Corresponds to :cpp:class:`rta::core::SpectralData`.
 
-  File format and schema references:
+File format and schema references:
 
-  - Format description:
-    `rawtoaces-data README (JSON Schema for Spectral Datasets) <https://github.com/AcademySoftwareFoundation/rawtoaces-data/blob/main/README.md#json-schema-for-spectral-datasets>`_
-  - Current schema:
-    `schema_1.0.0.json <https://github.com/AcademySoftwareFoundation/rawtoaces-data/blob/main/schema_1.0.0.json>`_
-  - Legacy schema (still found in many existing datasets):
-    `schema_0.1.0.json <https://github.com/AcademySoftwareFoundation/rawtoaces-data/blob/main/schema_0.1.0.json>`_
-
-  .. py:attribute:: str manufacturer
-  .. py:attribute:: str model
-  .. py:attribute:: str type
-  .. py:attribute:: str units
-
-  .. py:method:: bool load(str path, bool reshape=True)
-
-    Load spectral data from a JSON file.
-
-    :param path: Absolute or relative path to a spectral JSON file.
-    :param reshape: If ``True`` (default), reshapes curves to reference sampling.
-    :return: ``True`` on success, otherwise ``False``.
-
-
-.. py:class:: SpectralSolver
-
-  Solver for spectral camera sensitivities and illuminants.
-  Corresponds to :cpp:class:`rta::core::SpectralSolver`.
-
-  .. py:method:: SpectralSolver(list[str] search_directories=[])
-
-    Construct with optional spectral database search directories.
-
-  .. py:attribute:: SpectralData camera
-  .. py:attribute:: SpectralData illuminant
-  .. py:attribute:: SpectralData observer
-  .. py:attribute:: SpectralData training_data
-
-    Public spectral inputs used by the solver.
-
-  .. py:attribute:: str last_error_message
-
-    Last error message from a failed solver call.
-
-  .. py:attribute:: int verbosity
-
-    Solver verbosity level.
-
-  .. py:method:: list[str] collect_data_files(str type)
-
-    Collect available spectral data files under configured search paths.
-
-  .. py:method:: bool load_spectral_data(str file_path, SpectralData out_data)
-
-    Load data from a relative or absolute path into ``out_data``.
-    Relative paths are resolved against ``search_directories``.
-
-  .. py:method:: bool find_camera(str make, str model)
-
-    Find and load camera spectral sensitivity data.
-
-    :raises ValueError: if ``make`` or ``model`` is empty.
-
-  .. py:method:: bool find_illuminant(str type)
-
-    Find or generate an illuminant by name (for example ``d55`` or ``3200k``).
-
-    :raises ValueError: if ``type`` is empty.
-
-  .. py:method:: bool find_illuminant(list[float] wb_multipliers)
-
-    Find the illuminant that best matches provided RGB WB multipliers.
-
-    :raises ValueError: if list length is not exactly 3.
-
-  .. py:method:: bool calculate_WB()
-
-    Calculate WB multipliers from current camera and illuminant.
-
-  .. py:method:: bool calculate_IDT_matrix()
-
-    Calculate an IDT matrix using camera, illuminant, observer, and training data.
-
-  .. py:method:: list[float] get_WB_multipliers()
-
-    Return current RGB WB multipliers ``[R, G, B]``.
-
-  .. py:method:: list[list[float]] get_IDT_matrix()
-
-    Return current 3x3 IDT matrix.
-
+- Format description:
+  `rawtoaces-data README (JSON Schema for Spectral Datasets) <https://github.com/AcademySoftwareFoundation/rawtoaces-data/blob/main/README.md#json-schema-for-spectral-datasets>`_
+- Current schema:
+  `schema_1.0.0.json <https://github.com/AcademySoftwareFoundation/rawtoaces-data/blob/main/schema_1.0.0.json>`_
+- Legacy schema (still found in many existing datasets):
+  `schema_0.1.0.json <https://github.com/AcademySoftwareFoundation/rawtoaces-data/blob/main/schema_0.1.0.json>`_
 
 Error handling notes
 --------------------
@@ -294,10 +155,10 @@ Error handling notes
   length, invalid metadata calibration array size).
 
 
-Data requirements for ``calculate_IDT_matrix``
+Data requirements for ``calculate_transform``
 ----------------------------------------------
 
-Before calling :py:meth:`SpectralSolver.calculate_IDT_matrix`, ensure:
+Before calling :py:meth:`SpectralSolver.calculate_transform`, ensure:
 
 - ``camera`` has 3 channels (R, G, B)
 - ``illuminant`` has 1 channel (power)

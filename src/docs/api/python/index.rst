@@ -2,8 +2,8 @@
   Copyright Contributors to the rawtoaces Project.
   SPDX-License-Identifier: CC-BY-4.0
 
-Python bindings
-===============
+Python API
+==========
 
 The python bindings are currently work in progress.
 
@@ -22,3 +22,4 @@ are not currently available.
 
    image_converter
    rawtoaces_core
+   api_index

@@ -268,16 +268,29 @@ private:
 /// DNG metadata required to calculate an input transform.
 struct Metadata
 {
-    /// A calibration data set. Currently two sets are supported.
+    /// A calibration data set structure. Contains calibration matrices for
+    /// a given light source.
     struct Calibration
     {
-        unsigned short      illuminant = 0;
+        /// EXIF light source tag.
+        /// The values [0..22] encode predefined light sources, the extended
+        /// values (≥32768) can be used to encode an arbitrary CCT.
+        unsigned short illuminant = 0;
+        /// Camera calibration matrix.
         std::vector<double> camera_calibration_matrix;
+        /// XYZ to camera RGB colour transform matrix.
         std::vector<double> XYZ_to_RGB_matrix;
-    } calibration[2];
+    };
 
+    /// Calibration datasets. Currently two sets are supported.
+    struct Calibration calibration[2];
+
+    /// Neutral RGB values. The colour channels in the camera RGB colour space
+    /// representing a neutral colour.
     std::vector<double> neutral_RGB;
-    double              baseline_exposure = 0.0;
+
+    /// Exposure calibration multiplier.
+    double baseline_exposure = 0.0;
 };
 
 /// Solve an input transform using the metadata stored in DNG files.

@@ -2,18 +2,19 @@
   Copyright Contributors to the rawtoaces Project.
   SPDX-License-Identifier: CC-BY-4.0
 
-C++ API Reference
-=============
+C++ API
+=======
 
 This section contains the API documentation for the rawtoaces C++ libraries,
 automatically generated from the source code using Doxygen and Breathe.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    image_converter
    rawtoaces_core
    spectral_data
+   api_index
 
 Namespaces
 ----------

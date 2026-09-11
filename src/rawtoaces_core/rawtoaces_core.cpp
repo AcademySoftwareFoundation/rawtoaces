@@ -1133,11 +1133,28 @@ stack_rows( const std::vector<double> &matrix, size_t columns )
     return result;
 }
 
+/// Check whether the metadata carries a second calibration to interpolate
+/// with. Like the DNG SDK, a second matrix is only used when its illuminant
+/// is known; a DNG with a single colour matrix arrives here with illuminant
+/// 0 and an all-zero or empty second matrix.
+static bool has_second_calibration( const Metadata &metadata )
+{
+    const auto &second = metadata.calibration[1];
+    if ( second.illuminant == 0 || second.XYZ_to_RGB_matrix.size() != 9 )
+        return false;
+
+    for ( double value: second.XYZ_to_RGB_matrix )
+        if ( value != 0.0 )
+            return true;
+    return false;
+}
+
 /// Find the optimal camera to XYZ transformation matrix using iterative optimization.
 /// This function determines the best camera transformation matrix by iteratively
 /// searching through Mired values to find the one that minimizes the error between
-/// predicted and actual neutral RGB values. It uses a binary search approach with
-/// error minimization to find the optimal color temperature calibration point.
+/// predicted and actual neutral RGB values. It sweeps the Mired range between the
+/// two calibration illuminants in fixed steps and interpolates linearly between
+/// the two samples where the error changes sign.
 ///
 /// The function interpolates between two calibration matrices based on the estimated
 /// optimal Mired value, ensuring accurate color transformations for the given
@@ -1147,7 +1164,8 @@ stack_rows( const std::vector<double> &matrix, size_t columns )
 /// @param neutral_RGB Reference neutral RGB values for optimization
 /// @param out_matrix the output matrix to hold the calculated result.
 /// @return True on success
-/// @pre metadata must contain valid calibration data with at least two illuminants
+/// @pre metadata must contain valid calibration data for the first illuminant.
+///      With a single illuminant its matrix is used as is.
 bool find_camera_to_XYZ_matrix(
     const Metadata                   &metadata,
     const std::vector<double>        &neutral_RGB,
@@ -1160,10 +1178,16 @@ bool find_camera_to_XYZ_matrix(
         if ( verbosity > 0 )
             std::cerr << "No calibration illuminants were found." << std::endl;
     }
-    else if ( neutral_RGB.size() == 0 )
+    else if ( neutral_RGB.size() < 3 )
     {
         if ( verbosity > 0 )
             std::cerr << "No neutral RGB values were found." << std::endl;
+    }
+    else if ( !has_second_calibration( metadata ) )
+    {
+        // Nothing to interpolate between, the first matrix is used as is.
+        if ( verbosity > 1 )
+            std::cerr << "Only one calibration was found." << std::endl;
     }
     else
     {
@@ -1191,10 +1215,26 @@ bool find_camera_to_XYZ_matrix(
 
         double last_mired = 0.0, estimated_mired = 0.0, current_error = 0.0,
                last_error = 0.0, smallest_error = 0.0;
+        bool has_last_sample = false;
 
-        double current_mired = low_mired;
-        while ( current_mired < high_mired )
+        // Sample low_mired, then every mired_step up to and including
+        // high_mired. An empty range (identical illuminants, or both beyond
+        // the same limit) takes no samples and the first matrix is used as
+        // is, as before.
+        int num_samples = 0;
+        if ( high_mired - low_mired > 1e-09 )
         {
+            num_samples =
+                static_cast<int>( std::ceil(
+                    ( high_mired - low_mired ) / mired_step - 1e-09 ) ) +
+                1;
+        }
+
+        for ( int i = 0; i < num_samples; i++ )
+        {
+            double current_mired =
+                std::min( low_mired + i * mired_step, high_mired );
+
             std::string                      local_error_message;
             std::vector<std::vector<double>> camera_to_XYZ_matrix;
             if ( !camera_to_XYZ_weighted_matrix(
@@ -1206,7 +1246,6 @@ bool find_camera_to_XYZ_matrix(
                      camera_to_XYZ_matrix,
                      local_error_message ) )
             {
-                current_mired += mired_step;
                 continue;
             }
 
@@ -1216,31 +1255,31 @@ bool find_camera_to_XYZ_matrix(
             auto neutral_mired = kelvin_to_mired( neutral_CCT );
             current_error      = current_mired - neutral_mired;
 
-            if ( std::fabs( current_error - 0.0 ) <= 1e-09 )
+            if ( std::fabs( current_error ) <= 1e-09 )
             {
                 estimated_mired = current_mired;
                 break;
             }
-            if ( std::fabs( current_mired - low_mired - 0.0 ) > 1e-09 &&
-                 current_error * last_error <= 0.0 )
+            if ( has_last_sample && current_error * last_error <= 0.0 )
             {
+                // The error changed sign since the last valid sample, so the
+                // root lies between the two. Interpolate linearly to find it.
                 estimated_mired =
-                    current_mired +
-                    ( current_error / ( current_error - last_error ) *
-                      ( current_mired - last_mired ) );
+                    current_mired - current_error /
+                                        ( current_error - last_error ) *
+                                        ( current_mired - last_mired );
                 break;
             }
-            if ( std::fabs( current_mired - low_mired ) <= 1e-09 ||
+            if ( !has_last_sample ||
                  std::fabs( current_error ) < std::fabs( smallest_error ) )
             {
                 estimated_mired = current_mired;
                 smallest_error  = current_error;
             }
 
-            last_error = current_error;
-            last_mired = current_mired;
-
-            current_mired += mired_step;
+            last_error      = current_error;
+            last_mired      = current_mired;
+            has_last_sample = true;
         }
 
         if ( estimated_mired != 0.0 )

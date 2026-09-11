@@ -5,6 +5,7 @@
 
 #include <filesystem>
 #include <set>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <OpenImageIO/imageio.h>
@@ -44,6 +45,11 @@ bool prepare_transform_spectral(
     std::vector<double>              &WB_multipliers,
     std::vector<std::vector<double>> &out_transform_matrix,
     std::string                      &error_message );
+
+namespace exiftool
+{
+bool execute( const std::string &command, std::stringstream &stream );
+} // namespace exiftool
 
 } // namespace util
 } // namespace rta

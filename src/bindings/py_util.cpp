@@ -2,10 +2,14 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include "py_util.h"
+#include <rawtoaces/image_converter.h>
+
+// Nanobind headers from here
+#include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/ndarray.h>
-#include <rawtoaces/image_converter.h>
+
 #include "../misc/pragma.h"
 
 using namespace rta::util;
@@ -146,6 +150,26 @@ void util_bindings( nanobind::module_ &m )
         :return: ``True`` if configured successfully.
         )""" );
     image_converter.def(
+        "configure",
+        []( ImageConverter        &converter,
+            const OIIO::ImageSpec &image_spec,
+            OIIO::ParamValueList  &options ) {
+            return converter.configure( image_spec, options );
+        },
+        "image_spec"_a,
+        "options"_a,
+        R"""(
+        Configure the converter from an OpenImageIO ImageSpec.
+
+        :param image_spec: Image specification.
+        :type image_spec: OpenImageIO.ImageSpec
+
+        :param options: OIIO input options. This object may be modified.
+        :type options: OpenImageIO.ParamValueList
+
+        :return: ``True`` if configured successfully.
+        )""" );
+    image_converter.def(
         "get_supported_formats", &ImageConverter::get_supported_formats, R"""(
         Collects all camera raw formats supported by this version.
         
@@ -165,6 +189,126 @@ void util_bindings( nanobind::module_ &m )
         available in the database.
         
         :return: List containing camera model names.
+        )""" );
+    image_converter.def(
+        "apply_lens_correction",
+        &ImageConverter::apply_lens_correction,
+        "dst"_a,
+        "src"_a,
+        R"""(
+        Apply the lens correction to the image buffer.
+        
+        :param dst: Destination image buffer
+        :type dst OIIO::ImageBuf
+
+        :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
+        :type src OIIO::ImageBuf
+
+        :return: ``True`` if applied successfully.
+        )""" );
+    image_converter.def(
+        "apply_matrix",
+        []( ImageConverter       &converter,
+            OIIO::ImageBuf       &dst,
+            const OIIO::ImageBuf &src ) {
+            return converter.apply_matrix( dst, src );
+        },
+        "dst"_a,
+        "src"_a,
+        R"""(
+        Apply the colour space conversion matrix (or matrices) to convert the image buffer from the raw
+        camera colour space to ACES.
+        
+        :param dst: Destination image buffer.
+        :type dst OIIO::ImageBuf
+
+        :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
+        :type src OIIO::ImageBuf
+
+        :return: ``True`` if applied successfully.
+        )""" );
+    image_converter.def(
+        "apply_scale",
+        []( ImageConverter       &converter,
+            OIIO::ImageBuf       &dst,
+            const OIIO::ImageBuf &src ) {
+            return converter.apply_scale( dst, src );
+        },
+        "dst"_a,
+        "src"_a,
+        R"""(
+        Apply the headroom scale to image buffer.
+
+        :param dst: Destination image buffer
+        :type dst OIIO::ImageBuf
+
+        :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
+        :type src OIIO::ImageBuf
+        
+        :return: ``True`` if applied successfully.
+        )""" );
+    image_converter.def(
+        "apply_crop",
+        []( ImageConverter       &converter,
+            OIIO::ImageBuf       &dst,
+            const OIIO::ImageBuf &src ) {
+            return converter.apply_crop( dst, src );
+        },
+        "dst"_a,
+        "src"_a,
+        R"""(
+        Apply the cropping mode as specified in crop_mode.
+
+        :param dst: Destination image buffer.
+        :type dst OIIO::ImageBuf
+
+        :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
+        :type src OIIO::ImageBuf
+        
+        :return : ``True`` if applied successfully.
+        )""" );
+    image_converter.def(
+        "load_image",
+        []( ImageConverter             &converter,
+            const std::string          &path,
+            const OIIO::ParamValueList &hints ) {
+            OIIO::ImageBuf buffer;
+            if ( !converter.load_image( path, hints, buffer ) )
+            {
+                throw std::runtime_error( "Failed to load image" );
+            }
+            return buffer;
+        },
+        "path"_a,
+        "hints"_a,
+        R"""(
+        Load an image from a given ``path`` into a ``buffer``using the ``hints``
+        calculated by the ``configure`` method. The hints can be manually modified
+        prior to involking this method.
+        
+        :param path: Path to where the image from.
+        :type path std::string
+
+        :param hints: Conversion hints to be passed to OIIO when reading an image file.
+        :type hints OIIO::ParamValueList
+
+        :return: Destination buffer where the image loaded into.
+        )""" );
+    image_converter.def(
+        "save_image",
+        &ImageConverter::save_image,
+        "output_filename"_a,
+        "buf"_a,
+        R"""(
+        Save an image into an ACES container.
+
+        :param output_filename: Full path to the output file.
+        :type output_filename: str
+
+        :param buf: Image buffer to save.
+        :type buf: OIIO::ImageBuf
+
+        :return: ``True`` if saved successfully.
         )""" );
 
     nanobind::class_<ImageConverter::Settings> settings(

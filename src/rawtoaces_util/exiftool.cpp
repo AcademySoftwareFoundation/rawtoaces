@@ -4,6 +4,8 @@
 
 #include "exiftool.h"
 
+#include <cerrno>
+#include <cstdio>
 #include <iomanip>
 #include <iostream>
 #include <filesystem>
@@ -67,8 +69,6 @@ bool execute( const std::string &command, std::stringstream &stream )
     constexpr size_t buf_size = 255;
     char             buffer[buf_size];
 
-    errno = 0;
-
 #if defined( WIN32 ) || defined( WIN64 )
     FILE *file = _popen( command.c_str(), "r" );
 #else
@@ -77,29 +77,55 @@ bool execute( const std::string &command, std::stringstream &stream )
     // clang-format on
 #endif
 
-    bool success = ( errno == 0 );
-
-    // Struggling to detect errors consistently across all platforms. In some
-    // cases getting errno != 0 even when the command has been executed
-    // successfully. As a workaround, I'm treating the empty output as error.
-    bool empty = true;
-    if ( success )
+    // popen() reports a failure to start the shell by returning NULL. errno
+    // is not a reliable indicator, it can be left non-zero by a successful
+    // call (glibc probes clone3() first, which fails under some seccomp
+    // profiles, and falls back to clone()).
+    bool empty  = true;
+    int  status = -1;
+    if ( file != NULL )
     {
-        while ( fgets( buffer, buf_size, file ) != NULL )
+        // fread() returns every byte it copied, also when a signal cuts the
+        // read short half way through a line. fgets() returns NULL then, and
+        // the part of the line it has already consumed is lost.
+        do
         {
-            stream << buffer;
-            empty = false;
-        }
-    }
+            size_t count = fread( buffer, 1, buf_size, file );
+            // A signal delivered to the host process (SIGCHLD when the child
+            // exits, for one) interrupts the read when its handler was
+            // installed without SA_RESTART, as Python does. Keep reading.
+            if ( ferror( file ) && errno == EINTR )
+            {
+                clearerr( file );
+            }
+            if ( count > 0 )
+            {
+                stream.write( buffer, count );
+                empty = false;
+            }
+        } while ( !feof( file ) && !ferror( file ) );
 
 #if defined( WIN32 ) || defined( WIN64 )
-    _pclose( file );
+        status = _pclose( file );
 #else
-    pclose( file );
+        status = pclose( file );
 #endif
+    }
 
     stream.flush();
-    return success && !empty;
+
+    // The exit status covers a missing binary (127 from sh, 9009 from
+    // cmd.exe) and exiftool failing on the file. -1 means the child could
+    // not be waited for, which happens when the host process ignores
+    // SIGCHLD, or that popen() failed above. The output is all there is to
+    // go by then; the caller always asks for FileName, so a call that ran
+    // has some.
+    if ( status == -1 )
+    {
+        return !empty;
+    }
+
+    return status == 0 && !empty;
 }
 
 /// Quote a path for the shell that popen() runs the command with, so
@@ -185,11 +211,20 @@ bool perform_exiftool_call(
     std::stringstream stream;
     if ( !execute( command, stream ) )
     {
-        error_message =
-            "Failed to execute exiftool. Please make sure that its location is "
-            "available in PATH. Alternatively you can provide the path to the "
-            "exiftool binary via the RAWTOACES_EXIFTOOL_PATH environment "
-            "variable.";
+        // Output means exiftool ran and failed on the file; none means it
+        // did not run at all.
+        if ( !stream.str().empty() )
+        {
+            error_message = "Exiftool failed to read " + image_path + ".";
+        }
+        else
+        {
+            error_message =
+                "Failed to execute exiftool. Please make sure that its "
+                "location is available in PATH. Alternatively you can provide "
+                "the path to the exiftool binary via the "
+                "RAWTOACES_EXIFTOOL_PATH environment variable.";
+        }
         return false;
     }
 

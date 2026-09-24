@@ -10,6 +10,12 @@
 #include <nanobind/stl/vector.h>
 #include <nanobind/ndarray.h>
 
+// OIIO headers from here
+#include <OpenImageIO/oiioversion.h>
+#include <OpenImageIO/imagebuf.h>
+#include <OpenImageIO/paramlist.h>
+#include <OpenImageIO/imageio.h>
+
 #include "../misc/pragma.h"
 
 using namespace rta::util;
@@ -17,6 +23,27 @@ using namespace nanobind::literals;
 
 void util_bindings( nanobind::module_ &m )
 {
+#if OIIO_VERSION >= OIIO_MAKE_VERSION( 3, 2, 0 )
+    nanobind::module_::import_( "OpenImageIO" );
+    if ( !nanobind::type<OIIO::ImageBuf>().is_valid() )
+    {
+        throw nanobind::import_error(
+            "OIIO::ImageBuf is not registered with nanobind." );
+    }
+
+    if ( !nanobind::type<OIIO::ParamValueList>().is_valid() )
+    {
+        throw nanobind::import_error(
+            "OIIO::ParamValueList is not registered with nanobind." );
+    }
+
+    if ( !nanobind::type<OIIO::ImageSpec>().is_valid() )
+    {
+        throw nanobind::import_error(
+            "OIIO::ImageSpec is not registered with nanobind." );
+    }
+#endif
+
     m.def(
         "collect_image_files",
         &collect_image_files,
@@ -149,6 +176,7 @@ void util_bindings( nanobind::module_ &m )
         :type input_filename: str
         :return: ``True`` if configured successfully.
         )""" );
+#if OIIO_VERSION >= OIIO_MAKE_VERSION( 3, 2, 0 )
     image_converter.def(
         "configure",
         []( ImageConverter        &converter,
@@ -169,6 +197,7 @@ void util_bindings( nanobind::module_ &m )
 
         :return: ``True`` if configured successfully.
         )""" );
+#endif
     image_converter.def(
         "get_supported_formats", &ImageConverter::get_supported_formats, R"""(
         Collects all camera raw formats supported by this version.
@@ -190,6 +219,7 @@ void util_bindings( nanobind::module_ &m )
         
         :return: List containing camera model names.
         )""" );
+#if OIIO_VERSION >= OIIO_MAKE_VERSION( 3, 2, 0 )
     image_converter.def(
         "apply_lens_correction",
         &ImageConverter::apply_lens_correction,
@@ -310,7 +340,7 @@ void util_bindings( nanobind::module_ &m )
 
         :return: ``True`` if saved successfully.
         )""" );
-
+#endif
     nanobind::class_<ImageConverter::Settings> settings(
         image_converter, "Settings", R"""(
         The structure containing all parameters needed to configure image

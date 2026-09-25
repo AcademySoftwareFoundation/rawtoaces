@@ -187,9 +187,9 @@ void testIDT_FindCameraToXYZMtx()
                                        0.7904000305 };
 
     std::vector<std::vector<double>> expected_matrix = {
-        { 1.0616656923, -0.3124143737, -0.0661770211 },
-        { -0.4772957633, 1.3614785395, 0.1001599918 },
-        { -0.0411839968, 0.3103035015, 0.5718121924 }
+        { 1.0486871734407748, -0.3028543205865859, -0.070207760408238035 },
+        { -0.48041023036994102, 1.3572842365125108, 0.10300557220558426 },
+        { -0.046805366836249467, 0.31513619294079737, 0.56379096290258068 }
     };
 
     rta::core::math::inverse( expected_matrix, expected_matrix );
@@ -199,7 +199,7 @@ void testIDT_FindCameraToXYZMtx()
         neutralRGB,
         true,
         expected_matrix,
-        "Found illuminant: 5317k.\n",
+        "Found illuminant: 5566k.\n",
         "" );
 }
 
@@ -269,6 +269,173 @@ void testIDT_FindCameraToXYZMtx_ExactMatchMired()
         rta::core::stack_rows( k_identity_xyz_to_rgb, 3 ),
         "Found illuminant: 10000k.\n",
         "" );
+}
+
+void testIDT_FindCameraToXYZMtx_NonInvertibleFirstSample()
+{
+    // The first sample uses the first calibration matrix as is, which is
+    // singular here. The sample has to be skipped without seeding the
+    // bracket interpolation, so the search continues from the next sample.
+    rta::core::Metadata metadata;
+    init_metadata( metadata );
+    metadata.calibration[0].illuminant        = 21;
+    metadata.calibration[1].illuminant        = 17;
+    metadata.calibration[0].XYZ_to_RGB_matrix = { 1, 0, 0, 1, 0, 0, 1, 0, 0 };
+
+    std::vector<double> neutralRGB = { 0.6289999865,
+                                       1.0000000000,
+                                       0.7904000305 };
+
+    std::vector<std::vector<double>> expected_matrix = {
+        { 1.0002254267287176, -0.0069668493523752095, -0.0021034784893107592 },
+        { 0.96204747111145017, 0.034244821864608622, 0.0028462422751585441 },
+        { 0.97289625427054915, 0.0084049987930366991, 0.013733743656872396 }
+    };
+
+    rta::core::math::inverse( expected_matrix, expected_matrix );
+
+    check_DNG_matrix(
+        metadata,
+        neutralRGB,
+        true,
+        expected_matrix,
+        "Found illuminant: 6295k.\n",
+        "" );
+}
+
+void testIDT_FindCameraToXYZMtx_MatchAtHighMired()
+{
+    // A neutral shot under the first calibration illuminant (2856K, the
+    // warm end of the sweep) is only found if high_mired itself is sampled.
+    // Only the matrix is checked: the logged temperature rounds down from
+    // 2856.00002K, too close to the integer boundary to pin.
+    rta::core::Metadata metadata;
+    init_metadata( metadata );
+
+    std::vector<std::vector<double>> expected_matrix =
+        rta::core::stack_rows( metadata.calibration[0].XYZ_to_RGB_matrix, 3 );
+    std::vector<double> neutralRGB = rta::core::math::product(
+        expected_matrix, rta::core::color_temperature_to_XYZ( 2856.0 ) );
+    rta::core::math::inverse( expected_matrix, expected_matrix );
+
+    std::vector<std::vector<double>> camera_to_XYZ_matrix;
+    std::string                      error_message;
+    OIIO_CHECK_ASSERT( rta::core::find_camera_to_XYZ_matrix(
+        metadata, neutralRGB, camera_to_XYZ_matrix, error_message, 0 ) );
+    OIIO_CHECK_EQUAL( camera_to_XYZ_matrix.size(), 3 );
+    for ( size_t row = 0; row < 3; row++ )
+        for ( size_t col = 0; col < 3; col++ )
+            OIIO_CHECK_EQUAL_THRESH(
+                camera_to_XYZ_matrix[row][col],
+                expected_matrix[row][col],
+                1e-5 );
+}
+
+void testIDT_FindCameraToXYZMtx_KnownIlluminants()
+{
+    // For a neutral shot under a known colour temperature between the two
+    // calibration illuminants, the solver has to land on that temperature.
+    // The neutral is built from the interpolated matrix at that temperature,
+    // so the solver must return (the inverse of) the same matrix.
+    rta::core::Metadata metadata;
+    init_metadata( metadata );
+
+    const std::vector<double> &matrix1 =
+        metadata.calibration[0].XYZ_to_RGB_matrix;
+    const std::vector<double> &matrix2 =
+        metadata.calibration[1].XYZ_to_RGB_matrix;
+    double mired1 = rta::core::kelvin_to_mired( 2856.0 );
+    double mired2 = rta::core::kelvin_to_mired( 6500.0 );
+
+    for ( double kelvin: { 3000.0, 3700.5, 4500.0, 5500.0, 6200.0 } )
+    {
+        double mired = rta::core::kelvin_to_mired( kelvin );
+
+        std::vector<std::vector<double>> expected_matrix =
+            rta::core::XYZ_to_camera_weighted_matrix(
+                mired, mired1, mired2, matrix1, matrix2 );
+        std::vector<double> neutralRGB = rta::core::math::product(
+            expected_matrix, rta::core::color_temperature_to_XYZ( kelvin ) );
+        rta::core::math::inverse( expected_matrix, expected_matrix );
+
+        std::vector<std::vector<double>> camera_to_XYZ_matrix;
+        std::string                      error_message;
+        OIIO_CHECK_ASSERT( rta::core::find_camera_to_XYZ_matrix(
+            metadata, neutralRGB, camera_to_XYZ_matrix, error_message, 0 ) );
+        OIIO_CHECK_EQUAL( camera_to_XYZ_matrix.size(), 3 );
+        for ( size_t row = 0; row < 3; row++ )
+            for ( size_t col = 0; col < 3; col++ )
+                OIIO_CHECK_EQUAL_THRESH(
+                    camera_to_XYZ_matrix[row][col],
+                    expected_matrix[row][col],
+                    1e-5 );
+    }
+}
+
+void testIDT_FindCameraToXYZMtx_SingleCalibration()
+{
+    // A DNG with only ColorMatrix1 leaves the second calibration with
+    // illuminant 0 and an all-zero matrix (image_converter) or an empty one
+    // (metadata built by hand); a zero matrix next to a known illuminant is
+    // the same case. The first matrix is used as is in all of them.
+    rta::core::Metadata metadata;
+    init_metadata( metadata );
+
+    std::vector<double> neutralRGB = { 0.6289999865,
+                                       1.0000000000,
+                                       0.7904000305 };
+
+    std::vector<std::vector<double>> expected_matrix =
+        rta::core::stack_rows( metadata.calibration[0].XYZ_to_RGB_matrix, 3 );
+    rta::core::math::inverse( expected_matrix, expected_matrix );
+
+    metadata.calibration[1].illuminant = 0;
+    metadata.calibration[1].XYZ_to_RGB_matrix.assign( 9, 0.0 );
+    check_DNG_matrix(
+        metadata,
+        neutralRGB,
+        true,
+        expected_matrix,
+        "Only one calibration was found.\n",
+        "" );
+
+    metadata.calibration[1].XYZ_to_RGB_matrix.clear();
+    check_DNG_matrix(
+        metadata,
+        neutralRGB,
+        true,
+        expected_matrix,
+        "Only one calibration was found.\n",
+        "" );
+
+    metadata.calibration[1].illuminant = 21;
+    metadata.calibration[1].XYZ_to_RGB_matrix.assign( 9, 0.0 );
+    check_DNG_matrix(
+        metadata,
+        neutralRGB,
+        true,
+        expected_matrix,
+        "Only one calibration was found.\n",
+        "" );
+}
+
+void testIDT_FindCameraToXYZMtx_IdenticalIlluminants()
+{
+    // Two calibrations for the same illuminant leave an empty range to
+    // sweep; the first matrix is used as is, silently, as before.
+    rta::core::Metadata metadata;
+    init_metadata( metadata );
+    metadata.calibration[1].illuminant = metadata.calibration[0].illuminant;
+
+    std::vector<double> neutralRGB = { 0.6289999865,
+                                       1.0000000000,
+                                       0.7904000305 };
+
+    std::vector<std::vector<double>> expected_matrix =
+        rta::core::stack_rows( metadata.calibration[0].XYZ_to_RGB_matrix, 3 );
+    rta::core::math::inverse( expected_matrix, expected_matrix );
+
+    check_DNG_matrix( metadata, neutralRGB, true, expected_matrix, "", "" );
 }
 
 void testIDT_FindCameraToXYZMtx_Fail()
@@ -380,9 +547,9 @@ void testIDT_GetDNGCATMatrix()
     init_metadata( metadata );
     rta::core::MetadataSolver *di = new rta::core::MetadataSolver( metadata );
     double                     matrix[3][3] = {
-        { 0.99249998682567019, -0.0029995338200207045, 0.019985821819872025 },
-        { -0.0023403202593997633, 0.99648084986598617, 0.006295370469840196 },
-        { 0.0043810803525381123, -0.0076107605403616758, 1.1122427032269608 }
+        { 0.99099652028664909, -0.0039432226891074323, 0.018921317065371118 },
+        { -0.0039159159820485179, 0.99816564406286434, 0.0060505224917670325 },
+        { 0.0040217656639693206, -0.0069148526777877001, 1.1040273790037682 }
     };
 
     DISABLE_DEPRECATED_WARNINGS
@@ -401,9 +568,9 @@ void testIDT_GetDNGIDTMatrix()
     init_metadata( metadata );
     rta::core::MetadataSolver *di = new rta::core::MetadataSolver( metadata );
     double                     matrix[3][3] = {
-        { 0.6820640403922289, 0.21830620601468764, 0.097819588932001586 },
-        { -0.010414610202425199, 0.99916462206472656, 0.0094398234395704668 },
-        { -0.088115635108323973, -0.49312503931360652, 1.5794305097175558 }
+        { 0.68832510354036558, 0.21027184302848373, 0.10504235016823139 },
+        { -0.0074165224762133899, 1.0071009763365999, 0.0039548428394460544 },
+        { -0.086152187513382994, -0.50370399487211537, 1.5934954790790503 }
     };
 
     DISABLE_DEPRECATED_WARNINGS
@@ -422,9 +589,9 @@ void testIDT_GetDNGTransformMatrix()
     init_metadata( metadata );
     rta::core::MetadataSolver solver( metadata );
     double                    matrix[3][3] = {
-        { 0.6820640403922289, 0.21830620601468764, 0.097819588932001586 },
-        { -0.010414610202425199, 0.99916462206472656, 0.0094398234395704668 },
-        { -0.088115635108323973, -0.49312503931360652, 1.5794305097175558 }
+        { 0.68832510354036558, 0.21027184302848373, 0.10504235016823139 },
+        { -0.0074165224762133899, 1.0071009763365999, 0.0039548428394460544 },
+        { -0.086152187513382994, -0.50370399487211537, 1.5934954790790503 }
     };
 
     bool                              result = solver.calculate_transform();
@@ -480,6 +647,11 @@ int main( int, char ** )
     testIDT_FindCameraToXYZMtx_NoIlluminant();
     testIDT_FindCameraToXYZMtx_EmptyNeutral();
     testIDT_FindCameraToXYZMtx_ExactMatchMired();
+    testIDT_FindCameraToXYZMtx_NonInvertibleFirstSample();
+    testIDT_FindCameraToXYZMtx_MatchAtHighMired();
+    testIDT_FindCameraToXYZMtx_KnownIlluminants();
+    testIDT_FindCameraToXYZMtx_SingleCalibration();
+    testIDT_FindCameraToXYZMtx_IdenticalIlluminants();
     testIDT_FindCameraToXYZMtx_Fail();
     testIDT_ColorTemperatureToXYZ();
     testIDT_ColorTemperatureToXYZ_ClampHighMired();

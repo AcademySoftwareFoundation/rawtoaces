@@ -1,3 +1,27 @@
+Release 2.2.2 (September 30 2026) -- compared to 2.2.1
+--------------------------------------------------------
+
+
+**This version is API-compatible and ABI-compatible with the previous version.**
+
+### Changes:
+
+- *fix*: remove unsupported demosaic algos [#322](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/322)
+- *fix*: make the transform cache thread-safe [#323](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/323), [#334](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/334)
+- *fix*: quote the paths on the exiftool command line [#330](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/330)
+- *fix*: interpolate inside the bracket in the DNG solver [#327](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/327)
+- *fix*: stop using errno to detect popen() failures in exiftool [#328](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/328)
+
+Release 2.2.1 (August 4 2026) -- compared to 2.2.0
+--------------------------------------------------------
+
+
+**This version is a technical tag to trigger a documentation rebuild, not a proper release.**
+
+### Changes:
+
+- *docs*: fix readthedocs build [#311](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/311)
+
 Release 2.2.0 (July 25 2026) -- compared to 2.1.1
 --------------------------------------------------------
 

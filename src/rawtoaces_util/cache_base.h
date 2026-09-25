@@ -154,11 +154,11 @@ public:
             finish_pending();
             return cached_object;
         }
-        catch ( const std::exception &exception )
+        catch ( ... )
         {
             std::lock_guard<std::mutex> lock( _mutex );
             finish_pending();
-            throw( exception );
+            throw;
         }
     };
 

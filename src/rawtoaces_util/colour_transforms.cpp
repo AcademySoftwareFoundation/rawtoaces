@@ -158,14 +158,11 @@ bool fetch_illuminant_from_multipliers(
         { wb_multipliers[0], wb_multipliers[1], wb_multipliers[2] }
     };
 
-    auto &illuminant_from_WB_cache     = cache::get_illuminant_from_WB_cache();
-    illuminant_from_WB_cache.verbosity = verbosity;
-    illuminant_from_WB_cache.disabled  = disable_cache;
+    auto &illuminant_from_WB_cache = cache::get_illuminant_from_WB_cache();
 
     std::string solve_error;
     const auto  cache_entry = illuminant_from_WB_cache.fetch(
         descriptor,
-
         [&]() {
             return solve_illuminant_from_multipliers(
                 camera_make,
@@ -173,7 +170,9 @@ bool fetch_illuminant_from_multipliers(
                 wb_multipliers,
                 solver,
                 solve_error );
-        } );
+        },
+        disable_cache,
+        verbosity );
 
     if ( !cache_entry )
     {
@@ -247,15 +246,17 @@ bool fetch_multipliers_from_illuminant(
                                                         camera_model,
                                                         in_illuminant };
 
-    auto &WB_from_illuminant_cache     = cache::get_WB_from_illuminant_cache();
-    WB_from_illuminant_cache.verbosity = verbosity;
-    WB_from_illuminant_cache.disabled  = disable_cache;
+    auto &WB_from_illuminant_cache = cache::get_WB_from_illuminant_cache();
 
     std::string solve_error;
-    auto cache_entry = WB_from_illuminant_cache.fetch( descriptor, [&]() {
-        return solve_multipliers_from_illuminant(
-            camera_make, camera_model, in_illuminant, solver, solve_error );
-    } );
+    const auto  cache_entry = WB_from_illuminant_cache.fetch(
+        descriptor,
+        [&]() {
+            return solve_multipliers_from_illuminant(
+                camera_make, camera_model, in_illuminant, solver, solve_error );
+        },
+        disable_cache,
+        verbosity );
 
     bool success( cache_entry );
     if ( !success && !solve_error.empty() )
@@ -346,18 +347,19 @@ bool fetch_matrix_from_illuminant(
 
     auto &matrix_from_illuminant_cache =
         cache::get_matrix_from_illuminant_cache();
-    matrix_from_illuminant_cache.verbosity = verbosity;
-    matrix_from_illuminant_cache.disabled  = disable_cache;
 
-    const auto cache_entry =
-        matrix_from_illuminant_cache.fetch( descriptor, [&]() {
+    const auto cache_entry = matrix_from_illuminant_cache.fetch(
+        descriptor,
+        [&]() {
             return solve_matrix_from_illuminant(
                 camera_make,
                 camera_model,
                 in_illuminant,
                 solver,
                 error_message );
-        } );
+        },
+        disable_cache,
+        verbosity );
 
     if ( !cache_entry )
     {
@@ -421,13 +423,12 @@ bool fetch_matrix_from_metadata(
 
     auto &matrix_from_dng_metadata_cache =
         cache::get_matrix_from_dng_metadata_cache();
-    matrix_from_dng_metadata_cache.verbosity = verbosity;
-    matrix_from_dng_metadata_cache.disabled  = disable_cache;
 
-    const auto &entry =
-        matrix_from_dng_metadata_cache.fetch( descriptor, [&]() {
-            return solve_matrix_from_metadata( metadata, error_message );
-        } );
+    const auto &entry = matrix_from_dng_metadata_cache.fetch(
+        descriptor,
+        [&]() { return solve_matrix_from_metadata( metadata, error_message ); },
+        disable_cache,
+        verbosity );
 
     bool success( entry );
     if ( !success )

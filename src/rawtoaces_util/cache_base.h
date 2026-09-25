@@ -65,7 +65,9 @@ public:
 
     std::shared_ptr<const Data> fetch(
         const Descriptor                                   &descriptor,
-        const std::function<std::shared_ptr<const Data>()> &func )
+        const std::function<std::shared_ptr<const Data>()> &func,
+        bool                                                disabled  = false,
+        int                                                 verbosity = 0 )
     {
         if ( disabled )
         {
@@ -125,32 +127,41 @@ public:
                       << "): not found. Calculating a new entry." << std::endl;
         }
 
-        auto cached_object = func();
+        auto finish_pending = [&]() {
+            auto iter = find_pending( descriptor );
+            if ( iter != _pending_keys.end() )
+                _pending_keys.erase( iter );
+            _condition_variable.notify_all();
+        };
 
-        std::lock_guard<std::mutex> lock( _mutex );
-        auto                       &entry = _map.emplace_front();
-        entry.first                       = descriptor;
-        entry.second                      = cached_object;
-
-        // If the cache has exceeded the max capacity, remove the oldest entry.
-        if ( _map.size() > capacity )
+        try
         {
-            _map.pop_back();
+            auto cached_object = func();
+
+            std::lock_guard<std::mutex> lock( _mutex );
+            _map.emplace_front( descriptor, cached_object );
+
+            // If the cache has exceeded the max capacity, remove the oldest entry.
+            if ( _map.size() > capacity )
+            {
+                _map.pop_back();
+            }
+
+            // Remove from the list of entries being processed and
+            // notify other threads that the cache has been updated.
+            finish_pending();
+            return cached_object;
         }
-
-        // Remove from the list of entries being processed and
-        // notify other threads that the cache has been updated.
-        auto iter = find_pending( descriptor );
-        _pending_keys.erase( iter );
-        _condition_variable.notify_all();
-
-        return cached_object;
+        catch ( ... )
+        {
+            std::lock_guard<std::mutex> lock( _mutex );
+            finish_pending();
+            throw;
+        }
     };
 
-    bool        disabled  = false;
-    size_t      capacity  = 10;
-    int         verbosity = 0;
-    std::string name      = "default";
+    size_t      capacity = 10;
+    std::string name     = "default";
 
 private:
     std::list<std::pair<Descriptor, std::shared_ptr<const Data>>> _map;

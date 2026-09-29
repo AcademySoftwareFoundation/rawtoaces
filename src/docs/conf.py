@@ -35,6 +35,11 @@ extensions = [
     'enum_tools.autoenum'
 ]
 
+autodoc_mock_imports = [
+    "OpenImageIO",
+    "OpenImageIO.OpenImageIO",
+]
+
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 

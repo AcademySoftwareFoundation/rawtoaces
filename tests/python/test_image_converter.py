@@ -83,7 +83,41 @@ class TestImageConverter:
         
         assert hasattr(converter, "last_error_message")
         assert hasattr(converter, "status")
+
+        try:
+            import OpenImageIO as oiio
+        except ImportError:
+            oiio = None
+
+        if oiio is not None:
+            supports_oiio_bindings = (
+                oiio.VERSION_MAJOR,
+                oiio.VERSION_MINOR,
+                oiio.VERSION_PATCH,
+            ) >= (3, 2, 0)
         
+            oiio_methods = [
+                "apply_lens_correction",
+                "apply_matrix",
+                "apply_scale",
+                "apply_crop",
+                "load_image",
+                "save_image",
+            ]
+
+            for method_name in oiio_methods:
+                assert hasattr(converter, method_name) is supports_oiio_bindings
+
+                if supports_oiio_bindings:
+                    assert(callable(getattr(converter, method_name)))
+
+            if supports_oiio_bindings:
+                # Also verify that the new configure(ImageSpec, ParamValueList)
+                # overload is registered and accepts OIIO objects
+                image_spec = oiio.ImageSpec()
+                options = oiio.ParamValueList()
+                result = converter.configure(image_spec, options)
+                assert isinstance(result, bool)
 
     def test_process_image_with_invalid_path(self):
         """Test process_image with non-existent file returns False"""

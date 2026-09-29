@@ -383,6 +383,14 @@ public:
     /// Load an image from a given `path` into a `buffer` using the `hints`
     /// calculated by the `configure` method. The hints can be manually
     /// modified prior to invoking this method.
+    /// @param path
+    ///     Path to where the image from.
+    /// @param hints
+    ///     Conversion hints to be passed to OIIO when reading an image file.
+    /// @param buffer
+    ///     Destination buffer where the image loaded into.
+    /// @return
+    ///     `true` if image loaded successfully.
     bool load_image(
         const std::string          &path,
         const OIIO::ParamValueList &hints,

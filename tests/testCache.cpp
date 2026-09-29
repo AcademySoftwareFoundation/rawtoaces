@@ -17,16 +17,22 @@ std::shared_ptr<const Data> fetch(
     rta::cache::Cache<Descriptor, Data> &cache,
     const Descriptor                    &descriptor,
     const Data                          &in_value,
-    const bool                           in_success = true )
+    const bool                           in_success    = true,
+    const int                            verbosity     = 0,
+    const bool                           disable_cache = false )
 {
-    return cache.fetch( descriptor, [&]() {
-        if ( !in_success )
-        {
-            return (std::shared_ptr<const Data>)nullptr;
-        }
-        auto result = std::make_shared<const Data>( in_value );
-        return result;
-    } );
+    return cache.fetch(
+        descriptor,
+        [&]() {
+            if ( !in_success )
+            {
+                return (std::shared_ptr<const Data>)nullptr;
+            }
+            auto result = std::make_shared<const Data>( in_value );
+            return result;
+        },
+        disable_cache,
+        verbosity );
 }
 
 template <class Descriptor, class Data>
@@ -35,12 +41,16 @@ std::shared_ptr<const Data> fetch(
     const Descriptor                    &descriptor,
     const Data                          &in_value,
     std::string                         &out_message,
-    const bool                           in_success = true )
+    const bool                           in_success    = true,
+    const int                            verbosity     = 1,
+    const bool                           disable_cache = false )
 {
     std::shared_ptr<const Data> result;
 
-    out_message = capture_stderr(
-        [&]() { result = fetch( cache, descriptor, in_value, in_success ); } );
+    out_message = capture_stderr( [&]() {
+        result = fetch(
+            cache, descriptor, in_value, in_success, verbosity, disable_cache );
+    } );
 
     return result;
 }
@@ -50,12 +60,10 @@ void testCache_disabled()
     std::cout << std::endl << __FUNCTION__ << std::endl;
 
     rta::cache::Cache<std::string, int> cache( "cache_name" );
-    cache.verbosity = 1;
-    cache.disabled  = true;
 
     std::string key = "missing";
     std::string message;
-    auto        output = fetch( cache, key, 42, message );
+    auto        output = fetch( cache, key, 42, message, true, 1, true );
 
     OIIO_CHECK_ASSERT( output );
     OIIO_CHECK_EQUAL( *output.get(), 42 );
@@ -67,7 +75,6 @@ void testCache_missing()
     std::cout << std::endl << __FUNCTION__ << std::endl;
 
     rta::cache::Cache<std::string, int> cache( "cache_name" );
-    cache.verbosity = 1;
 
     std::string key = "missing";
     std::string message;
@@ -89,11 +96,10 @@ void testCache_present()
     std::cout << std::endl << __FUNCTION__ << std::endl;
 
     rta::cache::Cache<std::string, int> cache( "cache_name" );
-    cache.verbosity = 1;
 
     std::string key = "present";
     std::string message;
-    fetch( cache, key, 42, message );
+    fetch( cache, key, 42 );
     auto output = fetch( cache, key, -1, message );
 
     OIIO_CHECK_ASSERT( output );
@@ -112,11 +118,9 @@ void testCache_failed()
     std::cout << std::endl << __FUNCTION__ << std::endl;
 
     rta::cache::Cache<std::string, int> cache( "cache_name" );
-    cache.verbosity = 1;
 
-    std::string key = "missing";
-    std::string message;
-    auto        output = fetch( cache, key, 42, message, false );
+    std::string key    = "missing";
+    auto        output = fetch( cache, key, 42, false );
 
     OIIO_CHECK_ASSERT( !output );
 }
@@ -126,18 +130,17 @@ void testCache_full()
     std::cout << std::endl << __FUNCTION__ << std::endl;
 
     rta::cache::Cache<std::string, int> cache( "cache_name" );
-    cache.verbosity = 1;
-    cache.capacity  = 3;
+    cache.capacity = 3;
 
     // Insert N+1 entries into an N-element cache.
-    std::string message;
-    fetch( cache, std::string( "101" ), 101, message );
-    fetch( cache, std::string( "102" ), 102, message );
-    fetch( cache, std::string( "103" ), 103, message );
-    fetch( cache, std::string( "104" ), 104, message );
+    fetch( cache, std::string( "101" ), 101 );
+    fetch( cache, std::string( "102" ), 102 );
+    fetch( cache, std::string( "103" ), 103 );
+    fetch( cache, std::string( "104" ), 104 );
 
     // Confirm that the oldest entry has been removed.
-    auto output = fetch( cache, std::string( "101" ), -1, message );
+    std::string message;
+    auto        output = fetch( cache, std::string( "101" ), -1, message );
 
     OIIO_CHECK_ASSERT( output );
     OIIO_CHECK_EQUAL( *output.get(), -1 );
@@ -155,20 +158,19 @@ void testCache_bump()
     std::cout << std::endl << __FUNCTION__ << std::endl;
 
     rta::cache::Cache<std::string, int> cache( "cache_name" );
-    cache.verbosity = 1;
-    cache.capacity  = 3;
+    cache.capacity = 3;
 
     // Insert N entries into an N-element cache.
     std::string message;
-    fetch( cache, std::string( "101" ), 101, message );
-    fetch( cache, std::string( "102" ), 102, message );
-    fetch( cache, std::string( "103" ), 103, message );
+    fetch( cache, std::string( "101" ), 101 );
+    fetch( cache, std::string( "102" ), 102 );
+    fetch( cache, std::string( "103" ), 103 );
 
     // Bump the oldest entry to move it to the top.
-    fetch( cache, std::string( "101" ), -1, message );
+    fetch( cache, std::string( "101" ), -1 );
 
     // Insert another entry.
-    fetch( cache, std::string( "104" ), 104, message );
+    fetch( cache, std::string( "104" ), 104 );
 
     // Confirm that the bumped entry has not been removed.
     auto output = fetch( cache, std::string( "101" ), -2, message );
@@ -210,7 +212,7 @@ void test_cache_threading()
         for ( size_t i = 0; i < 100; i++ )
             in_value[i] = key;
 
-        auto output = fetch( threaded_cache, key, in_value, true );
+        auto output = fetch( threaded_cache, key, in_value );
 
         OIIO_CHECK_ASSERT( output );
         for ( size_t i = 0; i < 100; i++ )
@@ -345,6 +347,40 @@ void testCache_transform_caches()
     }
 }
 
+void test_cache_throw()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    rta::cache::Cache<std::string, int> cache( "cache_name" );
+
+    std::string key = "throwing";
+
+    // Make the first fetch throw.
+    try
+    {
+        cache.fetch( key, [] {
+            throw std::exception();
+            return std::shared_ptr<const int>();
+        } );
+    }
+    catch ( ... )
+    {}
+
+    // Re-fetch the same key.
+    std::string message;
+    auto        output = fetch( cache, key, 42, message );
+
+    OIIO_CHECK_ASSERT( output );
+    OIIO_CHECK_EQUAL( *output.get(), 42 );
+
+    // Assert on the expected error message
+    std::vector<std::string> expected_output = {
+        "Cache (cache_name): searching for an entry [throwing].",
+        "Cache (cache_name): not found. Calculating a new entry."
+    };
+    ASSERT_CONTAINS_ALL( message, expected_output );
+}
+
 int main( int, char ** )
 {
     testCache_disabled();
@@ -357,6 +393,7 @@ int main( int, char ** )
     testCache_metadata_comparison();
     testCache_transform_caches();
     test_cache_threading();
+    test_cache_throw();
 
     return unit_test_failures;
 }

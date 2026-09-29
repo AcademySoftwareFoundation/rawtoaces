@@ -251,14 +251,13 @@ std::shared_ptr<const OIIO::ImageBuf> fetch_vignette_map(
 {
     cache::LensDescriptor descriptor = spec;
 
-    auto &vignette_cache     = cache::get_vignette_cache();
-    vignette_cache.disabled  = disable_cache;
-    vignette_cache.verbosity = verbosity;
+    auto &vignette_cache = cache::get_vignette_cache();
 
-    std::shared_ptr<const OIIO::ImageBuf> result =
-        vignette_cache.fetch( descriptor, [&]() {
-            return solve_vignette_map( spec, false, error_message );
-        } );
+    std::shared_ptr<const OIIO::ImageBuf> result = vignette_cache.fetch(
+        descriptor,
+        [&]() { return solve_vignette_map( spec, false, error_message ); },
+        disable_cache,
+        verbosity );
 
     return result;
 }
@@ -411,13 +410,13 @@ std::shared_ptr<const OIIO::ImageBuf> fetch_distortion_map(
 {
     cache::LensDescriptor descriptor = spec;
 
-    auto &distortion_cache     = cache::get_distortion_cache();
-    distortion_cache.disabled  = disable_cache;
-    distortion_cache.verbosity = verbosity;
+    auto &distortion_cache = cache::get_distortion_cache();
 
-    const auto result = distortion_cache.fetch( descriptor, [&]() {
-        return solve_distortion_map( spec, false, error_message );
-    } );
+    const auto result = distortion_cache.fetch(
+        descriptor,
+        [&]() { return solve_distortion_map( spec, false, error_message ); },
+        disable_cache,
+        verbosity );
 
     return result;
 }
@@ -553,13 +552,13 @@ std::shared_ptr<const OIIO::ImageBuf> fetch_aberration_map(
 {
     cache::LensDescriptor descriptor = spec;
 
-    auto &aberration_cache     = cache::get_aberration_cache();
-    aberration_cache.disabled  = disable_cache;
-    aberration_cache.verbosity = verbosity;
+    auto &aberration_cache = cache::get_aberration_cache();
 
-    const auto result = aberration_cache.fetch( descriptor, [&]() {
-        return solve_aberration_map( spec, false, error_message );
-    } );
+    const auto result = aberration_cache.fetch(
+        descriptor,
+        [&]() { return solve_aberration_map( spec, false, error_message ); },
+        disable_cache,
+        verbosity );
 
     return result;
 }

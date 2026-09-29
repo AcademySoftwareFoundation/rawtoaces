@@ -2,6 +2,8 @@ from collections.abc import Sequence
 import enum
 from typing import overload
 
+import OpenImageIO
+
 
 class SpectralData:
     """
@@ -483,6 +485,7 @@ class ImageConverter:
             will be removed in v3. Use ``get_transform_matrix()``.
         """
 
+    @overload
     def configure(self, input_filename: str) -> bool:
         """
         Configures the converter using the requested white balance and colour
@@ -496,6 +499,20 @@ class ImageConverter:
         :param input_filename: A file name of the raw image file to read the 
             metadata from.
         :type input_filename: str
+        :return: ``True`` if configured successfully.
+        """
+
+    @overload
+    def configure(self, image_spec: OpenImageIO.ImageSpec, options: OpenImageIO.ParamValueList) -> bool:
+        """
+        Configure the converter from an OpenImageIO ImageSpec.
+
+        :param image_spec: Image specification.
+        :type image_spec: OpenImageIO.ImageSpec
+
+        :param options: OIIO input options. This object may be modified.
+        :type options: OpenImageIO.ParamValueList
+
         :return: ``True`` if configured successfully.
         """
 
@@ -521,6 +538,87 @@ class ImageConverter:
         :return: List containing camera model names.
         """
 
+    def apply_lens_correction(self, dst: OpenImageIO.ImageBuf, src: OpenImageIO.ImageBuf) -> bool:
+        """
+        Apply the lens correction to the image buffer.
+
+        :param dst: Destination image buffer
+        :type dst: OpenImageIO.ImageBuf
+
+        :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
+        :type src: OpenImageIO.ImageBuf
+
+        :return: ``True`` if applied successfully.
+        """
+
+    def apply_matrix(self, dst: OpenImageIO.ImageBuf, src: OpenImageIO.ImageBuf) -> bool:
+        """
+        Apply the colour space conversion matrix (or matrices) to convert the image buffer from the raw
+        camera colour space to ACES.
+
+        :param dst: Destination image buffer.
+        :type dst: OpenImageIO.ImageBuf
+
+        :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
+        :type src: OpenImageIO.ImageBuf
+
+        :return: ``True`` if applied successfully.
+        """
+
+    def apply_scale(self, dst: OpenImageIO.ImageBuf, src: OpenImageIO.ImageBuf) -> bool:
+        """
+        Apply the headroom scale to image buffer.
+
+        :param dst: Destination image buffer
+        :type dst: OpenImageIO.ImageBuf
+
+        :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
+        :type src: OpenImageIO.ImageBuf
+
+        :return: ``True`` if applied successfully.
+        """
+
+    def apply_crop(self, dst: OpenImageIO.ImageBuf, src: OpenImageIO.ImageBuf) -> bool:
+        """
+        Apply the cropping mode as specified in crop_mode.
+
+        :param dst: Destination image buffer.
+        :type dst: OpenImageIO.ImageBuf
+
+        :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
+        :type src: OpenImageIO.ImageBuf
+
+        :return: ``True`` if applied successfully.
+        """
+
+    def load_image(self, path: str, hints: OpenImageIO.ParamValueList) -> OpenImageIO.ImageBuf:
+        """
+        Load an image from a given ``path`` into a ``buffer`` using the ``hints``
+        calculated by the ``configure`` method. The hints can be manually modified
+        prior to invoking this method.
+
+        :param path: Path to where the image from.
+        :type path: str
+
+        :param hints: Conversion hints to be passed to OIIO when reading an image file.
+        :type hints: OpenImageIO.ParamValueList
+
+        :return: Destination buffer where the image loaded into.
+        """
+
+    def save_image(self, output_filename: str, buf: OpenImageIO.ImageBuf) -> bool:
+        """
+        Save an image into an ACES container.
+
+        :param output_filename: Full path to the output file.
+        :type output_filename: str
+
+        :param buf: Image buffer to save.
+        :type buf: OpenImageIO.ImageBuf
+
+        :return: ``True`` if saved successfully.
+        """
+
     class Settings:
         """
         The structure containing all parameters needed to configure image
@@ -536,7 +634,7 @@ class ImageConverter:
             """Chromatic aberration"""
 
             Distortion = 2
-            """Geeometric distortion"""
+            """Geometric distortion"""
 
             Vignetting = 4
             """Vignetting"""

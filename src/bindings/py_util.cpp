@@ -229,10 +229,10 @@ void util_bindings( nanobind::module_ &m )
         Apply the lens correction to the image buffer.
         
         :param dst: Destination image buffer
-        :type dst OIIO::ImageBuf
+        :type dst: OpenImageIO.ImageBuf
 
         :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
-        :type src OIIO::ImageBuf
+        :type src: OpenImageIO.ImageBuf
 
         :return: ``True`` if applied successfully.
         )""" );
@@ -250,10 +250,10 @@ void util_bindings( nanobind::module_ &m )
         camera colour space to ACES.
         
         :param dst: Destination image buffer.
-        :type dst OIIO::ImageBuf
+        :type dst: OpenImageIO.ImageBuf
 
         :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
-        :type src OIIO::ImageBuf
+        :type src: OpenImageIO.ImageBuf
 
         :return: ``True`` if applied successfully.
         )""" );
@@ -270,10 +270,10 @@ void util_bindings( nanobind::module_ &m )
         Apply the headroom scale to image buffer.
 
         :param dst: Destination image buffer
-        :type dst OIIO::ImageBuf
+        :type dst OpenImageIO.ImageBuf
 
         :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
-        :type src OIIO::ImageBuf
+        :type src OpenImageIO.ImageBuf
         
         :return: ``True`` if applied successfully.
         )""" );
@@ -290,12 +290,12 @@ void util_bindings( nanobind::module_ &m )
         Apply the cropping mode as specified in crop_mode.
 
         :param dst: Destination image buffer.
-        :type dst OIIO::ImageBuf
+        :type dst: OpenImageIO.ImageBuf
 
         :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
-        :type src OIIO::ImageBuf
+        :type src: OpenImageIO.ImageBuf
         
-        :return : ``True`` if applied successfully.
+        :return: ``True`` if applied successfully.
         )""" );
     image_converter.def(
         "load_image",
@@ -312,15 +312,15 @@ void util_bindings( nanobind::module_ &m )
         "path"_a,
         "hints"_a,
         R"""(
-        Load an image from a given ``path`` into a ``buffer``using the ``hints``
+        Load an image from a given ``path`` into a ``buffer`` using the ``hints``
         calculated by the ``configure`` method. The hints can be manually modified
-        prior to involking this method.
+        prior to invoking this method.
         
         :param path: Path to where the image from.
-        :type path std::string
+        :type path: str
 
         :param hints: Conversion hints to be passed to OIIO when reading an image file.
-        :type hints OIIO::ParamValueList
+        :type hints: OpenImageIO.ParamValueList
 
         :return: Destination buffer where the image loaded into.
         )""" );
@@ -336,7 +336,7 @@ void util_bindings( nanobind::module_ &m )
         :type output_filename: str
 
         :param buf: Image buffer to save.
-        :type buf: OIIO::ImageBuf
+        :type buf: OpenImageIO.ImageBuf
 
         :return: ``True`` if saved successfully.
         )""" );
@@ -768,7 +768,7 @@ void util_bindings( nanobind::module_ &m )
             "Distortion",
             ImageConverter::Settings::LensCorrectionType::Distortion,
             R"""(
-            Geeometric distortion
+            Geometric distortion
             )""" )
         .value(
             "Vignetting",

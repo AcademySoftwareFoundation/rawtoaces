@@ -5308,13 +5308,15 @@ void testIDT_CalIDT()
     std::vector<std::vector<double>> IDT_test = solver.get_IDT_matrix();
     ENABLE_WARNINGS
 
-    float IDT[3][3] = { { 1.0915120600f, -0.2516916464f, 0.1601795864f },
-                        { -0.0089998772f, 1.2147199060f, -0.2057200288f },
-                        { -0.1312667887f, -0.7361633199f, 1.8674301085f } };
+    double IDT[3][3] = {
+        { 0.95043530805803267, -0.16084996598159598, 0.21041465792356331 },
+        { -0.016538812288756623, 1.1248300529876902, -0.10829124069893359 },
+        { -0.12793823173879562, -0.65360465165948811, 1.7815428833982838 }
+    };
 
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
-            OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-4 );
+            OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-9 );
 }
 
 void testIDT_calculate_transform()
@@ -5328,13 +5330,15 @@ void testIDT_calculate_transform()
     OIIO_CHECK_ASSERT( solver.calculate_transform() );
     std::vector<std::vector<double>> &IDT_test = solver.transform_matrix;
 
-    float IDT[3][3] = { { 1.0915120600f, -0.2516916464f, 0.1601795864f },
-                        { -0.0089998772f, 1.2147199060f, -0.2057200288f },
-                        { -0.1312667887f, -0.7361633199f, 1.8674301085f } };
+    double IDT[3][3] = {
+        { 0.95043530805803267, -0.16084996598159598, 0.21041465792356331 },
+        { -0.016538812288756623, 1.1248300529876902, -0.10829124069893359 },
+        { -0.12793823173879562, -0.65360465165948811, 1.7815428833982838 }
+    };
 
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
-            OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-4 );
+            OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-9 );
 }
 
 /// Helper function to test that calculate_transform returns false and sets expected error

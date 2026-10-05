@@ -176,9 +176,9 @@ SpectralSolver::SpectralSolver(
     : _search_directories( search_directories ), _wb_multipliers( 3, 1.0 )
 {}
 
-/// Scale the illuminant (Light Source) to camera sensitivity data using the maximum RGB channel.
+/// Scale the illuminant (Light Source) to camera sensitivity data using the green channel.
 /// This function normalizes the illuminant spectral data by scaling it based on the camera's
-/// most sensitive RGB channel. The scaling ensures proper integration between camera sensitivity
+/// green channel. The scaling ensures proper integration between camera sensitivity
 /// and illuminant data for accurate color calculations.
 ///
 /// @param camera Camera sensitivity data containing RGB channel information
@@ -186,20 +186,7 @@ SpectralSolver::SpectralSolver(
 /// @pre camera contains valid RGB channel data and illuminant contains power spectrum data
 void scale_illuminant( const SpectralData &camera, SpectralData &illuminant )
 {
-    double max_R = camera["R"].max();
-    double max_G = camera["G"].max();
-    double max_B = camera["B"].max();
-
-    std::string max_channel;
-
-    if ( max_R >= max_G && max_R >= max_B )
-        max_channel = "R";
-    else if ( max_G >= max_R && max_G >= max_B )
-        max_channel = "G";
-    else
-        max_channel = "B";
-
-    const Spectrum &camera_spectrum     = camera[max_channel];
+    const Spectrum &camera_spectrum     = camera["G"];
     Spectrum       &illuminant_spectrum = illuminant["power"];
 
     double scale = 1.0 / ( camera_spectrum * illuminant_spectrum ).integrate();
@@ -684,16 +671,14 @@ _calculate_WB( const SpectralData &camera, SpectralData &illuminant )
     scale_illuminant( camera, illuminant );
 
     const Spectrum &camera_r            = camera["R"];
-    const Spectrum &camera_g            = camera["G"];
     const Spectrum &camera_b            = camera["B"];
     const Spectrum &illuminant_spectrum = illuminant["power"];
 
     double r = ( camera_r * illuminant_spectrum ).integrate();
-    double g = ( camera_g * illuminant_spectrum ).integrate();
     double b = ( camera_b * illuminant_spectrum ).integrate();
 
     // Normalise to the green channel.
-    std::vector<double> wb = { g / r, 1.0, g / b };
+    std::vector<double> wb = { 1.0 / r, 1.0, 1.0 / b };
     return wb;
 }
 

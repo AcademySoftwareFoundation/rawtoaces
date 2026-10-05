@@ -6,6 +6,7 @@ by first name.
 - Alexander Forsythe (@aforsythe)
 - Anthony Yin (@hyi18)
 - Anton Dukhovnikov (@antond-weta)
+- Hsiu-Chi Tsai (@thc1006)
 - Jean-Francois Panisset (@jfpanisset)
 - Joel Brun (@joelBrun)
 - Johathon Irons (@agentirons)

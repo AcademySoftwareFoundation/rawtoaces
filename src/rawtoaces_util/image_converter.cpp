@@ -2371,14 +2371,14 @@ bool ImageConverter::configure(
 bool ImageConverter::load_image(
     const std::string          &path,
     const OIIO::ParamValueList &hints,
-    OIIO::ImageBuf             &buffer )
+    OIIO::ImageBuf             &buffer,
+    OIIO::TypeDesc              data_type )
 {
     OIIO::ImageSpec image_spec;
     image_spec.extra_attribs = hints;
     buffer = OIIO::ImageBuf( path, 0, 0, nullptr, &image_spec, nullptr );
 
-    bool result =
-        buffer.read( 0, 0, 0, buffer.nchannels(), true, OIIO::TypeDesc::FLOAT );
+    bool result = buffer.read( 0, 0, 0, buffer.nchannels(), true, data_type );
     if ( !result )
     {
         status             = Status::ReadError;
@@ -2599,7 +2599,9 @@ bool ImageConverter::make_output_path(
 }
 
 bool ImageConverter::save_image(
-    const std::string &output_filename, const OIIO::ImageBuf &buf )
+    const std::string    &output_filename,
+    const OIIO::ImageBuf &buf,
+    OIIO::TypeDesc        data_type )
 {
     // ST2065-4 demands these conditions met by an OpenEXR file:
     // - ACES AP0 chromaticities,
@@ -2610,28 +2612,40 @@ bool ImageConverter::save_image(
                                      0.0001f, -0.077f, 0.32168f, 0.33767f };
 
     OIIO::ImageSpec image_spec = buf.spec();
-    image_spec.set_format( OIIO::TypeDesc::HALF );
+    image_spec.set_format( data_type );
     image_spec.attribute(
         "chromaticities",
         OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 8 ),
         chromaticities );
     image_spec["oiio:ColorSpace"] = "lin_ap0_scene";
 
+    bool is_compliant = true;
+
+    if ( data_type != OIIO::TypeDesc::HALF )
+    {
+        is_compliant = false;
+
+        std::cerr << "Warning: The ST2065-4 standard requires the pixel values "
+                  << "to be 16-bit floating point. The output file is not "
+                  << "AcesContainer-compliant." << std::endl;
+    }
+
     const auto &compression = settings.compression;
     if ( compression.empty() || compression == "none" )
     {
-        image_spec["acesImageContainerFlag"] = 1;
-        image_spec["compression"]            = "none";
+        image_spec["compression"] = "none";
     }
     else
     {
-        image_spec["acesImageContainerFlag"] = 0;
-        image_spec["compression"]            = compression;
+        image_spec["compression"] = compression;
+        is_compliant              = false;
 
         std::cerr << "Warning: The ST2065-4 standard does not allow compressed "
                   << "files. The output file is not AcesContainer-compliant."
                   << std::endl;
     }
+
+    image_spec["acesImageContainerFlag"] = is_compliant ? 1 : 0;
 
     auto image_output = OIIO::ImageOutput::create( "exr" );
     bool result       = image_output->open( output_filename, image_spec );

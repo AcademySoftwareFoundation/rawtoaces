@@ -303,7 +303,7 @@ void util_bindings( nanobind::module_ &m )
         "path"_a,
         "hints"_a,
         "buffer"_a,
-        "data_type"_a,
+        "data_type"_a = OIIO::TypeDesc::FLOAT,
         R"""(
         Load an image from a given ``path`` into a ``buffer`` using the ``hints``
         calculated by the ``configure`` method. The hints can be manually modified
@@ -328,7 +328,7 @@ void util_bindings( nanobind::module_ &m )
         &ImageConverter::save_image,
         "output_filename"_a,
         "buf"_a,
-        "data_type"_a,
+        "data_type"_a = OIIO::TypeDesc::HALF,
         R"""(
         Save an image into an ACES container.
 

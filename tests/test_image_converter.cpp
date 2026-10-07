@@ -2934,7 +2934,7 @@ void test_custom_wb_being_set()
     OIIO_CHECK_EQUAL_THRESH( wb_multipliers[3], 1.2f, 1e-5 );
 }
 
-void test_compression_warning()
+void test_save_image_compression_warning()
 {
     std::cout << std::endl << __FUNCTION__ << std::endl;
 
@@ -2954,8 +2954,61 @@ void test_compression_warning()
     OIIO_CHECK_ASSERT( result );
     ASSERT_CONTAINS(
         output,
-        "Warning: The ST2065-4 standard does not allow "
-        "compressed files" );
+        "Warning: The ST2065-4 standard does not allow compressed files" );
+}
+
+void test_save_image_type_warning()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    rta::util::ImageConverter converter;
+    OIIO::ImageBuf            buffer;
+    converter.load_image( nef_test_file, {}, buffer );
+
+    std::filesystem::path output_path =
+        std::filesystem::temp_directory_path() / "test_float.exr";
+
+    bool result;
+    auto output = capture_stderr( [&]() {
+        result = converter.save_image(
+            output_path.string(), buffer, OIIO::TypeDesc::FLOAT );
+    } );
+
+    OIIO_ASSERT( result );
+    ASSERT_CONTAINS(
+        output,
+        "The ST2065-4 standard requires the pixel values to be 16-bit floating "
+        "point." );
+}
+
+void test_load_image_types()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    std::vector<OIIO::TypeDesc> data_types = { OIIO::TypeDesc::FLOAT,
+                                               OIIO::TypeDesc::UINT16,
+                                               OIIO::TypeDesc::NONE };
+
+    for ( auto data_type: data_types )
+    {
+        rta::util::ImageConverter converter;
+        OIIO::ImageBuf            buffer;
+
+        bool result =
+            converter.load_image( nef_test_file, {}, buffer, data_type );
+
+        if ( data_type != OIIO::TypeDesc::NONE )
+        {
+            OIIO_ASSERT( result );
+            OIIO_CHECK_EQUAL( buffer.spec().width, 3899 );
+            OIIO_CHECK_EQUAL( buffer.spec().height, 2616 );
+            OIIO_CHECK_EQUAL( buffer.spec().format, data_type );
+        }
+        else
+        {
+            OIIO_ASSERT( !result );
+        }
+    }
 }
 
 int main( int, char ** )
@@ -3079,7 +3132,10 @@ int main( int, char ** )
         test_lens_correction_type();
 
         // Test compression warning.
-        test_compression_warning();
+        test_save_image_compression_warning();
+        test_save_image_type_warning();
+
+        test_load_image_types();
     }
     catch ( const std::exception &e )
     {

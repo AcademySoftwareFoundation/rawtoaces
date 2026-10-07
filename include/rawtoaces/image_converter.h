@@ -389,12 +389,15 @@ public:
     ///     Conversion hints to be passed to OIIO when reading an image file.
     /// @param buffer
     ///     Destination buffer where the image loaded into.
+    /// @param data_type
+    ///     Data type of the samples in the destination buffer.
     /// @return
     ///     `true` if image loaded successfully.
     bool load_image(
         const std::string          &path,
         const OIIO::ParamValueList &hints,
-        OIIO::ImageBuf             &buffer );
+        OIIO::ImageBuf             &buffer,
+        OIIO::TypeDesc              data_type = OIIO::TypeDesc::FLOAT );
 
     /// Apply the lens correction to the image buffer.
     /// @param dst
@@ -458,10 +461,14 @@ public:
     ///     Full path to the file to be saved.
     /// @param buf
     ///     Image buffer to be saved.
+    /// @param data_type
+    ///     Data type of the samples to be written out.
     /// @return
     ///    `true` if saved successfully.
-    bool
-    save_image( const std::string &output_filename, const OIIO::ImageBuf &buf );
+    bool save_image(
+        const std::string    &output_filename,
+        const OIIO::ImageBuf &buf,
+        OIIO::TypeDesc        data_type = OIIO::TypeDesc::HALF );
 
     /// A convenience single-call method to process an image. Equivalent to
     /// `make_output_path`, `configure`, `load_image`, optional lens correction,

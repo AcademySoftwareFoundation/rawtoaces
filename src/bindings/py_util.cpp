@@ -303,6 +303,7 @@ void util_bindings( nanobind::module_ &m )
         "path"_a,
         "hints"_a,
         "buffer"_a,
+        "data_type"_a = OIIO::TypeDesc::FLOAT,
         R"""(
         Load an image from a given ``path`` into a ``buffer`` using the ``hints``
         calculated by the ``configure`` method. The hints can be manually modified
@@ -317,6 +318,9 @@ void util_bindings( nanobind::module_ &m )
         :param buffer: Destination buffer where the image loaded into.
         :type buffer: OpenImageIO.ImageBuf
 
+        :param data_type: Data type of the samples in the destination buffer.
+        :type data_type: OpenImageIO.TypeDesc
+
         :return: ``True`` if image load successfully.
         )""" );
     image_converter.def(
@@ -324,6 +328,7 @@ void util_bindings( nanobind::module_ &m )
         &ImageConverter::save_image,
         "output_filename"_a,
         "buf"_a,
+        "data_type"_a = OIIO::TypeDesc::HALF,
         R"""(
         Save an image into an ACES container.
 
@@ -332,6 +337,9 @@ void util_bindings( nanobind::module_ &m )
 
         :param buf: Image buffer to save.
         :type buf: OpenImageIO.ImageBuf
+
+        :param data_type: Data type of the samples to be written out.
+        :type data_type: OpenImageIO.TypeDesc
 
         :return: ``True`` if saved successfully.
         )""" );

@@ -591,7 +591,7 @@ class ImageConverter:
         :return: ``True`` if applied successfully.
         """
 
-    def load_image(self, path: str, hints: OpenImageIO.ParamValueList) -> OpenImageIO.ImageBuf:
+    def load_image(self, path: str, hints: OpenImageIO.ParamValueList, buffer: OpenImageIO.ImageBuf) -> bool:
         """
         Load an image from a given ``path`` into a ``buffer`` using the ``hints``
         calculated by the ``configure`` method. The hints can be manually modified
@@ -603,7 +603,10 @@ class ImageConverter:
         :param hints: Conversion hints to be passed to OIIO when reading an image file.
         :type hints: OpenImageIO.ParamValueList
 
-        :return: Destination buffer where the image loaded into.
+        :param buffer: Destination buffer where the image loaded into.
+        :type buffer: OpenImageIO.ImageBuf
+
+        :return: ``True`` if image load successfully.
         """
 
     def save_image(self, output_filename: str, buf: OpenImageIO.ImageBuf) -> bool:

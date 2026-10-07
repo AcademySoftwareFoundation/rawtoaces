@@ -299,18 +299,10 @@ void util_bindings( nanobind::module_ &m )
         )""" );
     image_converter.def(
         "load_image",
-        []( ImageConverter             &converter,
-            const std::string          &path,
-            const OIIO::ParamValueList &hints ) {
-            OIIO::ImageBuf buffer;
-            if ( !converter.load_image( path, hints, buffer ) )
-            {
-                throw std::runtime_error( "Failed to load image" );
-            }
-            return buffer;
-        },
+        &ImageConverter::load_image,
         "path"_a,
         "hints"_a,
+        "buffer"_a,
         R"""(
         Load an image from a given ``path`` into a ``buffer`` using the ``hints``
         calculated by the ``configure`` method. The hints can be manually modified
@@ -322,7 +314,10 @@ void util_bindings( nanobind::module_ &m )
         :param hints: Conversion hints to be passed to OIIO when reading an image file.
         :type hints: OpenImageIO.ParamValueList
 
-        :return: Destination buffer where the image loaded into.
+        :param buffer: Destination buffer where the image loaded into.
+        :type buffer: OpenImageIO.ImageBuf
+
+        :return: ``True`` if image load successfully.
         )""" );
     image_converter.def(
         "save_image",

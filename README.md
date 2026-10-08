@@ -176,7 +176,7 @@ A help message with a description of all command line options can be obtained by
     - "metadata" uses the white-balancing coefficients from the raw image file, provided by the camera.
     - "illuminant" performs white balancing to the illuminant, provided in the "--illuminant" parameter. The list of the supported illuminants can be seen using the "--list-illuminants" parameter. This mode requires spectral sensitivity data for the camera model the image comes from. The list of cameras such data is available for, can be seen using the "--list-cameras" parameter. In addition to the named illuminants, which are stored under ${RAWTOACES_DATA_PATH}/illuminant, blackbody illuminants of a given colour temperature can me used (use 'K' suffix, i.e. '3200K'), as well as daylight illuminants (use the 'D' prefix, i.e. 'D65').
     - "box" performs white-balancing to make the given region of the image appear neutral gray. The box position (origin and size) can be specified using the "--wb-box" parameter. In case no such parameter provided, the whole image is used for white-balancing.
-    - "custom" uses the custom white balancing coefficients provided using the -"custom-wb" parameter.
+    - "custom" uses the custom white balancing coefficients provided using the "--custom-wb" parameter.
 
     Rawtoaces supports the following methods of color matrix computation:
     - "auto" (recommended) first tries the "spectral" method if spectral sensitivity data for the camera is available. If not, it falls back to "metadata". This avoids failures when spectral data is missing while still using the most accurate method when possible.
@@ -230,7 +230,7 @@ A help message with a description of all command line options can be obtained by
         --half-size                     If present, decode image at half size resolution.
         --highlight-mode VAL            0 = clip, 1 = unclip, 2 = blend, 3..9 = rebuild. (default: 0)
         --crop-box X Y W H              Apply custom crop. If not present, the default crop is applied, which should match the crop of the in-camera JPEG.
-        --crop-mode STR                 Cropping mode. Supported options: 'none' (write out the full sensor area), 'soft' (write out full image, mark the crop as the display window), 'hard' (write out only the crop area). (default: soft)
+        --crop-mode STR                 Cropping mode. Supported options: 'off' (write out the full sensor area), 'soft' (write out full image, mark the crop as the display window), 'hard' (write out only the crop area). (default: soft)
         --flip VAL                      If not -1, override the orientation specified in the metadata. 1..8 correspond to EXIF orientation codes (0 = none, 3 = 180 deg, 6 = 90 deg CCW, 8 = 90 deg CW.) (default: -1)
         --denoise-threshold VAL         Wavelet denoising threshold (default: 0)
         --demosaic STR                  Demosaicing algorithm. Supported options: 'linear', 'VNG', 'PPG', 'AHD', 'DCB', 'DHT', 'AAHD'. (default: AHD)
@@ -244,6 +244,16 @@ A help message with a description of all command line options can be obtained by
         --disable-exiftool              Disable using exiftool to fetch missing metadata.
         --verbose                       (-v) Print progress messages. Repeated -v will increase verbosity.
 		
+The CLI defaults to `--crop-mode soft`, which keeps the full sensor area and marks
+the crop as the display window. The C++ `ImageConverter::Settings` and Python
+`ImageConverter.Settings` APIs default to hard cropping (`CropMode::Hard` in C++,
+`CropMode.Hard` in Python), which writes only the crop area. Set the crop mode
+explicitly when matching results across interfaces. To write the full sensor area:
+
+```sh
+rawtoaces --crop-mode off input.raw
+```
+
 ### Command line parameters changes since version v1.x:
 
 The command line parser has been rewritten since v1.x, so there are some changes to the command line parameters. See below for some examples of how to use different white balance and matrix methods:

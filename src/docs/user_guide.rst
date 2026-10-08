@@ -11,6 +11,9 @@ Command Line Interface
 The ``rawtoaces`` command-line tool provides a comprehensive interface for converting
 RAW images to ACES format.
 
+White balance, matrix, and crop mode names are case-sensitive. Pass each value of
+a vector option as a separate space-separated argument.
+
 Basic Syntax
 ^^^^^^^^^^^^
 
@@ -36,11 +39,13 @@ White Balance Options
    - A D-series illuminant (e.g., ``D50``, ``D55``, ``D65``)
    - Any illuminant name present in the data folder
 
-``--wb-box <x,y,w,h>``
-   Define a region for box white balance calculation.
+``--wb-box <x y w h>``
+   Define a region for box white balance calculation, using four separate integers
+   for the origin and size. Use with ``--wb-method box``.
 
-``--custom-wb <r,g,b,g2>``
-   Provide custom white balance multipliers.
+``--custom-wb <r g b g2>``
+   Provide four separate custom white balance multipliers. Use with
+   ``--wb-method custom``.
 
 Matrix Options
 ^^^^^^^^^^^^^^
@@ -51,11 +56,12 @@ Matrix Options
    - ``auto`` (default): Use spectral if available, otherwise metadata
    - ``spectral``: Use camera spectral sensitivity curves
    - ``metadata``: Use matrix from file metadata (DNG)
-   - ``adobe``: Use Adobe color matrix from LibRaw
+   - ``Adobe``: Use Adobe color matrix from LibRaw
    - ``custom``: Use a custom 3x3 matrix
 
-``--custom-matrix <m00,m01,...,m22>``
-   Provide a custom 3x3 color transformation matrix.
+``--custom-mat <m00 m01 m02 m10 m11 m12 m20 m21 m22>``
+   Provide a custom 3x3 camera RGB to XYZ matrix as nine separate values in row
+   order. Use with ``--mat-method custom``.
 
 Output Options
 ^^^^^^^^^^^^^^
@@ -75,12 +81,21 @@ Output Options
 Cropping Options
 ^^^^^^^^^^^^^^^^
 
-``--crop <mode>``
+``--crop-mode <mode>``
    Specify cropping mode:
 
    - ``off``: Write full sensor area
-   - ``soft``: Full sensor area with crop marked as display window
-   - ``hard`` (default): Write only the crop area
+   - ``soft`` (CLI default): Full sensor area with crop marked as display window
+   - ``hard``: Write only the crop area
+
+The C++ ``ImageConverter::Settings`` and Python ``ImageConverter.Settings`` APIs
+default to hard cropping (``CropMode::Hard`` in C++, ``CropMode.Hard`` in Python).
+The CLI defaults to ``soft``. Set the crop mode explicitly when matching results
+across interfaces.
+
+``--crop-box <x y w h>``
+   Specify a custom crop using four separate integers for the origin and size.
+   Without this option, the default crop should match the in-camera JPEG.
 
 Camera Override Options
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -137,7 +152,7 @@ Verbosity Options
 ``--verbose`` or ``-v``
    Enable verbose output.
 
-``--timing``
+``--use-timing``
    Show timing information for each processing step.
 
 Examples
@@ -165,4 +180,35 @@ Use custom white balance:
 
 .. code-block:: bash
 
-   rawtoaces --wb-method custom --custom-wb 2.1,1.0,1.5,1.0 photo.nef
+   rawtoaces --wb-method custom --custom-wb 2.1 1.0 1.5 1.0 photo.nef
+
+Use a region for white balance:
+
+.. code-block:: bash
+
+   rawtoaces --wb-method box --wb-box 100 100 200 200 photo.nef
+
+Use the Adobe matrix supplied by LibRaw:
+
+.. code-block:: bash
+
+   rawtoaces --mat-method Adobe photo.nef
+
+Supply a camera RGB to XYZ matrix (replace these illustrative values with your
+camera's matrix):
+
+.. code-block:: bash
+
+   rawtoaces --mat-method custom --custom-mat 1 0 0 0 1 0 0 0 1 photo.nef
+
+Write the full sensor area:
+
+.. code-block:: bash
+
+   rawtoaces --crop-mode off photo.dng
+
+Write only a custom crop and show processing times:
+
+.. code-block:: bash
+
+   rawtoaces --crop-mode hard --crop-box 100 100 1000 800 --use-timing photo.dng

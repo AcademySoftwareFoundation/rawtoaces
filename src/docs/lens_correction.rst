@@ -35,11 +35,15 @@ Basic usage:
 
 Request correction of geometric distortion and vignetting:
 
+The examples explicitly select soft cropping to match the CLI default: retain
+the full sensor area and mark the crop as the display window. C++ and Python
+settings otherwise default to hard cropping.
+
 .. tabs::
   .. tab:: Shell
     .. code-block:: bash
 
-      rawtoaces --lens-correction dv <INPUT_PATH>
+      rawtoaces --crop-mode soft --lens-correction dv <INPUT_PATH>
 
   .. tab:: C++
     .. code-block:: C++
@@ -47,6 +51,7 @@ Request correction of geometric distortion and vignetting:
       #include <rawtoaces/rawtoaces_util.h>
       
       rta::util::ImageConverter converter;
+      converter.settings.crop_mode = rta::util::ImageConverter::Settings::CropMode::Soft;
       
       converter.settings.lens_correction_types =
         rta::util::ImageConverter::Settings::LensCorrectionType::Distortion |
@@ -58,6 +63,7 @@ Request correction of geometric distortion and vignetting:
       import rawtoaces
       
       converter = rawtoaces.ImageConverter()
+      converter.settings.crop_mode = rawtoaces.ImageConverter.Settings.CropMode.Soft
       
       converter.settings.lens_correction_types =
         rawtoaces.ImageConverter.Settings.LensCorrectionType.Distortion |
@@ -71,6 +77,7 @@ override all camera/lens info used for correction:
     .. code-block:: bash
 
       rawtoaces                                    \
+      --crop-mode soft                             \
       --lens-correction a                          \
       --require-lens-correction                    \
       --custom-camera-make "Canon"                 \
@@ -88,6 +95,7 @@ override all camera/lens info used for correction:
       #include <rawtoaces/rawtoaces_util.h>
       
       rta::util::ImageConverter converter;
+      converter.settings.crop_mode = rta::util::ImageConverter::Settings::CropMode::Soft;
       
       converter.settings.lens_correction_types =
         rta::util::ImageConverter::Settings::LensCorrectionType::Aberration |
@@ -110,6 +118,7 @@ override all camera/lens info used for correction:
       import rawtoaces
       
       converter = rawtoaces.ImageConverter()
+      converter.settings.crop_mode = rawtoaces.ImageConverter.Settings.CropMode.Soft
       
       converter.settings.lens_correction_types =
         rawtoaces.ImageConverter.Settings.LensCorrectionType.Aberration |

@@ -604,35 +604,6 @@ bool SpectralSolver::calculate_WB()
     return true;
 }
 
-/// Calculate the middle product based on camera sensitivity and illuminant data.
-/// This function computes the spectral integration of camera RGB channels with
-/// the illuminant power spectrum, then scales the result by the maximum value
-/// to normalize the output vector.
-///
-/// @param camera Camera sensitivity data containing RGB spectral information
-/// @param illuminant Illuminant data containing power spectrum information
-/// @return Vector of reciprocal RGB values scaled by the maximum component
-std::vector<double>
-calculate_CM( const SpectralData &camera, const SpectralData &illuminant )
-{
-    const Spectrum &camera_r            = camera["R"];
-    const Spectrum &camera_g            = camera["G"];
-    const Spectrum &camera_b            = camera["B"];
-    const Spectrum &illuminant_spectrum = illuminant["power"];
-
-    double r = ( camera_r * illuminant_spectrum ).integrate();
-    double g = ( camera_g * illuminant_spectrum ).integrate();
-    double b = ( camera_b * illuminant_spectrum ).integrate();
-
-    double max = std::max( { r, g, b } );
-
-    std::vector<double> result( 3 );
-    result[0] = max / r;
-    result[1] = max / g;
-    result[2] = max / b;
-    return result;
-}
-
 /// Calculate the middle product based on training data and illuminant data.
 /// This function computes spectral transformations using the training data
 /// and illuminant information. The result is a 2D vector representing spectral

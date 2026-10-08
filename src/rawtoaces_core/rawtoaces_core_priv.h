@@ -15,9 +15,6 @@ std::vector<double> CCT_to_xy( const double &cctd );
 
 void scale_illuminant( const SpectralData &camera, SpectralData &illuminant );
 
-std::vector<double>
-calculate_CM( const SpectralData &camera, const SpectralData &illuminant );
-
 std::vector<Spectrum> calculate_TI(
     const SpectralData &illuminant, const SpectralData &training_data );
 

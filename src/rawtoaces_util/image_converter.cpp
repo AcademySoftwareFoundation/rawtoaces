@@ -655,7 +655,7 @@ the image appear neutral gray. The box position (origin and size)
 can be specified using the "--wb-box" parameter. In case no such 
 parameter provided, the whole image is used for white-balancing.
 - "custom" uses the custom white balancing coefficients 
-provided using the -"custom-wb" parameter.
+provided using the "--custom-wb" parameter.
 
 Rawtoaces supports the following methods of color matrix 
 computation:
@@ -1005,7 +1005,7 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
 
     arg_parser.arg( "--crop-mode" )
         .help(
-            "Cropping mode. Supported options: 'none' (write out the full "
+            "Cropping mode. Supported options: 'off' (write out the full "
             "sensor area), 'soft' (write out full image, mark the crop as the "
             "display window), 'hard' (write out only the crop area)." )
         .metavar( "STR" )

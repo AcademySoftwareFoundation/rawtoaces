@@ -2383,12 +2383,24 @@ bool ImageConverter::load_image(
     {
         status             = Status::ReadError;
         last_error_message = "Failed to read image file: " + path;
+        return false;
     }
-    else
+
+    fix_metadata( buffer.specmod() );
+
+    std::string fetch_error_message;
+    result = fetch_missing_metadata(
+        path, settings, buffer.specmod(), fetch_error_message );
+    if ( !result )
     {
-        status = Status::Success;
+        status = Status::ConfigurationError;
+        last_error_message =
+            "Failed to read image file: " + path + ". " + fetch_error_message;
+        return false;
     }
-    return result;
+
+    status = Status::Success;
+    return true;
 }
 
 bool apply_matrix(
@@ -2751,37 +2763,29 @@ bool ImageConverter::process_image( const std::string &input_filename )
     {
         return false;
     }
-    fix_metadata( buffer.specmod() );
     usage_timer.print( input_filename, "reading image" );
 
-    if ( settings.lens_correction_types !=
-         ImageConverter::Settings::LensCorrectionType::None )
+    // ___ Apply lens correction ___
+    if ( settings.verbosity > 0 )
     {
-        usage_timer.reset();
-        std::string fetch_error_message;
-        fetch_missing_metadata(
-            input_filename, settings, buffer.specmod(), fetch_error_message );
-        usage_timer.print( input_filename, "fetching missing metadata" );
-
-        usage_timer.reset();
-        if ( !apply_lens_correction( buffer, buffer ) )
-        {
-            std::string message =
-                "Failed to apply lens correction to the file: " +
-                input_filename + ". " + last_error_message + " " +
-                fetch_error_message;
-            if ( settings.require_lens_correction )
-            {
-                last_error_message = message;
-                return false;
-            }
-            else
-            {
-                std::cerr << "Warning: " << message << std::endl;
-            }
-        }
-        usage_timer.print( input_filename, "applying lens correction" );
+        std::cerr << "Applying lens correction" << std::endl;
     }
+    usage_timer.reset();
+    if ( !apply_lens_correction( buffer, buffer ) )
+    {
+        std::string message = "Failed to apply lens correction to the file: " +
+                              input_filename + ". " + last_error_message;
+        if ( settings.require_lens_correction )
+        {
+            last_error_message = message;
+            return false;
+        }
+        else
+        {
+            std::cerr << "Warning: " << message << std::endl;
+        }
+    }
+    usage_timer.print( input_filename, "applying lens correction" );
 
     // ___ Apply matrix/matrices ___
     if ( settings.verbosity > 0 )

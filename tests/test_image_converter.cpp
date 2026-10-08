@@ -159,6 +159,7 @@ void assert_success_conversion( const std::string &output )
     ASSERT_CONTAINS( output, "Input Device Transform (IDT) matrix" );
 
     // Assert that image processing steps occurred
+    ASSERT_CONTAINS( output, "Applying lens correction" );
     ASSERT_CONTAINS( output, "Applying transform matrix" );
     ASSERT_CONTAINS( output, "Applying scale" );
     ASSERT_CONTAINS( output, "Applying crop" );

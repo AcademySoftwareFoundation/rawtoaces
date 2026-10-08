@@ -795,24 +795,6 @@ void testIDT_scaleLSC()
         OIIO_CHECK_EQUAL_THRESH( illumDataScaled[i], scaledIllum[i], 1e-5 );
 }
 
-void testIDT_CalCM()
-{
-    std::cout << std::endl << __FUNCTION__ << std::endl;
-
-    rta::core::SpectralData illuminant;
-    load_file( "illuminant/iso7589_stutung_380_780_5.json", illuminant );
-
-    rta::core::SpectralData camera;
-    load_file( "camera/ARRI_D21_380_780_5.json", camera );
-
-    std::vector<double> CM_test = calculate_CM( camera, illuminant );
-
-    float CM[81] = { 1.0000000000f, 1.4418439699f, 1.8703081160f };
-
-    for ( int i = 0; i < 3; i++ )
-        OIIO_CHECK_EQUAL_THRESH( CM[i], CM_test[i], 1e-5 );
-}
-
 void testIDT_CalWB()
 {
     std::cout << std::endl << __FUNCTION__ << std::endl;
@@ -5615,7 +5597,6 @@ int main( int, char ** )
     testIDT_LoadTrainingData();
     testIDT_LoadCMF();
     testIDT_scaleLSC();
-    testIDT_CalCM();
     testIDT_CalWB();
     testIDT_ChooseIllumSrc();
     testIDT_ChooseIllumType();

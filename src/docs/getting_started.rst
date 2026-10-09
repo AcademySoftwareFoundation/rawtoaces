@@ -25,7 +25,7 @@ Install development headers and libraries as well as command line tools:
      - CMake 3.12 or later and a C++17 compatible compiler.
    * - OpenImageIO
      - OpenImageIO 3.0 or later, including a RAW input plugin built with LibRaw
-       support and an OpenEXR output plugin.
+       support.
    * - nlohmann-json
      - Required JSON headers and CMake package configuration.
    * - Eigen3 and Ceres Solver

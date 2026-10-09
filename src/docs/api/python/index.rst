@@ -5,17 +5,22 @@
 Python API
 ==========
 
-The python bindings are currently work in progress.
+The Python bindings provide file conversion and metadata/spectral transform
+solving. Start with the :doc:`image conversion guide <image_converter>` or the
+:doc:`core workflows <rawtoaces_core>`, then use the
+:doc:`Python Reference <api_reference>` for signatures and settings.
 
-At this stage we provide:
+The main classes are:
 
-- The file-based methods of the :py:class:`rawtoaces.ImageConverter` class.
+- :py:class:`rawtoaces.ImageConverter` for file-based image conversion and
+  (when supported by the build) lower-level OpenImageIO operations.
 - Core solver bindings for metadata-based and spectral workflows:
   :py:class:`rawtoaces.Metadata`, :py:class:`rawtoaces.MetadataSolver`,
   :py:class:`rawtoaces.SpectralData`, and :py:class:`rawtoaces.SpectralSolver`.
 
-Lower-level methods that operate directly with OpenImageIO image buffers
-are not currently available.
+Some lower-level :py:class:`rawtoaces.ImageConverter` methods require a
+compatible OpenImageIO 3.2+ build; see
+:ref:`python-oiio-availability`.
 
 .. toctree::
    :maxdepth: 2

@@ -32,7 +32,8 @@ extensions = [
     'sphinx_multiversion',
     'myst_parser',
     'sphinx_tabs.tabs',
-    'enum_tools.autoenum'
+    'enum_tools.autoenum',
+    'generated_overloads',
 ]
 
 autodoc_mock_imports = [
@@ -57,6 +58,7 @@ master_doc = 'index'
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path('.', 'api', 'python').resolve()))
+sys.path.insert(0, str(Path(__file__).resolve().parent / '_ext'))
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

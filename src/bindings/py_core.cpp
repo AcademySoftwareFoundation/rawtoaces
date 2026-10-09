@@ -130,8 +130,18 @@ void core_bindings( nanobind::module_ &m )
         "calculate_transform", &TransformSolver::calculate_transform, R"""(
         Calculate the transform matrix. The solved matrix can be accessed via
         ``transform_matrix``.
-        
-        :return: ``True`` if calculated successfully.
+
+        Call this method on :py:class:`rawtoaces.MetadataSolver` or
+        :py:class:`rawtoaces.SpectralSolver`; the base class cannot be
+        constructed directly in Python. The derived solver's inputs must be
+        configured before solving. For spectral solving, calculate white
+        balance first with :py:meth:`rawtoaces.SpectralSolver.calculate_WB`
+        or the multiplier form of
+        :py:meth:`rawtoaces.SpectralSolver.find_illuminant`.
+
+        :return: ``True`` if calculated successfully, ``False`` otherwise.
+            Inspect ``last_error_message`` on failure. Read
+            ``transform_matrix`` only after a successful solve.
         )""" );
     transform_solver.def_rw(
         "transform_matrix", &TransformSolver::transform_matrix, R"""(
@@ -149,6 +159,9 @@ void core_bindings( nanobind::module_ &m )
     nanobind::class_<MetadataSolver, TransformSolver> metadata_solver(
         m, "MetadataSolver", R"""(
         Solve an input transform using the metadata stored in DNG files.
+
+        ``calculate_transform``, ``transform_matrix``, ``last_error_message``, and
+        ``verbosity`` are inherited from :py:class:`rawtoaces.TransformSolver`.
         )""" );
     metadata_solver.def(
         nanobind::init<const Metadata &>(),
@@ -220,6 +233,9 @@ void core_bindings( nanobind::module_ &m )
     nanobind::class_<SpectralSolver, TransformSolver> spectral_solver(
         m, "SpectralSolver", R"""(
         Solve an input transform using spectral sensitivity curves of a camera.
+
+        ``calculate_transform``, ``transform_matrix``, ``last_error_message``, and
+        ``verbosity`` are inherited from :py:class:`rawtoaces.TransformSolver`.
         )""" );
     spectral_solver.def(
         nanobind::init<const std::vector<std::string> &>(),
@@ -289,16 +305,18 @@ void core_bindings( nanobind::module_ &m )
         },
         "type"_a,
         R"""(
-        Find spectral power distribution data of an illuminant of the given
-        type. This function can handle both built-in illuminant types (e.g.,
-        ``d55``, ``3200k``) and custom illuminants stored in the database. For
-        built-in types, it generates the spectral data using standard formulas.
-        
-        :param type: illuminant type. Can be one of the built-in types, e.g. 
-           ``d55``, ``3200k``, or a custom illuminant stored in the  database.
-        :type type: str
-        
-        :return: ``True`` if loaded successfully, ``False`` otherwise
+        Load an illuminant by its non-empty standard or database name.
+
+        Generates daylight spectra such as ``"d55"`` and blackbody spectra such as
+        ``"3200k"``; other names are searched in the configured spectral database
+        paths. Camera data is not required for this form. This overload loads the
+        illuminant but does not calculate white balance; call ``calculate_WB()``
+        after loading the camera.
+
+        :param type: Non-empty standard or database illuminant name.
+        :return: ``True`` on success, ``False`` on failure. A failed database lookup
+            may leave ``last_error_message`` empty or unchanged.
+        :raises ValueError: If ``type`` is empty.
         )""" );
     spectral_solver.def(
         "find_illuminant",
@@ -313,16 +331,18 @@ void core_bindings( nanobind::module_ &m )
         },
         "wb_multipliers"_a,
         R"""(
-        Find the illuminant best matching the given white-balancing multipliers.
-        This function analyzes all available illuminants and selects the one
-        that best matches the white balance coefficients. It uses Sum of Squared
-        Errors (SSE) to find the optimal match and automatically scales the
-        white balance multipliers.
-        
-        :param wb_multipliers: white-balancing multipliers to match
-        :type wb_multipliers: list[float]
-        
-        :return: ``True`` if loaded successfully, ``False`` otherwise
+        Choose the illuminant best matching three white-balance multipliers.
+
+        Requires camera data with three channels (R, G, B) to be loaded first.
+        Searches generated daylight/blackbody spectra and database illuminants.
+        On success this overload also calculates white-balance multipliers, available
+        from ``get_WB_multipliers()``.
+
+        :param wb_multipliers: Exactly three white-balance multipliers, [R, G, B].
+        :return: ``True`` on success, ``False`` on failure. State-validation failures
+            populate ``last_error_message``; a failed database lookup may leave it
+            empty or unchanged.
+        :raises ValueError: If ``wb_multipliers`` does not contain exactly three values.
         )""" );
     spectral_solver.def( "calculate_WB", &SpectralSolver::calculate_WB, R"""(
         Calculate the white-balance multipliers for the given configuration.
@@ -405,10 +425,15 @@ void core_bindings( nanobind::module_ &m )
         responses with target XYZ values across all training patches.
         The ``camera``, ``illuminant``, ``observer`` and ``training_data`` have
         to be configured prior to this call.
-        
+
         :return: ``True`` if calculated successfully, ``False`` otherwise
         :pre: camera, illuminant, observer, and training_data must be properly
-            loaded)""" );
+            loaded
+
+        .. deprecated:: 2.2.0
+           Will be removed in v3. Use ``calculate_transform()`` and read
+           ``transform_matrix`` after it returns ``True``.
+        )""" );
 
     spectral_solver.def(
         "get_IDT_matrix",
@@ -427,9 +452,14 @@ void core_bindings( nanobind::module_ &m )
         camera RGB values to standardized color space. The matrix is computed by
         curve fitting optimization and represents the optimal color
         transformation for the camera under the specified illuminant conditions.
-        
+
         :return: a 3×3 IDT transformation matrix
         :pre: ``calculate_transform()`` or deprecated ``calculate_IDT_matrix()``
-            completed successfully)""" );
+            completed successfully
+
+        .. deprecated:: 2.2.0
+           Will be removed in v3. Read ``transform_matrix`` after a successful
+           ``calculate_transform()`` call.
+        )""" );
     ENABLE_WARNINGS
 }

@@ -271,7 +271,7 @@ void util_bindings( nanobind::module_ &m )
         "dst"_a,
         "src"_a,
         R"""(
-        Apply the headroom scale to image buffer.
+        Multiply image buffer pixel values by ``settings.headroom * settings.scale``.
 
         Available only with compatible OpenImageIO 3.2+ bindings; see
         :ref:`python-oiio-availability`.
@@ -414,7 +414,9 @@ void util_bindings( nanobind::module_ &m )
         folder.
         )""" );
     settings.def_rw( "headroom", &ImageConverter::Settings::headroom, R"""(
-        Highlight headroom factor.
+        Linear highlight headroom factor. The default is 6.0.
+        Pixel scaling uses ``headroom * scale``; changing headroom from 6 to 12
+        doubles that multiplier.
         )""" );
     settings.def_rw(
         "custom_camera_make",

@@ -619,7 +619,7 @@ class ImageConverter:
 
     def apply_scale(self, dst: OpenImageIO.ImageBuf, src: OpenImageIO.ImageBuf) -> bool:
         """
-        Apply the headroom scale to image buffer.
+        Multiply image buffer pixel values by ``settings.headroom * settings.scale``.
 
         Available only with compatible OpenImageIO 3.2+ bindings; see
         :ref:`python-oiio-availability`.
@@ -762,7 +762,11 @@ class ImageConverter:
 
         @property
         def headroom(self) -> float:
-            """Highlight headroom factor."""
+            """
+            Linear highlight headroom factor. The default is 6.0.
+            Pixel scaling uses ``headroom * scale``; changing headroom from 6 to 12
+            doubles that multiplier.
+            """
 
         @headroom.setter
         def headroom(self, arg: float, /) -> None: ...

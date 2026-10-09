@@ -57,11 +57,13 @@ Matrix Options
    - ``spectral``: Use camera spectral sensitivity curves
    - ``metadata``: Use matrix from file metadata (DNG)
    - ``Adobe``: Use Adobe color matrix from LibRaw
-   - ``custom``: Use a custom 3x3 matrix
+   - ``custom``: Use a full custom 3x3 camera RGB to ACES AP0 matrix
 
 ``--custom-mat <m00 m01 m02 m10 m11 m12 m20 m21 m22>``
-   Provide a custom 3x3 camera RGB to XYZ matrix as nine separate values in row
-   order. Use with ``--mat-method custom``.
+   Provide a custom 3x3 camera RGB to ACES AP0 matrix as nine separate values in
+   row order. Use with ``--mat-method custom``. The matrix is applied directly;
+   supply the complete colour-space transform to ACES AP0 because no additional
+   XYZ to ACES conversion is composed.
 
 Output Options
 ^^^^^^^^^^^^^^
@@ -194,8 +196,9 @@ Use the Adobe matrix supplied by LibRaw:
 
    rawtoaces --mat-method Adobe photo.nef
 
-Supply a camera RGB to XYZ matrix (replace these illustrative values with your
-camera's matrix):
+Supply a camera RGB to ACES AP0 matrix. The identity matrix below only
+illustrates the argument order; it does not calibrate camera RGB or convert it
+to ACES AP0. Replace it with your camera's full colour-space transform:
 
 .. code-block:: bash
 

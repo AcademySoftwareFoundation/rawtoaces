@@ -7,12 +7,12 @@ from __future__ import annotations
 
 import argparse
 import html
-import os
-import re
 import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+
+from build_docs import DEVELOPMENT_VERSION, build_docs
 
 
 RELEASE_TAG_EXCLUSIONS = ("RC", "BETA")
@@ -44,12 +44,6 @@ def ref_has_docs(repo_root: Path, ref: str) -> bool:
     ).returncode == 0
 
 
-def release_display_name(tag: str) -> str:
-    if re.match(r"^v\d", tag):
-        return tag[1:]
-    return tag
-
-
 def should_publish_tag(tag: str) -> bool:
     upper = tag.upper()
     return all(exclusion not in upper for exclusion in RELEASE_TAG_EXCLUSIONS)
@@ -58,32 +52,6 @@ def should_publish_tag(tag: str) -> bool:
 def release_tags(repo_root: Path) -> list[str]:
     tags = capture(["git", "tag", "--sort=-v:refname"], cwd=repo_root).splitlines()
     return [tag for tag in tags if tag and should_publish_tag(tag) and ref_has_docs(repo_root, tag)]
-
-
-def build_docs(worktree: Path, output_dir: Path, release_name: str | None) -> None:
-    docs_dir = worktree / "src" / "docs"
-    if not docs_dir.exists():
-        raise FileNotFoundError(f"Documentation sources not found in {worktree}")
-
-    output_dir.mkdir(parents=True, exist_ok=True)
-    env = os.environ.copy()
-
-    src_dir = worktree / "src"
-    run(["doxygen", "docs/Doxyfile"], cwd=src_dir, env=env)
-
-    sphinx_command = [
-        "sphinx-build",
-        "-b",
-        "html",
-        "-D",
-        "breathe_projects.rawtoaces=../doxygen/xml",
-    ]
-
-    if release_name is not None:
-        sphinx_command.extend(["-D", f"version={release_name}", "-D", f"release={release_name}"])
-
-    sphinx_command.extend([".", str(output_dir)])
-    run(sphinx_command, cwd=docs_dir, env=env)
 
 
 def write_versions_index(output_root: Path, published_versions: list[tuple[str, str]]) -> None:
@@ -166,7 +134,7 @@ def main() -> int:
         latest_worktree = temp_dir / "latest"
         run(["git", "worktree", "add", "--detach", str(latest_worktree), default_ref], cwd=repo_root)
         try:
-            build_docs(latest_worktree, output_root, None)
+            build_docs(latest_worktree, output_root, DEVELOPMENT_VERSION)
         finally:
             run(["git", "worktree", "remove", "--force", str(latest_worktree)], cwd=repo_root)
 
@@ -176,7 +144,10 @@ def main() -> int:
             output_dir = output_root / "versions" / tag
             run(["git", "worktree", "add", "--detach", str(tag_worktree), tag], cwd=repo_root)
             try:
-                build_docs(tag_worktree, output_dir, release_display_name(tag))
+                # Historical releases keep their original warning baseline;
+                # tool failures still fail publication. Current sources above
+                # must pass strict references and generated-output assertions.
+                build_docs(tag_worktree, output_dir, tag, strict=False)
                 published_versions.append((tag, tag))
             finally:
                 run(["git", "worktree", "remove", "--force", str(tag_worktree)], cwd=repo_root)

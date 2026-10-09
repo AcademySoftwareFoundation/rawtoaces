@@ -347,14 +347,36 @@ each version with three numbers: ``major.minor.patch``, where:
 
 ## Building Documentation
 
-The following commands build the documentation from the current source tree:
+Install Doxygen and the Python documentation requirements, then validate the
+current source tree directly:
+
+    python -m pip install -r src/docs/requirements.txt
+    python build_scripts/build_docs.py --repo-root . --output-dir site-preview
+
+The build fails on Doxygen and Sphinx warnings, unresolved references, missing
+essential Python API entries, and invalid Python example syntax. The only
+Doxygen exceptions are missing documentation for the unused `roi` parameter on
+`ImageConverter::apply_matrix`, `apply_scale`, and `apply_crop`, which are slated
+for deprecation. All other missing parameter documentation still fails. Pull
+requests run this same check and upload `site-preview` as a downloadable artifact.
+
+An existing configured CMake build can also build the documentation:
 
     cmake -S . -B build -D BUILD_DOCS=1
     cmake --build build --target docs
 
-The following command builds the documentation for all released versions:
+The following command builds the current committed checkout as the development
+site, alongside historical releases selected from local tags:
 
-    python ./build_scripts/build_versioned_docs.py --repo-root . --output-dir site 
+    python build_scripts/build_versioned_docs.py --repo-root . --output-dir site --default-ref HEAD
+
+This publication command uses Git worktrees, so commit changes before running
+it. Development documentation is labelled `main (development)`; release
+documentation uses the exact tag name in both Sphinx and Doxygen. Set
+`RAWTOACES_DOCS_VERSION` (or CMake's `RAWTOACES_DOCS_VERSION` cache option) for an
+explicit packaged-source label. Library versions in CMake and the changelog are
+separate release metadata. Historical tags retain their original warning
+baseline; they still fail if a documentation tool exits unsuccessfully.
 
 ### Updating Python documentation
 
@@ -375,4 +397,3 @@ Updating Python documentation uses the binding docstrings as its source:
 - Add `--check` to verify that the checked-in file matches a fresh generation.
 - Confirm that the documentation builds using 
   `cmake --build build --target docs`.
-

@@ -6,7 +6,7 @@
 
 # Project information
 PROJECT_NAME           = "rawtoaces"
-PROJECT_NUMBER         = "2.0.0"
+PROJECT_NUMBER         = "main (development)"
 PROJECT_BRIEF          = "RAW to ACES Utility"
 PROJECT_LOGO           =
 
@@ -49,6 +49,8 @@ REFERENCES_RELATION    = YES
 # Warnings
 QUIET                  = NO
 WARNINGS               = YES
+# build_docs.py rejects warnings except three roi inputs slated for deprecation.
+WARN_AS_ERROR          = NO
 WARN_IF_UNDOCUMENTED   = YES
 WARN_IF_DOC_ERROR      = YES
 WARN_NO_PARAMDOC       = YES

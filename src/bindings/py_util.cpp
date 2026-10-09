@@ -267,13 +267,13 @@ void util_bindings( nanobind::module_ &m )
         "dst"_a,
         "src"_a,
         R"""(
-        Apply the headroom scale to image buffer.
+        Multiply image buffer pixel values by ``settings.headroom * settings.scale``.
 
         :param dst: Destination image buffer
-        :type dst OpenImageIO.ImageBuf
+        :type dst: OpenImageIO.ImageBuf
 
         :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
-        :type src OpenImageIO.ImageBuf
+        :type src: OpenImageIO.ImageBuf
         
         :return: ``True`` if applied successfully.
         )""" );
@@ -375,7 +375,9 @@ void util_bindings( nanobind::module_ &m )
         folder.
         )""" );
     settings.def_rw( "headroom", &ImageConverter::Settings::headroom, R"""(
-        Highlight headroom factor.
+        Linear highlight headroom factor. The default is 6.0.
+        Pixel scaling uses ``headroom * scale``; changing headroom from 6 to 12
+        doubles that multiplier.
         )""" );
     settings.def_rw(
         "custom_camera_make",

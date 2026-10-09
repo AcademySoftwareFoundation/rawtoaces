@@ -22,4 +22,4 @@ are not currently available.
 
    image_converter
    rawtoaces_core
-   api_index
+   api_reference

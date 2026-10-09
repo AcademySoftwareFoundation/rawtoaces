@@ -5,11 +5,14 @@
 Lens Correction
 ===============
 
-Rawtoaces automatically corrects the following lens phenomena:
+Rawtoaces can correct the following lens phenomena when correction is requested:
 
 - Chromatic Aberration
 - Geometric Distortion
 - Vignetting
+
+Lens correction is disabled by default. Select the correction types using
+``--lens-correction`` or ``settings.lens_correction_types`` to enable it.
 
 To apply lens correction, Rawtoaces requires two key pieces of information:
 
@@ -33,11 +36,14 @@ environment variable.
 Basic usage:
 ------------
 
-Request correction of geometric distortion and vignetting:
+Replace ``<INPUT_PATH>`` with the path to a supported RAW file. Pass that path as
+the first argument to the compiled C++ program or saved Python script. Each
+example writes ``<input_stem>_aces.exr`` beside the input file. The API examples
+explicitly select soft cropping to match the CLI default: retain the full sensor
+area and mark the crop as the display window. C++ and Python settings otherwise
+default to hard cropping.
 
-The examples explicitly select soft cropping to match the CLI default: retain
-the full sensor area and mark the crop as the display window. C++ and Python
-settings otherwise default to hard cropping.
+Request correction of geometric distortion and vignetting:
 
 .. tabs::
   .. tab:: Shell
@@ -48,42 +54,75 @@ settings otherwise default to hard cropping.
   .. tab:: C++
     .. code-block:: C++
 
-      #include <rawtoaces/rawtoaces_util.h>
-      
-      rta::util::ImageConverter converter;
-      converter.settings.crop_mode = rta::util::ImageConverter::Settings::CropMode::Soft;
-      
-      converter.settings.lens_correction_types =
-        rta::util::ImageConverter::Settings::LensCorrectionType::Distortion |
-        rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting;
+      #include <rawtoaces/image_converter.h>
+      #include <iostream>
+
+      int main(int argc, char **argv)
+      {
+          if (argc != 2)
+          {
+              std::cerr << "Usage: lens_correction <INPUT_PATH>\n";
+              return 1;
+          }
+          const std::string input_path = argv[1];
+          rta::util::ImageConverter converter;
+
+          converter.settings.crop_mode =
+              rta::util::ImageConverter::Settings::CropMode::Soft;
+          converter.settings.lens_correction_types =
+              rta::util::ImageConverter::Settings::LensCorrectionType::Distortion |
+              rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting;
+
+          if (!converter.process_image(input_path))
+          {
+              std::cerr << converter.last_error_message << '\n';
+              return 1;
+          }
+          return 0;
+      }
 
   .. tab:: Python
     .. code-block:: Python
 
+      import sys
       import rawtoaces
-      
+
+      if len(sys.argv) != 2:
+          raise SystemExit("Usage: lens_correction.py <INPUT_PATH>")
+      input_path = sys.argv[1]
       converter = rawtoaces.ImageConverter()
+
       converter.settings.crop_mode = rawtoaces.ImageConverter.Settings.CropMode.Soft
-      
-      converter.settings.lens_correction_types =
-        rawtoaces.ImageConverter.Settings.LensCorrectionType.Distortion |
-        rawtoaces.ImageConverter.Settings.LensCorrectionType.Vignetting
+      converter.settings.lens_correction_types = (
+          rawtoaces.ImageConverter.Settings.LensCorrectionType.Distortion |
+          rawtoaces.ImageConverter.Settings.LensCorrectionType.Vignetting
+      )
+      if not converter.process_image(input_path):
+          raise RuntimeError(converter.last_error_message)
+
+Without ``--require-lens-correction`` (or ``require_lens_correction = True``),
+a missing profile or other lens-correction failure emits a warning and conversion
+continues without the requested correction. A successful conversion alone does
+not prove that lens correction was applied.
 
 Request all supported types of lens correction, make the correction mandatory,
-override all camera/lens info used for correction:
+and override all camera/lens information used for correction. This example uses
+a Canon EOS R5 with a Canon RF 15-35mm F2.8L IS USM lens, at 35mm and f/4, focused
+at 240 metres. Use overrides that match your input image and a Lensfun profile
+with calibration for every requested correction:
 
 .. tabs::
   .. tab:: Shell
     .. code-block:: bash
 
       rawtoaces                                    \
-      --crop-mode soft                             \
+      --crop-mode soft                            \
       --lens-correction a                          \
       --require-lens-correction                    \
       --custom-camera-make "Canon"                 \
       --custom-camera-model "EOS R5"               \
       --custom-lens-make "Canon"                   \
-      --custom-lens-model "RF 24-105mm F4L IS USM" \
+      --custom-lens-model "RF 15-35mm F2.8L IS USM" \
       --custom-aperture 4.0                        \
       --custom-focal-length 35.0                   \
       --custom-focus-distance 240.0                \
@@ -92,48 +131,70 @@ override all camera/lens info used for correction:
   .. tab:: C++
     .. code-block:: C++
 
-      #include <rawtoaces/rawtoaces_util.h>
-      
-      rta::util::ImageConverter converter;
-      converter.settings.crop_mode = rta::util::ImageConverter::Settings::CropMode::Soft;
-      
-      converter.settings.lens_correction_types =
-        rta::util::ImageConverter::Settings::LensCorrectionType::Aberration |
-        rta::util::ImageConverter::Settings::LensCorrectionType::Distortion |
-        rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting;
-      converter.settings.require_lens_correction = true;
-      converter.settings.custom_camera_make = "Canon";
-      converter.settings.custom_camera_model = "EOS R5";
-      converter.settings.custom_lens_make = "Canon";
-      converter.settings.custom_lens_model = "RF 24-105mm F4L IS USM";
-      converter.settings.custom_aperture = 4.0f;
-      converter.settings.custom_focal_length = 35.0f;
-      converter.settings.custom_focus_distance = 240.0f;
-      
-      converter.process_image(input_path);
+      #include <rawtoaces/image_converter.h>
+      #include <iostream>
+
+      int main(int argc, char **argv)
+      {
+          if (argc != 2)
+          {
+              std::cerr << "Usage: lens_correction <INPUT_PATH>\n";
+              return 1;
+          }
+          const std::string input_path = argv[1];
+          rta::util::ImageConverter converter;
+
+          converter.settings.crop_mode =
+              rta::util::ImageConverter::Settings::CropMode::Soft;
+          converter.settings.lens_correction_types =
+              rta::util::ImageConverter::Settings::LensCorrectionType::Aberration |
+              rta::util::ImageConverter::Settings::LensCorrectionType::Distortion |
+              rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting;
+          converter.settings.require_lens_correction = true;
+          converter.settings.custom_camera_make = "Canon";
+          converter.settings.custom_camera_model = "EOS R5";
+          converter.settings.custom_lens_make = "Canon";
+          converter.settings.custom_lens_model = "RF 15-35mm F2.8L IS USM";
+          converter.settings.custom_aperture = 4.0f;
+          converter.settings.custom_focal_length = 35.0f;
+          converter.settings.custom_focus_distance = 240.0f;
+
+          if (!converter.process_image(input_path))
+          {
+              std::cerr << converter.last_error_message << '\n';
+              return 1;
+          }
+          return 0;
+      }
 
   .. tab:: Python
     .. code-block:: Python
 
+      import sys
       import rawtoaces
-      
+
+      if len(sys.argv) != 2:
+          raise SystemExit("Usage: lens_correction.py <INPUT_PATH>")
+      input_path = sys.argv[1]
       converter = rawtoaces.ImageConverter()
+
       converter.settings.crop_mode = rawtoaces.ImageConverter.Settings.CropMode.Soft
-      
-      converter.settings.lens_correction_types =
-        rawtoaces.ImageConverter.Settings.LensCorrectionType.Aberration |
-        rawtoaces.ImageConverter.Settings.LensCorrectionType.Distortion |
-        rawtoaces.ImageConverter.Settings.LensCorrectionType.Vignetting
+      converter.settings.lens_correction_types = (
+          rawtoaces.ImageConverter.Settings.LensCorrectionType.Aberration |
+          rawtoaces.ImageConverter.Settings.LensCorrectionType.Distortion |
+          rawtoaces.ImageConverter.Settings.LensCorrectionType.Vignetting
+      )
       converter.settings.require_lens_correction = True
       converter.settings.custom_camera_make = "Canon"
       converter.settings.custom_camera_model = "EOS R5"
       converter.settings.custom_lens_make = "Canon"
-      converter.settings.custom_lens_model = "RF 24-105mm F4L IS USM"
+      converter.settings.custom_lens_model = "RF 15-35mm F2.8L IS USM"
       converter.settings.custom_aperture = 4.0
       converter.settings.custom_focal_length = 35.0
       converter.settings.custom_focus_distance = 240.0
       
-      converter.process_image(input_path);
+      if not converter.process_image(input_path):
+          raise RuntimeError(converter.last_error_message)
 
 .. note::
   Overriding the camera make and model affects both lens correction and

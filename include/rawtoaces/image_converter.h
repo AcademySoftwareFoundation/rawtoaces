@@ -148,7 +148,9 @@ public:
         /// folder.
         std::string illuminant;
 
-        /// Highlight headroom factor.
+        /// Linear highlight headroom factor (default: 6.0).
+        /// Pixel scaling uses `headroom * scale`; changing headroom from 6 to 12
+        /// doubles that multiplier.
         float headroom = 6.0;
 
         /// Box to use for white balancing when `WB_method` == `WBMethod::Box`.
@@ -422,7 +424,7 @@ public:
     bool apply_matrix(
         OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
 
-    /// Apply the headroom scale to image buffer.
+    /// Multiply image buffer pixel values by `settings.headroom * settings.scale`.
     /// @param dst
     ///     Destination image buffer.
     /// @param src

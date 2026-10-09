@@ -76,7 +76,11 @@ Output Options
    Create output directories if they don't exist.
 
 ``--headroom <value>``
-   Set the highlight headroom (default: 6.0 stops).
+   Set the linear highlight headroom factor (default: 6.0). After the colour
+   transform, pixel values are multiplied by this factor and the API's
+   ``settings.scale`` (default: 1.0). Changing headroom from 6 to 12 doubles this
+   scale, equivalent to adding one exposure stop. An adjustment of ``s`` stops
+   corresponds to multiplying the factor by ``2 ** s``.
 
 Cropping Options
 ^^^^^^^^^^^^^^^^

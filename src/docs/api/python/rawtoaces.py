@@ -1,3 +1,9 @@
+# Generated from compiled bindings by nanobind.stubgen.
+# Edit src/bindings/*.cpp docstrings, rebuild and regenerate; do not edit prose here.
+# Forward annotations, enum aliases and public OpenImageIO names are normalized.
+
+from __future__ import annotations
+
 from collections.abc import Sequence
 import enum
 from typing import overload
@@ -190,7 +196,7 @@ class MetadataSolver(TransformSolver):
         pipeline.
 
         :return: 3×3 Input Device Transform matrix for DNG to ACES conversion
-        :note: CAT is computed internally; ``calculate_CAT_matrix()`` does not 
+        :note: CAT is computed internally; ``calculate_CAT_matrix()`` does not
                need to be called first.
 
         .. deprecated:: 2.2.0
@@ -251,7 +257,7 @@ class SpectralSolver(TransformSolver):
         ``d55``, ``3200k``) and custom illuminants stored in the database. For
         built-in types, it generates the spectral data using standard formulas.
 
-        :param type: illuminant type. Can be one of the built-in types, e.g. 
+        :param type: illuminant type. Can be one of the built-in types, e.g.
            ``d55``, ``3200k``, or a custom illuminant stored in the  database.
         :type type: str
 
@@ -306,9 +312,9 @@ class SpectralSolver(TransformSolver):
     def get_WB_multipliers(self) -> list[float]:
         """
         Get the white-balance multipliers calculated using ``find_illuminant()``
-        or ``calculate_WB()``. This function returns a reference to the 
-        3-element vector containing RGB white balance multipliers. These 
-        multipliers scale the camera response to achieve proper white balance 
+        or ``calculate_WB()``. This function returns a reference to the
+        3-element vector containing RGB white balance multipliers. These
+        multipliers scale the camera response to achieve proper white balance
         under the specified illuminant conditions.
 
         :return: a 3-element white balance multiplier list [R, G, B]
@@ -387,7 +393,7 @@ class SpectralSolver(TransformSolver):
 def collect_image_files(path: Sequence[str]) -> list[list[str]]:
     """
     Collect all files from given `paths` into batches.
-    For each path that is a directory, a batch is created in the returned 
+    For each path that is a directory, a batch is created in the returned
     vector and filled with the file names. Invalid paths are skipped with
     an error message.
 
@@ -397,7 +403,7 @@ def collect_image_files(path: Sequence[str]) -> list[list[str]]:
     :param path: paths vector of paths to files or directories to process.
     :type path: list[str]
 
-    :return: list of batches, where each batch contains files from one input 
+    :return: list of batches, where each batch contains files from one input
         path.
     """
 
@@ -421,7 +427,7 @@ class ImageConverter:
     @property
     def status(self) -> ImageConverter.Status:
         """
-        This property holds the error code from the most recent method call 
+        This property holds the error code from the most recent method call
         that returns a bool.
         """
 
@@ -455,7 +461,7 @@ class ImageConverter:
 
     def get_transform_matrix(self) -> list[list[float]]:
         """
-        Get the solved colour transform matrix to be applied by 
+        Get the solved colour transform matrix to be applied by
         ``process_image``.
         The matrix becomes available after calling the ``configure`` method.
 
@@ -476,7 +482,7 @@ class ImageConverter:
     def get_CAT_matrix(self) -> list[list[float]]:
         """
         Get the solved chromatic adaptation transform matrix of the currently
-        processed image. The matrix becomes available after calling the 
+        processed image. The matrix becomes available after calling the
         ``configure`` method.
 
         :return: a list containing a 3x3 matrix.
@@ -489,14 +495,14 @@ class ImageConverter:
     def configure(self, input_filename: str) -> bool:
         """
         Configures the converter using the requested white balance and colour
-        matrix method, and the metadata of the file provided in 
+        matrix method, and the metadata of the file provided in
         ``input_filename``.
 
         This method loads the metadata from the given image file and
         initialises the options to give the OIIO raw image reader to
         decode the pixels.
 
-        :param input_filename: A file name of the raw image file to read the 
+        :param input_filename: A file name of the raw image file to read the
             metadata from.
         :type input_filename: str
         :return: ``True`` if configured successfully.
@@ -567,7 +573,7 @@ class ImageConverter:
 
     def apply_scale(self, dst: OpenImageIO.ImageBuf, src: OpenImageIO.ImageBuf) -> bool:
         """
-        Apply the headroom scale to image buffer.
+        Multiply image buffer pixel values by ``settings.headroom * settings.scale``.
 
         :param dst: Destination image buffer
         :type dst: OpenImageIO.ImageBuf
@@ -591,7 +597,7 @@ class ImageConverter:
         :return: ``True`` if applied successfully.
         """
 
-    def load_image(self, path: str, hints: OpenImageIO.ParamValueList, buffer: OpenImageIO.ImageBuf) -> bool:
+    def load_image(self, path: str, hints: OpenImageIO.ParamValueList, buffer: OpenImageIO.ImageBuf, data_type: OpenImageIO.TypeDesc = OpenImageIO.BASETYPE.FLOAT) -> bool:
         """
         Load an image from a given ``path`` into a ``buffer`` using the ``hints``
         calculated by the ``configure`` method. The hints can be manually modified
@@ -606,10 +612,13 @@ class ImageConverter:
         :param buffer: Destination buffer where the image loaded into.
         :type buffer: OpenImageIO.ImageBuf
 
+        :param data_type: Data type of the samples in the destination buffer.
+        :type data_type: OpenImageIO.TypeDesc
+
         :return: ``True`` if image load successfully.
         """
 
-    def save_image(self, output_filename: str, buf: OpenImageIO.ImageBuf) -> bool:
+    def save_image(self, output_filename: str, buf: OpenImageIO.ImageBuf, data_type: OpenImageIO.TypeDesc = OpenImageIO.BASETYPE.HALF) -> bool:
         """
         Save an image into an ACES container.
 
@@ -618,6 +627,9 @@ class ImageConverter:
 
         :param buf: Image buffer to save.
         :type buf: OpenImageIO.ImageBuf
+
+        :param data_type: Data type of the samples to be written out.
+        :type data_type: OpenImageIO.TypeDesc
 
         :return: ``True`` if saved successfully.
         """
@@ -629,88 +641,6 @@ class ImageConverter:
         """
 
         def __init__(self) -> None: ...
-        
-        class LensCorrectionType(enum.Flag):
-            """The enumerator containing all supported lens correction types."""
-
-            Aberration = 1
-            """Chromatic aberration"""
-
-            Distortion = 2
-            """Geometric distortion"""
-
-            Vignetting = 4
-            """Vignetting"""
-            
-        class MatrixMethod(enum.Enum):
-            """
-            The enumerator containing all supported colour transform matrix 
-            calculation methods.
-            """
-
-            Auto = 0
-            """
-            Automatically choose the best available matrix method.
-
-            - If spectral sensitivity data for the camera is available, use ``Spectral``.
-            - Otherwise, fall back to ``Metadata``.
-            """
-
-            Spectral = 1
-            """
-            Use the camera spectral sensitivity curves to solve for the colour
-            conversion matrix. In this mode the illuminant is either provided
-            directly in ``illuminant`` if ``WB_method`` == 
-            ``WBMethod::Illuminant``, or the best illuminant is derived from the
-            white balancing multipliers.
-            """
-
-            Metadata = 2
-            """
-            Use the metadata provided in the image file. This mode is mostly
-            usable with DNG files, as the information needed for conversion
-            is mandatory in the DNG format.
-            """
-
-            Adobe = 3
-            """Use the Adobe colour matrix for the camera supplied in LibRaw."""
-
-            Custom = 4
-            """
-            Specify a custom matrix in `colourMatrix`. This mode is useful if
-            the matrix is calculated by an external tool.
-            """
-            
-        class WBMethod(enum.Enum):
-            """The enumerator containing all supported white-balancing methods."""
-
-            Metadata = 0
-            """
-            Use the metadata provided in the image file. This mode is mostly
-            usable with DNG files, as the information needed for conversion
-            is mandatory in the DNG format.
-            """
-
-            Illuminant = 1
-            """
-            White balance to a specified illuminant. See the ``illuminant``
-            property for more information on the supported illuminants. This
-            mode can only be used if spectral sensitivities are available for
-            the camera.
-            """
-
-            Box = 2
-            """
-            Calculate white balance by averaging over a specified region of
-            the image. See ``WB_box``. In this mode if an empty box is provided,
-            white balancing is done by averaging over the whole image.
-            """
-
-            Custom = 3
-            """
-            Use custom white balancing multipliers. This mode is useful if
-            the white balancing coefficients are calculated by an external tool.
-            """
 
         @property
         def WB_method(self) -> ImageConverter.Settings.WBMethod:
@@ -754,7 +684,11 @@ class ImageConverter:
 
         @property
         def headroom(self) -> float:
-            """Highlight headroom factor."""
+            """
+            Linear highlight headroom factor. The default is 6.0.
+            Pixel scaling uses ``headroom * scale``; changing headroom from 6 to 12
+            doubles that multiplier.
+            """
 
         @headroom.setter
         def headroom(self, arg: float, /) -> None: ...
@@ -817,7 +751,7 @@ class ImageConverter:
         @property
         def highlight_mode(self) -> int:
             """
-            Highlight recovery mode, as supported by OpenImageIO/Libraw: 
+            Highlight recovery mode, as supported by OpenImageIO/Libraw:
             0 = clip, 1 = unclip, 2 = blend, 3..9 = rebuild.
             """
 
@@ -852,7 +786,7 @@ class ImageConverter:
         @property
         def demosaic_algorithm(self) -> str:
             """
-            Demosaicing algorithm. 
+            Demosaicing algorithm.
             Supported options: ``linear``, ``VNG``, ``PPG``, ``AHD``, ``DCB``,
             ``DHT``, ``AAHD``.
             """
@@ -1044,21 +978,82 @@ class ImageConverter:
         @chromatic_aberration.setter
         def chromatic_aberration(self, arg: Sequence[float], /) -> None: ...
 
-        
+        class WBMethod(enum.Enum):
+            """The enumerator containing all supported white-balancing methods."""
 
-        Metadata: MatrixMethod = MatrixMethod.Metadata
+            Metadata = 0
+            """
+            Use the metadata provided in the image file. This mode is mostly
+            usable with DNG files, as the information needed for conversion
+            is mandatory in the DNG format.
+            """
 
-        Illuminant: WBMethod = WBMethod.Illuminant
+            Illuminant = 1
+            """
+            White balance to a specified illuminant. See the ``illuminant``
+            property for more information on the supported illuminants. This
+            mode can only be used if spectral sensitivities are available for
+            the camera.
+            """
 
-        Box: WBMethod = WBMethod.Box
+            Box = 2
+            """
+            Calculate white balance by averaging over a specified region of
+            the image. See ``WB_box``. In this mode if an empty box is provided,
+            white balancing is done by averaging over the whole image.
+            """
 
-        Custom: MatrixMethod = MatrixMethod.Custom
+            Custom = 3
+            """
+            Use custom white balancing multipliers. This mode is useful if
+            the white balancing coefficients are calculated by an external tool.
+            """
 
-        Auto: MatrixMethod = MatrixMethod.Auto
 
-        Spectral: MatrixMethod = MatrixMethod.Spectral
 
-        Adobe: MatrixMethod = MatrixMethod.Adobe
+
+
+        class MatrixMethod(enum.Enum):
+            """
+            The enumerator containing all supported colour transform matrix
+            calculation methods.
+            """
+
+            Auto = 0
+            """
+            Automatically choose the best available matrix method.
+
+            - If spectral sensitivity data for the camera is available, use ``Spectral``.
+            - Otherwise, fall back to ``Metadata``.
+            """
+
+            Spectral = 1
+            """
+            Use the camera spectral sensitivity curves to solve for the colour
+            conversion matrix. In this mode the illuminant is either provided
+            directly in ``illuminant`` if ``WB_method`` ==
+            ``WBMethod::Illuminant``, or the best illuminant is derived from the
+            white balancing multipliers.
+            """
+
+            Metadata = 2
+            """
+            Use the metadata provided in the image file. This mode is mostly
+            usable with DNG files, as the information needed for conversion
+            is mandatory in the DNG format.
+            """
+
+            Adobe = 3
+            """Use the Adobe colour matrix for the camera supplied in LibRaw."""
+
+            Custom = 4
+            """
+            Specify a custom matrix in `colourMatrix`. This mode is useful if
+            the matrix is calculated by an external tool.
+            """
+
+
+
 
         class CropMode(enum.Enum):
             """The enumerator containing all supported cropping modes."""
@@ -1068,26 +1063,57 @@ class ImageConverter:
 
             Soft = 1
             """
-            Write out full sensor area, mark the crop area as the display 
+            Write out full sensor area, mark the crop area as the display
             window.
             """
 
             Hard = 2
             """Write out only the crop area."""
 
-        Off: CropMode = CropMode.Off
 
-        Soft: CropMode = CropMode.Soft
 
-        Hard: CropMode = CropMode.Hard
 
-        
+        class LensCorrectionType(enum.Flag):
+            """The enumerator containing all supported lens correction types."""
 
-        Aberration: LensCorrectionType = LensCorrectionType.Aberration
+            Aberration = 1
+            """Chromatic aberration"""
 
-        Distortion: LensCorrectionType = LensCorrectionType.Distortion
+            Distortion = 2
+            """Geometric distortion"""
 
-        Vignetting: LensCorrectionType = LensCorrectionType.Vignetting
+            Vignetting = 4
+            """Vignetting"""
+
+
+
+
+        Metadata: ImageConverter.Settings.MatrixMethod = MatrixMethod.Metadata
+
+        Illuminant: ImageConverter.Settings.WBMethod = WBMethod.Illuminant
+
+        Box: ImageConverter.Settings.WBMethod = WBMethod.Box
+
+        Custom: ImageConverter.Settings.MatrixMethod = MatrixMethod.Custom
+
+        Auto: ImageConverter.Settings.MatrixMethod = MatrixMethod.Auto
+
+        Spectral: ImageConverter.Settings.MatrixMethod = MatrixMethod.Spectral
+
+        Adobe: ImageConverter.Settings.MatrixMethod = MatrixMethod.Adobe
+
+        Off: ImageConverter.Settings.CropMode = CropMode.Off
+
+        Soft: ImageConverter.Settings.CropMode = CropMode.Soft
+
+        Hard: ImageConverter.Settings.CropMode = CropMode.Hard
+
+        Aberration: ImageConverter.Settings.LensCorrectionType = LensCorrectionType.Aberration
+
+        Distortion: ImageConverter.Settings.LensCorrectionType = LensCorrectionType.Distortion
+
+        Vignetting: ImageConverter.Settings.LensCorrectionType = LensCorrectionType.Vignetting
+
 
     class Status(enum.Enum):
         """Status codes for operation results."""
@@ -1140,34 +1166,34 @@ class ImageConverter:
         UnknownError = 15
         """Unknown error."""
 
-    Success: Status = Status.Success
+    Success: ImageConverter.Status = Status.Success
 
-    DatabaseNotFound: Status = Status.DatabaseNotFound
+    DatabaseNotFound: ImageConverter.Status = Status.DatabaseNotFound
 
-    FileExists: Status = Status.FileExists
+    FileExists: ImageConverter.Status = Status.FileExists
 
-    InputFileNotFound: Status = Status.InputFileNotFound
+    InputFileNotFound: ImageConverter.Status = Status.InputFileNotFound
 
-    EmptyInputFilename: Status = Status.EmptyInputFilename
+    EmptyInputFilename: ImageConverter.Status = Status.EmptyInputFilename
 
-    FilesystemError: Status = Status.FilesystemError
+    FilesystemError: ImageConverter.Status = Status.FilesystemError
 
-    OutputDirectoryError: Status = Status.OutputDirectoryError
+    OutputDirectoryError: ImageConverter.Status = Status.OutputDirectoryError
 
-    InvalidPath: Status = Status.InvalidPath
+    InvalidPath: ImageConverter.Status = Status.InvalidPath
 
-    ConfigurationError: Status = Status.ConfigurationError
+    ConfigurationError: ImageConverter.Status = Status.ConfigurationError
 
-    ReadError: Status = Status.ReadError
+    ReadError: ImageConverter.Status = Status.ReadError
 
-    LensCorrectionError: Status = Status.LensCorrectionError
+    LensCorrectionError: ImageConverter.Status = Status.LensCorrectionError
 
-    MatrixApplicationError: Status = Status.MatrixApplicationError
+    MatrixApplicationError: ImageConverter.Status = Status.MatrixApplicationError
 
-    ScaleApplicationError: Status = Status.ScaleApplicationError
+    ScaleApplicationError: ImageConverter.Status = Status.ScaleApplicationError
 
-    CropApplicationError: Status = Status.CropApplicationError
+    CropApplicationError: ImageConverter.Status = Status.CropApplicationError
 
-    WriteError: Status = Status.WriteError
+    WriteError: ImageConverter.Status = Status.WriteError
 
-    UnknownError: Status = Status.UnknownError
+    UnknownError: ImageConverter.Status = Status.UnknownError

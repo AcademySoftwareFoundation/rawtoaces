@@ -1562,13 +1562,16 @@ void fix_metadata( OIIO::ImageSpec &spec )
 
         if ( dst_attribute == nullptr && src_attribute != nullptr )
         {
-            auto type = src_attribute->type();
-            if ( type.arraylen == 0 )
-            {
-                if ( type.basetype == OIIO::TypeDesc::STRING )
-                    spec[dst_name] = src_attribute->get_string();
-            }
-            spec.erase_attribute( src_name );
+            // The attribute name is immutable. Create a copy with a different
+            // name and delete the original.
+            OIIO::ParamValue pv(
+                dst_name,
+                src_attribute->type(),
+                src_attribute->nvalues(),
+                src_attribute->interp(),
+                src_attribute->data() );
+            spec.extra_attribs.add_or_replace( pv );
+            spec.extra_attribs.remove( src_name );
         }
     }
 }
@@ -1582,50 +1585,74 @@ bool fetch_missing_metadata(
     if ( settings.disable_exiftool )
         return true;
 
-    std::vector<std::string> keys_to_check;
+    std::set<std::string> required_keys_to_check;
+    std::set<std::string> optional_keys_to_check;
 
     if ( settings.custom_camera_make.empty() )
-        keys_to_check.push_back( "cameraMake" );
+        required_keys_to_check.insert( "cameraMake" );
     if ( settings.custom_camera_model.empty() )
-        keys_to_check.push_back( "cameraModel" );
+        required_keys_to_check.insert( "cameraModel" );
 
 #if ( RTA_ENABLE_LENSFUN )
     if ( settings.lens_correction_types !=
          ImageConverter::Settings::LensCorrectionType::None )
     {
+        std::set<std::string> &keys_to_check = settings.require_lens_correction
+                                                   ? required_keys_to_check
+                                                   : optional_keys_to_check;
+
         if ( settings.custom_lens_model.empty() )
-            keys_to_check.push_back( "lensModel" );
+            keys_to_check.insert( "lensModel" );
 
         if ( settings.custom_focal_length == 0.0f )
-            keys_to_check.push_back( "focalLength" );
+            keys_to_check.insert( "focalLength" );
 
         if ( settings.lens_correction_types &&
              ImageConverter::Settings::LensCorrectionType::Vignetting )
         {
             if ( settings.custom_aperture == 0.0f )
-                keys_to_check.push_back( "aperture" );
+                keys_to_check.insert( "aperture" );
 
             if ( settings.custom_focus_distance == 0.0f )
-                keys_to_check.push_back( "focus" );
+                keys_to_check.insert( "focus" );
         }
     }
 #endif // ( RTA_ENABLE_LENSFUN )
-    std::vector<std::string> keys_to_fetch;
+    std::vector<std::string> required_keys_to_fetch;
+    std::vector<std::string> all_keys_to_fetch;
 
-    for ( auto &key: keys_to_check )
+    for ( auto &key: required_keys_to_check )
     {
         auto attribute = spec.find_attribute( key );
         if ( attribute == nullptr )
         {
-            keys_to_fetch.push_back( key );
+            required_keys_to_fetch.push_back( key );
+            all_keys_to_fetch.push_back( key );
             continue;
         }
     }
-    if ( keys_to_fetch.empty() )
+
+    for ( auto &key: optional_keys_to_check )
+    {
+        auto attribute = spec.find_attribute( key );
+        if ( attribute == nullptr )
+        {
+            all_keys_to_fetch.push_back( key );
+            continue;
+        }
+    }
+
+    if ( all_keys_to_fetch.empty() )
         return true;
 
-    return exiftool::fetch_metadata(
-        spec, input_path, keys_to_fetch, error_message );
+    bool result = exiftool::fetch_metadata(
+        spec, input_path, all_keys_to_fetch, error_message );
+
+    // If exiftool failed but all required metadata is already present,
+    // return success.
+    if ( !result )
+        result = required_keys_to_fetch.empty();
+    return result;
 }
 
 template <typename T>

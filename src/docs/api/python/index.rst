@@ -9,10 +9,10 @@ The python bindings are currently work in progress.
 
 At this stage we provide:
 
-- The file-based methods of the :py:class:`ImageConverter` class.
+- The file-based methods of the :py:class:`rawtoaces.ImageConverter` class.
 - Core solver bindings for metadata-based and spectral workflows:
-  :py:class:`Metadata`, :py:class:`MetadataSolver`,
-  :py:class:`SpectralData`, and :py:class:`SpectralSolver`.
+  :py:class:`rawtoaces.Metadata`, :py:class:`rawtoaces.MetadataSolver`,
+  :py:class:`rawtoaces.SpectralData`, and :py:class:`rawtoaces.SpectralSolver`.
 
 Lower-level methods that operate directly with OpenImageIO image buffers
 are not currently available.
@@ -22,4 +22,4 @@ are not currently available.
 
    image_converter
    rawtoaces_core
-   api_index
+   api_reference

@@ -9,7 +9,7 @@ Core
 ====
 
 The core python API exposes low-level solving logic implemented in
-:cpp:class:`rta::core`.
+:doc:`rta::core <../cpp/rawtoaces_core>`.
 
 Use this API when you need direct control over the solver inputs and outputs,
 for example:
@@ -158,7 +158,7 @@ Error handling notes
 Data requirements for ``calculate_transform``
 ----------------------------------------------
 
-Before calling :py:meth:`SpectralSolver.calculate_transform`, ensure:
+Before calling :py:meth:`rawtoaces.SpectralSolver.calculate_transform`, ensure:
 
 - ``camera`` has 3 channels (R, G, B)
 - ``illuminant`` has 1 channel (power)

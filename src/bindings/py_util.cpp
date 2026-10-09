@@ -270,10 +270,10 @@ void util_bindings( nanobind::module_ &m )
         Apply the headroom scale to image buffer.
 
         :param dst: Destination image buffer
-        :type dst OpenImageIO.ImageBuf
+        :type dst: OpenImageIO.ImageBuf
 
         :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
-        :type src OpenImageIO.ImageBuf
+        :type src: OpenImageIO.ImageBuf
         
         :return: ``True`` if applied successfully.
         )""" );
@@ -622,8 +622,10 @@ void util_bindings( nanobind::module_ &m )
             }
         },
         R"""(
-        Custom camera RGB to XYZ matrix to be used when
+        Custom camera RGB to ACES AP0 matrix to be used when
         ``matrix_method`` == ``MatrixMethod::Custom``.
+        Applied directly; it must include the complete colour-space transform
+        to ACES AP0. No additional XYZ to ACES conversion is composed.
         )""" );
 
     settings.def_prop_rw(
@@ -736,8 +738,9 @@ void util_bindings( nanobind::module_ &m )
             Use the Adobe colour matrix for the camera supplied in LibRaw.
             )""" )
         .value( "Custom", ImageConverter::Settings::MatrixMethod::Custom, R"""(
-            Specify a custom matrix in `colourMatrix`. This mode is useful if
-            the matrix is calculated by an external tool.
+            Specify a full camera RGB to ACES AP0 matrix in ``custom_matrix``.
+            The matrix is applied directly, without an additional XYZ to
+            ACES conversion. It can be calculated by an external tool.
             )""" )
         .export_values();
 

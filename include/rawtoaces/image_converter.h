@@ -116,8 +116,9 @@ public:
             Metadata,
             /// Use the Adobe colour matrix for the camera supplied in LibRaw.
             Adobe,
-            /// Specify a custom matrix in `colourMatrix`. This mode is useful if
-            /// the matrix is calculated by an external tool.
+            /// Specify a full camera RGB to ACES AP0 matrix in `custom_matrix`.
+            /// The matrix is applied directly, without an additional XYZ to
+            /// ACES conversion. It can be calculated by an external tool.
             Custom
         };
 
@@ -159,8 +160,10 @@ public:
         /// `WB_method` == `WBMethod::Custom`.
         float custom_WB[4] = { 1.0, 1.0, 1.0, 1.0 };
 
-        /// Custom camera RGB to XYZ matrix to be used when
+        /// Custom camera RGB to ACES AP0 matrix to be used when
         /// `matrix_method` == `MatrixMethod::Custom`.
+        /// Applied directly; it must include the complete colour-space transform
+        /// to ACES AP0. No additional XYZ to ACES conversion is composed.
         float custom_matrix[3][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
 
         /// Camera manufacturer name to be used for spectral sensitivity

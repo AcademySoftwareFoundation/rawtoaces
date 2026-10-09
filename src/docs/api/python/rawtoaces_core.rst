@@ -9,7 +9,7 @@ Core
 ====
 
 The core python API exposes low-level solving logic implemented in
-:cpp:class:`rta::core`.
+:doc:`rta::core <../cpp/rawtoaces_core>`.
 
 Use this API when you need direct control over the solver inputs and outputs,
 for example:
@@ -23,12 +23,18 @@ for example:
 Data model summary
 ------------------
 
-The core bindings expose four classes:
+The core bindings expose these data containers and solvers:
 
 - :py:class:`rawtoaces.Metadata`: container for DNG-style calibration/neutral metadata.
 - :py:class:`rawtoaces.MetadataSolver`: solves CAT/IDT using :py:class:`rawtoaces.Metadata`.
 - :py:class:`rawtoaces.SpectralData`: spectral JSON container/loader.
 - :py:class:`rawtoaces.SpectralSolver`: solves WB/IDT using spectral datasets.
+
+Both solvers inherit :py:meth:`rawtoaces.TransformSolver.calculate_transform`,
+:py:attr:`rawtoaces.TransformSolver.transform_matrix`,
+:py:attr:`rawtoaces.TransformSolver.last_error_message`, and
+:py:attr:`rawtoaces.TransformSolver.verbosity` from
+:py:class:`rawtoaces.TransformSolver`.
 
 
 Metadata workflow
@@ -66,8 +72,11 @@ Minimal example:
   md.calibration = [c0, c1]
 
   solver = rawtoaces.MetadataSolver(md)
-  cat = solver.calculate_CAT_matrix()   # 3x3 list[list[float]]
-  idt = solver.calculate_IDT_matrix()   # 3x3 list[list[float]]
+  if not solver.calculate_transform():
+      raise RuntimeError(solver.last_error_message)
+  idt = solver.transform_matrix  # 3x3 list[list[float]]
+
+The transform includes chromatic adaptation; no separate CAT call is needed.
 
 Spectral workflow
 -----------------
@@ -96,27 +105,27 @@ Minimal example using database lookup + file loading:
   # camera and illuminant
   ok = solver.find_camera("nikon", "d200")
   if not ok:
-      raise RuntimeError("camera not found")
+      raise RuntimeError(solver.last_error_message or "camera not found")
 
   ok = solver.find_illuminant("d55")
   if not ok:
-      raise RuntimeError(solver.last_error_message)
+      raise RuntimeError(solver.last_error_message or "illuminant not found")
 
   # required for IDT solve
   if not solver.load_spectral_data("cmf/cmf_1931.json", solver.observer):
-      raise RuntimeError("failed to load observer")
+      raise RuntimeError(solver.last_error_message or "failed to load observer")
   if not solver.load_spectral_data(
       "training/training_spectral.json", solver.training_data
   ):
-      raise RuntimeError("failed to load training data")
+      raise RuntimeError(solver.last_error_message or "failed to load training data")
 
   if not solver.calculate_WB():
       raise RuntimeError(solver.last_error_message)
-  if not solver.calculate_IDT_matrix():
+  if not solver.calculate_transform():
       raise RuntimeError(solver.last_error_message)
 
   wb = solver.get_WB_multipliers()  # [R, G, B]
-  idt = solver.get_IDT_matrix()     # 3x3
+  idt = solver.transform_matrix    # 3x3
 
 
 Finding a standard illuminant best matching the given white-balancing multipliers:
@@ -158,12 +167,43 @@ Error handling notes
 Data requirements for ``calculate_transform``
 ----------------------------------------------
 
-Before calling :py:meth:`SpectralSolver.calculate_transform`, ensure:
+Before calling :py:meth:`rawtoaces.SpectralSolver.calculate_transform`, ensure:
 
 - ``camera`` has 3 channels (R, G, B)
 - ``illuminant`` has 1 channel (power)
 - ``observer`` has 3 channels (X, Y, Z)
 - ``training_data`` is non-empty
+- White balance has been calculated with ``calculate_WB()`` or the
+  three-multiplier form of ``find_illuminant()``. The name form only loads
+  illuminant data; the transform solve uses the currently stored multipliers.
 
-If these conditions are not met, the method returns ``False`` and
-``last_error_message`` describes the missing prerequisite.
+Missing camera, illuminant, observer, or training data makes the method return
+``False``, with ``last_error_message`` describing the missing prerequisite.
+Skipping white balance leaves the current multipliers in use (initially
+``[1.0, 1.0, 1.0]``); this condition does not itself produce an error.
+
+Migration from deprecated methods
+---------------------------------
+
+The methods below are deprecated since 2.2.0 and scheduled for removal in v3.
+Use the current APIs in new code.
+
+.. list-table:: Solver and converter replacements
+   :header-rows: 1
+   :widths: 45 55
+
+   * - Deprecated method
+     - Replacement
+   * - ``MetadataSolver.calculate_CAT_matrix()``
+     - ``calculate_transform()`` includes adaptation in the complete
+       transform. It does not return a separate CAT matrix.
+   * - ``MetadataSolver.calculate_IDT_matrix()``
+     - Check ``calculate_transform()`` and then read ``transform_matrix``.
+       The new method returns a boolean rather than the matrix itself.
+   * - ``SpectralSolver.calculate_IDT_matrix()``
+     - Check ``calculate_transform()``; it also returns a boolean.
+   * - ``SpectralSolver.get_IDT_matrix()``
+     - Read ``transform_matrix`` after a successful solve.
+   * - ``ImageConverter.get_IDT_matrix()`` and ``get_CAT_matrix()``
+     - Use ``get_transform_matrix()`` after successful ``configure()``.
+       This returns the complete transform rather than a separate CAT matrix.

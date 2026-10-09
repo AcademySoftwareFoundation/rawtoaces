@@ -674,8 +674,9 @@ image file metadata. This mode works best with the images using
 the DNG format, as the DNG standard mandates the presense of 
 such matrices.
 - "Adobe" uses the Adobe coefficients provided by LibRaw. 
-- "custom" uses a user-provided color conversion matrix. 
-A matrix can be specified using the "--custom-mat" parameter.
+- "custom" uses a user-provided camera RGB to ACES AP0 conversion matrix.
+A matrix can be specified using the "--custom-mat" parameter. It is applied
+directly, without an additional XYZ to ACES conversion.
 
 The paths rawtoaces uses to search for the spectral sensitivity 
 data can be specified in the RAWTOACES_DATA_PATH environment 
@@ -821,7 +822,9 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
         .action( OIIO::ArgParse::store<float>() );
 
     arg_parser.arg( "--custom-mat" )
-        .help( "Custom camera RGB to XYZ matrix." )
+        .help(
+            "Custom camera RGB to ACES AP0 matrix, applied directly without "
+            "an additional XYZ to ACES conversion." )
         .nargs( 9 )
         .metavar( "Rr Rg Rb Gr Gg Gb Br Bg Bb" )
         .action( OIIO::ArgParse::store<float>() );

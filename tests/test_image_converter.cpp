@@ -159,6 +159,7 @@ void assert_success_conversion( const std::string &output )
     ASSERT_CONTAINS( output, "Input Device Transform (IDT) matrix" );
 
     // Assert that image processing steps occurred
+    ASSERT_CONTAINS( output, "Applying lens correction" );
     ASSERT_CONTAINS( output, "Applying transform matrix" );
     ASSERT_CONTAINS( output, "Applying scale" );
     ASSERT_CONTAINS( output, "Applying crop" );
@@ -562,26 +563,29 @@ void test_empty_input_path()
 }
 
 /// Tests fix_metadata with both Make and Model attributes
-void test_fix_metadata_both_attributes()
+void test_fix_metadata_all_attributes()
 {
     std::cout << std::endl
               << "test_fix_metadata_both_attributes()" << std::endl;
     OIIO::ImageSpec spec;
 
     // Add both original attributes
-    spec["Make"]  = "Sony";
-    spec["Model"] = "A7R IV";
+    spec["Make"]    = "Sony";
+    spec["Model"]   = "A7R IV";
+    spec["FNumber"] = 2.8f;
 
     // Call fix_metadata
     fix_metadata( spec );
 
-    // Check that both destinations were created with correct values
+    // Check that all destinations were created with correct values
     OIIO_CHECK_EQUAL( spec.get_string_attribute( "cameraMake" ), "Sony" );
     OIIO_CHECK_EQUAL( spec.get_string_attribute( "cameraModel" ), "A7R IV" );
+    OIIO_CHECK_EQUAL( spec.get_float_attribute( "aperture" ), 2.8f );
 
-    // Check that both originals were removed
+    // Check that all originals were removed
     OIIO_CHECK_EQUAL( spec.find_attribute( "Make" ), nullptr );
     OIIO_CHECK_EQUAL( spec.find_attribute( "Model" ), nullptr );
+    OIIO_CHECK_EQUAL( spec.find_attribute( "FNumber" ), nullptr );
 }
 
 /// Tests fix_metadata when destination already exists (should not overwrite or remove source)
@@ -619,26 +623,6 @@ void test_fix_metadata_source_missing()
     // Check that no attributes were created
     OIIO_CHECK_EQUAL( spec.find_attribute( "cameraMake" ), nullptr );
     OIIO_CHECK_EQUAL( spec.find_attribute( "cameraModel" ), nullptr );
-}
-
-/// Tests fix_metadata with non-string (should be ignored)
-void test_fix_metadata_unsupported_type()
-{
-    std::cout << std::endl
-              << "test_fix_metadata_unsupported_type()" << std::endl;
-    OIIO::ImageSpec spec;
-
-    // Add integer attribute (this should be ignored by fix_metadata)
-    spec["Make"] = 42; // Integer, not string
-
-    // Call fix_metadata
-    fix_metadata( spec );
-
-    // Check that no destination was created (unsupported types are ignored)
-    OIIO_CHECK_EQUAL( spec.find_attribute( "cameraMake" ), nullptr );
-
-    // Check that original was removed
-    OIIO_CHECK_EQUAL( spec.find_attribute( "Make" ), nullptr );
 }
 
 void test_combine_make_model()
@@ -2740,6 +2724,17 @@ void test_fetch_missing_metadata()
     result = fetch_missing_metadata(
         "wrong_filename", converter.settings, spec, error_message );
     OIIO_CHECK_ASSERT( !result );
+
+#if ( RTA_ENABLE_LENSFUN )
+    spec["cameraMake"]  = "some camera make";
+    spec["cameraModel"] = "some camera model";
+    converter.settings.lens_correction_types =
+        rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting;
+    converter.settings.require_lens_correction = false;
+    result                                     = fetch_missing_metadata(
+        "wrong_filename", converter.settings, spec, error_message );
+    OIIO_CHECK_ASSERT( result );
+#endif // ( RTA_ENABLE_LENSFUN )
 }
 
 /// Tests that main prints FileExists hint when output file already exists
@@ -3039,11 +3034,10 @@ int main( int, char ** )
         test_empty_input_path();
 
         // Tests for fix_metadata
-        test_fix_metadata_both_attributes();
+        test_fix_metadata_all_attributes();
         test_fix_metadata_destination_exists();
         test_fix_metadata_source_missing();
         test_fix_metadata_source_missing();
-        test_fix_metadata_unsupported_type();
 
         test_fetch_missing_metadata();
 

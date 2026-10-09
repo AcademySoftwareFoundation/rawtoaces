@@ -1613,8 +1613,10 @@ bool fetch_missing_metadata(
             if ( settings.custom_aperture == 0.0f )
                 keys_to_check.insert( "aperture" );
 
+            // Focus distance should always be treated as optional as it is
+            // rarely available.
             if ( settings.custom_focus_distance == 0.0f )
-                keys_to_check.insert( "focus" );
+                optional_keys_to_check.insert( "focus" );
         }
     }
 #endif // ( RTA_ENABLE_LENSFUN )

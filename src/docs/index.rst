@@ -6,7 +6,14 @@ rawtoaces Documentation
 =======================
 
 rawtoaces is a tool for converting RAW camera images to ACES (Academy Color Encoding System) format.
-It provides both a command-line utility and a C++ library for integration into other applications.
+It provides a command-line utility, a C++ library, and Python bindings for
+integration into other applications.
+
+Programming references
+----------------------
+
+- :doc:`api/cpp/api_reference`: C++ classes, settings, and functions.
+- :doc:`api/python/api_reference`: Python classes and methods.
 
 .. toctree::
    :maxdepth: 2
@@ -59,7 +66,7 @@ Library Usage (C++)
    bool success = converter.process_image("input.dng");
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`search`

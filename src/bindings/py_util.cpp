@@ -163,18 +163,15 @@ void util_bindings( nanobind::module_ &m )
         },
         "input_filename"_a,
         R"""(
-        Configures the converter using the requested white balance and colour
-        matrix method, and the metadata of the file provided in 
-        ``input_filename``.
-        
-        This method loads the metadata from the given image file and
-        initialises the options to give the OIIO raw image reader to
-        decode the pixels.
-        
-        :param input_filename: A file name of the raw image file to read the 
-            metadata from.
-        :type input_filename: str
-        :return: ``True`` if configured successfully.
+        Configure white balance, the colour transform and decoding options from a file.
+
+        Uses the current ``settings`` and reads metadata from ``input_filename``.
+        This overload is available in every Python build and does not expose the
+        OpenImageIO decoding options to Python.
+
+        :param input_filename: Path to the RAW image whose metadata will be read.
+        :return: ``True`` on success, ``False`` on failure. On failure, inspect
+            ``last_error_message`` and ``status``.
         )""" );
 #if OIIO_VERSION >= OIIO_MAKE_VERSION( 3, 2, 0 )
     image_converter.def(
@@ -187,15 +184,16 @@ void util_bindings( nanobind::module_ &m )
         "image_spec"_a,
         "options"_a,
         R"""(
-        Configure the converter from an OpenImageIO ImageSpec.
+        Configure white balance, the colour transform and decoding options from metadata.
 
-        :param image_spec: Image specification.
-        :type image_spec: OpenImageIO.ImageSpec
+        Uses the current ``settings`` and fills or modifies ``options`` in place with
+        OpenImageIO decoding hints. Requires compatible OpenImageIO 3.2+ bindings;
+        see :ref:`python-oiio-availability`.
 
-        :param options: OIIO input options. This object may be modified.
-        :type options: OpenImageIO.ParamValueList
-
-        :return: ``True`` if configured successfully.
+        :param image_spec: Image specification containing the source metadata.
+        :param options: OpenImageIO input options; this object may be modified.
+        :return: ``True`` on success, ``False`` on failure. On failure, inspect
+            ``last_error_message`` and ``status``.
         )""" );
 #endif
     image_converter.def(
@@ -227,7 +225,10 @@ void util_bindings( nanobind::module_ &m )
         "src"_a,
         R"""(
         Apply the lens correction to the image buffer.
-        
+
+        Available only with compatible OpenImageIO 3.2+ bindings; see
+        :ref:`python-oiio-availability`.
+
         :param dst: Destination image buffer
         :type dst: OpenImageIO.ImageBuf
 
@@ -248,7 +249,10 @@ void util_bindings( nanobind::module_ &m )
         R"""(
         Apply the colour space conversion matrix (or matrices) to convert the image buffer from the raw
         camera colour space to ACES.
-        
+
+        Available only with compatible OpenImageIO 3.2+ bindings; see
+        :ref:`python-oiio-availability`.
+
         :param dst: Destination image buffer.
         :type dst: OpenImageIO.ImageBuf
 
@@ -269,11 +273,14 @@ void util_bindings( nanobind::module_ &m )
         R"""(
         Apply the headroom scale to image buffer.
 
+        Available only with compatible OpenImageIO 3.2+ bindings; see
+        :ref:`python-oiio-availability`.
+
         :param dst: Destination image buffer
-        :type dst OpenImageIO.ImageBuf
+        :type dst: OpenImageIO.ImageBuf
 
         :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
-        :type src OpenImageIO.ImageBuf
+        :type src: OpenImageIO.ImageBuf
         
         :return: ``True`` if applied successfully.
         )""" );
@@ -289,12 +296,15 @@ void util_bindings( nanobind::module_ &m )
         R"""(
         Apply the cropping mode as specified in crop_mode.
 
+        Available only with compatible OpenImageIO 3.2+ bindings; see
+        :ref:`python-oiio-availability`.
+
         :param dst: Destination image buffer.
         :type dst: OpenImageIO.ImageBuf
 
         :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
         :type src: OpenImageIO.ImageBuf
-        
+
         :return: ``True`` if applied successfully.
         )""" );
     image_converter.def(
@@ -308,7 +318,10 @@ void util_bindings( nanobind::module_ &m )
         Load an image from a given ``path`` into a ``buffer`` using the ``hints``
         calculated by the ``configure`` method. The hints can be manually modified
         prior to invoking this method.
-        
+
+        Available only with compatible OpenImageIO 3.2+ bindings; see
+        :ref:`python-oiio-availability`.
+
         :param path: Path to where the image from.
         :type path: str
 
@@ -318,7 +331,8 @@ void util_bindings( nanobind::module_ &m )
         :param buffer: Destination buffer where the image loaded into.
         :type buffer: OpenImageIO.ImageBuf
 
-        :param data_type: Data type of the samples in the destination buffer.
+        :param data_type: Sample type in the destination buffer (default:
+            ``OpenImageIO.FLOAT``).
         :type data_type: OpenImageIO.TypeDesc
 
         :return: ``True`` if image load successfully.
@@ -332,13 +346,17 @@ void util_bindings( nanobind::module_ &m )
         R"""(
         Save an image into an ACES container.
 
+        Available only with compatible OpenImageIO 3.2+ bindings; see
+        :ref:`python-oiio-availability`.
+
         :param output_filename: Full path to the output file.
         :type output_filename: str
 
         :param buf: Image buffer to save.
         :type buf: OpenImageIO.ImageBuf
 
-        :param data_type: Data type of the samples to be written out.
+        :param data_type: Sample type written to the file (default:
+            ``OpenImageIO.HALF``).
         :type data_type: OpenImageIO.TypeDesc
 
         :return: ``True`` if saved successfully.

@@ -470,9 +470,21 @@ public:
         const OIIO::ImageBuf &buf,
         OIIO::TypeDesc        data_type = OIIO::TypeDesc::HALF );
 
+    /// A convenience single-call method to process an image buffer.
+    /// Equivalent to calling `apply_lens_correction`, `apply_matrix`,
+    /// `apply_scale`, and `apply_crop` in sequence.
+    /// @param dst
+    ///     Destination image buffer.
+    /// @param src
+    ///     Source image buffer, can be the same as `dst` for in-place
+    ///     conversion.
+    /// @return
+    ///    `true` if processed successfully.
+    bool process_buffer( OIIO::ImageBuf &dst, const OIIO::ImageBuf &src );
+
     /// A convenience single-call method to process an image. Equivalent to
-    /// `make_output_path`, `configure`, `load_image`, optional lens correction,
-    /// `apply_matrix`, `apply_scale`, `apply_crop`, and `save_image` in sequence.
+    /// `make_output_path`, `configure`, `load_image`, `process_buffer`,
+    /// and `save_image` in sequence.
     /// @param input_filename
     ///     Full path to the file to be converted.
     /// @return

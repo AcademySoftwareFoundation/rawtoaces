@@ -103,6 +103,7 @@ class TestImageConverter:
                 "apply_crop",
                 "load_image",
                 "save_image",
+                "process_buffer"
             ]
 
             for method_name in oiio_methods:

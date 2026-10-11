@@ -2846,7 +2846,26 @@ bool ImageConverter::process_image( const std::string &input_filename )
         return false;
     }
 
-    if ( !apply_lens_correction( buffer, buffer ) )
+    if ( !process_buffer( buffer, buffer ) )
+    {
+        return false;
+    }
+
+    if ( !save_image( output_filename, buffer ) )
+    {
+        return false;
+    }
+
+    status = Status::Success;
+    return true;
+}
+
+bool ImageConverter::process_buffer(
+    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src )
+{
+    const std::string input_filename = src.name();
+
+    if ( !apply_lens_correction( dst, src ) )
     {
         std::string message = "Failed to apply lens correction to the file: " +
                               input_filename + ". " + last_error_message;
@@ -2861,22 +2880,17 @@ bool ImageConverter::process_image( const std::string &input_filename )
         }
     }
 
-    if ( !apply_matrix( buffer, buffer ) )
+    if ( !apply_matrix( dst, dst ) )
     {
         return false;
     }
 
-    if ( !apply_scale( buffer, buffer ) )
+    if ( !apply_scale( dst, dst ) )
     {
         return false;
     }
 
-    if ( !apply_crop( buffer, buffer ) )
-    {
-        return false;
-    }
-
-    if ( !save_image( output_filename, buffer ) )
+    if ( !apply_crop( dst, dst ) )
     {
         return false;
     }

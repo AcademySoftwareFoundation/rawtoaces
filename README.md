@@ -49,7 +49,7 @@ To build `rawtoaces` you would need to satisfy these dependencies:
 
 | Library          | Min Version| Purpose  | Link to installation instruction |
 | -------          | -----------| -------- | -------------------------------- |
-| `cmake`          | `3.12`     | | [CMake download](https://cmake.org/download/)|
+| `cmake`          | `3.15`     | | [CMake download](https://cmake.org/download/)|
 | `ceres`          | `1.12.0`   | Ceres Solver is an open source library for solving Non-linear Least Squares problems with bounds constraints and unconstrained optimization problems. It processes non-linear regression for rawtoaces.  | [Ceres Solver installation](http://ceres-solver.org/installation.html)|
 | `eigen`          | `3.3.7`    | Eigen is an open source library for solving linear algebra problems. | [Eigen installation](https://libeigen.gitlab.io/#download)|
 | `OpenImageIO`    | `3.0`      | OpenImageIO is an open source library providing vast functionality for image processing. rawtoaces relies on OpenImageIO for reading raw files, saving AcesContainer files, and also all pixel operations.  | [OpenImageIO installation](https://github.com/AcademySoftwareFoundation/OpenImageIO/blob/main/INSTALL.md) |

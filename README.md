@@ -61,6 +61,7 @@ interfaces.
 
 - [Full documentation](https://rawtoaces.readthedocs.io/en/latest/)
 - [Installation, data setup, and v1 CLI migration](src/docs/getting_started.rst)
+- [Docker installation and conversion](src/docs/getting_started.rst#docker)
 - [CLI usage guide](src/docs/user_guide.rst)
 - [C++ API guide](src/docs/api/cpp/index.rst) and [Python API guide](src/docs/api/python/index.rst)
 - [Spectral datasets and schema](https://github.com/AcademySoftwareFoundation/rawtoaces-data)

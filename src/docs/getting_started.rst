@@ -180,6 +180,33 @@ with its native dependencies available to the runtime loader. Merely installing
 nanobind or satisfying the OpenImageIO version number is not sufficient. See
 :doc:`api/python/index` for method availability and setup details.
 
+Docker
+^^^^^^
+
+With `Docker <https://www.docker.com/>`_ installed, build the repository's
+``Dockerfile`` from the root source directory:
+
+.. code-block:: bash
+
+   docker build -f Dockerfile -t rawtoaces:latest .
+
+The Dockerfile compiles Ceres Solver, which needs substantial memory. The
+existing Dockerfile recommends allocating about 8 GB to Docker; increase the
+memory allocation in Docker Desktop's resource settings if needed.
+
+From a directory containing RAW images, mount that directory into the
+container and run the converter:
+
+.. code-block:: bash
+
+   docker run -it --rm -v "$PWD:/tmp" -w /tmp rawtoaces:latest \
+     rawtoaces IMG_1234.CR2
+
+Replace ``IMG_1234.CR2`` with an existing RAW file. The mounted directory makes
+both the input image and the converted output available on the host. The
+container is removed when the command exits; files in the mounted directory
+remain.
+
 Environment Setup
 -----------------
 

@@ -27,7 +27,7 @@ if (RTA_BUILD_PYTHON_BINDINGS)
     endif ()
 
     if ( RTA_PYTHON_VERSION STREQUAL "" )
-        find_package ( Python 3.8 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED )
+        find_package ( Python 3.10 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED )
     else ()
         find_package ( Python ${RTA_PYTHON_VERSION} EXACT COMPONENTS Interpreter ${DEV_MODULE} REQUIRED )
     endif()

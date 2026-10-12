@@ -13,7 +13,7 @@ From Source
 
 rawtoaces requires the following dependencies:
 
-- CMake 3.12 or later
+- CMake 3.15 or later
 - C++17 compatible compiler
 - OpenImageIO (with RAW support via LibRaw)
 - Ceres Solver

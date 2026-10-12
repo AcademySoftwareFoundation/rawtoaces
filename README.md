@@ -75,8 +75,10 @@ $ /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/inst
 $ brew install cmake ceres-solver nlohmann-json openimageio nanobind robin-map
 ```
 
+Homebrew installs OpenImageIO's Python as a keg-only formula, so `python3` on `PATH` may be a different interpreter from the one CMake selects. Install pytest with OpenImageIO's Python:
+
 ```sh
-$ python3 -m pip install --break-system-packages pytest
+$ "$(brew --prefix "$(brew deps --formula openimageio | awk '/^python@/{ print; exit }')")/bin/python3" -m pip install --break-system-packages pytest
 ```
 
 ### Linux

@@ -14,6 +14,7 @@
 #include <rawtoaces/rawtoaces_core.h>
 
 #include <OpenImageIO/unittest.h>
+#include <OpenImageIO/imagebufalgo.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -150,7 +151,7 @@ void assert_success_conversion( const std::string &output )
     ASSERT_CONTAINS( output, "Processing file" );
     ASSERT_CONTAINS( output, "Configuring transform" );
     ASSERT_CONTAINS( output, "Loading image" );
-    ASSERT_CONTAINS( output, "Saving output" );
+    ASSERT_CONTAINS( output, "Saving image" );
 
     // Assert that white balance coefficients were calculated
     ASSERT_CONTAINS( output, "White balance coefficients" );
@@ -3006,6 +3007,24 @@ void test_load_image_types()
     }
 }
 
+void test_timing_wrapper()
+{
+    rta::util::ImageConverter converter;
+    converter.settings.verbosity  = 1;
+    converter.settings.use_timing = true;
+
+    OIIO::ImageSpec spec( 64, 64, 3, OIIO::TypeDesc::FLOAT );
+    OIIO::ImageBuf  buffer( "NAME", spec );
+
+    bool result;
+    auto output = capture_stderr(
+        [&]() { result = converter.apply_scale( buffer, buffer ); } );
+
+    OIIO_ASSERT( result );
+    ASSERT_CONTAINS( output, "Applying scale" );
+    ASSERT_CONTAINS( output, "Timing: NAME/applying scale" );
+}
+
 int main( int, char ** )
 {
     try
@@ -3130,6 +3149,8 @@ int main( int, char ** )
         test_save_image_type_warning();
 
         test_load_image_types();
+
+        test_timing_wrapper();
     }
     catch ( const std::exception &e )
     {

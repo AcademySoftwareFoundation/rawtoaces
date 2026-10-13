@@ -3014,8 +3014,7 @@ void test_timing_wrapper()
     converter.settings.use_timing = true;
 
     OIIO::ImageSpec spec( 64, 64, 3, OIIO::TypeDesc::FLOAT );
-    OIIO::ImageBuf  buffer( spec );
-    buffer.set_name( "NAME" );
+    OIIO::ImageBuf  buffer( "NAME", spec );
 
     bool result;
     auto output = capture_stderr(

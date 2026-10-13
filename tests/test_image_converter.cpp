@@ -3014,14 +3014,12 @@ void test_timing_wrapper()
     converter.settings.use_timing = true;
 
     OIIO::ImageSpec spec( 64, 64, 3, OIIO::TypeDesc::FLOAT );
-    OIIO::ImageBuf buffer( spec );
+    OIIO::ImageBuf  buffer( spec );
     buffer.set_name( "NAME" );
 
     bool result;
-    auto output = capture_stderr( [&]() {
-        result =
-            converter.apply_scale( buffer, buffer );
-    });
+    auto output = capture_stderr(
+        [&]() { result = converter.apply_scale( buffer, buffer ); });
 
     OIIO_ASSERT( result );
     ASSERT_CONTAINS( output, "Applying scale" );

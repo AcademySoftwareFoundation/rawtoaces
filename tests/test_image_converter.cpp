@@ -3019,7 +3019,7 @@ void test_timing_wrapper()
 
     bool result;
     auto output = capture_stderr(
-        [&]() { result = converter.apply_scale( buffer, buffer ); });
+        [&]() { result = converter.apply_scale( buffer, buffer ); } );
 
     OIIO_ASSERT( result );
     ASSERT_CONTAINS( output, "Applying scale" );

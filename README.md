@@ -16,7 +16,7 @@ Conversion can use measured camera spectral sensitivities and illuminant data, m
 
 ## Quick start
 
-Install with Homebrew on macOS:
+Install with Homebrew on macOS or Linux:
 
 ```sh
 brew install rawtoaces

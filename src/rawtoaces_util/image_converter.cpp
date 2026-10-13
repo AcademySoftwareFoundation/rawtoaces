@@ -2712,7 +2712,7 @@ bool ImageConverter::save_image(
         std::cerr << "Saving image: '" << output_filename << "'." << std::endl;
 
     UsageTimerWrapper usage_timer(
-        buf.name(), "writing image", settings.use_timing );
+        output_filename, "writing image", settings.use_timing );
 
     // ST2065-4 demands these conditions met by an OpenEXR file:
     // - ACES AP0 chromaticities,

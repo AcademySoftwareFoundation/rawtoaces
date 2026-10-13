@@ -150,7 +150,7 @@ void assert_success_conversion( const std::string &output )
     ASSERT_CONTAINS( output, "Processing file" );
     ASSERT_CONTAINS( output, "Configuring transform" );
     ASSERT_CONTAINS( output, "Loading image" );
-    ASSERT_CONTAINS( output, "Saving output" );
+    ASSERT_CONTAINS( output, "Saving image" );
 
     // Assert that white balance coefficients were calculated
     ASSERT_CONTAINS( output, "White balance coefficients" );

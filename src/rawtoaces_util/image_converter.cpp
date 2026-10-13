@@ -26,6 +26,35 @@ namespace rta
 namespace util
 {
 
+/// A private RAII wrapper for UsageTimer to simplify its use without
+/// needing to modify the public class.
+class UsageTimerWrapper : private UsageTimer
+{
+public:
+    UsageTimerWrapper(
+        const std::string &filename, const std::string &message, bool enabled )
+        : _filename( filename ), _message( message )
+    {
+        if ( enabled )
+        {
+            this->enabled = true;
+            reset();
+        }
+    }
+
+    ~UsageTimerWrapper()
+    {
+        if ( enabled )
+        {
+            print( _filename, _message );
+        }
+    }
+
+private:
+    std::string _filename;
+    std::string _message;
+};
+
 ImageConverter::Settings::LensCorrectionType operator&(
     const ImageConverter::Settings::LensCorrectionType &lhs,
     const ImageConverter::Settings::LensCorrectionType &rhs )
@@ -1685,6 +1714,12 @@ bool fetch_lens_parameter(
 bool ImageConverter::apply_lens_correction(
     OIIO::ImageBuf &dst, const OIIO::ImageBuf &src )
 {
+    if ( settings.verbosity > 0 )
+        std::cerr << "Applying lens correction" << std::endl;
+
+    UsageTimerWrapper usage_timer(
+        src.name(), "applying lens correction", settings.use_timing );
+
     if ( settings.lens_correction_types ==
          ImageConverter::Settings::LensCorrectionType::None )
     {
@@ -1879,6 +1914,12 @@ bool ImageConverter::apply_lens_correction(
 bool ImageConverter::configure(
     const std::string &input_filename, OIIO::ParamValueList &options )
 {
+    if ( settings.verbosity > 0 )
+        std::cerr << "Configuring transform for: '" << input_filename << "'."
+                  << std::endl;
+    UsageTimerWrapper usage_timer(
+        input_filename, "configuring reader", settings.use_timing );
+
     options["raw:ColorSpace"]    = "XYZ";
     options["raw:use_camera_wb"] = 0;
     options["raw:use_auto_wb"]   = 0;
@@ -2403,6 +2444,11 @@ bool ImageConverter::load_image(
     OIIO::ImageBuf             &buffer,
     OIIO::TypeDesc              data_type )
 {
+    if ( settings.verbosity > 0 )
+        std::cerr << "Loading image: '" << path << "'." << std::endl;
+
+    UsageTimerWrapper usage_timer( path, "reading image", settings.use_timing );
+
     OIIO::ImageSpec image_spec;
     image_spec.extra_attribs = hints;
     buffer = OIIO::ImageBuf( path, 0, 0, nullptr, &image_spec, nullptr );
@@ -2472,6 +2518,12 @@ bool apply_matrix(
 bool ImageConverter::apply_matrix(
     OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi )
 {
+    if ( settings.verbosity > 0 )
+        std::cerr << "Applying transform matrix" << std::endl;
+
+    UsageTimerWrapper usage_timer(
+        src.name(), "applying matrix", settings.use_timing );
+
     bool success = true;
 
     if ( !roi.defined() )
@@ -2495,6 +2547,12 @@ bool ImageConverter::apply_matrix(
 bool ImageConverter::apply_scale(
     OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI /* roi */ )
 {
+    if ( settings.verbosity > 0 )
+        std::cerr << "Applying scale" << std::endl;
+
+    UsageTimerWrapper usage_timer(
+        src.name(), "applying scale", settings.use_timing );
+
     bool result =
         OIIO::ImageBufAlgo::mul( dst, src, settings.headroom * settings.scale );
     if ( !result )
@@ -2512,6 +2570,12 @@ bool ImageConverter::apply_scale(
 bool ImageConverter::apply_crop(
     OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI /* roi */ )
 {
+    if ( settings.verbosity > 0 )
+        std::cerr << "Applying crop" << std::endl;
+
+    UsageTimerWrapper usage_timer(
+        src.name(), "applying crop", settings.use_timing );
+
     if ( settings.crop_mode == Settings::CropMode::Off )
     {
         if ( !OIIO::ImageBufAlgo::copy( dst, src ) )
@@ -2644,6 +2708,12 @@ bool ImageConverter::save_image(
     const OIIO::ImageBuf &buf,
     OIIO::TypeDesc        data_type )
 {
+    if ( settings.verbosity > 0 )
+        std::cerr << "Saving image: '" << output_filename << "'." << std::endl;
+
+    UsageTimerWrapper usage_timer(
+        buf.name(), "writing image", settings.use_timing );
+
     // ST2065-4 demands these conditions met by an OpenEXR file:
     // - ACES AP0 chromaticities,
     // - acesImageContainerFlag present,
@@ -2764,42 +2834,18 @@ bool ImageConverter::process_image( const std::string &input_filename )
         return false;
     }
 
-    util::UsageTimer usage_timer;
-    usage_timer.enabled = settings.use_timing;
-
-    // ___ Configure transform ___
-    if ( settings.verbosity > 0 )
-    {
-        std::cerr << "Configuring transform for: '" << input_filename << "'."
-                  << std::endl;
-    }
-    usage_timer.reset();
     OIIO::ParamValueList hints;
     if ( !configure( input_filename, hints ) )
     {
         return false;
     }
-    usage_timer.print( input_filename, "configuring reader" );
 
-    // ___ Load image ___
-    if ( settings.verbosity > 0 )
-    {
-        std::cerr << "Loading image: '" << input_filename << "'." << std::endl;
-    }
-    usage_timer.reset();
     OIIO::ImageBuf buffer;
     if ( !load_image( input_filename, hints, buffer ) )
     {
         return false;
     }
-    usage_timer.print( input_filename, "reading image" );
 
-    // ___ Apply lens correction ___
-    if ( settings.verbosity > 0 )
-    {
-        std::cerr << "Applying lens correction" << std::endl;
-    }
-    usage_timer.reset();
     if ( !apply_lens_correction( buffer, buffer ) )
     {
         std::string message = "Failed to apply lens correction to the file: " +
@@ -2814,55 +2860,26 @@ bool ImageConverter::process_image( const std::string &input_filename )
             std::cerr << "Warning: " << message << std::endl;
         }
     }
-    usage_timer.print( input_filename, "applying lens correction" );
 
-    // ___ Apply matrix/matrices ___
-    if ( settings.verbosity > 0 )
-    {
-        std::cerr << "Applying transform matrix" << std::endl;
-    }
-    usage_timer.reset();
     if ( !apply_matrix( buffer, buffer ) )
     {
         return false;
     }
-    usage_timer.print( input_filename, "applying transform matrix" );
 
-    // ___ Apply scale ___
-    if ( settings.verbosity > 0 )
-    {
-        std::cerr << "Applying scale" << std::endl;
-    }
-    usage_timer.reset();
     if ( !apply_scale( buffer, buffer ) )
     {
         return false;
     }
-    usage_timer.print( input_filename, "applying scale" );
 
-    // ___ Apply crop ___
-    if ( settings.verbosity > 0 )
-    {
-        std::cerr << "Applying crop" << std::endl;
-    }
-    usage_timer.reset();
     if ( !apply_crop( buffer, buffer ) )
     {
         return false;
     }
-    usage_timer.print( input_filename, "applying crop" );
 
-    // ___ Save image ___
-    if ( settings.verbosity > 0 )
-    {
-        std::cerr << "Saving output: '" << output_filename << "'." << std::endl;
-    }
-    usage_timer.reset();
     if ( !save_image( output_filename, buffer ) )
     {
         return false;
     }
-    usage_timer.print( input_filename, "writing image" );
 
     status = Status::Success;
     return true;

@@ -2,11 +2,14 @@
   Copyright Contributors to the rawtoaces Project.
   SPDX-License-Identifier: CC-BY-4.0
 
+C++ Reference
+=============
+
 Image Converter
-=================
+---------------
 
 Class Reference
----------------
+^^^^^^^^^^^^^^^
 
 .. doxygenclass:: rta::util::ImageConverter
    :members:
@@ -14,15 +17,15 @@ Class Reference
    :undoc-members:
 
 Utility Functions
------------------
+^^^^^^^^^^^^^^^^^
 
 .. doxygenfunction:: rta::util::collect_image_files
 
 rawtoaces Core
-==============
+--------------
 
 Class Reference
----------------
+^^^^^^^^^^^^^^^
 
 .. doxygenstruct:: rta::core::Spectrum
    :members:
@@ -60,8 +63,19 @@ Class Reference
    :undoc-members:
 
 Utility Functions
------------------
+^^^^^^^^^^^^^^^^^
 
 .. doxygenfunction:: rta::core::calculate_daylight_SPD
 
 .. doxygenfunction:: rta::core::calculate_blackbody_SPD
+
+.. rubric:: Namespaces
+
+.. doxygennamespace:: rta
+   :desc-only:
+
+.. doxygennamespace:: rta::util
+   :desc-only:
+
+.. doxygennamespace:: rta::core
+   :desc-only:

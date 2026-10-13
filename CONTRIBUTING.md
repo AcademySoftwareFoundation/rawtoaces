@@ -3,11 +3,11 @@
 Thank you for your interest in contributing to rawtoaces. This document
 explains our contribution process and procedures:
 
-* [Getting Information](#Getting-Information)
-* [Legal Requirements](#Legal-Requirements)
-* [Development Workflow](#Development-Workflow)
-* [Coding Style](#Coding-Style)
-* [Versioning Policy](#Versioning-Policy)
+* [Getting Information](#getting-information)
+* [Legal Requirements](#legal-requirements)
+* [Development Workflow](#development-workflow)
+* [Coding Style](#coding-style)
+* [Versioning Policy](#versioning-policy)
 
 For a description of the roles and responsibilities of the various
 members of the rawtoaces community, see the rawtoaces project's [Technical
@@ -63,7 +63,7 @@ among the project community.
 ### How to Report a Security Vulnerability
 
 If you think you've found a potential vulnerability in rawtoaces, please
-refer to [SECURITY.md](SECURITY.md) to responsibly disclose it.
+refer to [SECURITY.md](https://github.com/AcademySoftwareFoundation/rawtoaces/blob/main/SECURITY.md) to responsibly disclose it.
 
 ### How to Contribute a Bug Fix or Change
 
@@ -85,7 +85,7 @@ open source software best practice policies of the Linux Foundation.
 
 ### License
 
-rawtoaces is licensed under the [Apache-2.0](LICENSE)
+rawtoaces is licensed under the [Apache-2.0](https://github.com/AcademySoftwareFoundation/rawtoaces/blob/main/LICENSE)
 license. Contributions to the library should abide by that standard
 license.
 
@@ -120,7 +120,7 @@ and [individual CLAs](https://docs.linuxfoundation.org/lfx/easycla/v2-current/co
 Every commit must be signed off.  That is, every commit log message
 must include a “`Signed-off-by`” line (generated, for example, with
 “`git commit --signoff`”), indicating that the committer wrote the
-code and has the right to release it under the [Apache-2.0](LICENSE)
+code and has the right to release it under the [Apache-2.0](https://github.com/AcademySoftwareFoundation/rawtoaces/blob/main/LICENSE)
 license. See https://github.com/AcademySoftwareFoundation/tac/blob/main/process/contributing.md#contribution-sign-off for more information on this requirement.
 
 ## Development Workflow
@@ -280,7 +280,7 @@ All new source files should begin with a copyright and license stating:
 ### Formatting
 
 The coding style of the library source code is enforced via Clang format, with
-the configuration defined in [.clang-format](.clang-format).
+the configuration defined in [.clang-format](https://github.com/AcademySoftwareFoundation/rawtoaces/blob/main/.clang-format).
 
 One of the CI test matrix entries runs clang-format and fails if any
 diffs were generated (that is, if any of your code did not 100% conform to

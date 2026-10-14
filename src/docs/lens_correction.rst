@@ -5,7 +5,7 @@
 Lens Correction
 ===============
 
-Rawtoaces automatically corrects the following lens phenomena:
+Rawtoaces can optionally correct the following lens phenomena:
 
 - Chromatic Aberration
 - Geometric Distortion
@@ -29,6 +29,34 @@ through the properties of the :cpp:class:`rta::util::ImageConverter::Settings` o
 project. If the Lensfun library cannot automatically locate the Lensfun
 database, you may need to specify the path using the RAWTOACES_LENSFUNDB_PATH
 environment variable.
+
+Correction behavior
+-------------------
+
+Lens correction is disabled by default. Select the corrections you need with
+``--lens-correction`` or ``settings.lens_correction_types``. Aperture is required
+only for vignetting. Lens manufacturer and focus distance are optional; an
+unknown focus distance uses Lensfun's existing 1000-metre default.
+
+Corrections run in order: vignetting, chromatic aberration, then geometric
+distortion. The result is committed only when every requested stage succeeds.
+If any stage fails, optional correction emits a warning and conversion proceeds
+with the original pixels. ``--require-lens-correction`` or
+``settings.require_lens_correction = true`` makes that failure stop conversion.
+The same behavior applies when Lensfun support is absent from the build.
+
+For buffer workflows, configure the converter, then call
+``converter.process_buffer(dst, src)`` to apply lens correction, the colour
+matrix, scale, and crop. Source and destination may be the same buffer. Calling
+``apply_lens_correction`` directly always reports a correction failure as
+``false`` and leaves both buffers unchanged; that lower-level call does not
+perform the optional fallback.
+
+Correction preserves the source's metadata and image windows. Chromatic
+aberration expects RGB in the first three channels and leaves other channels
+unchanged. Vignetting adjusts colour channels while preserving alpha and depth.
+Geometric distortion remaps every channel together. Lens correction requires a
+non-empty, flat 2D image with positive full-window dimensions.
 
 Basic usage:
 ------------
@@ -65,9 +93,10 @@ settings otherwise default to hard cropping.
       converter = rawtoaces.ImageConverter()
       converter.settings.crop_mode = rawtoaces.ImageConverter.Settings.CropMode.Soft
       
-      converter.settings.lens_correction_types =
-        rawtoaces.ImageConverter.Settings.LensCorrectionType.Distortion |
-        rawtoaces.ImageConverter.Settings.LensCorrectionType.Vignetting
+      converter.settings.lens_correction_types = (
+          rawtoaces.ImageConverter.Settings.LensCorrectionType.Distortion |
+          rawtoaces.ImageConverter.Settings.LensCorrectionType.Vignetting
+      )
 
 Request all supported types of lens correction, make the correction mandatory,
 override all camera/lens info used for correction:
@@ -120,10 +149,11 @@ override all camera/lens info used for correction:
       converter = rawtoaces.ImageConverter()
       converter.settings.crop_mode = rawtoaces.ImageConverter.Settings.CropMode.Soft
       
-      converter.settings.lens_correction_types =
-        rawtoaces.ImageConverter.Settings.LensCorrectionType.Aberration |
-        rawtoaces.ImageConverter.Settings.LensCorrectionType.Distortion |
-        rawtoaces.ImageConverter.Settings.LensCorrectionType.Vignetting
+      converter.settings.lens_correction_types = (
+          rawtoaces.ImageConverter.Settings.LensCorrectionType.Aberration |
+          rawtoaces.ImageConverter.Settings.LensCorrectionType.Distortion |
+          rawtoaces.ImageConverter.Settings.LensCorrectionType.Vignetting
+      )
       converter.settings.require_lens_correction = True
       converter.settings.custom_camera_make = "Canon"
       converter.settings.custom_camera_model = "EOS R5"

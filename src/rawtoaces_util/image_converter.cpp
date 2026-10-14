@@ -2517,6 +2517,12 @@ bool apply_matrix(
 bool ImageConverter::apply_matrix(
     OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI /* roi */ )
 {
+    return apply_matrix( dst, src );
+}
+
+bool ImageConverter::apply_matrix(
+    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src )
+{
     if ( settings.verbosity > 0 )
         std::cerr << "Applying transform matrix" << std::endl;
 
@@ -2543,6 +2549,12 @@ bool ImageConverter::apply_matrix(
 bool ImageConverter::apply_scale(
     OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI /* roi */ )
 {
+    return apply_scale( dst, src );
+}
+
+bool ImageConverter::apply_scale(
+    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src )
+{
     if ( settings.verbosity > 0 )
         std::cerr << "Applying scale" << std::endl;
 
@@ -2565,6 +2577,12 @@ bool ImageConverter::apply_scale(
 
 bool ImageConverter::apply_crop(
     OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI /* roi */ )
+{
+    return apply_crop( dst, src );
+}
+
+bool ImageConverter::apply_crop(
+    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src )
 {
     if ( settings.verbosity > 0 )
         std::cerr << "Applying crop" << std::endl;

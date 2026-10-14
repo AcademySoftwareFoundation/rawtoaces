@@ -2870,7 +2870,7 @@ bool is_empty_or_identity( const std::vector<std::vector<double>> &matrix )
         {
             double expected = row == col ? 1.0 : 0.0;
             if ( row_vec[col] != expected )
-                    return false;
+                return false;
         }
     }
     return true;

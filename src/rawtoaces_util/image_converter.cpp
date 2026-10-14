@@ -2481,8 +2481,7 @@ bool ImageConverter::load_image(
 bool apply_matrix(
     const std::vector<std::vector<double>> &matrix,
     OIIO::ImageBuf                         &dst,
-    const OIIO::ImageBuf                   &src,
-    OIIO::ROI                               roi )
+    const OIIO::ImageBuf                   &src )
 {
     float M[4][4];
 
@@ -2512,11 +2511,11 @@ bool apply_matrix(
         }
     }
 
-    return OIIO::ImageBufAlgo::colormatrixtransform( dst, src, M, false, roi );
+    return OIIO::ImageBufAlgo::colormatrixtransform( dst, src, M, false );
 }
 
 bool ImageConverter::apply_matrix(
-    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi )
+    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI /* roi */ )
 {
     if ( settings.verbosity > 0 )
         std::cerr << "Applying transform matrix" << std::endl;
@@ -2526,12 +2525,9 @@ bool ImageConverter::apply_matrix(
 
     bool success = true;
 
-    if ( !roi.defined() )
-        roi = dst.roi();
-
     if ( _transform_matrix.size() )
     {
-        success = rta::util::apply_matrix( _transform_matrix, dst, src, roi );
+        success = rta::util::apply_matrix( _transform_matrix, dst, src );
         if ( !success )
         {
             status             = Status::MatrixApplicationError;

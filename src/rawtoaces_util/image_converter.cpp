@@ -2860,12 +2860,29 @@ bool ImageConverter::process_image( const std::string &input_filename )
     return true;
 }
 
+bool is_empty_or_identity( const std::vector<std::vector<double>> &matrix )
+{
+    for ( size_t row = 0; row < matrix.size(); row++ )
+    {
+        const auto &row_vec = matrix[row];
+
+        for ( size_t col = 0; col < row_vec.size(); col++ )
+        {
+            double expected = row == col ? 1.0 : 0.0;
+            if ( row_vec[col] != expected )
+                    return false;
+        }
+    }
+    return true;
+}
+
 bool ImageConverter::process_buffer(
     OIIO::ImageBuf &dst, const OIIO::ImageBuf &src )
 {
-    const std::string input_filename = src.name();
+    const std::string     input_filename = src.name();
+    const OIIO::ImageBuf *src_ptr        = &src;
 
-    if ( !apply_lens_correction( dst, src ) )
+    if ( !apply_lens_correction( dst, *src_ptr ) )
     {
         std::string message = "Failed to apply lens correction to the file: " +
                               input_filename + ". " + last_error_message;
@@ -2879,21 +2896,47 @@ bool ImageConverter::process_buffer(
             std::cerr << "Warning: " << message << std::endl;
         }
     }
-
-    if ( !apply_matrix( dst, dst ) )
+    else
     {
-        return false;
+        src_ptr = &dst;
     }
 
-    if ( !apply_scale( dst, dst ) )
+    if ( !is_empty_or_identity( _transform_matrix ) )
     {
-        return false;
+        if ( !apply_matrix( dst, *src_ptr ) )
+        {
+            return false;
+        }
+        src_ptr = &dst;
     }
 
-    if ( !apply_crop( dst, dst ) )
+    if ( settings.scale * settings.headroom != 1.0f )
     {
-        return false;
+        if ( !apply_scale( dst, *src_ptr ) )
+        {
+            return false;
+        }
+        src_ptr = &dst;
     }
+
+    if ( settings.crop_mode != Settings::CropMode::Soft )
+    {
+        if ( !apply_crop( dst, *src_ptr ) )
+        {
+            return false;
+        }
+        src_ptr = &dst;
+    }
+
+    // If every step has happened to be no-op:
+    // - lens correction failed, but was optional,
+    // - identity matrix,
+    // - unity scale,
+    // - soft crop;
+    // and the destination buffer != source,
+    // we need to copy the source buffer.
+    if ( src_ptr != &dst )
+        dst.copy( src );
 
     status = Status::Success;
     return true;

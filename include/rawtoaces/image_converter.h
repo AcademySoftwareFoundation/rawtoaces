@@ -419,8 +419,21 @@ public:
     ///     conversion.
     /// @return
     ///    `true` if applied successfully.
-    bool apply_matrix(
-        OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
+    [[deprecated(
+        "This method will be removed in v3. Use the version of "
+        "`apply_matrix()` without the roi parameter." )]] bool
+    apply_matrix(
+        OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi );
+    /// Apply the colour space conversion matrix (or matrices) to convert the
+    /// image buffer from the raw camera colour space to ACES.
+    /// @param dst
+    ///     Destination image buffer.
+    /// @param src
+    ///     Source image buffer, can be the same as `dst` for in-place
+    ///     conversion.
+    /// @return
+    ///    `true` if applied successfully.
+    bool apply_matrix( OIIO::ImageBuf &dst, const OIIO::ImageBuf &src );
 
     /// Apply the headroom scale to image buffer.
     /// @param dst
@@ -430,8 +443,20 @@ public:
     ///     conversion.
     /// @return
     ///    `true` if applied successfully.
-    bool apply_scale(
-        OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
+    [[deprecated(
+        "This method will be removed in v3. Use the version of "
+        "`apply_scale()` without the roi parameter." )]] bool
+    apply_scale( OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI );
+
+    /// Apply the headroom scale to image buffer.
+    /// @param dst
+    ///     Destination image buffer.
+    /// @param src
+    ///     Source image buffer, can be the same as `dst` for in-place
+    ///     conversion.
+    /// @return
+    ///    `true` if applied successfully.
+    bool apply_scale( OIIO::ImageBuf &dst, const OIIO::ImageBuf &src );
 
     /// Apply the cropping mode as specified in crop_mode.
     /// @param dst
@@ -441,8 +466,20 @@ public:
     ///     conversion.
     /// @return
     ///    `true` if applied successfully.
-    bool apply_crop(
-        OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi = {} );
+    [[deprecated(
+        "This method will be removed in v3. Use the version of "
+        "`apply_crop()` without the roi parameter." )]] bool
+    apply_crop( OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi );
+
+    /// Apply the cropping mode as specified in crop_mode.
+    /// @param dst
+    ///     Destination image buffer.
+    /// @param src
+    ///     Source image buffer, can be the same as `dst` for in-place
+    ///     conversion.
+    /// @return
+    ///    `true` if applied successfully.
+    bool apply_crop( OIIO::ImageBuf &dst, const OIIO::ImageBuf &src );
 
     /// Make output file path and check if it is writable.
     /// @param path

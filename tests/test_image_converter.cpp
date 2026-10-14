@@ -163,7 +163,6 @@ void assert_success_conversion( const std::string &output )
     ASSERT_CONTAINS( output, "Applying lens correction" );
     ASSERT_CONTAINS( output, "Applying transform matrix" );
     ASSERT_CONTAINS( output, "Applying scale" );
-    ASSERT_CONTAINS( output, "Applying crop" );
 
     // Assert that the correct input and output files were processed
     ASSERT_CONTAINS( output, "blackmagic_cinema_camera_cinemadng.dng" );

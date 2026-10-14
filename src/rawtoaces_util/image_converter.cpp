@@ -2481,8 +2481,7 @@ bool ImageConverter::load_image(
 bool apply_matrix(
     const std::vector<std::vector<double>> &matrix,
     OIIO::ImageBuf                         &dst,
-    const OIIO::ImageBuf                   &src,
-    OIIO::ROI                               roi )
+    const OIIO::ImageBuf                   &src )
 {
     float M[4][4];
 
@@ -2512,11 +2511,11 @@ bool apply_matrix(
         }
     }
 
-    return OIIO::ImageBufAlgo::colormatrixtransform( dst, src, M, false, roi );
+    return OIIO::ImageBufAlgo::colormatrixtransform( dst, src, M, false );
 }
 
 bool ImageConverter::apply_matrix(
-    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi )
+    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI /* roi */ )
 {
     if ( settings.verbosity > 0 )
         std::cerr << "Applying transform matrix" << std::endl;
@@ -2526,12 +2525,9 @@ bool ImageConverter::apply_matrix(
 
     bool success = true;
 
-    if ( !roi.defined() )
-        roi = dst.roi();
-
     if ( _transform_matrix.size() )
     {
-        success = rta::util::apply_matrix( _transform_matrix, dst, src, roi );
+        success = rta::util::apply_matrix( _transform_matrix, dst, src );
         if ( !success )
         {
             status             = Status::MatrixApplicationError;
@@ -2846,7 +2842,43 @@ bool ImageConverter::process_image( const std::string &input_filename )
         return false;
     }
 
-    if ( !apply_lens_correction( buffer, buffer ) )
+    if ( !process_buffer( buffer, buffer ) )
+    {
+        return false;
+    }
+
+    if ( !save_image( output_filename, buffer ) )
+    {
+        return false;
+    }
+
+    status = Status::Success;
+    return true;
+}
+
+bool is_empty_or_identity( const std::vector<std::vector<double>> &matrix )
+{
+    for ( size_t row = 0; row < matrix.size(); row++ )
+    {
+        const auto &row_vec = matrix[row];
+
+        for ( size_t col = 0; col < row_vec.size(); col++ )
+        {
+            double expected = row == col ? 1.0 : 0.0;
+            if ( row_vec[col] != expected )
+                return false;
+        }
+    }
+    return true;
+}
+
+bool ImageConverter::process_buffer(
+    OIIO::ImageBuf &dst, const OIIO::ImageBuf &src )
+{
+    const std::string     input_filename = src.name();
+    const OIIO::ImageBuf *src_ptr        = &src;
+
+    if ( !apply_lens_correction( dst, *src_ptr ) )
     {
         std::string message = "Failed to apply lens correction to the file: " +
                               input_filename + ". " + last_error_message;
@@ -2860,26 +2892,47 @@ bool ImageConverter::process_image( const std::string &input_filename )
             std::cerr << "Warning: " << message << std::endl;
         }
     }
-
-    if ( !apply_matrix( buffer, buffer ) )
+    else
     {
-        return false;
+        src_ptr = &dst;
     }
 
-    if ( !apply_scale( buffer, buffer ) )
+    if ( !is_empty_or_identity( _transform_matrix ) )
     {
-        return false;
+        if ( !apply_matrix( dst, *src_ptr ) )
+        {
+            return false;
+        }
+        src_ptr = &dst;
     }
 
-    if ( !apply_crop( buffer, buffer ) )
+    if ( settings.scale * settings.headroom != 1.0f )
     {
-        return false;
+        if ( !apply_scale( dst, *src_ptr ) )
+        {
+            return false;
+        }
+        src_ptr = &dst;
     }
 
-    if ( !save_image( output_filename, buffer ) )
+    if ( settings.crop_mode != Settings::CropMode::Soft )
     {
-        return false;
+        if ( !apply_crop( dst, *src_ptr ) )
+        {
+            return false;
+        }
+        src_ptr = &dst;
     }
+
+    // If every step has happened to be no-op:
+    // - lens correction failed, but was optional,
+    // - identity matrix,
+    // - unity scale,
+    // - soft crop;
+    // and the destination buffer != source,
+    // we need to copy the source buffer.
+    if ( src_ptr != &dst )
+        dst.copy( src );
 
     status = Status::Success;
     return true;

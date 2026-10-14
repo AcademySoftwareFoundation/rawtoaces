@@ -591,7 +591,22 @@ class ImageConverter:
         :return: ``True`` if applied successfully.
         """
 
-    def load_image(self, path: str, hints: OpenImageIO.ParamValueList, buffer: OpenImageIO.ImageBuf) -> bool:
+    def process_buffer(self, dst: OpenImageIO.ImageBuf, src: OpenImageIO.ImageBuf) -> bool:
+        """
+        A convenience single-call method to process an image buffer.
+        Equivalent to calling `apply_lens_correction`, `apply_matrix`,
+        `apply_scale`, and `apply_crop` in sequence.
+
+        :param dst: Destination image buffer.
+        :type dst: OpenImageIO.ImageBuf
+
+        :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
+        :type src: OpenImageIO.ImageBuf
+
+        :return: ``True`` if processed successfully.
+        """
+
+    def load_image(self, path: str, hints: OpenImageIO.ParamValueList, buffer: OpenImageIO.ImageBuf, data_type: OpenImageIO.TypeDesc = OpenImageIO.BASETYPE.FLOAT) -> bool:
         """
         Load an image from a given ``path`` into a ``buffer`` using the ``hints``
         calculated by the ``configure`` method. The hints can be manually modified
@@ -606,10 +621,13 @@ class ImageConverter:
         :param buffer: Destination buffer where the image loaded into.
         :type buffer: OpenImageIO.ImageBuf
 
+        :param data_type: Data type of the samples in the destination buffer.
+        :type data_type: OpenImageIO.TypeDesc
+
         :return: ``True`` if image load successfully.
         """
 
-    def save_image(self, output_filename: str, buf: OpenImageIO.ImageBuf) -> bool:
+    def save_image(self, output_filename: str, buf: OpenImageIO.ImageBuf, data_type: OpenImageIO.TypeDesc = OpenImageIO.BASETYPE.HALF) -> bool:
         """
         Save an image into an ACES container.
 
@@ -618,6 +636,9 @@ class ImageConverter:
 
         :param buf: Image buffer to save.
         :type buf: OpenImageIO.ImageBuf
+
+        :param data_type: Data type of the samples to be written out.
+        :type data_type: OpenImageIO.TypeDesc
 
         :return: ``True`` if saved successfully.
         """

@@ -42,7 +42,7 @@ void util_bindings( nanobind::module_ &m )
         throw nanobind::import_error(
             "OIIO::ImageSpec is not registered with nanobind." );
     }
-#endif
+#endif // OIIO_VERSION >= OIIO_MAKE_VERSION( 3, 2, 0 )
 
     m.def(
         "collect_image_files",
@@ -197,7 +197,7 @@ void util_bindings( nanobind::module_ &m )
 
         :return: ``True`` if configured successfully.
         )""" );
-#endif
+#endif // OIIO_VERSION >= OIIO_MAKE_VERSION( 3, 2, 0 )
     image_converter.def(
         "get_supported_formats", &ImageConverter::get_supported_formats, R"""(
         Collects all camera raw formats supported by this version.
@@ -270,10 +270,10 @@ void util_bindings( nanobind::module_ &m )
         Apply the headroom scale to image buffer.
 
         :param dst: Destination image buffer
-        :type dst OpenImageIO.ImageBuf
+        :type dst: OpenImageIO.ImageBuf
 
         :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
-        :type src OpenImageIO.ImageBuf
+        :type src: OpenImageIO.ImageBuf
         
         :return: ``True`` if applied successfully.
         )""" );
@@ -296,6 +296,24 @@ void util_bindings( nanobind::module_ &m )
         :type src: OpenImageIO.ImageBuf
         
         :return: ``True`` if applied successfully.
+        )""" );
+    image_converter.def(
+        "process_buffer",
+        &ImageConverter::process_buffer,
+        "dst"_a,
+        "src"_a,
+        R"""(
+        A convenience single-call method to process an image buffer.
+        Equivalent to calling `apply_lens_correction`, `apply_matrix`,
+        `apply_scale`, and `apply_crop` in sequence.
+        
+        :param dst: Destination image buffer.
+        :type dst: OpenImageIO.ImageBuf
+
+        :param src: Source image buffer, can be the same as ``dst`` for in-place conversion.
+        :type src: OpenImageIO.ImageBuf
+        
+        :return: ``True`` if processed successfully.
         )""" );
     image_converter.def(
         "load_image",
@@ -343,7 +361,7 @@ void util_bindings( nanobind::module_ &m )
 
         :return: ``True`` if saved successfully.
         )""" );
-#endif
+#endif // OIIO_VERSION >= OIIO_MAKE_VERSION( 3, 2, 0 )
     nanobind::class_<ImageConverter::Settings> settings(
         image_converter, "Settings", R"""(
         The structure containing all parameters needed to configure image

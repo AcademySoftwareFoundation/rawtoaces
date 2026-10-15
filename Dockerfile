@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright Contributors to the rawtoaces project.
+
 # https://hub.docker.com/r/aswf/ci-vfxall/tags
 FROM aswf/ci-vfxall:2024
 

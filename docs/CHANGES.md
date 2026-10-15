@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright Contributors to the rawtoaces project. -->
+
 Release 2.2.2 (September 30 2026) -- compared to 2.2.1
 --------------------------------------------------------
 

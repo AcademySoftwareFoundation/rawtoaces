@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# SPDX-License-Identifier: Apache-2.0
+# Copyright Contributors to the rawtoaces project.
+
 from __future__ import annotations
 
 import argparse

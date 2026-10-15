@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright Contributors to the rawtoaces project. -->
+
 # Code of Conduct
 
 The rawtoaces project abides by Linux Foundation's code of conduct, which

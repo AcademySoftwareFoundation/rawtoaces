@@ -8,10 +8,18 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "build_scripts"))
-from generate_python_docs import generated_reference, normalize_source
+from generate_python_docs import HEADER, generated_reference, normalize_source
 
 
 class GeneratedReference(unittest.TestCase):
+    def test_generated_reference_has_project_license(self):
+        self.assertTrue(
+            HEADER.startswith(
+                "# Copyright Contributors to the rawtoaces Project.\n"
+                "# SPDX-License-Identifier: Apache-2.0\n"
+            )
+        )
+
     def test_forward_enum_aliases_import_and_keep_their_documentation(self):
         source = '''"""Binding module documentation."""
 import enum

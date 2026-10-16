@@ -29,6 +29,13 @@ if (RTA_BUILD_PYTHON_BINDINGS)
         set( DEV_MODULE Development.Module )
     endif ()
 
+    # macOS CI installs pytest into OpenImageIO's Homebrew Python and records
+    # that interpreter in RTA_CI_PYTHON_EXECUTABLE. FindPython otherwise selects
+    # the newest interpreter on the runner, which may not have pytest.
+    if ( NOT Python_EXECUTABLE AND DEFINED ENV{RTA_CI_PYTHON_EXECUTABLE} AND NOT "$ENV{RTA_CI_PYTHON_EXECUTABLE}" STREQUAL "" )
+        set ( Python_EXECUTABLE "$ENV{RTA_CI_PYTHON_EXECUTABLE}" CACHE FILEPATH "Python interpreter selected by CI" )
+    endif ()
+
     if ( RTA_PYTHON_VERSION STREQUAL "" )
         find_package ( Python 3.10 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED )
     else ()

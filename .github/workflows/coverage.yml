@@ -42,6 +42,7 @@ jobs:
           -DENABLE_COVERAGE=ON \
           -DCMAKE_CXX_STANDARD=17 \
           -DCMAKE_CXX_FLAGS="-g -O0" \
+          -DPython_EXECUTABLE="${RTA_CI_PYTHON_EXECUTABLE}" \
           ..
     
     - name: Build

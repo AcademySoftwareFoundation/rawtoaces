@@ -1,4 +1,8 @@
 #! /bin/bash
+
+# SPDX-License-Identifier: Apache-2.0
+# Copyright Contributors to the rawtoaces project.
+
 # Execute from the build directory of the CLI tool
 
 set -ex

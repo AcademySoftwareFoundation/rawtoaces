@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright Contributors to the rawtoaces project.
+
 # Documentation build configuration for RAWtoACES
 #
 # This file provides CMake targets for building documentation locally.

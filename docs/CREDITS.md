@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright Contributors to the rawtoaces project. -->
+
 This is a list of all the contributors to rawtoaces, sorted alphabetically
 by first name.
 

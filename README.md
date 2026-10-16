@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright Contributors to the rawtoaces project. -->
+
 <p align="center">
   <img src="ASWF/logos/rawtoaces-horizontal-color.png" alt="rawtoaces">
 </p>

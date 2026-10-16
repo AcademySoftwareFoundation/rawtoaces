@@ -25,13 +25,9 @@ Classes
 .. autoclass:: rawtoaces.SpectralData
     :members:
 
-.. autoclass:: rawtoaces.TransformSolver
-    :members:
-
 .. autoclass:: rawtoaces.SpectralSolver
     :members:
     :inherited-members:
-    :show-inheritance:
 
 .. autoclass:: rawtoaces.Metadata
     :members:
@@ -39,7 +35,6 @@ Classes
 .. autoclass:: rawtoaces.MetadataSolver
     :members:
     :inherited-members:
-    :show-inheritance:
 
 Utility Functions
 -----------------

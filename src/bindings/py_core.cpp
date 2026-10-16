@@ -146,7 +146,7 @@ void core_bindings( nanobind::module_ &m )
     transform_solver.def_rw(
         "transform_matrix", &TransformSolver::transform_matrix, R"""(
         A 3×3 colour transform matrix populated by `calculate_transform()`
-        (starts as identity from the base `TransformSolver` constructor).
+        (initially the identity matrix).
         )""" );
     transform_solver.def_rw(
         "last_error_message", &TransformSolver::last_error_message, R"""(
@@ -160,8 +160,9 @@ void core_bindings( nanobind::module_ &m )
         m, "MetadataSolver", R"""(
         Solve an input transform using the metadata stored in DNG files.
 
-        ``calculate_transform``, ``transform_matrix``, ``last_error_message``, and
-        ``verbosity`` are inherited from :py:class:`rawtoaces.TransformSolver`.
+        The inherited ``calculate_transform``, ``transform_matrix``,
+        ``last_error_message``, and ``verbosity`` members are available on this
+        class.
         )""" );
     metadata_solver.def(
         nanobind::init<const Metadata &>(),
@@ -234,18 +235,19 @@ void core_bindings( nanobind::module_ &m )
         m, "SpectralSolver", R"""(
         Solve an input transform using spectral sensitivity curves of a camera.
 
-        ``calculate_transform``, ``transform_matrix``, ``last_error_message``, and
-        ``verbosity`` are inherited from :py:class:`rawtoaces.TransformSolver`.
+        The inherited ``calculate_transform``, ``transform_matrix``,
+        ``last_error_message``, and ``verbosity`` members are available on this
+        class.
         )""" );
     spectral_solver.def(
         nanobind::init<const std::vector<std::string> &>(),
         "search_directories"_a = std::vector<std::string>{},
         R"""(
         Initialize SpectralSolver with database search path.
-        Sets white balance multipliers to neutral (1, 1, 1) and relies on the
-        base `TransformSolver` constructor for an identity `transform_matrix` and
-        zero verbosity. Takes the database search path as an optional parameter
-        for finding spectral data files.
+        Sets white balance multipliers to neutral (1, 1, 1),
+        ``transform_matrix`` to identity, and ``verbosity`` to zero. Takes the
+        database search path as an optional parameter for finding spectral data
+        files.
         
         :param search_directories: optional database search path for spectral
             data files

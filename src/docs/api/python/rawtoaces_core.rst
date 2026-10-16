@@ -30,11 +30,9 @@ The core bindings expose these data containers and solvers:
 - :py:class:`rawtoaces.SpectralData`: spectral JSON container/loader.
 - :py:class:`rawtoaces.SpectralSolver`: solves WB/IDT using spectral datasets.
 
-Both solvers inherit :py:meth:`rawtoaces.TransformSolver.calculate_transform`,
-:py:attr:`rawtoaces.TransformSolver.transform_matrix`,
-:py:attr:`rawtoaces.TransformSolver.last_error_message`, and
-:py:attr:`rawtoaces.TransformSolver.verbosity` from
-:py:class:`rawtoaces.TransformSolver`.
+Both concrete solvers expose the inherited ``calculate_transform``,
+``transform_matrix``, ``last_error_message``, and ``verbosity`` members
+directly. The reference lists these members under each solver.
 
 
 Metadata workflow

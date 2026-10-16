@@ -153,7 +153,7 @@ class TransformSolver:
     def transform_matrix(self) -> list[list[float]]:
         """
         A 3×3 colour transform matrix populated by `calculate_transform()`
-        (starts as identity from the base `TransformSolver` constructor).
+        (initially the identity matrix).
         """
 
     @transform_matrix.setter
@@ -179,8 +179,9 @@ class MetadataSolver(TransformSolver):
     """
     Solve an input transform using the metadata stored in DNG files.
 
-    ``calculate_transform``, ``transform_matrix``, ``last_error_message``, and
-    ``verbosity`` are inherited from :py:class:`rawtoaces.TransformSolver`.
+    The inherited ``calculate_transform``, ``transform_matrix``,
+    ``last_error_message``, and ``verbosity`` members are available on this
+    class.
     """
 
     def __init__(self, metadata: Metadata) -> None:
@@ -230,17 +231,18 @@ class SpectralSolver(TransformSolver):
     """
     Solve an input transform using spectral sensitivity curves of a camera.
 
-    ``calculate_transform``, ``transform_matrix``, ``last_error_message``, and
-    ``verbosity`` are inherited from :py:class:`rawtoaces.TransformSolver`.
+    The inherited ``calculate_transform``, ``transform_matrix``,
+    ``last_error_message``, and ``verbosity`` members are available on this
+    class.
     """
 
     def __init__(self, search_directories: Sequence[str] = []) -> None:
         """
         Initialize SpectralSolver with database search path.
-        Sets white balance multipliers to neutral (1, 1, 1) and relies on the
-        base `TransformSolver` constructor for an identity `transform_matrix` and
-        zero verbosity. Takes the database search path as an optional parameter
-        for finding spectral data files.
+        Sets white balance multipliers to neutral (1, 1, 1),
+        ``transform_matrix`` to identity, and ``verbosity`` to zero. Takes the
+        database search path as an optional parameter for finding spectral data
+        files.
 
         :param search_directories: optional database search path for spectral
             data files

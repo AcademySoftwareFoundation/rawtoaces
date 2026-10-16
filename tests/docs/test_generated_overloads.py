@@ -83,6 +83,10 @@ class GeneratedOverloadTests(unittest.TestCase):
                     .. autoclass:: rawtoaces.SpectralSolver
                        :members:
                        :inherited-members:
+
+                    .. autoclass:: rawtoaces.MetadataSolver
+                       :members:
+                       :inherited-members:
                     '''
                 )
             )
@@ -124,6 +128,9 @@ class GeneratedOverloadTests(unittest.TestCase):
                             @overload
                             def find_illuminant(self, wb_multipliers: Sequence[float]) -> bool:
                                 """{revision} multiplier illuminant documentation."""
+
+                        class MetadataSolver(TransformSolver):
+                            pass
                         '''
                     )
                 )
@@ -147,8 +154,10 @@ class GeneratedOverloadTests(unittest.TestCase):
                     'rawtoaces.ImageConverter.configure',
                     'rawtoaces.SpectralSolver.find_illuminant',
                     'rawtoaces.SpectralSolver.calculate_transform',
+                    'rawtoaces.MetadataSolver.calculate_transform',
                 ):
                     self.assertEqual(page.ids.count(method), 1, method)
+                self.assertNotIn('rawtoaces.TransformSolver', page.ids)
                 rendered = ''.join(page.text)
                 for documentation in (
                     f'{revision} filename overload documentation.',

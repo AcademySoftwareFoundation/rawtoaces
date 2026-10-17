@@ -26,12 +26,10 @@ This will convert the input file ``/path/to/input/file.CR3`` using the default
 settings, and create the output file ``/path/to/input/file_aces.exr`` in the same
 directory.
 
-To white-balance to a specified illuminant, the spectral database must contain
-camera sensitivity measurements for the input camera, along with the colour
-matching functions and training data needed to solve its transform. Set
-``RAWTOACES_DATA_PATH`` to the database location if it is not installed in a
-default search directory. The following example explicitly selects spectral
-conversion and uses the generated 3200K blackbody illuminant:
+Using a named illuminant for white balance requires camera sensitivities, colour
+matching functions, and training data in the spectral database. Set
+``RAWTOACES_DATA_PATH`` when that database is not on the default search path.
+This example uses spectral conversion and the generated 3200K blackbody:
 
 .. code-block:: python
 
@@ -54,11 +52,10 @@ the colour temperature of 3200K, and create the output file
 Output scaling
 --------------
 
-After applying the colour transform, the converter multiplies pixel values by
-``settings.headroom * settings.scale``. ``headroom`` is a linear factor with a
-default of ``6.0``. Changing it from ``6.0`` to ``12.0`` doubles the output scale,
-equivalent to adding one exposure stop. To apply an adjustment of ``s`` stops,
-multiply ``settings.scale`` by ``2 ** s``.
+Pixel values are multiplied by ``settings.headroom * settings.scale``.
+``headroom`` is a linear factor (default ``6.0``). Doubling headroom is
+equivalent to adding one exposure stop. An adjustment of ``s`` stops
+corresponds to multiplying the factor by ``2 ** s``.
 
 .. _python-oiio-availability:
 

@@ -36,12 +36,9 @@ environment variable.
 Basic usage:
 ------------
 
-Replace ``<INPUT_PATH>`` with the path to a supported RAW file. Pass that path as
-the first argument to the compiled C++ program or saved Python script. Each
-example writes ``<input_stem>_aces.exr`` beside the input file. The API examples
-explicitly select soft cropping to match the CLI default: retain the full sensor
-area and mark the crop as the display window. C++ and Python settings otherwise
-default to hard cropping.
+Pass the RAW path as ``<INPUT_PATH>``. Output is ``<input_stem>_aces.exr`` beside
+the input. The API examples set soft crop — full sensor, crop stored as the
+display window — to match the CLI. C++ and Python default to hard crop.
 
 Request correction of geometric distortion and vignetting:
 
@@ -101,15 +98,12 @@ Request correction of geometric distortion and vignetting:
           raise RuntimeError(converter.last_error_message)
 
 Without ``--require-lens-correction`` (or ``require_lens_correction = True``),
-a missing profile or other lens-correction failure emits a warning and conversion
-continues without the requested correction. A successful conversion alone does
-not prove that lens correction was applied.
+a missing profile or other failure warns and conversion continues uncorrected.
+A successful conversion does not mean the correction was applied.
 
-Request all supported types of lens correction, make the correction mandatory,
-and override all camera/lens information used for correction. This example uses
-a Canon EOS R5 with a Canon RF 15-35mm F2.8L IS USM lens, at 35mm and f/4, focused
-at 240 metres. Use overrides that match your input image and a Lensfun profile
-with calibration for every requested correction:
+Request every supported correction, make it mandatory, and override the camera
+and lens information used for correction. Match the overrides to the image, and
+use a Lensfun profile calibrated for every requested correction:
 
 .. tabs::
   .. tab:: Shell

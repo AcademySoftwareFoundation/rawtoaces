@@ -763,9 +763,8 @@ class ImageConverter:
         @property
         def headroom(self) -> float:
             """
-            Linear highlight headroom factor. The default is 6.0.
-            Pixel scaling uses ``headroom * scale``; changing headroom from 6 to 12
-            doubles that multiplier.
+            Linear highlight headroom factor (default 6.0). Pixel scaling uses
+            ``headroom * scale``.
             """
 
         @headroom.setter

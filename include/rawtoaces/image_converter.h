@@ -148,9 +148,7 @@ public:
         /// folder.
         std::string illuminant;
 
-        /// Linear highlight headroom factor (default: 6.0).
-        /// Pixel scaling uses `headroom * scale`; changing headroom from 6 to 12
-        /// doubles that multiplier.
+        /// Linear highlight headroom factor. Pixel scaling uses `headroom * scale`.
         float headroom = 6.0;
 
         /// Box to use for white balancing when `WB_method` == `WBMethod::Box`.

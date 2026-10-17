@@ -414,9 +414,8 @@ void util_bindings( nanobind::module_ &m )
         folder.
         )""" );
     settings.def_rw( "headroom", &ImageConverter::Settings::headroom, R"""(
-        Linear highlight headroom factor. The default is 6.0.
-        Pixel scaling uses ``headroom * scale``; changing headroom from 6 to 12
-        doubles that multiplier.
+        Linear highlight headroom factor (default 6.0). Pixel scaling uses
+        ``headroom * scale``.
         )""" );
     settings.def_rw(
         "custom_camera_make",

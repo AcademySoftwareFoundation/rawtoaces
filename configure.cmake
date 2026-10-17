@@ -29,6 +29,12 @@ if (RTA_BUILD_PYTHON_BINDINGS)
         set( DEV_MODULE Development.Module )
     endif ()
 
+    # macOS dependency setup publishes OpenImageIO's Python as RTA_PYTHON_VERSION.
+    # An explicit -D RTA_PYTHON_VERSION, used by the Linux images, takes precedence.
+    if ( RTA_PYTHON_VERSION STREQUAL "" AND NOT "$ENV{RTA_PYTHON_VERSION}" STREQUAL "" )
+        set ( RTA_PYTHON_VERSION "$ENV{RTA_PYTHON_VERSION}" )
+    endif ()
+
     if ( RTA_PYTHON_VERSION STREQUAL "" )
         find_package ( Python 3.10 COMPONENTS Interpreter ${DEV_MODULE} REQUIRED )
     else ()

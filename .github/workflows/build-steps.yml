@@ -111,8 +111,7 @@ jobs:
           -D RTA_ENABLE_CERES="${{ inputs.enable_ceres }}"
           -D RTA_SANITISER_MODE="${{ inputs.sanitiser_mode }}"
           -D RTA_PYTHON_VERSION="${{ inputs.python_version }}"
-          ${{ runner.os == 'macOS' && format('-D Python_EXECUTABLE="{0}"', env.RTA_CI_PYTHON_EXECUTABLE) || '' }}
-          
+
       - name: Build
         # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
         run: |

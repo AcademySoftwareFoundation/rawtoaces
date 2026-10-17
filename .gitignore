@@ -1,6 +1,7 @@
 .DS_Store
 build/
 build-coverage/
+build_scripts/vcpkg_installed
 tests/materials/*.exr
 __pycache__/
 

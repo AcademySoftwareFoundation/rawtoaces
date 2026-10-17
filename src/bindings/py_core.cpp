@@ -201,7 +201,7 @@ void core_bindings( nanobind::module_ &m )
         :return: 3×3 Color Adaptation Transform matrix
         
         .. deprecated:: 2.2.0
-           will be removed in v3. Use ``calculate_transform()``.
+           Will be removed in v3. Use ``calculate_transform()``.
         )""" );
 
     metadata_solver.def(
@@ -227,7 +227,7 @@ void core_bindings( nanobind::module_ &m )
                need to be called first.
                 
         .. deprecated:: 2.2.0
-           will be removed in v3. Use ``calculate_transform()``.
+           Will be removed in v3. Use ``calculate_transform()``.
         )""" );
     ENABLE_WARNINGS
 
@@ -433,8 +433,7 @@ void core_bindings( nanobind::module_ &m )
             loaded
 
         .. deprecated:: 2.2.0
-           Will be removed in v3. Use ``calculate_transform()`` and read
-           ``transform_matrix`` after it returns ``True``.
+           Will be removed in v3. Use ``calculate_transform()``.
         )""" );
 
     spectral_solver.def(

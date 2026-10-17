@@ -130,7 +130,7 @@ void util_bindings( nanobind::module_ &m )
         :return: a list containing a 3x3 matrix.
         
         .. deprecated:: 2.2.0
-            will be removed in v3. Use ``get_transform_matrix()``.
+            Will be removed in v3. Use ``get_transform_matrix()``.
         )""" );
 
     image_converter.def(
@@ -151,7 +151,7 @@ void util_bindings( nanobind::module_ &m )
         :return: a list containing a 3x3 matrix.
         
         .. deprecated:: 2.2.0
-            will be removed in v3. Use ``get_transform_matrix()``.
+            Will be removed in v3. Use ``get_transform_matrix()``.
         )""" );
     ENABLE_WARNINGS
 

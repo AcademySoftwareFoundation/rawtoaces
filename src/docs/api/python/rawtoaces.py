@@ -210,7 +210,7 @@ class MetadataSolver(TransformSolver):
         :return: 3×3 Color Adaptation Transform matrix
 
         .. deprecated:: 2.2.0
-           will be removed in v3. Use ``calculate_transform()``.
+           Will be removed in v3. Use ``calculate_transform()``.
         """
 
     def calculate_IDT_matrix(self) -> list[list[float]]:
@@ -227,7 +227,7 @@ class MetadataSolver(TransformSolver):
                need to be called first.
 
         .. deprecated:: 2.2.0
-           will be removed in v3. Use ``calculate_transform()``.
+           Will be removed in v3. Use ``calculate_transform()``.
         """
 
 class SpectralSolver(TransformSolver):
@@ -411,8 +411,7 @@ class SpectralSolver(TransformSolver):
             loaded
 
         .. deprecated:: 2.2.0
-           Will be removed in v3. Use ``calculate_transform()`` and read
-           ``transform_matrix`` after it returns ``True``.
+           Will be removed in v3. Use ``calculate_transform()``.
         """
 
     def get_IDT_matrix(self) -> list[list[float]]:
@@ -519,7 +518,7 @@ class ImageConverter:
         :return: a list containing a 3x3 matrix.
 
         .. deprecated:: 2.2.0
-            will be removed in v3. Use ``get_transform_matrix()``.
+            Will be removed in v3. Use ``get_transform_matrix()``.
         """
 
     def get_CAT_matrix(self) -> list[list[float]]:
@@ -531,7 +530,7 @@ class ImageConverter:
         :return: a list containing a 3x3 matrix.
 
         .. deprecated:: 2.2.0
-            will be removed in v3. Use ``get_transform_matrix()``.
+            Will be removed in v3. Use ``get_transform_matrix()``.
         """
 
     @overload

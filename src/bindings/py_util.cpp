@@ -539,7 +539,8 @@ void util_bindings( nanobind::module_ &m )
         &ImageConverter::Settings::lens_correction_types,
         R"""(
         The requested lens correction types.
-        No correction is requested by default; select flags to enable it.
+        No correction is requested by default. Combine LensCorrectionType
+        values to enable it.
         )""" );
     settings.def_rw(
         "require_lens_correction",

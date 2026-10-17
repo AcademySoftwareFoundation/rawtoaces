@@ -280,7 +280,8 @@ public:
             const LensCorrectionType &lhs, const LensCorrectionType &rhs );
 
         /// The requested lens correction types.
-        /// No correction is requested by default; select flags to enable it.
+        /// No correction is requested by default. Combine LensCorrectionType
+        /// values to enable it.
         LensCorrectionType lens_correction_types = LensCorrectionType::None;
 
         /// If true, treat lens correction as mandatory. The conversion will

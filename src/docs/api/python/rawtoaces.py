@@ -957,7 +957,8 @@ class ImageConverter:
         def lens_correction_types(self) -> ImageConverter.Settings.LensCorrectionType:
             """
             The requested lens correction types.
-            No correction is requested by default; select flags to enable it.
+            No correction is requested by default. Combine LensCorrectionType
+            values to enable it.
             """
 
         @lens_correction_types.setter

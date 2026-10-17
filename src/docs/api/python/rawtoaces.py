@@ -911,9 +911,11 @@ class ImageConverter:
         @property
         def compression(self) -> str:
             """
-            "Output file compression type. Supported options: none, rle, "
-                "zip, zips, piz, pxr24, b44, b44a, dwaa, dwab, htj2k256, htj2k32. "
-                "(default: none)\"
+            Output file compression type.
+
+            Supported options include none, rle, zip, zips, piz, pxr24, b44, b44a,
+            dwaa, dwab, htj2k256, htj2k32.
+            An empty string (the default) writes uncompressed output, as does ``none``.
             """
 
         @compression.setter
@@ -956,7 +958,11 @@ class ImageConverter:
 
         @property
         def lens_correction_types(self) -> ImageConverter.Settings.LensCorrectionType:
-            """The selected lens correction types."""
+            """
+            The requested lens correction types.
+            No correction is requested by default. Combine LensCorrectionType
+            values to enable it.
+            """
 
         @lens_correction_types.setter
         def lens_correction_types(self, arg: ImageConverter.Settings.LensCorrectionType, /) -> None: ...
@@ -988,21 +994,21 @@ class ImageConverter:
 
         @property
         def custom_aperture(self) -> float:
-            """Aperture (f-number) to be user for lens correction."""
+            """Aperture (f-number) to be used for lens correction."""
 
         @custom_aperture.setter
         def custom_aperture(self, arg: float, /) -> None: ...
 
         @property
         def custom_focal_length(self) -> float:
-            """Focal length to be user for lens correction."""
+            """Focal length to be used for lens correction."""
 
         @custom_focal_length.setter
         def custom_focal_length(self, arg: float, /) -> None: ...
 
         @property
         def custom_focus_distance(self) -> float:
-            """Focus distance to be user for lens correction."""
+            """Focus distance to be used for lens correction."""
 
         @custom_focus_distance.setter
         def custom_focus_distance(self, arg: float, /) -> None: ...
@@ -1030,8 +1036,10 @@ class ImageConverter:
         @property
         def custom_matrix(self) -> list[list[float]]:
             """
-            Custom camera RGB to XYZ matrix to be used when
+            Custom camera RGB to ACES AP0 matrix to be used when
             ``matrix_method`` == ``MatrixMethod::Custom``.
+            Applied directly; it must include the complete colour-space transform
+            to ACES AP0. No additional XYZ to ACES conversion is composed.
             """
 
         @custom_matrix.setter
@@ -1125,8 +1133,9 @@ class ImageConverter:
 
             Custom = 4
             """
-            Specify a custom matrix in `colourMatrix`. This mode is useful if
-            the matrix is calculated by an external tool.
+            Specify a full camera RGB to ACES AP0 matrix in ``custom_matrix``.
+            The matrix is applied directly, without an additional XYZ to
+            ACES conversion. It can be calculated by an external tool.
             """
 
 

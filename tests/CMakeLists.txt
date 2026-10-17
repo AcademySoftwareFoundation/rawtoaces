@@ -89,7 +89,7 @@ add_executable (
 	test_utils.cpp
     test_data_helpers.cpp
     test_data_helpers.h
-    ../src/misc/pragma.h
+    ../src/cpp/misc/pragma.h
 )
 
 target_link_libraries(
@@ -129,7 +129,7 @@ add_executable (
 	test_utils.cpp
     test_data_helpers.cpp
     test_data_helpers.h
-    ../src/misc/pragma.h
+    ../src/cpp/misc/pragma.h
 )
 
 target_link_libraries(
@@ -361,9 +361,9 @@ if(RTA_BUILD_PYTHON_BINDINGS)
         # Set environment for Python test to find the compiled module
         # Handle both single-config (Linux/macOS) and multi-config (Windows) generators
         if(WIN32)
-            set( TEST_PYTHONPATH "${CMAKE_BINARY_DIR}/src/bindings/Release;${CMAKE_BINARY_DIR}/src/bindings;$ENV{PYTHONPATH}" )
+            set( TEST_PYTHONPATH "${CMAKE_BINARY_DIR}/src/python/Release;${CMAKE_BINARY_DIR}/src/python;$ENV{PYTHONPATH}" )
         else()
-            set( TEST_PYTHONPATH "${CMAKE_BINARY_DIR}/src/bindings;$ENV{PYTHONPATH}" )
+            set( TEST_PYTHONPATH "${CMAKE_BINARY_DIR}/src/python;$ENV{PYTHONPATH}" )
         endif()
 
         set_tests_properties(Test_Python_CoreBindings PROPERTIES

@@ -9,8 +9,8 @@
 #include "test_utils.h"
 #include <OpenImageIO/unittest.h>
 
-#include "../src/rawtoaces_util/colour_transforms.h"
-#include <rawtoaces/rawtoaces_core.h>
+#include "../src/cpp/rawtoaces_util/colour_transforms.h"
+#include <rawtoaces_core.h>
 
 namespace
 {

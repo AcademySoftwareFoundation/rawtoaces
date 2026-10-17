@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <rawtoaces/spectral_data.h>
+#include <spectral_data.h>
 
 namespace rta
 {

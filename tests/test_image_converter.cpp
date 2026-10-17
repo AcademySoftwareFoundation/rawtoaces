@@ -7,11 +7,11 @@
 #    undef RGB
 #endif
 
-#include "../src/rawtoaces_util/rawtoaces_util_priv.h"
+#include "../src/cpp/rawtoaces_util/rawtoaces_util_priv.h"
 
 // must be before <OpenImageIO/unittest.h>
-#include <rawtoaces/image_converter.h>
-#include <rawtoaces/rawtoaces_core.h>
+#include <image_converter.h>
+#include <rawtoaces_core.h>
 
 #include <OpenImageIO/unittest.h>
 #include <OpenImageIO/imagebufalgo.h>
@@ -92,9 +92,9 @@ std::string run_rawtoaces_command(
     // Build the command line
     std::string command;
 #ifdef WIN32
-    command = "..\\src\\rawtoaces\\Release\\rawtoaces.exe";
+    command = "..\\src\\cpp\\rawtoaces\\Release\\rawtoaces.exe";
 #else
-    command = "../src/rawtoaces/rawtoaces";
+    command = "../src/cpp/rawtoaces/rawtoaces";
 #endif
 
     for ( const auto &arg: args )

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
-#include <rawtoaces/spectral_data.h>
+#include <spectral_data.h>
 
 #include <assert.h>
 #include <fstream>

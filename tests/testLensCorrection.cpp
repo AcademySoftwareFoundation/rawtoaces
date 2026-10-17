@@ -6,9 +6,9 @@
 #    include <windows.h>
 #endif
 
-#include "../src/rawtoaces_util/lens_correction.h"
-#include "../src/rawtoaces_util/lens_correction_cache.h"
-#include "../src/rawtoaces_util/rawtoaces_util_priv.h"
+#include "../src/cpp/rawtoaces_util/lens_correction.h"
+#include "../src/cpp/rawtoaces_util/lens_correction_cache.h"
+#include "../src/cpp/rawtoaces_util/rawtoaces_util_priv.h"
 
 #include "test_utils.h"
 #include <OpenImageIO/unittest.h>

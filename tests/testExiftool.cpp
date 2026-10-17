@@ -11,8 +11,8 @@
 #    include <sys/time.h>
 #endif
 
-#include "../src/rawtoaces_util/exiftool.h"
-#include "../src/rawtoaces_util/rawtoaces_util_priv.h"
+#include "../src/cpp/rawtoaces_util/exiftool.h"
+#include "../src/cpp/rawtoaces_util/rawtoaces_util_priv.h"
 
 #include <filesystem>
 

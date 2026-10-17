@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
-#include <rawtoaces/usage_timer.h>
+#include <usage_timer.h>
 
 #include <iostream>
 #include <iomanip>

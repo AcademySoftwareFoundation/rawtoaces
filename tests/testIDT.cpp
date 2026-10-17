@@ -9,11 +9,11 @@
 #include <filesystem>
 #include <OpenImageIO/unittest.h>
 
-#include "../src/rawtoaces_core/core_math.h"
-#include <rawtoaces/rawtoaces_core.h>
-#include "../src/rawtoaces_core/rawtoaces_core_priv.h"
+#include "../src/cpp/rawtoaces_core/core_math.h"
+#include <rawtoaces_core.h>
+#include "../src/cpp/rawtoaces_core/rawtoaces_core_priv.h"
 #include "test_utils.h"
-#include "../src/misc/pragma.h"
+#include "../src/cpp/misc/pragma.h"
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 

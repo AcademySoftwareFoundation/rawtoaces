@@ -6,8 +6,8 @@
 #    include <windows.h>
 #endif
 
-#include "../src/rawtoaces_util/cache_base.h"
-#include "../src/rawtoaces_util/transform_cache.h"
+#include "../src/cpp/rawtoaces_util/cache_base.h"
+#include "../src/cpp/rawtoaces_util/transform_cache.h"
 
 #include "test_utils.h"
 #include <OpenImageIO/unittest.h>

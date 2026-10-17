@@ -3,7 +3,7 @@
 
 #include <OpenImageIO/unittest.h>
 
-#include "../src/rawtoaces_core/core_math.h"
+#include "../src/cpp/rawtoaces_core/core_math.h"
 
 // This is a unit test to check the proper functioning of different logic in different functions.
 

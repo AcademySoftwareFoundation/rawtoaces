@@ -11,8 +11,8 @@
 #include <nlohmann/json.hpp>
 #include "test_utils.h"
 
-#include "../src/rawtoaces_core/core_math.h"
-#include <rawtoaces/rawtoaces_core.h>
+#include "../src/cpp/rawtoaces_core/core_math.h"
+#include <rawtoaces_core.h>
 #include <OpenImageIO/unittest.h>
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"

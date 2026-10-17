@@ -7,7 +7,7 @@
 #endif
 
 #include <filesystem>
-#include <rawtoaces/image_converter.h>
+#include <image_converter.h>
 
 #include <OpenImageIO/unittest.h>
 

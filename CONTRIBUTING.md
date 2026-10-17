@@ -358,12 +358,12 @@ The following command builds the documentation for all released versions:
 
 ### Updating Python documentation
 
-Updating Python documentation uses the binding docstrings as its source:
+Updating Python documentation uses the python binding docstrings as its source:
 - Make sure that the docstrings in the python documentation in 
-  `./src/bindings/*.cpp` are up to date.
+  `./src/python/*.cpp` are up to date.
 - Build the code.
 - Run the generator with the same interpreter used to build the extension:
-  `python build_scripts/generate_python_docs.py --module-dir build/src/bindings`.
+  `python build_scripts/generate_python_docs.py --module-dir build/src/python`.
   This invokes `nanobind.stubgen` and writes `src/docs/api/python/rawtoaces.py`.
   Use an OpenImageIO 3.2+ build to generate the documented superset of buffer APIs.
 - The generator preserves binding signatures and docstrings. It defers forward

@@ -9,9 +9,9 @@
 
 #include <OpenImageIO/unittest.h>
 
-#include "../src/rawtoaces_core/core_math.h"
-#include "../src/rawtoaces_core/core_math_priv.h"
-#include "../src/rawtoaces_core/define.h"
+#include "../src/cpp/rawtoaces_core/core_math.h"
+#include "../src/cpp/rawtoaces_core/core_math_priv.h"
+#include "../src/cpp/rawtoaces_core/define.h"
 #include "test_utils.h"
 
 void test_inverse_failure()

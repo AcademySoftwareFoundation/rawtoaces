@@ -43,7 +43,7 @@ The default CLI conversion uses metadata white balance and selects the spectral 
 - [CLI usage guide](src/docs/user_guide.rst)
 - [C++ API guide](src/docs/api/cpp/index.rst) and [Python API guide](src/docs/api/python/index.rst)
 - [Spectral datasets and schema](https://github.com/AcademySoftwareFoundation/rawtoaces-data)
-- [Public headers](include/rawtoaces), [source](src), and [tests](tests)
+- [Public headers](src/cpp/include/rawtoaces), [source](src), and [tests](tests)
 - [Changes](docs/CHANGES.md) and [known issues](https://github.com/AcademySoftwareFoundation/rawtoaces/issues)
 
 ## Community

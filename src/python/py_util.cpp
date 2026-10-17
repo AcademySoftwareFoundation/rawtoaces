@@ -16,7 +16,7 @@
 #include <OpenImageIO/paramlist.h>
 #include <OpenImageIO/imageio.h>
 
-#include "../misc/pragma.h"
+#include "../cpp/misc/pragma.h"
 
 using namespace rta::util;
 using namespace nanobind::literals;

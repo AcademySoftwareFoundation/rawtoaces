@@ -48,7 +48,7 @@ settings otherwise default to hard cropping.
   .. tab:: C++
     .. code-block:: C++
 
-      #include <rawtoaces/rawtoaces_util.h>
+      #include <rawtoaces/image_converter.h>
       
       rta::util::ImageConverter converter;
       converter.settings.crop_mode = rta::util::ImageConverter::Settings::CropMode::Soft;
@@ -92,7 +92,7 @@ override all camera/lens info used for correction:
   .. tab:: C++
     .. code-block:: C++
 
-      #include <rawtoaces/rawtoaces_util.h>
+      #include <rawtoaces/image_converter.h>
       
       rta::util::ImageConverter converter;
       converter.settings.crop_mode = rta::util::ImageConverter::Settings::CropMode::Soft;

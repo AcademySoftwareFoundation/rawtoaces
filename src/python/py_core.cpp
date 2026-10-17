@@ -4,9 +4,9 @@
 #include "py_core.h"
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
-#include <rawtoaces_core.h>
+#include <rawtoaces/rawtoaces_core.h>
 #include <stdexcept>
-#include "../misc/pragma.h"
+#include "../cpp/misc/pragma.h"
 
 using namespace rta::core;
 using namespace nanobind::literals;

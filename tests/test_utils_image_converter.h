@@ -10,7 +10,7 @@
 #include <OpenImageIO/typedesc.h>
 #include <OpenImageIO/imageio.h>
 
-#include <image_converter.h>
+#include <rawtoaces/image_converter.h>
 
 /// Builder for creating ImageSpec objects
 /// Usage: auto spec = ImageSpecBuilder().size(100, 100).channels(3).camera("X", "Y").build();

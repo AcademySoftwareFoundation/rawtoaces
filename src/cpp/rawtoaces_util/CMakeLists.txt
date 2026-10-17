@@ -10,8 +10,8 @@ if( ENABLE_COVERAGE )
 endif()
 
 set( UTIL_PUBLIC_HEADER
-    ../include/image_converter.h
-    ../include/usage_timer.h
+    ../include/rawtoaces/image_converter.h
+    ../include/rawtoaces/usage_timer.h
 )
 
 add_library ( ${RAWTOACES_UTIL_LIB} ${DO_SHARED}

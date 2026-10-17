@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Generated from compiled bindings by nanobind.stubgen.
-# Edit src/bindings/*.cpp docstrings, rebuild and regenerate; do not edit prose here.
+# Edit src/python/*.cpp docstrings, rebuild and regenerate; do not edit prose here.
 # Forward annotations, enum aliases and public OpenImageIO names are normalized.
 
 """

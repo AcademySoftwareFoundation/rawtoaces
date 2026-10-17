@@ -2,7 +2,7 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include "py_util.h"
-#include <image_converter.h>
+#include <rawtoaces/image_converter.h>
 
 // Nanobind headers from here
 #include <nanobind/nanobind.h>
@@ -16,7 +16,7 @@
 #include <OpenImageIO/paramlist.h>
 #include <OpenImageIO/imageio.h>
 
-#include "../misc/pragma.h"
+#include "../cpp/misc/pragma.h"
 
 using namespace rta::util;
 using namespace nanobind::literals;

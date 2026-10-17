@@ -25,7 +25,7 @@ HEADER = (
     "# SPDX-License-Identifier: Apache-2.0\n"
     "\n"
     "# Generated from compiled bindings by nanobind.stubgen.\n"
-    "# Edit src/bindings/*.cpp docstrings, rebuild and regenerate; do not edit prose here.\n"
+    "# Edit src/python/*.cpp docstrings, rebuild and regenerate; do not edit prose here.\n"
     "# Forward annotations, enum aliases and public OpenImageIO names are normalized.\n"
     "\n"
 )

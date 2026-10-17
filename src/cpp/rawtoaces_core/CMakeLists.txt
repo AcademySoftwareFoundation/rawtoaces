@@ -10,8 +10,8 @@ if( ENABLE_COVERAGE )
 endif()
 
 set( CORE_PUBLIC_HEADER
-    ../include/rawtoaces_core.h
-    ../include/spectral_data.h
+    ../include/rawtoaces/rawtoaces_core.h
+    ../include/rawtoaces/spectral_data.h
 )
 
 add_library( ${RAWTOACES_CORE_LIB} ${DO_SHARED}

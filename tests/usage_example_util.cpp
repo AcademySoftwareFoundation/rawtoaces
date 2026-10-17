@@ -2,7 +2,7 @@
 // Copyright Contributors to the rawtoaces Project.
 
 // must be before <OpenImageIO/unittest.h>
-#include <image_converter.h>
+#include <rawtoaces/image_converter.h>
 
 #include <filesystem>
 #include <OpenImageIO/unittest.h>

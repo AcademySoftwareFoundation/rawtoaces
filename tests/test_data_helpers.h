@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <rawtoaces/spectral_data.h>
+#include <spectral_data.h>
 
 // The make and model parameters only affect the metadata, not the curves shape.
 rta::core::SpectralData create_hypothetical_camera(

@@ -7,7 +7,7 @@
 #endif
 
 #include <OpenImageIO/unittest.h>
-#include <rawtoaces/rawtoaces_core.h>
+#include <rawtoaces_core.h>
 
 void testIllum_calDayLightSPD()
 {

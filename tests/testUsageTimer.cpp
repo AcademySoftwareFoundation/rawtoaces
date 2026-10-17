@@ -5,7 +5,7 @@
 
 #include <OpenImageIO/unittest.h>
 
-#include <rawtoaces/usage_timer.h>
+#include <usage_timer.h>
 
 #include <chrono>
 #include <iostream>

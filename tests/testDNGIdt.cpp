@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <OpenImageIO/unittest.h>
 
-#include <rawtoaces/rawtoaces_core.h>
+#include <rawtoaces_core.h>
 #include "../src/cpp/rawtoaces_core/define.h"
 #include "../src/cpp/rawtoaces_core/core_math.h"
 #include "../src/cpp/rawtoaces_core/rawtoaces_core_priv.h"

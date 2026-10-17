@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
-#include <rawtoaces/rawtoaces_core.h>
+#include <rawtoaces_core.h>
 
 #include <nlohmann/json.hpp>
 #include <fstream>

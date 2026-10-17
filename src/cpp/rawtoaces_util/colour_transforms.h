@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include <rawtoaces/rawtoaces_core.h>
+#include <rawtoaces_core.h>
 
 namespace rta
 {

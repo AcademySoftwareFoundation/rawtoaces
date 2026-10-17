@@ -10,8 +10,8 @@ if( ENABLE_COVERAGE )
 endif()
 
 set( CORE_PUBLIC_HEADER
-    ../../include/rawtoaces/rawtoaces_core.h
-    ../../include/rawtoaces/spectral_data.h
+    ../include/rawtoaces_core.h
+    ../include/spectral_data.h
 )
 
 add_library( ${RAWTOACES_CORE_LIB} ${DO_SHARED}
@@ -50,7 +50,7 @@ if ( RTA_ENABLE_CERES )
 endif ( RTA_ENABLE_CERES )
 
 target_include_directories( ${RAWTOACES_CORE_LIB} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
     $<INSTALL_INTERFACE:./include>
 )
 

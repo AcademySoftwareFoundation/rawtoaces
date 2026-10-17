@@ -103,12 +103,12 @@ endif()
 ##   Build
 
 add_definitions( -DPACKAGE="RAWTOACES" -DVERSION="${RAWTOACES_VERSION}" )
-add_subdirectory("src/${RAWTOACES_CORE_LIB}")
-add_subdirectory("src/${RAWTOACES_UTIL_LIB}")
-add_subdirectory("src/rawtoaces")
+add_subdirectory("src/cpp/${RAWTOACES_CORE_LIB}")
+add_subdirectory("src/cpp/${RAWTOACES_UTIL_LIB}")
+add_subdirectory("src/cpp/rawtoaces")
 
 if ( RTA_BUILD_PYTHON_BINDINGS )
-    add_subdirectory(src/bindings)
+    add_subdirectory(src/python)
 endif ( RTA_BUILD_PYTHON_BINDINGS )
 
 if ( RTA_BUILD_TESTS )

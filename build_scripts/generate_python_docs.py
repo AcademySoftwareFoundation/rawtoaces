@@ -2,7 +2,7 @@
 # Copyright Contributors to the rawtoaces Project.
 # SPDX-License-Identifier: Apache-2.0
 
-"""Regenerate the Python reference from the freshly built binding module.
+"""Regenerate the Python reference from the freshly built python bindings module.
 
 Run with the interpreter used to build the extension. Docstrings and signatures
 come exclusively from nanobind.stubgen. Mechanical normalization makes forward

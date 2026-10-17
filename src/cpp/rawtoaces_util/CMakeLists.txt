@@ -10,8 +10,8 @@ if( ENABLE_COVERAGE )
 endif()
 
 set( UTIL_PUBLIC_HEADER
-    ../../include/rawtoaces/image_converter.h
-    ../../include/rawtoaces/usage_timer.h
+    ../include/image_converter.h
+    ../include/usage_timer.h
 )
 
 add_library ( ${RAWTOACES_UTIL_LIB} ${DO_SHARED}
@@ -60,7 +60,7 @@ if( ENABLE_COVERAGE AND COVERAGE_SUPPORTED )
 endif()
 
 target_include_directories( ${RAWTOACES_UTIL_LIB} PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
     $<INSTALL_INTERFACE:./include>
 )
 

@@ -1,6 +1,5 @@
-// Copyright Contributors to the rawtoaces project.
 // SPDX-License-Identifier: Apache-2.0
-// https://github.com/AcademySoftwareFoundation/rawtoaces
+// Copyright Contributors to the rawtoaces Project.
 
 #ifdef WIN32
 #    define WIN32_LEAN_AND_MEAN

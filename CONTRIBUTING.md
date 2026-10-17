@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright Contributors to the rawtoaces project. -->
+
 # Contributing to rawtoaces
 
 Thank you for your interest in contributing to rawtoaces. This document

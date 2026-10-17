@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright Contributors to the rawtoaces project.
 
 #
 # This file tests the cmake config files being exported/installed by rawtoaces.

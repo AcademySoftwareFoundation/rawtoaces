@@ -6,7 +6,7 @@ include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
 
 # Include coverage support if enabled
 if( ENABLE_COVERAGE )
-    include( ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/CodeCoverage.cmake )
+    include( ${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake/CodeCoverage.cmake )
 endif()
 
 set( UTIL_PUBLIC_HEADER

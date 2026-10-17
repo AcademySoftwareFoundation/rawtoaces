@@ -123,6 +123,10 @@ void testCache_failed()
     auto        output = fetch( cache, key, 42, false );
 
     OIIO_CHECK_ASSERT( !output );
+    auto retry = fetch( cache, key, 42 );
+    OIIO_CHECK_ASSERT( retry );
+    if ( retry )
+        OIIO_CHECK_EQUAL( *retry, 42 );
 }
 
 void testCache_full()

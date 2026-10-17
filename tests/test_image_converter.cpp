@@ -2821,8 +2821,12 @@ void test_main_error_message_without_hint()
 
 void check_data_dir_hint( const std::vector<std::string> &args )
 {
-    // Test with missing database
-    std::string output = run_rawtoaces_command( args, true );
+    // Force a missing database even on developer machines with installed data.
+    TestDirectory test_dir;
+    auto          command = args;
+    command.insert(
+        command.end(), { "--data-dir", test_dir.path() + "/missing" } );
+    std::string output = run_rawtoaces_command( command, true );
 
     // Assert on expected error message - file not found during collection
     ASSERT_CONTAINS( output, "Spectral measurements database not found" );
@@ -2844,7 +2848,49 @@ void test_main_error_data_dir_hint()
     check_data_dir_hint( { "--list-illuminants" } );
 }
 
-/// Tests bit-wise operations on LensCorrectionType
+/// Tests fallback using the source even when dst is empty or stale.
+void test_optional_lens_correction_fallback()
+{
+    ImageConverter converter;
+    converter.settings.lens_correction_types =
+        ImageConverter::Settings::LensCorrectionType::Distortion;
+    converter.settings.headroom  = 1;
+    converter.settings.scale     = 2;
+    converter.settings.crop_mode = ImageConverter::Settings::CropMode::Off;
+    OIIO::ImageBuf src( OIIO::ImageSpec( 8, 6, 3, OIIO::TypeDesc::FLOAT ) );
+    OIIO::ImageBufAlgo::fill( src, { 0.2f, 0.4f, 0.6f } );
+    auto expected = OIIO::ImageBufAlgo::mul( src, 2.0f );
+    for ( bool initialized: { false, true } )
+    {
+        OIIO::ImageBuf dst;
+        if ( initialized )
+        {
+            dst.reset( OIIO::ImageSpec( 1, 1, 1, OIIO::TypeDesc::FLOAT ) );
+            OIIO::ImageBufAlgo::fill( dst, { 42.0f } );
+        }
+        bool success = false;
+        auto warning = capture_stderr(
+            [&]() { success = converter.process_buffer( dst, src ); } );
+        OIIO_CHECK_ASSERT( success );
+        ASSERT_CONTAINS( warning, "Warning:" );
+        OIIO_CHECK_EQUAL(
+            OIIO::ImageBufAlgo::compare( dst, expected, 0, 0 ).maxerror, 0 );
+        OIIO_CHECK_ASSERT(
+            converter.status == ImageConverter::Status::Success );
+    }
+    converter.settings.require_lens_correction = true;
+    OIIO::ImageBuf dst;
+    OIIO_CHECK_ASSERT( !converter.process_buffer( dst, src ) );
+    OIIO_CHECK_ASSERT( !dst.initialized() );
+    converter.settings.lens_correction_types =
+        ImageConverter::Settings::LensCorrectionType::None;
+    OIIO_CHECK_ASSERT( converter.apply_lens_correction( dst, src ) );
+    OIIO_CHECK_ASSERT( converter.status == ImageConverter::Status::Success );
+    OIIO::ImageBuf empty;
+    OIIO_CHECK_ASSERT( !converter.apply_lens_correction( dst, empty ) );
+    OIIO_CHECK_ASSERT( !converter.apply_lens_correction( empty, empty ) );
+}
+
 void test_lens_correction_type()
 {
     std::cout << "\n" << __FUNCTION__ << std::endl;
@@ -3142,6 +3188,7 @@ int main( int, char ** )
 
         // Tests for lens correction types
         test_lens_correction_type();
+        test_optional_lens_correction_fallback();
 
         // Test compression warning.
         test_save_image_compression_warning();

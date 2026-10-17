@@ -7,22 +7,30 @@
 #include <OpenImageIO/imagebufalgo.h>
 #include <OpenImageIO/imagebufalgo_util.h>
 #include <lensfun/lensfun.h>
-#include <assert.h>
+#include <cmath>
+#include <mutex>
+#include <memory>
+#include <type_traits>
+#include <vector>
 
 namespace rta
 {
 namespace util
 {
 
-static lfDatabase *Database;
+namespace
+{
+std::mutex                  database_mutex;
+std::shared_ptr<lfDatabase> database;
+} // namespace
 
 void reset_database()
 {
-    delete Database;
-    Database = nullptr;
+    std::lock_guard<std::mutex> lock( database_mutex );
+    database.reset();
 }
 
-const lfModifier *modifier_from_spec(
+static std::shared_ptr<const lfModifier> modifier_from_spec(
     const OIIO::ImageSpec &spec,
     bool                   inverse,
     bool                   enable_vignetting,
@@ -41,14 +49,25 @@ const lfModifier *modifier_from_spec(
     if ( focus_distance == 0 )
         focus_distance = 1000.f;
 
-    if ( Database == nullptr )
+    if ( spec.width <= 0 || spec.height <= 0 || spec.full_width <= 0 ||
+         spec.full_height <= 0 || spec.depth != 1 || spec.deep )
     {
-        Database                = new lfDatabase();
-        bool loaded_succesfully = false;
+        error_message =
+            "Lens correction requires a non-empty, flat 2D image with a valid full window.";
+        return nullptr;
+    }
+
+    // Serialize database loading and lookup, including the cache-disabled path.
+    // Modifiers keep the database alive while maps are calculated outside this lock.
+    std::lock_guard<std::mutex> lock( database_mutex );
+    if ( !database )
+    {
+        auto candidate           = std::make_shared<lfDatabase>();
+        bool loaded_successfully = false;
 
         // Try loading the default path first.
-        if ( Database->Load() == LF_NO_ERROR )
-            loaded_succesfully = true;
+        if ( candidate->Load() == LF_NO_ERROR )
+            loaded_successfully = true;
 
         std::vector<std::string> paths;
         char                    *path = getenv( "RAWTOACES_LENSFUNDB_PATH" );
@@ -65,15 +84,15 @@ const lfModifier *modifier_from_spec(
         for ( const auto &each_path: paths )
         {
 #if ( LF_VERSION <= ( ( 0 << 24 ) | ( 3 << 16 ) | ( 4 << 8 ) ) )
-            if ( Database->LoadDirectory( each_path.c_str() ) )
-                loaded_succesfully = true;
+            if ( candidate->LoadDirectory( each_path.c_str() ) )
+                loaded_successfully = true;
 #else
-            if ( Database->Load( each_path.c_str() ) == LF_NO_ERROR )
-                loaded_succesfully = true;
+            if ( candidate->Load( each_path.c_str() ) == LF_NO_ERROR )
+                loaded_successfully = true;
 #endif // LF_VERSION
         }
 
-        if ( !loaded_succesfully )
+        if ( !loaded_successfully )
         {
             error_message =
                 "Lensfun DB not found, please provide the path to "
@@ -81,12 +100,14 @@ const lfModifier *modifier_from_spec(
                 "RAWTOACES_LENSFUNDB_PATH environment variable.";
             return nullptr;
         }
+        database = std::move( candidate );
     }
 
-    const lfCamera **cameras =
-        Database->FindCamerasExt( camera_make.c_str(), camera_model.c_str() );
+    std::unique_ptr<const lfCamera *, decltype( &lf_free )> cameras(
+        database->FindCamerasExt( camera_make.c_str(), camera_model.c_str() ),
+        &lf_free );
 
-    if ( cameras == nullptr )
+    if ( !cameras || !cameras.get()[0] )
     {
         error_message = "Lens correction data for the camera make '" +
                         camera_make + "' and model '" + camera_model +
@@ -94,12 +115,16 @@ const lfModifier *modifier_from_spec(
         return nullptr;
     }
 
-    auto cam = cameras[0];
+    auto cam = cameras.get()[0];
 
-    const lfLens **lenses =
-        Database->FindLenses( cam, lens_make.c_str(), lens_model.c_str() );
+    std::unique_ptr<const lfLens *, decltype( &lf_free )> lenses(
+        database->FindLenses(
+            cam,
+            lens_make.empty() ? nullptr : lens_make.c_str(),
+            lens_model.c_str() ),
+        &lf_free );
 
-    if ( lenses == nullptr )
+    if ( !lenses || !lenses.get()[0] )
     {
         error_message = "Lens correction data for the lens make '" + lens_make +
                         "'(optional) and model '" + lens_model +
@@ -107,39 +132,32 @@ const lfModifier *modifier_from_spec(
         return nullptr;
     }
 
-    auto lens = lenses[0];
+    auto lens = lenses.get()[0];
 
-    int requested_flags   = 0;
-    int initialised_flags = 0;
-
-#if ( LF_VERSION <= ( ( 0 << 24 ) | ( 3 << 16 ) | ( 4 << 8 ) ) )
-
+    int requested_flags = 0;
     if ( enable_vignetting )
         requested_flags |= LF_MODIFY_VIGNETTING;
-
     if ( enable_distortion )
         requested_flags |= LF_MODIFY_DISTORTION;
-
     if ( enable_aberration )
         requested_flags |= LF_MODIFY_TCA;
 
-    lfModifier *mod = new lfModifier(
+    int initialised_flags = 0;
+#if ( LF_VERSION <= ( ( 0 << 24 ) | ( 3 << 16 ) | ( 4 << 8 ) ) )
+    auto mod = std::make_unique<lfModifier>(
         lens, cam->CropFactor, spec.full_width, spec.full_height );
-    if ( mod != nullptr )
-    {
-        initialised_flags = mod->Initialize(
-            lens,
-            LF_PF_F32,
-            focal_length,
-            aperture,
-            focus_distance,
-            1.0,
-            LF_UNKNOWN,
-            requested_flags,
-            inverse );
-    }
+    initialised_flags = mod->Initialize(
+        lens,
+        LF_PF_F32,
+        focal_length,
+        aperture,
+        focus_distance,
+        1.0,
+        LF_UNKNOWN,
+        requested_flags,
+        inverse );
 #else
-    lfModifier *mod = new lfModifier(
+    auto mod = std::make_unique<lfModifier>(
         lens,
         focal_length,
         cam->CropFactor,
@@ -147,45 +165,176 @@ const lfModifier *modifier_from_spec(
         spec.full_height,
         LF_PF_F32,
         inverse );
-
-    if ( mod != nullptr )
-    {
-        if ( enable_vignetting )
-        {
-            requested_flags |= LF_MODIFY_VIGNETTING;
-            initialised_flags |=
-                mod->EnableVignettingCorrection( aperture, focus_distance );
-        }
-
-        if ( enable_distortion )
-        {
-            requested_flags |= LF_MODIFY_DISTORTION;
-            initialised_flags |= mod->EnableDistortionCorrection();
-        }
-
-        if ( enable_aberration )
-        {
-            requested_flags |= LF_MODIFY_TCA;
-            initialised_flags |= mod->EnableTCACorrection();
-        }
-    }
+    if ( enable_vignetting )
+        initialised_flags |=
+            mod->EnableVignettingCorrection( aperture, focus_distance );
+    if ( enable_distortion )
+        initialised_flags |= mod->EnableDistortionCorrection();
+    if ( enable_aberration )
+        initialised_flags |= mod->EnableTCACorrection();
 #endif // LF_VERSION
 
     if ( requested_flags != initialised_flags )
     {
-        if ( mod != nullptr )
+        error_message = "Failed to initialise lens correction transform.";
+        return nullptr;
+    }
+    return std::shared_ptr<const lfModifier>(
+        mod.release(), [keep_alive = database]( const lfModifier *modifier ) {
+            delete modifier;
+        } );
+}
+
+namespace
+{
+template <typename T>
+bool lens_parameter(
+    T                     &value,
+    const OIIO::ImageSpec &spec,
+    const char            *attribute,
+    const char            *description,
+    std::string           &error,
+    bool                   required = true )
+{
+    if ( value == T() )
+    {
+        if constexpr ( std::is_same_v<T, float> )
+            value = spec.get_float_attribute( attribute );
+        else
+            value = spec.get_string_attribute( attribute );
+    }
+    if ( value == T() && required )
+    {
+        error = std::string( "Missing the " ) + description +
+                " in the file metadata.";
+        return false;
+    }
+    if constexpr ( std::is_same_v<T, float> )
+    {
+        if ( !std::isfinite( value ) || value < 0.0f )
         {
-            delete mod;
-            mod = nullptr;
+            error = std::string( "Invalid " ) + description +
+                    ": expected a finite positive value.";
+            return false;
         }
     }
+    return true;
+}
+} // namespace
 
-    if ( mod == nullptr )
+bool apply_lens_corrections(
+    OIIO::ImageBuf                 &dst,
+    const OIIO::ImageBuf           &src,
+    const ImageConverter::Settings &settings,
+    std::string                    &error_message )
+{
+    using Type   = ImageConverter::Settings::LensCorrectionType;
+    auto enabled = [&]( Type type ) {
+        return ( settings.lens_correction_types & type ) != Type::None;
+    };
+    const auto &spec           = src.spec();
+    auto        camera_make    = settings.custom_camera_make;
+    auto        camera_model   = settings.custom_camera_model;
+    auto        lens_make      = settings.custom_lens_make;
+    auto        lens_model     = settings.custom_lens_model;
+    float       focal_length   = settings.custom_focal_length;
+    float       aperture       = settings.custom_aperture;
+    float       focus_distance = settings.custom_focus_distance;
+
+    // Resolve overrides and metadata once. Missing optional fields do not set errors.
+    if ( !lens_parameter(
+             camera_make,
+             spec,
+             "cameraMake",
+             "camera manufacturer name",
+             error_message ) ||
+         !lens_parameter(
+             camera_model,
+             spec,
+             "cameraModel",
+             "camera model name",
+             error_message ) ||
+         !lens_parameter(
+             lens_make,
+             spec,
+             "lensMake",
+             "lens manufacturer name",
+             error_message,
+             false ) ||
+         !lens_parameter(
+             lens_model,
+             spec,
+             "lensModel",
+             "lens model name",
+             error_message ) ||
+         !lens_parameter(
+             focal_length,
+             spec,
+             "focalLength",
+             "focal length value",
+             error_message ) )
+        return false;
+    if ( enabled( Type::Vignetting ) &&
+         ( !lens_parameter(
+               aperture, spec, "aperture", "aperture value", error_message ) ||
+           !lens_parameter(
+               focus_distance,
+               spec,
+               "focus",
+               "focus distance value",
+               error_message,
+               false ) ) )
+        return false;
+
+    if ( !src.initialized() || spec.width <= 0 || spec.height <= 0 ||
+         spec.full_width <= 0 || spec.full_height <= 0 || spec.depth != 1 ||
+         spec.deep || spec.nchannels <= 0 )
     {
-        error_message = "Failed to initialise lens correction transform.";
+        error_message =
+            "Lens correction requires a non-empty, flat 2D image with a valid full window.";
+        return false;
     }
+    const auto lens_spec = init_lens_map_spec(
+        spec,
+        1,
+        camera_make,
+        camera_model,
+        lens_make,
+        lens_model,
+        focal_length,
+        aperture,
+        focus_distance );
 
-    return mod;
+    // Each stage writes to private storage. Commit only once all stages succeed.
+    OIIO::ImageBuf        working;
+    const OIIO::ImageBuf *input = &src;
+    auto                  run   = [&]( Type type, auto apply ) {
+        if ( !enabled( type ) )
+            return true;
+        if ( !apply(
+                 working,
+                 *input,
+                 lens_spec,
+                 settings.verbosity,
+                 settings.disable_cache,
+                 error_message ) )
+            return false;
+        input = &working;
+        return true;
+    };
+    if ( !run( Type::Vignetting, apply_vignette_map ) ||
+         !run( Type::Aberration, apply_aberration_map ) ||
+         !run( Type::Distortion, apply_distortion_map ) )
+        return false;
+    if ( input == &src )
+    {
+        error_message = "No supported lens correction types selected.";
+        return false;
+    }
+    working.set_name( src.name() );
+    working.specmod().extra_attribs = spec.extra_attribs;
+    dst                             = std::move( working );
+    return true;
 }
 
 std::shared_ptr<const OIIO::ImageBuf> solve_vignette_map(
@@ -193,7 +342,7 @@ std::shared_ptr<const OIIO::ImageBuf> solve_vignette_map(
 {
     int nthreads = 0;
 
-    const lfModifier *modifier =
+    const auto modifier =
         modifier_from_spec( spec, inverse, true, false, false, error_message );
 
     if ( modifier == nullptr )
@@ -239,7 +388,6 @@ std::shared_ptr<const OIIO::ImageBuf> solve_vignette_map(
             }
         } );
 
-    delete modifier;
     return result;
 }
 
@@ -292,35 +440,16 @@ OIIO::ImageSpec init_lens_map_spec(
 }
 
 bool apply_vignette_map(
-    OIIO::ImageBuf       &dst_buffer,
-    const OIIO::ImageBuf &src_buffer,
-    const std::string    &camera_make,
-    const std::string    &camera_model,
-    const std::string    &lens_make,
-    const std::string    &lens_model,
-    float                 focal_length,
-    float                 aperture,
-    float                 focus_distance,
-    int                   verbosity,
-    bool                  disable_cache,
-    std::string          &error_message )
+    OIIO::ImageBuf        &dst_buffer,
+    const OIIO::ImageBuf  &src_buffer,
+    const OIIO::ImageSpec &lens_spec,
+    int                    verbosity,
+    bool                   disable_cache,
+    std::string           &error_message )
 {
-#if OIIO_VERSION < OIIO_MAKE_VERSION( 3, 1, 0 )
-    const int nchannels = 3;
-#else
-    const int nchannels = 1;
-#endif
-
-    OIIO::ImageSpec spec = init_lens_map_spec(
-        src_buffer.spec(),
-        nchannels,
-        camera_make,
-        camera_model,
-        lens_make,
-        lens_model,
-        focal_length,
-        aperture,
-        focus_distance );
+    OIIO::ImageSpec spec = lens_spec;
+    spec.nchannels       = 1;
+    spec.default_channel_names();
 
     const auto result =
         fetch_vignette_map( spec, verbosity, disable_cache, error_message );
@@ -331,21 +460,27 @@ bool apply_vignette_map(
         return false;
     }
 
-    const auto &vignette_map = *result.get();
-
-#if OIIO_VERSION < OIIO_MAKE_VERSION( 3, 1, 0 )
-    bool success =
-        OIIO::ImageBufAlgo::mul( dst_buffer, src_buffer, vignette_map );
-#else
-    bool      success =
-        OIIO::ImageBufAlgo::scale( dst_buffer, src_buffer, vignette_map, {} );
-#endif
-    if ( !success )
+    OIIO::ImageBuf corrected;
+    if ( !corrected.copy( src_buffer ) )
     {
-        error_message = "Failed to apply the vignette map.";
+        error_message = "Failed to copy the source for vignetting correction.";
         return false;
     }
-
+    const auto &source_spec  = src_buffer.spec();
+    const auto &vignette_map = *result;
+    // A single gain channel works with every supported OIIO version. Alpha and
+    // depth describe coverage/geometry and must not receive an exposure gain.
+    OIIO::ImageBufAlgo::parallel_image(
+        corrected.roi(), 0, [&]( OIIO::ROI roi ) {
+            OIIO::ImageBuf::Iterator<float>      pixel( corrected, roi );
+            OIIO::ImageBuf::ConstIterator<float> gain( vignette_map, roi );
+            for ( ; !pixel.done(); ++pixel, ++gain )
+                for ( int c = roi.chbegin; c < roi.chend; ++c )
+                    if ( c != source_spec.alpha_channel &&
+                         c != source_spec.z_channel )
+                        pixel[c] = pixel[c] * gain[0];
+        } );
+    dst_buffer = std::move( corrected );
     return true;
 }
 
@@ -354,7 +489,7 @@ std::shared_ptr<const OIIO::ImageBuf> solve_distortion_map(
 {
     int nthreads = 0;
 
-    const lfModifier *modifier =
+    const auto modifier =
         modifier_from_spec( spec, inverse, false, true, false, error_message );
 
     if ( modifier == nullptr )
@@ -371,7 +506,7 @@ std::shared_ptr<const OIIO::ImageBuf> solve_distortion_map(
     OIIO::ImageBufAlgo::parallel_image(
         dst.roi(), nthreads, [&]( OIIO::ROI roi ) {
             OIIO::ImageBuf::Iterator<float> iterator( dst, roi );
-            size_t                          count = roi.width() * 2 * 3;
+            size_t                          count = size_t( roi.width() ) * 2;
 
             std::vector<float> buff( count );
 
@@ -398,7 +533,6 @@ std::shared_ptr<const OIIO::ImageBuf> solve_distortion_map(
             }
         } );
 
-    delete modifier;
     return result;
 }
 
@@ -422,27 +556,16 @@ std::shared_ptr<const OIIO::ImageBuf> fetch_distortion_map(
 }
 
 bool apply_distortion_map(
-    OIIO::ImageBuf       &dst_buffer,
-    const OIIO::ImageBuf &src_buffer,
-    const std::string    &camera_make,
-    const std::string    &camera_model,
-    const std::string    &lens_make,
-    const std::string    &lens_model,
-    float                 focal_length,
-    int                   verbosity,
-    bool                  disable_cache,
-    std::string          &error_message )
+    OIIO::ImageBuf        &dst_buffer,
+    const OIIO::ImageBuf  &src_buffer,
+    const OIIO::ImageSpec &lens_spec,
+    int                    verbosity,
+    bool                   disable_cache,
+    std::string           &error_message )
 {
-    const int nthreads = 0;
-
-    OIIO::ImageSpec spec = init_lens_map_spec(
-        src_buffer.spec(),
-        2,
-        camera_make,
-        camera_model,
-        lens_make,
-        lens_model,
-        focal_length );
+    OIIO::ImageSpec spec = lens_spec;
+    spec.nchannels       = 2;
+    spec.default_channel_names();
 
     const auto result =
         fetch_distortion_map( spec, verbosity, disable_cache, error_message );
@@ -453,26 +576,14 @@ bool apply_distortion_map(
         return false;
     }
 
-    if ( dst_buffer.initialized() )
-        spec = dst_buffer.spec();
-    else
-        spec = src_buffer.spec();
+    spec = src_buffer.spec();
 
     OIIO::ImageBuf temp_buffer( spec );
 
     const auto &distortion_map = *result.get();
 
     bool success = OIIO::ImageBufAlgo::st_warp(
-        temp_buffer,
-        src_buffer,
-        distortion_map,
-        nullptr,
-        0,
-        1,
-        false,
-        false,
-        {},
-        nthreads );
+        temp_buffer, src_buffer, distortion_map, nullptr, 0, 1, false, false );
 
     if ( !success )
     {
@@ -480,7 +591,7 @@ bool apply_distortion_map(
         return false;
     }
 
-    dst_buffer = temp_buffer;
+    dst_buffer = std::move( temp_buffer );
     return true;
 }
 
@@ -489,7 +600,7 @@ std::shared_ptr<const OIIO::ImageBuf> solve_aberration_map(
 {
     int nthreads = 0;
 
-    const lfModifier *modifier =
+    const auto modifier =
         modifier_from_spec( spec, inverse, false, false, true, error_message );
 
     if ( modifier == nullptr )
@@ -540,7 +651,6 @@ std::shared_ptr<const OIIO::ImageBuf> solve_aberration_map(
             }
         } );
 
-    delete modifier;
     return result;
 }
 
@@ -564,25 +674,16 @@ std::shared_ptr<const OIIO::ImageBuf> fetch_aberration_map(
 }
 
 bool apply_aberration_map(
-    OIIO::ImageBuf       &dst_buffer,
-    const OIIO::ImageBuf &src_buffer,
-    const std::string    &camera_make,
-    const std::string    &camera_model,
-    const std::string    &lens_make,
-    const std::string    &lens_model,
-    float                 focal_length,
-    int                   verbosity,
-    bool                  disable_cache,
-    std::string          &error_message )
+    OIIO::ImageBuf        &dst_buffer,
+    const OIIO::ImageBuf  &src_buffer,
+    const OIIO::ImageSpec &lens_spec,
+    int                    verbosity,
+    bool                   disable_cache,
+    std::string           &error_message )
 {
-    OIIO::ImageSpec spec = init_lens_map_spec(
-        src_buffer.spec(),
-        6,
-        camera_make,
-        camera_model,
-        lens_make,
-        lens_model,
-        focal_length );
+    OIIO::ImageSpec spec = lens_spec;
+    spec.nchannels       = 6;
+    spec.default_channel_names();
 
     const auto entry =
         fetch_aberration_map( spec, verbosity, disable_cache, error_message );
@@ -596,18 +697,29 @@ bool apply_aberration_map(
 
     const auto &aberration_map = *entry.get();
 
-    if ( dst_buffer.initialized() )
-        spec = dst_buffer.spec();
-    else
-        spec = src_buffer.spec();
+    spec = src_buffer.spec();
 
-    OIIO::ImageBuf temp_buffer( spec );
+    if ( spec.nchannels < 3 ||
+         ( spec.alpha_channel >= 0 && spec.alpha_channel < 3 ) ||
+         ( spec.z_channel >= 0 && spec.z_channel < 3 ) )
+    {
+        error_message =
+            "Chromatic aberration correction requires RGB channels.";
+        return false;
+    }
+    OIIO::ImageBuf temp_buffer;
+    if ( !temp_buffer.copy( src_buffer ) )
+    {
+        error_message =
+            "Failed to copy the source for chromatic aberration correction.";
+        return false;
+    }
 
     OIIO::ROI roi = spec.roi();
 
-    for ( int i = 0; i < spec.nchannels; i++ )
+    for ( int i = 0; i < 3; i++ )
     {
-        int s_chan   = ( i * 2 ) % 6;
+        int s_chan   = i * 2;
         roi.chbegin  = i;
         roi.chend    = i + 1;
         bool success = OIIO::ImageBufAlgo::st_warp(
@@ -627,7 +739,7 @@ bool apply_aberration_map(
         }
     }
 
-    dst_buffer = temp_buffer;
+    dst_buffer = std::move( temp_buffer );
     return true;
 }
 

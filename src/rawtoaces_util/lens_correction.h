@@ -3,8 +3,9 @@
 
 #pragma once
 
+#include <rawtoaces/image_converter.h>
 #include <string>
-#include <vector>
+#include <memory>
 
 #include <OpenImageIO/imagebuf.h>
 
@@ -12,6 +13,13 @@ namespace rta
 {
 namespace util
 {
+
+// Applies all requested stages atomically. On failure neither buffer is modified.
+bool apply_lens_corrections(
+    OIIO::ImageBuf                 &dst,
+    const OIIO::ImageBuf           &src,
+    const ImageConverter::Settings &settings,
+    std::string                    &error_message );
 
 std::shared_ptr<const OIIO::ImageBuf> fetch_vignette_map(
     const OIIO::ImageSpec &spec,
@@ -48,42 +56,28 @@ OIIO::ImageSpec init_lens_map_spec(
     float                  focus_distance = 0.0f );
 
 bool apply_vignette_map(
-    OIIO::ImageBuf       &dst_buffer,
-    const OIIO::ImageBuf &src_buffer,
-    const std::string    &camera_make,
-    const std::string    &camera_model,
-    const std::string    &lens_make,
-    const std::string    &lens_model,
-    float                 focal_length,
-    float                 aperture,
-    float                 focus_distance,
-    int                   verbosity,
-    bool                  disable_cache,
-    std::string          &error_message );
+    OIIO::ImageBuf        &dst_buffer,
+    const OIIO::ImageBuf  &src_buffer,
+    const OIIO::ImageSpec &lens_spec,
+    int                    verbosity,
+    bool                   disable_cache,
+    std::string           &error_message );
 
 bool apply_distortion_map(
-    OIIO::ImageBuf       &dst_buffer,
-    const OIIO::ImageBuf &src_buffer,
-    const std::string    &camera_make,
-    const std::string    &camera_model,
-    const std::string    &lens_make,
-    const std::string    &lens_model,
-    float                 focal_length,
-    int                   verbosity,
-    bool                  disable_cache,
-    std::string          &error_message );
+    OIIO::ImageBuf        &dst_buffer,
+    const OIIO::ImageBuf  &src_buffer,
+    const OIIO::ImageSpec &lens_spec,
+    int                    verbosity,
+    bool                   disable_cache,
+    std::string           &error_message );
 
 bool apply_aberration_map(
-    OIIO::ImageBuf       &dst_buffer,
-    const OIIO::ImageBuf &src_buffer,
-    const std::string    &camera_make,
-    const std::string    &camera_model,
-    const std::string    &lens_make,
-    const std::string    &lens_model,
-    float                 focal_length,
-    int                   verbosity,
-    bool                  disable_cache,
-    std::string          &error_message );
+    OIIO::ImageBuf        &dst_buffer,
+    const OIIO::ImageBuf  &src_buffer,
+    const OIIO::ImageSpec &lens_spec,
+    int                    verbosity,
+    bool                   disable_cache,
+    std::string           &error_message );
 
 std::shared_ptr<const OIIO::ImageBuf> solve_vignette_map(
     const OIIO::ImageSpec &spec, bool inverse, std::string &error_message );

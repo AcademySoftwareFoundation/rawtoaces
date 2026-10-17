@@ -399,7 +399,9 @@ public:
         OIIO::ImageBuf             &buffer,
         OIIO::TypeDesc              data_type = OIIO::TypeDesc::FLOAT );
 
-    /// Apply the lens correction to the image buffer.
+    /// Apply the requested lens corrections atomically. On failure neither
+    /// buffer is modified. This method reports failure even when correction is
+    /// optional; process_buffer and process_image handle the optional fallback.
     /// @param dst
     ///     Destination image buffer.
     /// @param src
@@ -527,6 +529,11 @@ public:
     /// @return
     ///    `true` if processed successfully.
     bool process_image( const std::string &input_filename );
+
+    /// Process a configured image buffer: lens correction, matrix, scale, crop.
+    /// If optional lens correction fails, warn and process the original source.
+    /// dst and src may refer to the same buffer.
+    bool process_buffer( OIIO::ImageBuf &dst, const OIIO::ImageBuf &src );
 
     /// Get the solved white balance multipliers of the currently processed
     /// image. The multipliers become available after calling either of the

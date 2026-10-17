@@ -53,6 +53,26 @@ class TestImageConverter:
         assert hasattr(converter, "settings")
         assert converter.settings is not None
 
+    def test_process_buffer_optional_lens_failure(self):
+        oiio = pytest.importorskip("OpenImageIO")
+        if (oiio.VERSION_MAJOR, oiio.VERSION_MINOR, oiio.VERSION_PATCH) < (3, 2, 0):
+            pytest.skip("Buffer bindings require OIIO 3.2")
+        converter = rawtoaces.ImageConverter()
+        converter.settings.lens_correction_types = (
+            rawtoaces.ImageConverter.Settings.LensCorrectionType.Distortion
+        )
+        converter.settings.headroom = 1
+        converter.settings.scale = 2
+        converter.settings.crop_mode = rawtoaces.ImageConverter.Settings.CropMode.Off
+        src = oiio.ImageBuf(oiio.ImageSpec(1, 1, 3, oiio.FLOAT))
+        src.setpixel(0, 0, (0.2, 0.4, 0.6))
+        dst = oiio.ImageBuf()
+        assert converter.process_buffer(dst, src)
+        assert dst.getpixel(0, 0) == pytest.approx((0.4, 0.8, 1.2))
+        assert src.getpixel(0, 0) == pytest.approx((0.2, 0.4, 0.6))
+        converter.settings.require_lens_correction = True
+        assert not converter.process_buffer(dst, src)
+
     def test_converter_has_methods(self):
         """Test that ImageConverter has all methods"""
         converter = rawtoaces.ImageConverter()
@@ -101,6 +121,7 @@ class TestImageConverter:
                 "apply_matrix",
                 "apply_scale",
                 "apply_crop",
+                "process_buffer",
                 "load_image",
                 "save_image",
                 "process_buffer"

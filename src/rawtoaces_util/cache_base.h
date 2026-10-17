@@ -139,7 +139,9 @@ public:
             auto cached_object = func();
 
             std::lock_guard<std::mutex> lock( _mutex );
-            _map.emplace_front( descriptor, cached_object );
+            // A failed calculation must be retried, with its own diagnostics.
+            if ( cached_object )
+                _map.emplace_front( descriptor, cached_object );
 
             // If the cache has exceeded the max capacity, remove the oldest entry.
             if ( _map.size() > capacity )

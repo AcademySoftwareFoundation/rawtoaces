@@ -92,7 +92,7 @@ std::string run_rawtoaces_command(
     // Build the command line
     std::string command;
 #ifdef WIN32
-    command = "..\\\\src\\\\cpp\\\\rawtoaces\\\\Release\\\\rawtoaces.exe";
+    command = "..\\src\\cpp\\rawtoaces\\Release\\rawtoaces.exe";
 #else
     command = "../src/cpp/rawtoaces/rawtoaces";
 #endif

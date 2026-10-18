@@ -55,17 +55,20 @@ def doxygen_quote(value: str) -> str:
 
 
 def check_doxygen_warnings(repo_root: Path, warnings: str) -> None:
-    """Permit only three undocumented ROI inputs slated for deprecation.
+    """Permit missing docs only for the deprecated ROI overloads.
 
-    Keep parameter warnings enabled. Suppressing that whole warning category
-    would hide missing documentation on current APIs as well.
+    ``apply_matrix``, ``apply_scale``, and ``apply_crop`` still have deprecated
+    overloads that take ``roi``. Those overloads are scheduled for removal in
+    v3, so their missing parameter docs stay allowed. The current signatures
+    have no default argument. Keep parameter warnings enabled: suppressing that
+    whole category would hide missing documentation on current APIs as well.
     """
     header = re.escape(str((repo_root / "include/rawtoaces/image_converter.h").resolve()))
     ignored_roi = re.compile(
         rf"^{header}:\d+: warning: The following parameter of "
         r"rta::util::ImageConverter::apply_(?:matrix|scale|crop)\("
         r"OIIO::ImageBuf\s*&dst,\s*const OIIO::ImageBuf\s*&src,\s*"
-        r"OIIO::ROI roi\s*=\s*\{\}\) is not documented:\n"
+        r"OIIO::ROI roi\s*(?:=\s*\{\})?\) is not documented:\n"
         r"[ \t]+parameter 'roi'\n?",
         re.MULTILINE,
     )
@@ -173,14 +176,17 @@ def check_html(output_dir: Path) -> None:
     reference_path = output_dir / "api/python/api_reference.html"
     reference = DocumentationHTML()
     reference.feed(reference_path.read_text(encoding="utf-8"))
+    # Inherited solver members are published on the concrete solvers. The
+    # reference does not give TransformSolver its own page.
     required_anchors = [
         "rawtoaces.ImageConverter.configure",
         "rawtoaces.SpectralSolver.find_illuminant",
-        "rawtoaces.TransformSolver.calculate_transform",
-        "rawtoaces.TransformSolver.transform_matrix",
-        "rawtoaces.TransformSolver.last_error_message",
         "rawtoaces.MetadataSolver.calculate_transform",
         "rawtoaces.SpectralSolver.calculate_transform",
+        "rawtoaces.MetadataSolver.transform_matrix",
+        "rawtoaces.SpectralSolver.transform_matrix",
+        "rawtoaces.MetadataSolver.last_error_message",
+        "rawtoaces.SpectralSolver.last_error_message",
     ]
     errors = []
     for anchor in required_anchors:
@@ -189,7 +195,8 @@ def check_html(output_dir: Path) -> None:
 
     expected_overloads = {
         "rawtoaces.ImageConverter.configure": [
-            r"configure\s*\(\s*input_filename\b",
+            r"configure\s*\(\s*input_filename\b(?!\s*,)",
+            r"configure\s*\(\s*input_filename\b[^)]*\boptions\b",
             r"configure\s*\(\s*image_spec\b[^)]*\boptions\b",
         ],
         "rawtoaces.SpectralSolver.find_illuminant": [
@@ -199,8 +206,10 @@ def check_html(output_dir: Path) -> None:
     }
     for anchor, patterns in expected_overloads.items():
         signatures = reference.methods.get(anchor, [])
-        if len(signatures) != 2:
-            errors.append(f"{reference_path}: expected two overload signatures for {anchor}")
+        if len(signatures) != len(patterns):
+            errors.append(
+                f"{reference_path}: expected {len(patterns)} overload signatures for {anchor}"
+            )
         for pattern in patterns:
             if not any(re.search(pattern, signature) for signature in signatures):
                 errors.append(f"{reference_path}: missing overload of {anchor}: {pattern}")

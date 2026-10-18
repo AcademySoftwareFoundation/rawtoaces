@@ -98,7 +98,7 @@ provided_xml = os.environ.get('RAWTOACES_DOCS_DOXYGEN_XML')
 if provided_xml:
     breathe_projects = {'rawtoaces': provided_xml}
 elif read_the_docs_build:
-    # Apply the shared warning policy, including the unused ROI exception.
+    # Apply the shared warning policy, including the deprecated ROI exception.
     doxygen_output = repo_root / 'src' / 'doxygen'
     run_doxygen(repo_root, doxygen_output, release, strict=strict_docs)
     breathe_projects = {'rawtoaces': str(doxygen_output / 'xml')}

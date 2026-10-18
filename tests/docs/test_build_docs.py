@@ -24,16 +24,19 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 def reference_html() -> str:
     methods = {
         "rawtoaces.ImageConverter.configure": [
-            "configure(input_filename: str)", "configure(image_spec: ImageSpec, options: ParamValueList)",
+            "configure(input_filename: str)",
+            "configure(input_filename: str, options: ParamValueList)",
+            "configure(image_spec: ImageSpec, options: ParamValueList)",
         ],
         "rawtoaces.SpectralSolver.find_illuminant": [
             "find_illuminant(type: str)", "find_illuminant(wb_multipliers: Sequence[float])",
         ],
-        "rawtoaces.TransformSolver.calculate_transform": ["calculate_transform()"],
-        "rawtoaces.TransformSolver.transform_matrix": ["transform_matrix"],
-        "rawtoaces.TransformSolver.last_error_message": ["last_error_message"],
         "rawtoaces.MetadataSolver.calculate_transform": ["calculate_transform()"],
         "rawtoaces.SpectralSolver.calculate_transform": ["calculate_transform()"],
+        "rawtoaces.MetadataSolver.transform_matrix": ["transform_matrix"],
+        "rawtoaces.SpectralSolver.transform_matrix": ["transform_matrix"],
+        "rawtoaces.MetadataSolver.last_error_message": ["last_error_message"],
+        "rawtoaces.SpectralSolver.last_error_message": ["last_error_message"],
     }
     blocks = []
     for anchor, signatures in methods.items():
@@ -80,7 +83,7 @@ class OutputChecks(unittest.TestCase):
             "configure(input_filename: str)</dt>",
             "configure(input_filename: str)</dt><dt class=\"sig\">configure(other)</dt>",
         ))
-        with self.assertRaisesRegex(ValueError, "expected two overload signatures"):
+        with self.assertRaisesRegex(ValueError, "expected 3 overload signatures"):
             check_html(self.output)
 
     def test_typing_helper_fails_even_with_valid_signatures(self):
@@ -125,12 +128,13 @@ class DoxygenDiagnostics(unittest.TestCase):
         docs.mkdir(parents=True)
         (docs / "Doxyfile").write_text("PROJECT_NAME = test\n")
 
-    def warning(self, method="apply_matrix", parameter="roi", filename=None):
+    def warning(self, method="apply_matrix", parameter="roi", filename=None, default=True):
         header = filename or self.root / "include/rawtoaces/image_converter.h"
+        default_text = "={}" if default else ""
         return (
             f"{header.resolve()}:123: warning: The following parameter of "
             f"rta::util::ImageConverter::{method}(OIIO::ImageBuf &dst, "
-            f"const OIIO::ImageBuf &src, OIIO::ROI roi={{}}) is not documented:\n"
+            f"const OIIO::ImageBuf &src, OIIO::ROI roi{default_text}) is not documented:\n"
             f"  parameter '{parameter}'\n"
         )
 
@@ -153,9 +157,12 @@ class DoxygenDiagnostics(unittest.TestCase):
         )
 
     def test_only_known_roi_warnings_are_permitted(self):
-        self.run_diagnostics("".join(self.warning(method) for method in (
-            "apply_matrix", "apply_scale", "apply_crop",
-        )))
+        for default in (True, False):
+            with self.subTest(default=default):
+                self.run_diagnostics("".join(
+                    self.warning(method, default=default)
+                    for method in ("apply_matrix", "apply_scale", "apply_crop")
+                ))
 
     def test_unrelated_parameter_method_class_and_file_fail(self):
         cases = [

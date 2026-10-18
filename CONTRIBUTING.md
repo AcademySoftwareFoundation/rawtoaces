@@ -355,10 +355,11 @@ current source tree directly:
 
 The build fails on Doxygen and Sphinx warnings, unresolved references, missing
 essential Python API entries, and invalid Python example syntax. The only
-Doxygen exceptions are missing documentation for the unused `roi` parameter on
-`ImageConverter::apply_matrix`, `apply_scale`, and `apply_crop`, which are slated
-for deprecation. All other missing parameter documentation still fails. Pull
-requests run this same check and upload `site-preview` as a downloadable artifact.
+Doxygen exceptions are missing documentation for the deprecated `roi` parameter
+on `ImageConverter::apply_matrix`, `apply_scale`, and `apply_crop`. Those
+overloads are scheduled for removal in v3. All other missing parameter
+documentation still fails. Pull requests run this same check and upload
+`site-preview` as a downloadable artifact.
 
 An existing configured CMake build can also build the documentation:
 

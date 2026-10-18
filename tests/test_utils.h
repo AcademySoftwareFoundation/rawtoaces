@@ -11,7 +11,7 @@
 #include <vector>
 #include <ctime>
 #include <nlohmann/json.hpp>
-#include <rawtoaces_core.h>
+#include <rawtoaces/rawtoaces_core.h>
 
 /// RAII (Resource Acquisition Is Initialization)
 /// helper class for test directory management

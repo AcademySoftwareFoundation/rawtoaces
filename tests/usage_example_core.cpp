@@ -3,7 +3,7 @@
 
 #include <filesystem>
 #include <OpenImageIO/unittest.h>
-#include <rawtoaces_core.h>
+#include <rawtoaces/rawtoaces_core.h>
 #include "test_utils.h"
 
 // This file contains some usage examples of the core library.

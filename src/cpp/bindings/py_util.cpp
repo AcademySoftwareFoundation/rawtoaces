@@ -2,7 +2,7 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include "py_util.h"
-#include <image_converter.h>
+#include <rawtoaces/image_converter.h>
 
 // Nanobind headers from here
 #include <nanobind/nanobind.h>

@@ -10,8 +10,8 @@
 #include "../src/cpp/rawtoaces_util/rawtoaces_util_priv.h"
 
 // must be before <OpenImageIO/unittest.h>
-#include <image_converter.h>
-#include <rawtoaces_core.h>
+#include <rawtoaces/image_converter.h>
+#include <rawtoaces/rawtoaces_core.h>
 
 #include <OpenImageIO/unittest.h>
 #include <OpenImageIO/imagebufalgo.h>

@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.12)
 
 # Include coverage support if enabled
 if( ENABLE_COVERAGE )
-    include( ${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/CodeCoverage.cmake )
+    include( ${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake/CodeCoverage.cmake )
 endif()
 
 add_executable( rawtoaces

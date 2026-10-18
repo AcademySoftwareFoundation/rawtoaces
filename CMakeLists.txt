@@ -108,7 +108,7 @@ add_subdirectory("src/cpp/${RAWTOACES_UTIL_LIB}")
 add_subdirectory("src/cpp/rawtoaces")
 
 if ( RTA_BUILD_PYTHON_BINDINGS )
-    add_subdirectory(src/python)
+    add_subdirectory(src/cpp/bindings)
 endif ( RTA_BUILD_PYTHON_BINDINGS )
 
 if ( RTA_BUILD_TESTS )

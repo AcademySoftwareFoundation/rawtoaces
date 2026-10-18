@@ -57,7 +57,7 @@ Library Usage (C++)
 
 .. code-block:: cpp
 
-   #include <image_converter.h>
+   #include <rawtoaces/image_converter.h>
 
    rta::util::ImageConverter converter;
    converter.settings.WB_method = rta::util::ImageConverter::Settings::WBMethod::Metadata;

@@ -28,7 +28,7 @@ Basic Usage
 
 .. code-block:: cpp
 
-   #include <image_converter.h>
+   #include <rawtoaces/image_converter.h>
 
    rta::util::ImageConverter converter;
 

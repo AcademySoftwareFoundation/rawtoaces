@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 #include <OpenImageIO/imageio.h>
-#include "../include/image_converter.h"
+#include <rawtoaces/image_converter.h>
 
 // Contains the declarations of the private functions,
 // exposed here for unit-testing.

@@ -361,9 +361,9 @@ if(RTA_BUILD_PYTHON_BINDINGS)
         # Set environment for Python test to find the compiled module
         # Handle both single-config (Linux/macOS) and multi-config (Windows) generators
         if(WIN32)
-            set( TEST_PYTHONPATH "${CMAKE_BINARY_DIR}/src/python/Release;${CMAKE_BINARY_DIR}/src/python;$ENV{PYTHONPATH}" )
+            set( TEST_PYTHONPATH "${CMAKE_BINARY_DIR}/src/cpp/bindings/Release;${CMAKE_BINARY_DIR}/src/cpp/bindings;$ENV{PYTHONPATH}" )
         else()
-            set( TEST_PYTHONPATH "${CMAKE_BINARY_DIR}/src/python;$ENV{PYTHONPATH}" )
+            set( TEST_PYTHONPATH "${CMAKE_BINARY_DIR}/src/cpp/bindings;$ENV{PYTHONPATH}" )
         endif()
 
         set_tests_properties(Test_Python_CoreBindings PROPERTIES

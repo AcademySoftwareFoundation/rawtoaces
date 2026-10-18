@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright Contributors to the rawtoaces Project.
 
-#include <image_converter.h>
+#include <rawtoaces/image_converter.h>
 
 /// Amend the error message by adding info on the relevant command line parameter.
 void update_error_message( std::string &error_message )

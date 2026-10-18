@@ -10,7 +10,7 @@
 #include <OpenImageIO/unittest.h>
 
 #include "../src/cpp/rawtoaces_util/colour_transforms.h"
-#include <rawtoaces_core.h>
+#include <rawtoaces/rawtoaces_core.h>
 
 namespace
 {

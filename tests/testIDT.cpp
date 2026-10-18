@@ -10,7 +10,7 @@
 #include <OpenImageIO/unittest.h>
 
 #include "../src/cpp/rawtoaces_core/core_math.h"
-#include <rawtoaces_core.h>
+#include <rawtoaces/rawtoaces_core.h>
 #include "../src/cpp/rawtoaces_core/rawtoaces_core_priv.h"
 #include "test_utils.h"
 #include "../src/cpp/misc/pragma.h"

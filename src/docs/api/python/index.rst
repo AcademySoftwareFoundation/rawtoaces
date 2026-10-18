@@ -16,7 +16,8 @@ The main classes are:
   (when supported by the build) lower-level OpenImageIO operations.
 - Core solver bindings for metadata-based and spectral workflows:
   :py:class:`rawtoaces.Metadata`, :py:class:`rawtoaces.MetadataSolver`,
-  :py:class:`rawtoaces.SpectralData`, and :py:class:`rawtoaces.SpectralSolver`.
+  :py:class:`rawtoaces.Spectrum`, :py:class:`rawtoaces.SpectralData`, and
+  :py:class:`rawtoaces.SpectralSolver`.
 
 Some lower-level :py:class:`rawtoaces.ImageConverter` methods require a
 compatible OpenImageIO 3.2+ build; see

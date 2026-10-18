@@ -2,14 +2,265 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include "py_core.h"
+#include <nanobind/operators.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/vector.h>
 #include <rawtoaces/rawtoaces_core.h>
+#include <cmath>
+#include <functional>
 #include <stdexcept>
 #include "../misc/pragma.h"
 
 using namespace rta::core;
 using namespace nanobind::literals;
+
+namespace
+{
+
+// Arithmetic asserts on mismatched curves. Raise ValueError for Python.
+void require_same_sampling( const Spectrum &lhs, const Spectrum &rhs )
+{
+    if ( !( lhs.shape == rhs.shape ) || lhs.values.size() != rhs.values.size() )
+    {
+        throw std::invalid_argument(
+            "Spectrum operands must have the same shape and sample count." );
+    }
+}
+
+// A positive step makes the C++ constructor cast the sample count to
+// size_t. Reject shapes where that cast would be undefined.
+void require_valid_shape( const Spectrum::Shape &shape )
+{
+    if ( !( shape.step > 0 ) )
+    {
+        return;
+    }
+
+    if ( !std::isfinite( shape.first ) || !std::isfinite( shape.last ) ||
+         !std::isfinite( shape.step ) || shape.last < shape.first )
+    {
+        throw std::invalid_argument(
+            "Spectrum shape with a positive step must use finite "
+            "wavelengths and last >= first." );
+    }
+}
+
+} // namespace
+
+void bind_spectrum( nanobind::module_ &m )
+{
+    nanobind::class_<Spectrum> spectrum( m, "Spectrum", R"""(
+        A regularly sampled spectral curve.
+
+        Corresponds to :cpp:struct:`rta::core::Spectrum`. Per-element
+        arithmetic requires both curves to share a shape and sample count.
+        )""" );
+
+    nanobind::class_<Spectrum::Shape> shape( spectrum, "Shape", R"""(
+        Regular wavelength sampling, in nanometers.
+
+        ``first`` and ``last`` are the endpoint wavelengths and ``step`` is
+        the spacing. Shapes compare equal when all three values match.
+        )""" );
+    shape.def(
+        nanobind::init<float, float, float>(),
+        "first"_a = 0.f,
+        "last"_a  = 0.f,
+        "step"_a  = 0.f,
+        R"""(
+        Create a sampling description.
+
+        :param first: Wavelength of the first sample, in nanometers.
+        :param last: Wavelength of the last sample, in nanometers.
+        :param step: Spacing between samples, in nanometers. A zero step
+            describes an empty curve.
+        )""" );
+    shape.def( nanobind::init<const Spectrum::Shape &>(), "other"_a, R"""(
+        Copy constructor.
+        )""" );
+    shape.def_rw( "first", &Spectrum::Shape::first, R"""(
+        Wavelength of the first sample, in nanometers.
+        )""" );
+    shape.def_rw( "last", &Spectrum::Shape::last, R"""(
+        Wavelength of the last sample, in nanometers.
+        )""" );
+    shape.def_rw( "step", &Spectrum::Shape::step, R"""(
+        Spacing between samples, in nanometers.
+        )""" );
+    shape.def( nanobind::self == nanobind::self, R"""(
+        Return whether ``first``, ``last``, and ``step`` all match.
+        )""" );
+    // Equality is by value, and a shape is mutable, so it cannot be hashed.
+    shape.attr( "__hash__" ) = nanobind::none();
+
+    spectrum.def(
+        "__init__",
+        []( Spectrum *self, double value, const Spectrum::Shape &shape ) {
+            require_valid_shape( shape );
+            new ( self ) Spectrum( value, shape );
+        },
+        "value"_a = 0.0,
+        "shape"_a = Spectrum::ReferenceShape,
+        R"""(
+        Create a curve and fill every sample with ``value``.
+
+        :param value: Initial value of every sample.
+        :param shape: Sampling of the new curve. Defaults to
+            ``Spectrum.ReferenceShape``. Pass ``Spectrum.EmptyShape`` to
+            allocate no samples.
+        :raises ValueError: If ``step`` is positive and the wavelengths are
+            non-finite or ``last`` is less than ``first``.
+        )""" );
+    spectrum.def( nanobind::init<const Spectrum &>(), "other"_a, R"""(
+        Copy constructor.
+        )""" );
+    spectrum.def_prop_ro_static(
+        "ReferenceShape",
+        []( nanobind::handle ) { return Spectrum::ReferenceShape; },
+        R"""(
+        Built-in sampling used by rawtoaces, from 380 nm through 780 nm in
+        5 nm steps. Each access returns a new copy.
+        )""" );
+    spectrum.def_prop_ro_static(
+        "EmptyShape",
+        []( nanobind::handle ) { return Spectrum::EmptyShape; },
+        R"""(
+        Empty sampling (zero step) used to construct a curve with no samples.
+        Each access returns a new copy.
+        )""" );
+    spectrum.def_rw( "shape", &Spectrum::shape, R"""(
+        Wavelength sampling of this curve, in nanometers. Assigning a shape
+        records that sampling and leaves ``values`` unchanged, so the sample
+        count can disagree with the shape. ``reshape()`` resamples onto
+        ``ReferenceShape`` from the current samples and does not check that
+        the sample count matches the shape.
+        )""" );
+    spectrum.def_rw( "values", &Spectrum::values, R"""(
+        Spectral samples. Reading returns a new list, so assigning to an
+        index of that list leaves the curve unchanged. Assign a sequence to
+        replace the samples.
+        )""" );
+    spectrum.def(
+        "reshape",
+        []( Spectrum &curve ) {
+            if ( curve.values.empty() )
+            {
+                throw std::invalid_argument(
+                    "Cannot reshape a spectrum with no samples." );
+            }
+            curve.reshape();
+        },
+        R"""(
+        Resample this curve onto ``ReferenceShape`` with linear interpolation.
+
+        Wavelengths outside the current range are filled from the nearest
+        endpoint sample. A curve whose shape already equals
+        ``ReferenceShape`` is left unchanged, including when its sample count
+        does not match that shape.
+
+        :raises ValueError: If the curve has no samples.
+        )""" );
+    spectrum.def( "integrate", &Spectrum::integrate, R"""(
+        Sum every sample.
+
+        :return: The sum of ``values``, or ``0`` when the curve is empty.
+        )""" );
+    spectrum.def( "max", &Spectrum::max, R"""(
+        Return the largest sample, or ``0`` when ``values`` is empty.
+        )""" );
+
+    auto bind_binary = [&]( const char *name, auto op, const char *doc ) {
+        spectrum.def(
+            name,
+            [op]( const Spectrum &lhs, const Spectrum &rhs ) {
+                require_same_sampling( lhs, rhs );
+                return op( lhs, rhs );
+            },
+            nanobind::is_operator(),
+            doc );
+    };
+    auto bind_inplace = [&]( const char *name, auto op, const char *doc ) {
+        spectrum.def(
+            name,
+            [op]( Spectrum &lhs, const Spectrum &rhs ) -> Spectrum & {
+                require_same_sampling( lhs, rhs );
+                op( lhs, rhs );
+                return lhs;
+            },
+            nanobind::is_operator(),
+            nanobind::rv_policy::reference,
+            doc );
+    };
+
+    bind_binary( "__add__", std::plus<>(), R"""(
+        Per-element addition.
+
+        :param other: Curve with the same shape and sample count.
+        :return: A new curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        )""" );
+    bind_binary( "__sub__", std::minus<>(), R"""(
+        Per-element subtraction.
+
+        :param other: Curve with the same shape and sample count.
+        :return: A new curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        )""" );
+    bind_binary( "__mul__", std::multiplies<>(), R"""(
+        Per-element multiplication.
+
+        :param other: Curve with the same shape and sample count.
+        :return: A new curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        )""" );
+    bind_binary( "__truediv__", std::divides<>(), R"""(
+        Per-element division.
+
+        :param other: Curve with the same shape and sample count.
+        :return: A new curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        )""" );
+    bind_inplace(
+        "__iadd__",
+        []( Spectrum &lhs, const Spectrum &rhs ) { lhs += rhs; },
+        R"""(
+        Per-element addition in place.
+
+        :param other: Curve with the same shape and sample count.
+        :return: This curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        )""" );
+    bind_inplace(
+        "__isub__",
+        []( Spectrum &lhs, const Spectrum &rhs ) { lhs -= rhs; },
+        R"""(
+        Per-element subtraction in place.
+
+        :param other: Curve with the same shape and sample count.
+        :return: This curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        )""" );
+    bind_inplace(
+        "__imul__",
+        []( Spectrum &lhs, const Spectrum &rhs ) { lhs *= rhs; },
+        R"""(
+        Per-element multiplication in place.
+
+        :param other: Curve with the same shape and sample count.
+        :return: This curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        )""" );
+    bind_inplace(
+        "__itruediv__",
+        []( Spectrum &lhs, const Spectrum &rhs ) { lhs /= rhs; },
+        R"""(
+        Per-element division in place.
+
+        :param other: Curve with the same shape and sample count.
+        :return: This curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        )""" );
+}
 
 void bind_spectral_data( nanobind::module_ &m )
 {
@@ -48,11 +299,80 @@ void bind_spectral_data( nanobind::module_ &m )
         :param path: path a path to the file to load data from
         :type path: str
         
-        :param reshape: if set to ``True``, the data will be reshaped to the
-            reference shape
+        :param reshape: if set to ``True``, the data will be reshaped to
+            :py:attr:`rawtoaces.Spectrum.ReferenceShape`
         :type reshape: bool
         
         :return: ``True`` if loaded successfully.
+        )""" );
+    spectral_data.def(
+        "__getitem__",
+        []( SpectralData &spectral_data_value, const std::string &name ) {
+            return spectral_data_value[name];
+        },
+        "name"_a,
+        R"""(
+        Return a copy of the named channel in the ``main`` data set.
+
+        :param name: Channel name in the ``main`` set.
+        :return: A copy of that channel's spectrum.
+        :raises ValueError: If the ``main`` set or the channel is absent.
+        )""" );
+    spectral_data.def(
+        "__setitem__",
+        []( SpectralData      &spectral_data_value,
+            const std::string &name,
+            const Spectrum    &curve ) { spectral_data_value[name] = curve; },
+        "name"_a,
+        "curve"_a,
+        R"""(
+        Replace the named channel in the ``main`` data set.
+
+        :param name: Channel name in the ``main`` set.
+        :param curve: Spectrum to store. The channel must already exist.
+        :raises ValueError: If the ``main`` set or the channel is absent.
+        )""" );
+    spectral_data.def(
+        "__contains__",
+        []( const SpectralData &spectral_data_value, const std::string &name ) {
+            const auto set = spectral_data_value.data.find( "main" );
+            if ( set == spectral_data_value.data.end() )
+            {
+                return false;
+            }
+
+            for ( const auto &channel: set->second )
+            {
+                if ( channel.first == name )
+                    return true;
+            }
+            return false;
+        },
+        "name"_a,
+        R"""(
+        Return whether ``name`` is a channel in the ``main`` data set.
+
+        :param name: Channel name to look up.
+        :return: ``True`` when that channel exists. An empty container and a
+            missing ``main`` set return ``False``.
+        )""" );
+    spectral_data.attr( "__iter__" ) = nanobind::none();
+    spectral_data.def(
+        "get",
+        []( SpectralData      &spectral_data_value,
+            const std::string &set_name,
+            const std::string &channel_name ) {
+            return spectral_data_value.get( set_name, channel_name );
+        },
+        "set_name"_a,
+        "channel_name"_a,
+        R"""(
+        Return a copy of one channel from a named data set.
+
+        :param set_name: Spectral set name, usually ``"main"``.
+        :param channel_name: Channel name within that set.
+        :return: A copy of the matching spectrum.
+        :raises ValueError: If the set or channel is absent.
         )""" );
 }
 
@@ -117,6 +437,7 @@ void bind_metadata( nanobind::module_ &m )
 
 void core_bindings( nanobind::module_ &m )
 {
+    bind_spectrum( m );
     bind_spectral_data( m );
     bind_metadata( m );
 

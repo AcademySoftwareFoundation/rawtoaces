@@ -54,27 +54,14 @@ def doxygen_quote(value: str) -> str:
     return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
-def check_doxygen_warnings(repo_root: Path, warnings: str) -> None:
-    """Permit missing docs only for the deprecated ROI overloads.
+def check_doxygen_warnings(warnings: str) -> None:
+    """Fail when Doxygen reports any diagnostic.
 
-    ``apply_matrix``, ``apply_scale``, and ``apply_crop`` still have deprecated
-    overloads that take ``roi``. Those overloads are scheduled for removal in
-    v3, so their missing parameter docs stay allowed. The current signatures
-    have no default argument. Keep parameter warnings enabled: suppressing that
-    whole category would hide missing documentation on current APIs as well.
+    Parameter warnings stay enabled. There is no allowlist: a missing
+    parameter note fails the current documentation build.
     """
-    header = re.escape(str((repo_root / "include/rawtoaces/image_converter.h").resolve()))
-    ignored_roi = re.compile(
-        rf"^{header}:\d+: warning: The following parameter of "
-        r"rta::util::ImageConverter::apply_(?:matrix|scale|crop)\("
-        r"OIIO::ImageBuf\s*&dst,\s*const OIIO::ImageBuf\s*&src,\s*"
-        r"OIIO::ROI roi\s*(?:=\s*\{\})?\) is not documented:\n"
-        r"[ \t]+parameter 'roi'\n?",
-        re.MULTILINE,
-    )
-    unexpected = ignored_roi.sub("", warnings).strip()
-    if unexpected:
-        raise ValueError("Unexpected Doxygen diagnostics:\n" + unexpected)
+    if warnings.strip():
+        raise ValueError("Unexpected Doxygen diagnostics:\n" + warnings.strip())
 
 
 def run_doxygen(
@@ -105,11 +92,11 @@ def run_doxygen(
         )
         if result.stderr:
             print(result.stderr, file=sys.stderr, end="")
-        # A permitted warning never excuses a failed Doxygen process.
+        # A warning in the log never excuses a failed Doxygen process.
         result.check_returncode()
         warnings = warning_log.read_text(encoding="utf-8")
         if strict:
-            check_doxygen_warnings(repo_root, warnings)
+            check_doxygen_warnings(warnings)
             if result.stderr.strip():
                 raise ValueError("Unexpected Doxygen stderr:\n" + result.stderr.strip())
         elif warnings:

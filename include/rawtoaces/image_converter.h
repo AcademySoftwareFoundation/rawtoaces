@@ -425,6 +425,9 @@ public:
     /// @param src
     ///     Source image buffer, can be the same as `dst` for in-place
     ///     conversion.
+    /// @param roi
+    ///     Ignored. This overload processes the whole image and will be
+    ///     removed in v3.
     /// @return
     ///    `true` if applied successfully.
     [[deprecated(
@@ -449,12 +452,15 @@ public:
     /// @param src
     ///     Source image buffer, can be the same as `dst` for in-place
     ///     conversion.
+    /// @param roi
+    ///     Ignored. This overload processes the whole image and will be
+    ///     removed in v3.
     /// @return
     ///    `true` if applied successfully.
     [[deprecated(
         "This method will be removed in v3. Use the version of "
         "`apply_scale()` without the roi parameter." )]] bool
-    apply_scale( OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI );
+    apply_scale( OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi );
 
     /// Apply the headroom scale to image buffer.
     /// @param dst
@@ -472,6 +478,9 @@ public:
     /// @param src
     ///     Source image buffer, can be the same as `dst` for in-place
     ///     conversion.
+    /// @param roi
+    ///     Ignored. This overload processes the whole image and will be
+    ///     removed in v3.
     /// @return
     ///    `true` if applied successfully.
     [[deprecated(

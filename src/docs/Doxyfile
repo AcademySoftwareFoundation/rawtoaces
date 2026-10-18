@@ -49,7 +49,7 @@ REFERENCES_RELATION    = YES
 # Warnings
 QUIET                  = NO
 WARNINGS               = YES
-# build_docs.py rejects warnings except the deprecated roi overloads.
+# build_docs.py rejects every warning for current sources.
 WARN_AS_ERROR          = NO
 WARN_IF_UNDOCUMENTED   = YES
 WARN_IF_DOC_ERROR      = YES

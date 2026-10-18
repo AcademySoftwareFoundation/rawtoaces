@@ -156,29 +156,27 @@ class DoxygenDiagnostics(unittest.TestCase):
             executable=str(executable), strict=strict,
         )
 
-    def test_only_known_roi_warnings_are_permitted(self):
-        for default in (True, False):
-            with self.subTest(default=default):
-                self.run_diagnostics("".join(
-                    self.warning(method, default=default)
-                    for method in ("apply_matrix", "apply_scale", "apply_crop")
-                ))
-
-    def test_unrelated_parameter_method_class_and_file_fail(self):
+    def test_any_warning_fails(self):
         cases = [
+            self.warning(),
+            self.warning(default=False),
+            "".join(
+                self.warning(method, default=False)
+                for method in ("apply_matrix", "apply_scale", "apply_crop")
+            ),
             self.warning(parameter="src"),
             self.warning(method="apply_lens_correction"),
             self.warning().replace("ImageConverter", "SpectralSolver"),
             self.warning(filename=self.root / "include/rawtoaces/other.h"),
             self.warning().replace("OIIO::ROI roi={}", "OIIO::ROI roi={}, bool extra=false"),
+            "warning: unknown command @typo\n",
+            self.warning() + "warning: unknown command @typo\n",
         ]
         for diagnostic in cases:
-            with self.subTest(diagnostic=diagnostic), self.assertRaisesRegex(ValueError, "Unexpected Doxygen diagnostics"):
+            with self.subTest(diagnostic=diagnostic), self.assertRaisesRegex(
+                ValueError, "Unexpected Doxygen diagnostics"
+            ):
                 self.run_diagnostics(diagnostic)
-
-    def test_allowed_warning_does_not_hide_other_diagnostics(self):
-        with self.assertRaisesRegex(ValueError, "unknown command"):
-            self.run_diagnostics(self.warning() + "warning: unknown command @typo\n")
 
     def test_missing_warning_log_fails(self):
         with self.assertRaises(FileNotFoundError):
@@ -188,13 +186,13 @@ class DoxygenDiagnostics(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Unexpected Doxygen stderr"):
             self.run_diagnostics("", stderr="warning: ignoring unsupported configuration option\n")
 
-    def test_allowed_warning_does_not_excuse_nonzero_exit(self):
+    def test_nonzero_exit_fails_even_when_the_log_has_a_warning(self):
         for strict in (True, False):
             with self.subTest(strict=strict), self.assertRaises(subprocess.CalledProcessError) as error:
                 self.run_diagnostics(self.warning(), returncode=17, strict=strict)
             self.assertEqual(error.exception.returncode, 17)
 
-    def test_historical_warning_policy_keeps_unrelated_warning_nonfatal(self):
+    def test_historical_build_keeps_warnings_nonfatal(self):
         self.run_diagnostics(self.warning(parameter="src"), strict=False)
 
 

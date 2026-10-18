@@ -460,7 +460,8 @@ public:
     [[deprecated(
         "This method will be removed in v3. Use the version of "
         "`apply_scale()` without the roi parameter." )]] bool
-    apply_scale( OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi );
+    apply_scale(
+        OIIO::ImageBuf &dst, const OIIO::ImageBuf &src, OIIO::ROI roi );
 
     /// Apply the headroom scale to image buffer.
     /// @param dst

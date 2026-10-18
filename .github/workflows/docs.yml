@@ -2,7 +2,8 @@
 # Copyright Contributors to the rawtoaces project.
 
 # Documentation build and deployment workflow
-# Validates the event checkout, then publishes default-branch and release docs.
+# Builds and checks the files from this run. Publishes the default branch and
+# release docs after a push to main or a release tag.
 
 name: Documentation
 

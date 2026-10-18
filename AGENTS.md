@@ -1,5 +1,6 @@
 # Agent guidance
 
+- Read `CONTRIBUTING.md` and `docs/AI_Policy.md` first.
 - Add the project copyright and SPDX license header to new source files.
   Generated files must receive that header from their generator.
 - Do not hand-edit `src/docs/api/python/rawtoaces.py`. Update python binding docstrings,

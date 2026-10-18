@@ -176,6 +176,29 @@ void util_bindings( nanobind::module_ &m )
 #if OIIO_VERSION >= OIIO_MAKE_VERSION( 3, 2, 0 )
     image_converter.def(
         "configure",
+        []( ImageConverter       &converter,
+            const std::string    &input_filename,
+            OIIO::ParamValueList &options ) {
+            return converter.configure( input_filename, options );
+        },
+        "input_filename"_a,
+        "options"_a,
+        R"""(
+        Configure white balance, the colour transform and decoding options from a file.
+
+        Uses the current ``settings`` and reads metadata from ``input_filename``.
+        ``options`` may be pre-populated with additional OpenImageIO decoding hints
+        and is modified in place with the hints calculated for the rawtoaces
+        conversion. Requires compatible OpenImageIO 3.2+ bindings; see
+        :ref:`python-oiio-availability`.
+
+        :param input_filename: Path to the RAW image whose metadata will be read.
+        :param options: OpenImageIO input options; this object may be modified.
+        :return: ``True`` on success, ``False`` on failure. On failure, inspect
+            ``last_error_message`` and ``status``.
+        )""" );
+    image_converter.def(
+        "configure",
         []( ImageConverter        &converter,
             const OIIO::ImageSpec &image_spec,
             OIIO::ParamValueList  &options ) {
@@ -271,7 +294,7 @@ void util_bindings( nanobind::module_ &m )
         "dst"_a,
         "src"_a,
         R"""(
-        Apply the headroom scale to image buffer.
+        Multiply image buffer pixel values by ``settings.headroom * settings.scale``.
 
         Available only with compatible OpenImageIO 3.2+ bindings; see
         :ref:`python-oiio-availability`.
@@ -414,7 +437,8 @@ void util_bindings( nanobind::module_ &m )
         folder.
         )""" );
     settings.def_rw( "headroom", &ImageConverter::Settings::headroom, R"""(
-        Highlight headroom factor.
+        Linear highlight headroom factor (default 6.0). Pixel scaling uses
+        ``headroom * scale``.
         )""" );
     settings.def_rw(
         "custom_camera_make",

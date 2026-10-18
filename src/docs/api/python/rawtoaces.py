@@ -548,6 +548,23 @@ class ImageConverter:
         """
 
     @overload
+    def configure(self, input_filename: str, options: OpenImageIO.ParamValueList) -> bool:
+        """
+        Configure white balance, the colour transform and decoding options from a file.
+
+        Uses the current ``settings`` and reads metadata from ``input_filename``.
+        ``options`` may be pre-populated with additional OpenImageIO decoding hints
+        and is modified in place with the hints calculated for the rawtoaces
+        conversion. Requires compatible OpenImageIO 3.2+ bindings; see
+        :ref:`python-oiio-availability`.
+
+        :param input_filename: Path to the RAW image whose metadata will be read.
+        :param options: OpenImageIO input options; this object may be modified.
+        :return: ``True`` on success, ``False`` on failure. On failure, inspect
+            ``last_error_message`` and ``status``.
+        """
+
+    @overload
     def configure(self, image_spec: OpenImageIO.ImageSpec, options: OpenImageIO.ParamValueList) -> bool:
         """
         Configure white balance, the colour transform and decoding options from metadata.
@@ -619,7 +636,7 @@ class ImageConverter:
 
     def apply_scale(self, dst: OpenImageIO.ImageBuf, src: OpenImageIO.ImageBuf) -> bool:
         """
-        Apply the headroom scale to image buffer.
+        Multiply image buffer pixel values by ``settings.headroom * settings.scale``.
 
         Available only with compatible OpenImageIO 3.2+ bindings; see
         :ref:`python-oiio-availability`.
@@ -762,7 +779,10 @@ class ImageConverter:
 
         @property
         def headroom(self) -> float:
-            """Highlight headroom factor."""
+            """
+            Linear highlight headroom factor (default 6.0). Pixel scaling uses
+            ``headroom * scale``.
+            """
 
         @headroom.setter
         def headroom(self, arg: float, /) -> None: ...

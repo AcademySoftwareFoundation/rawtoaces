@@ -41,7 +41,7 @@ The default CLI conversion uses metadata white balance and selects the spectral 
 - [Installation, data setup, and v1 CLI migration](src/docs/getting_started.rst)
 - [Docker installation and conversion](src/docs/getting_started.rst#docker)
 - [CLI usage guide](src/docs/user_guide.rst)
-- [C++ API guide](src/docs/api/cpp/index.rst) and [Python API guide](src/docs/api/python/index.rst)
+- [API overview](src/docs/api/overview.rst), [C++ API guide](src/docs/api/cpp/index.rst), and [Python API guide](src/docs/api/python/index.rst)
 - [Spectral datasets and schema](https://github.com/AcademySoftwareFoundation/rawtoaces-data)
 - [Public headers](src/cpp/include/rawtoaces), [source](src), and [tests](tests)
 - [Changes](docs/CHANGES.md) and [known issues](https://github.com/AcademySoftwareFoundation/rawtoaces/issues)

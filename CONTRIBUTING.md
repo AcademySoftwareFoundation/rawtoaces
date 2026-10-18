@@ -357,6 +357,16 @@ The build fails on Doxygen and Sphinx warnings, unresolved references, missing
 essential Python API entries, and invalid Python example syntax. Pull
 requests run this same check and upload `site-preview` as a downloadable artifact.
 
+This documentation build does not require OpenImageIO, which keeps the Read the
+Docs environment limited to Doxygen and `src/docs/requirements.txt`. The
+checked-in Python reference always describes the buffer methods, and Sphinx
+mocks the `OpenImageIO` import. Those methods are marked as requiring
+OpenImageIO 3.2 or later; an extension built against an earlier release does
+not provide them at runtime. Regenerating `src/docs/api/python/rawtoaces.py`
+is a separate step and still needs an OpenImageIO 3.2+ extension. Keep
+documentation sources under `src/docs`. Do not generate them from the unit
+tests.
+
 An existing configured CMake build can also build the documentation:
 
     cmake -S . -B build -D BUILD_DOCS=1

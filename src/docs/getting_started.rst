@@ -136,7 +136,7 @@ Use the platform's virtual-environment activation command on Windows. ``RTA_PYTH
    PYTHONPATH="$PWD/install-python/lib" python -c \
      "import rawtoaces; print(rawtoaces.ImageConverter)"
 
-For builds against OpenImageIO 3.2 or later, ``rawtoaces`` also imports the ``OpenImageIO`` Python extension and checks its nanobind type registrations. Install a compatible OpenImageIO Python extension for the selected interpreter, with its native dependencies available to the runtime loader. Merely installing nanobind or satisfying the OpenImageIO version number is not sufficient. See :doc:`api/python/index` for method availability and setup details.
+For builds against OpenImageIO 3.2 or later, ``rawtoaces`` also imports the ``OpenImageIO`` Python extension and checks its nanobind type registrations. Install a compatible OpenImageIO Python extension for the selected interpreter, with its native dependencies available to the runtime loader. Merely installing nanobind or satisfying the OpenImageIO version number is not sufficient. The documentation always describes those buffer methods; see :doc:`api/overview` for when to use them and :doc:`api/python/index` for setup details.
 
 Docker
 ^^^^^^

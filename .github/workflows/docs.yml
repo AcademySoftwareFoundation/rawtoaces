@@ -2,8 +2,8 @@
 # Copyright Contributors to the rawtoaces project.
 
 # Documentation build and deployment workflow
-# Builds documentation for the default branch and release tags.
-# Deploys a combined versioned site to GitHub Pages.
+# Builds and checks the files from this run. Publishes the default branch and
+# release docs after a push to main or a release tag.
 
 name: Documentation
 
@@ -15,29 +15,47 @@ on:
     paths:
       - 'src/docs/**'
       - 'include/**'
+      - 'src/bindings/**'
+      - 'src/rawtoaces_core/**'
+      - 'src/rawtoaces_util/**'
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'docs/**'
+      - 'CMakeLists.txt'
+      - 'configure.cmake'
+      - '.readthedocs.yaml'
       - '.github/workflows/docs.yml'
-      - 'build_scripts/build_versioned_docs.py'
+      - 'build_scripts/**'
+      - 'tests/docs/**'
   pull_request:
     paths:
       - 'src/docs/**'
       - 'include/**'
+      - 'src/bindings/**'
+      - 'src/rawtoaces_core/**'
+      - 'src/rawtoaces_util/**'
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'docs/**'
+      - 'CMakeLists.txt'
+      - 'configure.cmake'
+      - '.readthedocs.yaml'
       - '.github/workflows/docs.yml'
-      - 'build_scripts/build_versioned_docs.py'
+      - 'build_scripts/**'
+      - 'tests/docs/**'
   # Allow manual trigger
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # Allow only one concurrent deployment
 concurrency:
-  group: "pages"
+  group: "docs-${{ github.event_name == 'pull_request' && github.ref || 'pages' }}"
   cancel-in-progress: true
 
 jobs:
-  build-docs:
+  validate-docs:
     runs-on: ubuntu-latest
     
     steps:
@@ -61,9 +79,51 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r src/docs/requirements.txt
 
-      - name: Build versioned documentation site
+      - name: Test documentation validation
+        run: python -m unittest discover -s tests/docs
+
+      - name: Build and validate the proposed documentation
+        run: python build_scripts/build_docs.py --repo-root . --output-dir site-preview
+
+      - name: Upload pull-request preview
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          path: site-preview
+          name: rawtoaces-documentation-preview
+          retention-days: 5
+
+  build-docs:
+    if: github.event_name != 'pull_request'
+    needs: validate-docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout publication sources
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 0
+          # A tag event validates the tag above, but latest remains main.
+          ref: ${{ github.ref_type == 'tag' && 'main' || github.sha }}
+
+      - name: Install Doxygen
         run: |
-          python build_scripts/build_versioned_docs.py --repo-root . --output-dir site
+          sudo apt-get update
+          sudo apt-get install -y doxygen
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+        with:
+          python-version: '3.14'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r src/docs/requirements.txt
+
+      - name: Build versioned publication site
+        run: |
+          python build_scripts/build_versioned_docs.py --repo-root . --output-dir site --default-ref HEAD
 
       - name: Upload artifact for GitHub Pages
         if: github.event_name == 'push'
@@ -84,6 +144,9 @@ jobs:
     if: github.event_name == 'push'
     needs: build-docs
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     
     environment:
       name: github-pages

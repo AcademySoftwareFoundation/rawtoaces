@@ -224,7 +224,9 @@ void util_bindings( nanobind::module_ &m )
         "dst"_a,
         "src"_a,
         R"""(
-        Apply the lens correction to the image buffer.
+        Apply requested lens corrections atomically. On failure both buffers
+        are unchanged and this method returns False, even if correction is optional.
+        process_buffer and process_image handle optional fallback.
 
         Available only with compatible OpenImageIO 3.2+ bindings; see
         :ref:`python-oiio-availability`.
@@ -327,6 +329,16 @@ void util_bindings( nanobind::module_ &m )
         :type src: OpenImageIO.ImageBuf
         
         :return: ``True`` if processed successfully.
+        )""" );
+    image_converter.def(
+        "process_buffer",
+        &ImageConverter::process_buffer,
+        "dst"_a,
+        "src"_a,
+        R"""(
+        Process a configured image buffer: lens correction, matrix, scale, crop.
+        If optional lens correction fails, warn and process the original source.
+        dst and src may be the same buffer.
         )""" );
     image_converter.def(
         "load_image",

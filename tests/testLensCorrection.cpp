@@ -13,6 +13,8 @@
 #include "test_utils.h"
 #include <OpenImageIO/unittest.h>
 #include <OpenImageIO/imagebufalgo.h>
+#include <future>
+#include <limits>
 
 const std::string camera_make    = "RTA_TestCameraMake";
 const std::string camera_model   = "RTA_TestCameraModel";
@@ -296,7 +298,7 @@ void test_vignetting()
     bool           success = rta::util::apply_vignette_map(
         undistorted_image,
         distorted_image,
-        VIGN_PARAMS,
+        rta::util::init_lens_map_spec( distorted_image.spec(), 1, VIGN_PARAMS ),
         1,
         true,
         error_message );
@@ -330,7 +332,7 @@ void test_distortion()
     bool           success = rta::util::apply_distortion_map(
         undistorted_image,
         distorted_image,
-        DIST_PARAMS,
+        rta::util::init_lens_map_spec( distorted_image.spec(), 1, DIST_PARAMS ),
         0,
         true,
         error_message );
@@ -364,7 +366,7 @@ void test_aberration()
     bool           success = rta::util::apply_aberration_map(
         undistorted_image,
         distorted_image,
-        DIST_PARAMS,
+        rta::util::init_lens_map_spec( distorted_image.spec(), 1, DIST_PARAMS ),
         0,
         true,
         error_message );
@@ -620,70 +622,210 @@ void test_apply_lens_correction_fail_generate()
     }
 }
 
-void test_apply_lens_correction_fail_apply()
+OIIO::ImageBuf metadata_image( int channels = 3 )
 {
-    std::cout << "\n" << __FUNCTION__ << "\n";
-
-    OIIO::ImageSpec spec( 10, 10, 3 );
+    OIIO::ImageSpec spec( 40, 30, channels, OIIO::TypeDesc::FLOAT );
     spec["cameraMake"]  = camera_make;
     spec["cameraModel"] = camera_model;
-    spec["lensMake"]    = lens_make;
     spec["lensModel"]   = lens_model;
-    spec["aperture"]    = aperture;
     spec["focalLength"] = focal_length;
-    spec["focus"]       = focus_distance;
+    spec["aperture"]    = aperture;
+    OIIO::ImageBuf result( spec );
+    OIIO::ImageBufAlgo::fill( result, { 0.2f, 0.4f, 0.6f, 0.75f } );
+    return result;
+}
 
-    OIIO::ImageBuf src_buffer( spec );
+void check_same_pixels( const OIIO::ImageBuf &a, const OIIO::ImageBuf &b )
+{
+    OIIO_CHECK_EQUAL( a.roi(), b.roi() );
+    OIIO_CHECK_EQUAL( a.roi_full(), b.roi_full() );
+    OIIO_CHECK_EQUAL( OIIO::ImageBufAlgo::compare( a, b, 0, 0 ).maxerror, 0 );
+}
 
-    // Using a deep image buffer as destination makes applying a correction
-    // fail.
-    OIIO::ImageSpec dst_spec( 1, 1, 1 );
-    dst_spec.deep = true;
-    OIIO::ImageBuf dst_buffer( dst_spec );
-
+void test_destination_geometry_and_optional_metadata()
+{
+    using Type = rta::util::ImageConverter::Settings::LensCorrectionType;
+    auto src =
+        metadata_image(); // lens maker and focus distance deliberately absent
+    src.set_name( "source.raw" );
+    for ( auto type: { Type::Vignetting, Type::Aberration, Type::Distortion } )
     {
         rta::util::ImageConverter converter;
-        converter.settings.lens_correction_types =
-            rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting;
-        converter.settings.require_lens_correction = true;
-        converter.settings.disable_cache           = true;
-
-        bool success =
-            converter.apply_lens_correction( dst_buffer, src_buffer );
-        OIIO_CHECK_ASSERT( !success );
-        ASSERT_CONTAINS(
-            converter.last_error_message, "Failed to apply the vignette map." );
+        converter.settings.lens_correction_types = type;
+        OIIO::ImageBuf expected, dst( OIIO::ImageSpec( 1, 1, 1 ) );
+        OIIO_CHECK_ASSERT( converter.apply_lens_correction( expected, src ) );
+        OIIO_CHECK_EQUAL( converter.last_error_message, "" );
+        OIIO_CHECK_ASSERT(
+            converter.status == rta::util::ImageConverter::Status::Success );
+        OIIO_CHECK_ASSERT( converter.apply_lens_correction( dst, src ) );
+        check_same_pixels( dst, expected );
+        OIIO_CHECK_EQUAL( std::string( dst.name() ), "source.raw" );
+        OIIO_CHECK_EQUAL(
+            dst.spec().get_string_attribute( "cameraModel" ), camera_model );
+        auto inplace = src;
+        OIIO_CHECK_ASSERT(
+            converter.apply_lens_correction( inplace, inplace ) );
+        check_same_pixels( inplace, expected );
     }
+}
 
+void test_transactional_failure()
+{
+    using Type = rta::util::ImageConverter::Settings::LensCorrectionType;
+    auto src   = metadata_image();
+    // This profile has vignetting, but no TCA: the first stage succeeds, the second fails.
+    src.specmod()["lensModel"]         = "RTA_VignetteOnlyLens";
+    auto                      original = src;
+    rta::util::ImageConverter converter;
+    converter.settings.lens_correction_types =
+        Type::Vignetting | Type::Aberration;
+    OIIO::ImageBuf dst( OIIO::ImageSpec( 1, 1, 3, OIIO::TypeDesc::FLOAT ) );
+    OIIO::ImageBufAlgo::fill( dst, { 42.0f } );
+    auto sentinel = dst;
+    OIIO_CHECK_ASSERT( !converter.apply_lens_correction( dst, src ) );
+    ASSERT_CONTAINS( converter.last_error_message, "chromatic aberration map" );
+    check_same_pixels( dst, sentinel );
+    OIIO_CHECK_ASSERT( !converter.apply_lens_correction( src, src ) );
+    check_same_pixels( src, original );
+    converter.settings.headroom = 1;
+    converter.settings.crop_mode =
+        rta::util::ImageConverter::Settings::CropMode::Off;
+    bool success = false;
+    auto warning = capture_stderr(
+        [&]() { success = converter.process_buffer( dst, src ); } );
+    OIIO_CHECK_ASSERT( success );
+    ASSERT_CONTAINS( warning, "Warning:" );
+    check_same_pixels( dst, original );
+    converter.settings.require_lens_correction = true;
+    OIIO_CHECK_ASSERT( !converter.process_buffer( src, src ) );
+    check_same_pixels( src, original );
+}
+
+void test_map_cache_windows_and_retry()
+{
+    auto src  = metadata_image();
+    auto spec = rta::util::init_lens_map_spec( src.spec(), 2, DIST_PARAMS );
+    std::string error;
+    auto first = rta::util::fetch_distortion_map( spec, 0, false, error );
+    OIIO_CHECK_ASSERT( first );
+    for ( int OIIO::ImageSpec::*field: { &OIIO::ImageSpec::x,
+                                         &OIIO::ImageSpec::y,
+                                         &OIIO::ImageSpec::full_x,
+                                         &OIIO::ImageSpec::full_y,
+                                         &OIIO::ImageSpec::full_width,
+                                         &OIIO::ImageSpec::full_height } )
     {
-        rta::util::ImageConverter converter;
-        converter.settings.lens_correction_types =
-            rta::util::ImageConverter::Settings::LensCorrectionType::Distortion;
-        converter.settings.require_lens_correction = true;
-        converter.settings.disable_cache           = true;
-
-        bool success =
-            converter.apply_lens_correction( dst_buffer, src_buffer );
-        OIIO_CHECK_ASSERT( !success );
-        ASSERT_CONTAINS(
-            converter.last_error_message,
-            "Failed to apply the distortion map." );
+        auto changed = spec;
+        changed.*field += 2;
+        auto cached =
+            rta::util::fetch_distortion_map( changed, 0, false, error );
+        auto fresh = rta::util::fetch_distortion_map( changed, 0, true, error );
+        OIIO_CHECK_ASSERT( cached && fresh && cached != first );
+        if ( cached && fresh )
+            check_same_pixels( *cached, *fresh );
     }
+    spec["lensModel"] = "RTA_BadLensModel";
+    OIIO_CHECK_ASSERT(
+        !rta::util::fetch_distortion_map( spec, 0, false, error ) );
+    error.clear();
+    OIIO_CHECK_ASSERT(
+        !rta::util::fetch_distortion_map( spec, 0, false, error ) );
+    ASSERT_CONTAINS( error, "Failed to initialise" );
+}
 
+void test_invalid_lens_parameters_and_windows()
+{
+    using Type = rta::util::ImageConverter::Settings::LensCorrectionType;
+    auto                      src = metadata_image();
+    rta::util::ImageConverter converter;
+    converter.settings.lens_correction_types = Type::Distortion;
+    OIIO::ImageBuf dst;
+    // Geometry correction needs neither aperture nor focus.
+    src.specmod().erase_attribute( "aperture" );
+    OIIO_CHECK_ASSERT( converter.apply_lens_correction( dst, src ) );
+    for ( float value: { -1.0f,
+                         std::numeric_limits<float>::infinity(),
+                         std::numeric_limits<float>::quiet_NaN() } )
     {
-        rta::util::ImageConverter converter;
-        converter.settings.lens_correction_types =
-            rta::util::ImageConverter::Settings::LensCorrectionType::Aberration;
-        converter.settings.require_lens_correction = true;
-        converter.settings.disable_cache           = true;
-
-        bool success =
-            converter.apply_lens_correction( dst_buffer, src_buffer );
-        OIIO_CHECK_ASSERT( !success );
-        ASSERT_CONTAINS(
-            converter.last_error_message,
-            "Failed to apply the chromatic aberration map." );
+        converter.settings.custom_focal_length = value;
+        OIIO_CHECK_ASSERT( !converter.apply_lens_correction( dst, src ) );
+        ASSERT_CONTAINS( converter.last_error_message, "Invalid focal length" );
     }
+    converter.settings.custom_focal_length = 0;
+    for ( auto type: { Type::Vignetting, Type::Aberration, Type::Distortion } )
+    {
+        converter.settings.lens_correction_types = type;
+        for ( bool deep: { false, true } )
+        {
+            auto invalid_spec = metadata_image().spec();
+            invalid_spec.deep = deep;
+            if ( !deep )
+                invalid_spec.depth = invalid_spec.full_depth = 2;
+            OIIO::ImageBuf invalid( invalid_spec );
+            OIIO_CHECK_ASSERT(
+                !converter.apply_lens_correction( dst, invalid ) );
+            ASSERT_CONTAINS( converter.last_error_message, "flat 2D image" );
+        }
+    }
+    src.specmod().full_width                 = 0;
+    converter.settings.lens_correction_types = Type::Distortion;
+    OIIO_CHECK_ASSERT( !converter.apply_lens_correction( dst, src ) );
+    ASSERT_CONTAINS( converter.last_error_message, "valid full window" );
+}
+
+void test_vignetting_preserves_alpha_and_depth()
+{
+    auto src                    = metadata_image( 5 );
+    src.specmod().alpha_channel = 3;
+    src.specmod().z_channel     = 4;
+    for ( OIIO::ImageBuf::Iterator<float> p( src ); !p.done(); ++p )
+    {
+        p[3] = float( p.x() + p.y() ) / 100;
+        p[4] = float( p.x() + 2 * p.y() );
+    }
+    rta::util::ImageConverter converter;
+    converter.settings.lens_correction_types =
+        rta::util::ImageConverter::Settings::LensCorrectionType::Vignetting;
+    OIIO::ImageBuf dst;
+    OIIO_CHECK_ASSERT( converter.apply_lens_correction( dst, src ) );
+    for ( OIIO::ImageBuf::ConstIterator<float> p( dst ); !p.done(); ++p )
+    {
+        OIIO_CHECK_EQUAL( p[3], float( p.x() + p.y() ) / 100 );
+        OIIO_CHECK_EQUAL( p[4], float( p.x() + 2 * p.y() ) );
+    }
+    OIIO_CHECK_GT( OIIO::ImageBufAlgo::compare( dst, src, 0, 0 ).maxerror, 0 );
+    auto gray = metadata_image( 1 );
+    OIIO_CHECK_ASSERT( converter.apply_lens_correction( dst, gray ) );
+    OIIO_CHECK_EQUAL( dst.nchannels(), 1 );
+}
+
+void test_aberration_alpha_and_concurrent_lookup()
+{
+    using Type = rta::util::ImageConverter::Settings::LensCorrectionType;
+    auto src   = metadata_image( 4 );
+    src.specmod().alpha_channel = 3;
+    // An alpha gradient makes unintended spatial warping visible.
+    for ( OIIO::ImageBuf::Iterator<float> p( src ); !p.done(); ++p )
+        p[3] = float( p.x() + p.y() ) / 100;
+    rta::util::ImageConverter converter;
+    converter.settings.lens_correction_types = Type::Aberration;
+    OIIO::ImageBuf dst;
+    OIIO_CHECK_ASSERT( converter.apply_lens_correction( dst, src ) );
+    for ( OIIO::ImageBuf::ConstIterator<float> p( dst ); !p.done(); ++p )
+        OIIO_CHECK_EQUAL( p[3], float( p.x() + p.y() ) / 100 );
+
+    rta::util::reset_database();
+    std::vector<std::future<bool>> pending;
+    for ( int i = 0; i < 8; ++i )
+        pending.push_back( std::async( std::launch::async, [src]() {
+            rta::util::ImageConverter c;
+            c.settings.lens_correction_types = Type::Distortion;
+            c.settings.disable_cache         = true;
+            OIIO::ImageBuf out;
+            return c.apply_lens_correction( out, src );
+        } ) );
+    for ( auto &result: pending )
+        OIIO_CHECK_ASSERT( result.get() );
 }
 
 void check_apply_lens_correction(
@@ -812,7 +954,12 @@ int main( int, char ** )
     test_lens_correction_caches();
 
     test_apply_lens_correction_fail_init();
-    test_apply_lens_correction_fail_apply();
+    test_destination_geometry_and_optional_metadata();
+    test_transactional_failure();
+    test_map_cache_windows_and_retry();
+    test_invalid_lens_parameters_and_windows();
+    test_aberration_alpha_and_concurrent_lookup();
+    test_vignetting_preserves_alpha_and_depth();
     test_apply_lens_correction_success();
 
     return unit_test_failures;

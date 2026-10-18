@@ -584,9 +584,20 @@ class ImageConverter:
         :return: List containing camera model names.
         """
 
+    def process_buffer(self, dst: OpenImageIO.ImageBuf, src: OpenImageIO.ImageBuf) -> bool:
+        """
+        Process a configured buffer: lens correction, matrix, scale, crop.
+        If optional correction fails, warn and process the original source.
+        Source and destination may be the same buffer.
+
+        :return: ``True`` if processed successfully.
+        """
+
     def apply_lens_correction(self, dst: OpenImageIO.ImageBuf, src: OpenImageIO.ImageBuf) -> bool:
         """
-        Apply the lens correction to the image buffer.
+        Apply requested lens corrections atomically. On failure both buffers
+        are unchanged and this method returns False, even if correction is optional.
+        process_buffer and process_image handle optional fallback.
 
         Available only with compatible OpenImageIO 3.2+ bindings; see
         :ref:`python-oiio-availability`.

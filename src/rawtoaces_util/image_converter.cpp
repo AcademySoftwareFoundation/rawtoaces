@@ -1639,8 +1639,9 @@ bool fetch_missing_metadata(
         if ( settings.custom_focal_length == 0.0f )
             keys_to_check.insert( "focalLength" );
 
-        if ( settings.lens_correction_types &&
-             ImageConverter::Settings::LensCorrectionType::Vignetting )
+        if ( ( settings.lens_correction_types &
+               ImageConverter::Settings::LensCorrectionType::Vignetting ) !=
+             ImageConverter::Settings::LensCorrectionType::None )
         {
             if ( settings.custom_aperture == 0.0f )
                 keys_to_check.insert( "aperture" );
@@ -1689,229 +1690,42 @@ bool fetch_missing_metadata(
     return result;
 }
 
-template <typename T>
-bool fetch_lens_parameter(
-    T                     &parameter,
-    const OIIO::ImageSpec &spec,
-    const std::string     &attribute_name,
-    const std::string     &property_name,
-    std::string           &error_message )
-{
-    if ( parameter == T() )
-    {
-        if constexpr ( std::is_same<T, float>::value )
-            parameter = spec.get_float_attribute( attribute_name );
-        else
-            parameter = spec.get_string_attribute( attribute_name );
-
-        if ( parameter == T() )
-        {
-            error_message =
-                "Missing the " + property_name + " in the file metadata.";
-            return false;
-        }
-    }
-    return true;
-}
-
 bool ImageConverter::apply_lens_correction(
     OIIO::ImageBuf &dst, const OIIO::ImageBuf &src )
 {
     if ( settings.verbosity > 0 )
         std::cerr << "Applying lens correction" << std::endl;
-
     UsageTimerWrapper usage_timer(
         src.name(), "applying lens correction", settings.use_timing );
 
-    if ( settings.lens_correction_types ==
-         ImageConverter::Settings::LensCorrectionType::None )
+    bool success;
+    if ( settings.lens_correction_types == Settings::LensCorrectionType::None )
     {
-        // No correction requested, copy the source to destination if needed.
-        dst.copy( src );
+        success = src.initialized();
+        if ( success && &dst != &src )
+        {
+            OIIO::ImageBuf copy;
+            success = copy.copy( src );
+            if ( success )
+                dst = std::move( copy );
+        }
+        if ( !success )
+            last_error_message = "Failed to copy the source image.";
     }
     else
     {
 #if ( RTA_ENABLE_LENSFUN )
-        auto &src_spec = src.spec();
-
-        std::string camera_make = settings.custom_camera_make;
-        if ( !fetch_lens_parameter(
-                 camera_make,
-                 src_spec,
-                 "cameraMake",
-                 "camera manufacturer name",
-                 last_error_message ) )
-        {
-            status = Status::LensCorrectionError;
-            return false;
-        }
-
-        std::string camera_model = settings.custom_camera_model;
-        if ( !fetch_lens_parameter(
-                 camera_model,
-                 src_spec,
-                 "cameraModel",
-                 "camera model name",
-                 last_error_message ) )
-        {
-            status = Status::LensCorrectionError;
-            return false;
-        }
-
-        std::string lens_make = settings.custom_lens_make;
-        // Do not fail if the lens make is missing. We can work around that.
-        fetch_lens_parameter(
-            lens_make,
-            src_spec,
-            "lensMake",
-            "lens manufacturer name",
-            last_error_message );
-
-        std::string lens_model = settings.custom_lens_model;
-        if ( !fetch_lens_parameter(
-                 lens_model,
-                 src_spec,
-                 "lensModel",
-                 "lens model name",
-                 last_error_message ) )
-        {
-            status = Status::LensCorrectionError;
-            return false;
-        }
-
-        float focal_length = settings.custom_focal_length;
-        if ( !fetch_lens_parameter(
-                 focal_length,
-                 src_spec,
-                 "focalLength",
-                 "focal length value",
-                 last_error_message ) )
-        {
-            status = Status::LensCorrectionError;
-            return false;
-        }
-
-        float aperture       = 0.0f;
-        float focus_distance = 0.0f;
-
-        if ( settings.lens_correction_types &&
-             ImageConverter::Settings::LensCorrectionType::Vignetting )
-        {
-            aperture = settings.custom_aperture;
-            if ( !fetch_lens_parameter(
-                     aperture,
-                     src_spec,
-                     "aperture",
-                     "aperture value",
-                     last_error_message ) )
-            {
-                status = Status::LensCorrectionError;
-                return false;
-            }
-
-            // Do not fail if the focus distance is missing. Not many raw files
-            // have this information, nor many lens vignette models account for
-            // that.
-            focus_distance = settings.custom_focus_distance;
-            fetch_lens_parameter(
-                focus_distance,
-                src_spec,
-                "focus",
-                "focus distance value",
-                last_error_message );
-        }
-
-        const OIIO::ImageBuf *src_ptr = &src;
-
-        if ( settings.lens_correction_types &&
-             ImageConverter::Settings::LensCorrectionType::Vignetting )
-        {
-            if ( !apply_vignette_map(
-                     dst,
-                     *src_ptr,
-                     camera_make,
-                     camera_model,
-                     lens_make,
-                     lens_model,
-                     focal_length,
-                     aperture,
-                     focus_distance,
-                     settings.verbosity,
-                     settings.disable_cache,
-                     last_error_message ) )
-            {
-                status = Status::LensCorrectionError;
-                return false;
-            }
-
-            if ( &dst != src_ptr )
-            {
-                dst.specmod().extra_attribs = src.spec().extra_attribs;
-                src_ptr                     = &dst;
-            }
-        }
-
-        if ( settings.lens_correction_types &&
-             ImageConverter::Settings::LensCorrectionType::Aberration )
-        {
-            if ( !apply_aberration_map(
-                     dst,
-                     *src_ptr,
-                     camera_make,
-                     camera_model,
-                     lens_make,
-                     lens_model,
-                     focal_length,
-                     settings.verbosity,
-                     settings.disable_cache,
-                     last_error_message ) )
-            {
-                status = Status::LensCorrectionError;
-                return false;
-            }
-
-            if ( &dst != src_ptr )
-            {
-                dst.specmod().extra_attribs = src.spec().extra_attribs;
-                src_ptr                     = &dst;
-            }
-        }
-
-        if ( settings.lens_correction_types &&
-             ImageConverter::Settings::LensCorrectionType::Distortion )
-        {
-            if ( !apply_distortion_map(
-                     dst,
-                     *src_ptr,
-                     camera_make,
-                     camera_model,
-                     lens_make,
-                     lens_model,
-                     focal_length,
-                     settings.verbosity,
-                     settings.disable_cache,
-                     last_error_message ) )
-            {
-                status = Status::LensCorrectionError;
-                return false;
-            }
-
-            if ( &dst != src_ptr )
-            {
-                dst.specmod().extra_attribs = src.spec().extra_attribs;
-            }
-        }
+        success =
+            apply_lens_corrections( dst, src, settings, last_error_message );
 #else
-        dst.copy( src );
+        success = false;
         last_error_message =
             "The rawtoaces tool/library has been built without lensfun "
             "support. Lens correction is not available.";
-        status = Status::LensCorrectionError;
-        return false;
-#endif // ( RTA_ENABLE_LENSFUN )
+#endif
     }
-
-    return true;
+    status = success ? Status::Success : Status::LensCorrectionError;
+    return success;
 }
 
 bool ImageConverter::configure(

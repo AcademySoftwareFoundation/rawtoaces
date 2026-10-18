@@ -18,9 +18,8 @@ operator<<( std::ostream &os, const OIIO::ImageSpec &data [[maybe_unused]] )
 
 bool operator==( const OIIO::ImageSpec &data1, const OIIO::ImageSpec &data2 )
 {
-    if ( data1.width != data2.width )
-        return false;
-    if ( data1.height != data2.height )
+    if ( data1.roi() != data2.roi() || data1.roi_full() != data2.roi_full() ||
+         data1.format != data2.format || data1.deep != data2.deep )
         return false;
 
     static std::vector<std::string> string_keys = {

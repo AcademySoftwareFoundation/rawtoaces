@@ -16,25 +16,46 @@ Usage examples
 .. code-block:: python
 
   import rawtoaces
+
+  input_path = "/path/to/input/file.CR3"
   converter = rawtoaces.ImageConverter()
-  converter.process_image("/path/to/input/file.CR3")
+  if not converter.process_image(input_path):
+      raise RuntimeError(converter.last_error_message)
 
 This will convert the input file ``/path/to/input/file.CR3`` using the default
 settings, and create the output file ``/path/to/input/file_aces.exr`` in the same
 directory.
 
+Using a named illuminant for white balance requires camera sensitivities, colour
+matching functions, and training data in the spectral database. Set
+``RAWTOACES_DATA_PATH`` when that database is not on the default search path.
+This example uses spectral conversion and the generated 3200K blackbody:
+
 .. code-block:: python
 
   import rawtoaces
+
+  input_path = "/path/to/input/file.CR3"
   converter = rawtoaces.ImageConverter()
-  converter.settings.WB_method == rawtoaces.ImageConverter.Settings.WBMethod.Illuminant
+  converter.settings.WB_method = rawtoaces.ImageConverter.Settings.WBMethod.Illuminant
+  converter.settings.matrix_method = rawtoaces.ImageConverter.Settings.MatrixMethod.Spectral
   converter.settings.illuminant = "3200K"
   converter.settings.output_dir = "/path/to/output"
-  converter.process_image("/path/to/an/image/file.CR3")
+  converter.settings.create_dirs = True
+  if not converter.process_image(input_path):
+      raise RuntimeError(converter.last_error_message)
 
 This will convert the input file ``/path/to/input/file.CR3`` white-balancing to
 the colour temperature of 3200K, and create the output file
 ``/path/to/output/file_aces.exr`` at the provided location.
+
+Output scaling
+--------------
+
+Pixel values are multiplied by ``settings.headroom * settings.scale``.
+``headroom`` is a linear factor (default ``6.0``). Doubling headroom is
+equivalent to adding one exposure stop. An adjustment of ``s`` stops
+corresponds to multiplying the factor by ``2 ** s``.
 
 .. _python-oiio-availability:
 

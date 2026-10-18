@@ -78,7 +78,9 @@ Output Options
    Create output directories if they don't exist.
 
 ``--headroom <value>``
-   Set the highlight headroom (default: 6.0 stops).
+   Linear factor (defaults to 6.0) multiplied with the API ``settings.scale`` (defaults to 1.0).
+   Doubling headroom is equivalent to adding one exposure stop. An adjustment of ``s`` stops
+   corresponds to multiplying the factor by ``2 ** s``. 
 
 Cropping Options
 ^^^^^^^^^^^^^^^^

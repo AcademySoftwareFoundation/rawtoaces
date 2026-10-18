@@ -156,6 +156,6 @@ jobs:
 
       - name: Run sanitiser checks
         if: inputs.sanitiser_mode != 'none'
-        working-directory: build/src/rawtoaces
+        working-directory: build/src/cpp/rawtoaces
         run: |
-          bash ../../../tests/run_valid.sh
+          bash ../../../../tests/run_valid.sh

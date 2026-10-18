@@ -11,7 +11,7 @@ PROJECT_BRIEF          = "RAW to ACES Utility"
 PROJECT_LOGO           =
 
 # Input/Output
-INPUT                  = ../include/rawtoaces
+INPUT                  = cpp/include/rawtoaces
 OUTPUT_DIRECTORY       = doxygen
 RECURSIVE              = YES
 FILE_PATTERNS          = *.h *.hpp

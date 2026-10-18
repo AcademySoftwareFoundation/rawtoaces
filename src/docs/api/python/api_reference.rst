@@ -22,6 +22,9 @@ Classes
 .. autoclass:: rawtoaces.ImageConverter
     :members:
 
+.. autoclass:: rawtoaces.Spectrum
+    :members:
+
 .. autoclass:: rawtoaces.SpectralData
     :members:
 

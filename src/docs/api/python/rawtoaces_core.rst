@@ -27,6 +27,7 @@ The core bindings expose these data containers and solvers:
 
 - :py:class:`rawtoaces.Metadata`: container for DNG-style calibration/neutral metadata.
 - :py:class:`rawtoaces.MetadataSolver`: solves CAT/IDT using :py:class:`rawtoaces.Metadata`.
+- :py:class:`rawtoaces.Spectrum`: one regularly sampled spectral curve.
 - :py:class:`rawtoaces.SpectralData`: spectral JSON container/loader.
 - :py:class:`rawtoaces.SpectralSolver`: solves WB/IDT using spectral datasets.
 
@@ -135,12 +136,42 @@ Finding a standard illuminant best matching the given white-balancing multiplier
       raise RuntimeError(solver.last_error_message)
 
 
+Spectrum
+--------
+
+:py:class:`rawtoaces.Spectrum` stores one regularly sampled spectral curve and
+corresponds to :cpp:struct:`rta::core::Spectrum`. Its nested
+:py:class:`~rawtoaces.Spectrum.Shape` describes that sampling in nanometers.
+
+``Spectrum.ReferenceShape`` is the sampling rawtoaces uses internally: 380 nm
+through 780 nm in 5 nm steps. ``Spectrum.EmptyShape`` allocates no samples.
+A shape with a positive step must use finite wavelengths and ``last >= first``;
+otherwise construction raises ``ValueError``. Arithmetic is per sample and
+requires both curves to share a shape and sample count; a mismatch raises
+``ValueError``. ``reshape()`` interpolates onto ``ReferenceShape``. Reading
+``values`` returns a new list, and assigning ``shape`` leaves the current
+samples in place.
+
+.. code-block:: python
+
+  import rawtoaces
+
+  curve = rawtoaces.Spectrum(0.0, rawtoaces.Spectrum.Shape(380, 400, 10))
+  curve.values = [10.0, 20.0, 30.0]
+  curve.reshape()
+
 Spectral Data
 -------------
 
 The :py:class:`rawtoaces.SpectralData` class is a minimal spectral data container exposed
 for :py:class:`rawtoaces.SpectralSolver` workflows.
 Corresponds to :cpp:class:`rta::core::SpectralData`.
+
+Channels in a loaded container are :py:class:`rawtoaces.Spectrum` copies.
+``data["channel"]`` and ``data.get(set_name, channel_name)`` read them, and
+``data["channel"] = curve`` replaces a channel that already exists in the
+``main`` set. ``"channel" in data`` tests for that name. The container is not
+iterable.
 
 File format and schema references:
 

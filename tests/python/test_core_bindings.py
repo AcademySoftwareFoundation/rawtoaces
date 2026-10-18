@@ -3,7 +3,7 @@
 # Copyright Contributors to the rawtoaces Project.
 
 """
-Unit tests for rawtoaces Python bindings - core metadata solver bindings
+Unit tests for rawtoaces Python bindings - core solver and spectrum bindings
 """
 
 import json
@@ -103,6 +103,8 @@ def _write_test_spectral_file(
 
 class TestMetadataBindings:
     def test_metadata_types_exist(self):
+        assert hasattr(rawtoaces, "Spectrum")
+        assert hasattr(rawtoaces.Spectrum, "Shape")
         assert hasattr(rawtoaces, "SpectralData")
         assert hasattr(rawtoaces, "Metadata")
         assert hasattr(rawtoaces.Metadata, "Calibration")
@@ -319,3 +321,167 @@ class TestSpectralSolverBindings:
             assert len(row) == 3
             for value in row:
                 assert math.isfinite(value)
+
+
+def _reference_sample_count():
+    shape = rawtoaces.Spectrum.ReferenceShape
+    return int((shape.last - shape.first) / shape.step) + 1
+
+
+class TestSpectrumBindings:
+    def test_reference_and_empty_shapes_are_copies(self):
+        reference = rawtoaces.Spectrum.ReferenceShape
+        assert reference == rawtoaces.Spectrum.Shape(380, 780, 5)
+        reference.first = 0
+        assert rawtoaces.Spectrum.ReferenceShape.first == 380
+
+        empty = rawtoaces.Spectrum.EmptyShape
+        assert empty == rawtoaces.Spectrum.Shape(0, 0, 0)
+        assert reference != empty
+        assert (reference == 1) is False
+        with pytest.raises(TypeError):
+            hash(rawtoaces.Spectrum.Shape(380, 780, 5))
+
+    def test_constructor_fills_samples_for_the_requested_shape(self):
+        shape = rawtoaces.Spectrum.Shape(380, 390, 5)
+        curve = rawtoaces.Spectrum(2.5, shape)
+
+        assert curve.shape == shape
+        assert curve.values == [2.5, 2.5, 2.5]
+        curve.values[0] = 9.0
+        assert curve.values == [2.5, 2.5, 2.5]
+        assert len(rawtoaces.Spectrum().values) == _reference_sample_count() == 81
+
+        empty = rawtoaces.Spectrum(1.0, rawtoaces.Spectrum.EmptyShape)
+        assert empty.values == []
+        assert empty.max() == 0
+        assert empty.integrate() == 0
+
+        with pytest.raises(ValueError) as exc_info:
+            rawtoaces.Spectrum(0.0, rawtoaces.Spectrum.Shape(780, 380, 5))
+        assert "last >= first" in str(exc_info.value)
+        with pytest.raises(ValueError):
+            rawtoaces.Spectrum(
+                0.0, rawtoaces.Spectrum.Shape(float("nan"), 780, 5)
+            )
+
+    def test_shape_assignment_keeps_existing_samples(self):
+        curve = rawtoaces.Spectrum(1.0, rawtoaces.Spectrum.Shape(380, 390, 5))
+        curve.shape.last = 400
+        assert curve.shape.last == 400
+
+        curve.shape = rawtoaces.Spectrum.Shape(400, 410, 5)
+        assert curve.shape.first == 400
+        assert curve.values == [1.0, 1.0, 1.0]
+
+    def test_copy_is_independent(self):
+        original = rawtoaces.Spectrum(4.0, rawtoaces.Spectrum.Shape(380, 390, 5))
+        copied = rawtoaces.Spectrum(original)
+        copied.values = [0.0, 0.0, 0.0]
+
+        assert original.values == [4.0, 4.0, 4.0]
+
+    def test_arithmetic_is_per_element_and_checks_sampling(self):
+        shape = rawtoaces.Spectrum.Shape(380, 390, 5)
+        left = rawtoaces.Spectrum(0.0, shape)
+        right = rawtoaces.Spectrum(0.0, shape)
+        left.values = [2.0, 3.0, 4.0]
+        right.values = [5.0, 1.0, 2.0]
+
+        assert (left + right).values == [7.0, 4.0, 6.0]
+        assert (left - right).values == [-3.0, 2.0, 2.0]
+        assert (left * right).values == [10.0, 3.0, 8.0]
+        assert (left / right).values == [0.4, 3.0, 2.0]
+        assert left.values == [2.0, 3.0, 4.0]
+
+        updated = left
+        left += right
+        assert updated is left
+        assert left.values == [7.0, 4.0, 6.0]
+        left -= right
+        left *= right
+        assert left.values == [10.0, 3.0, 8.0]
+        left /= right
+        assert left.values == [2.0, 3.0, 4.0]
+
+        mismatched = rawtoaces.Spectrum(1.0, rawtoaces.Spectrum.Shape(380, 400, 10))
+        with pytest.raises(ValueError) as exc_info:
+            left + mismatched
+        assert (
+            str(exc_info.value)
+            == "Spectrum operands must have the same shape and sample count."
+        )
+
+        shortened = rawtoaces.Spectrum(left)
+        shortened.values = shortened.values[:-1]
+        with pytest.raises(ValueError):
+            left += shortened
+        assert left.values == [2.0, 3.0, 4.0]
+
+        with pytest.raises(TypeError) as exc_info:
+            left + 1
+        assert "incompatible function arguments" not in str(exc_info.value)
+
+    def test_reshape_interpolates_onto_the_reference_shape(self):
+        curve = rawtoaces.Spectrum(0.0, rawtoaces.Spectrum.Shape(380, 400, 10))
+        curve.values = [10.0, 20.0, 30.0]
+        curve.reshape()
+
+        assert curve.shape == rawtoaces.Spectrum.ReferenceShape
+        assert len(curve.values) == 81
+        assert curve.values[0] == pytest.approx(10.0)
+        assert curve.values[1] == pytest.approx(15.0)
+        assert curve.values[2] == pytest.approx(20.0)
+        assert curve.values[3] == pytest.approx(25.0)
+        assert curve.values[4] == pytest.approx(30.0)
+        assert curve.integrate() == pytest.approx(sum(curve.values))
+        assert curve.max() == pytest.approx(max(curve.values))
+
+        already_reference = rawtoaces.Spectrum(1.0)
+        already_reference.reshape()
+        assert already_reference.values == [1.0] * 81
+
+        with pytest.raises(ValueError) as exc_info:
+            rawtoaces.Spectrum(0.0, rawtoaces.Spectrum.EmptyShape).reshape()
+        assert str(exc_info.value) == "Cannot reshape a spectrum with no samples."
+
+    def test_spectral_data_channels_round_trip(self, tmp_path):
+        _write_test_spectral_file(
+            tmp_path,
+            "illuminant",
+            "flat.json",
+            ["power"],
+            {"type": "illuminant"},
+        )
+        data = rawtoaces.SpectralData()
+        assert data.load(str(tmp_path / "illuminant" / "flat.json")) is True
+
+        loaded = data["power"]
+        assert isinstance(loaded, rawtoaces.Spectrum)
+        assert loaded.shape == rawtoaces.Spectrum.ReferenceShape
+        assert loaded.values[0] == pytest.approx(1.0)
+        assert loaded.values[1] == pytest.approx(1.05)
+        assert data.get("main", "power").values == loaded.values
+
+        loaded.values = [0.0] * len(loaded.values)
+        assert data["power"].values[0] == pytest.approx(1.0)
+
+        replacement = rawtoaces.Spectrum(3.0)
+        data["power"] = replacement
+        assert data["power"].values == [3.0] * 81
+
+        with pytest.raises(ValueError) as exc_info:
+            data["missing"]
+        assert "missing" in str(exc_info.value)
+        with pytest.raises(ValueError) as exc_info:
+            data.get("other", "power")
+        assert "other" in str(exc_info.value)
+
+        assert "power" in data
+        assert "missing" not in data
+        assert "power" not in rawtoaces.SpectralData()
+        with pytest.raises(ValueError) as exc_info:
+            rawtoaces.SpectralData()["power"]
+        assert "main" in str(exc_info.value)
+        with pytest.raises(TypeError):
+            list(data)

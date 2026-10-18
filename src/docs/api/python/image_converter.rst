@@ -77,7 +77,7 @@ superset; a method shown there may be absent from your installed build.
        settings, and supported-data queries
      - Available
      - Available
-   * - ``MetadataSolver``, ``SpectralSolver``, and ``SpectralData``
+   * - ``Spectrum``, ``MetadataSolver``, ``SpectralSolver``, and ``SpectralData``
      - Available
      - Available
    * - ``configure(image_spec, options)``

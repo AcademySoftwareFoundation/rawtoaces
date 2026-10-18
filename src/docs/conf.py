@@ -6,8 +6,14 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import subprocess
 import os
+import sys
+from pathlib import Path
+
+docs_dir = Path(__file__).resolve().parent
+repo_root = docs_dir.parents[1]
+sys.path.insert(0, str(repo_root / 'build_scripts'))
+from build_docs import check_html, documentation_version, run_doxygen
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -16,9 +22,10 @@ project = 'rawtoaces'
 copyright = '2024, Contributors to the rawtoaces Project'
 author = 'Contributors to the rawtoaces Project'
 
-# The version info for the project
-version = '2.0'
-release = '2.0.0'
+# Label the documentation checkout, independently of library release metadata.
+version = release = documentation_version(repo_root)
+strict_docs = os.environ.get('RAWTOACES_DOCS_STRICT', '1') == '1'
+nitpicky = strict_docs
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -58,10 +65,8 @@ master_doc = 'index'
 
 # Autodoc needs to import the rawtoaces module to read the docstrings.
 # Adding the path to the module stub to the search path.
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path('.', 'api', 'python').resolve()))
-sys.path.insert(0, str(Path(__file__).resolve().parent / '_ext'))
+sys.path.insert(0, str(docs_dir / 'api' / 'python'))
+sys.path.insert(0, str(docs_dir / '_ext'))
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -89,10 +94,14 @@ read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 # Path to Doxygen XML output
 # When building locally with CMake, this will be in the build directory
 # When building on RTD, we run Doxygen from conf.py
-if read_the_docs_build:
-    # Run Doxygen when building on Read the Docs
-    subprocess.call('cd .. && doxygen docs/Doxyfile', shell=True)
-    breathe_projects = {'rawtoaces': '../doxygen/xml'}
+provided_xml = os.environ.get('RAWTOACES_DOCS_DOXYGEN_XML')
+if provided_xml:
+    breathe_projects = {'rawtoaces': provided_xml}
+elif read_the_docs_build:
+    # Apply the same warning check used by the direct documentation build.
+    doxygen_output = repo_root / 'src' / 'doxygen'
+    run_doxygen(repo_root, doxygen_output, release, strict=strict_docs)
+    breathe_projects = {'rawtoaces': str(doxygen_output / 'xml')}
 else:
     # Local build - assume CMake has run Doxygen
     breathe_projects = {'rawtoaces': '_build/doxygen/xml'}
@@ -131,3 +140,16 @@ myst_enable_extensions = [
 
 # Match GitHub heading fragments in the included contribution guide.
 myst_heading_anchors = 3
+
+
+def validate_generated_html(app, exception):
+    if exception is None and strict_docs and app.builder.name == 'html':
+        from sphinx.errors import ExtensionError
+        try:
+            check_html(Path(app.outdir))
+        except (ValueError, OSError) as error:
+            raise ExtensionError(str(error)) from error
+
+
+def setup(app):
+    app.connect('build-finished', validate_generated_html)

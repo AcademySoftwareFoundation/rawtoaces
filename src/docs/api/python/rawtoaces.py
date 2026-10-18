@@ -17,10 +17,214 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 import enum
-from typing import overload
+from typing import Final, overload
 
 import OpenImageIO
 
+
+class Spectrum:
+    """
+    A regularly sampled spectral curve.
+
+    Corresponds to :cpp:struct:`rta::core::Spectrum`. Per-element
+    arithmetic requires both curves to share a shape and sample count.
+    """
+
+    @overload
+    def __init__(self, value: float = 0.0, shape: Spectrum.Shape = ...) -> None:
+        """
+        Create a curve and fill every sample with ``value``.
+
+        :param value: Initial value of every sample.
+        :param shape: Sampling of the new curve. Defaults to
+            ``Spectrum.ReferenceShape``. Pass ``Spectrum.EmptyShape`` to
+            allocate no samples.
+        :raises ValueError: If ``step`` is positive and the wavelengths are
+            non-finite or ``last`` is less than ``first``.
+        """
+
+    @overload
+    def __init__(self, other: Spectrum) -> None:
+        """Copy constructor."""
+
+    class Shape:
+        """
+        Regular wavelength sampling, in nanometers.
+
+        ``first`` and ``last`` are the endpoint wavelengths and ``step`` is
+        the spacing. Shapes compare equal when all three values match.
+        """
+
+        @overload
+        def __init__(self, first: float = 0.0, last: float = 0.0, step: float = 0.0) -> None:
+            """
+            Create a sampling description.
+
+            :param first: Wavelength of the first sample, in nanometers.
+            :param last: Wavelength of the last sample, in nanometers.
+            :param step: Spacing between samples, in nanometers. A zero step
+                describes an empty curve.
+            """
+
+        @overload
+        def __init__(self, other: Spectrum.Shape) -> None:
+            """Copy constructor."""
+
+        @property
+        def first(self) -> float:
+            """Wavelength of the first sample, in nanometers."""
+
+        @first.setter
+        def first(self, arg: float, /) -> None: ...
+
+        @property
+        def last(self) -> float:
+            """Wavelength of the last sample, in nanometers."""
+
+        @last.setter
+        def last(self, arg: float, /) -> None: ...
+
+        @property
+        def step(self) -> float:
+            """Spacing between samples, in nanometers."""
+
+        @step.setter
+        def step(self, arg: float, /) -> None: ...
+
+        def __eq__(self, arg: Spectrum.Shape, /) -> bool:
+            """Return whether ``first``, ``last``, and ``step`` all match."""
+
+        __hash__: None = None
+
+    ReferenceShape: Final[Spectrum.Shape] = ...
+    """
+    Built-in sampling used by rawtoaces, from 380 nm through 780 nm in
+    5 nm steps. Each access returns a new copy.
+    """
+
+    EmptyShape: Final[Spectrum.Shape] = ...
+    """
+    Empty sampling (zero step) used to construct a curve with no samples.
+    Each access returns a new copy.
+    """
+
+    @property
+    def shape(self) -> Spectrum.Shape:
+        """
+        Wavelength sampling of this curve, in nanometers. Assigning a shape
+        records that sampling and leaves ``values`` unchanged, so the sample
+        count can disagree with the shape. ``reshape()`` resamples onto
+        ``ReferenceShape`` from the current samples and does not check that
+        the sample count matches the shape.
+        """
+
+    @shape.setter
+    def shape(self, arg: Spectrum.Shape, /) -> None: ...
+
+    @property
+    def values(self) -> list[float]:
+        """
+        Spectral samples. Reading returns a new list, so assigning to an
+        index of that list leaves the curve unchanged. Assign a sequence to
+        replace the samples.
+        """
+
+    @values.setter
+    def values(self, arg: Sequence[float], /) -> None: ...
+
+    def reshape(self) -> None:
+        """
+        Resample this curve onto ``ReferenceShape`` with linear interpolation.
+
+        Wavelengths outside the current range are filled from the nearest
+        endpoint sample. A curve whose shape already equals
+        ``ReferenceShape`` is left unchanged, including when its sample count
+        does not match that shape.
+
+        :raises ValueError: If the curve has no samples.
+        """
+
+    def integrate(self) -> float:
+        """
+        Sum every sample.
+
+        :return: The sum of ``values``, or ``0`` when the curve is empty.
+        """
+
+    def max(self) -> float:
+        """Return the largest sample, or ``0`` when ``values`` is empty."""
+
+    def __add__(self, arg: Spectrum, /) -> Spectrum:
+        """
+        Per-element addition.
+
+        :param other: Curve with the same shape and sample count.
+        :return: A new curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        """
+
+    def __sub__(self, arg: Spectrum, /) -> Spectrum:
+        """
+        Per-element subtraction.
+
+        :param other: Curve with the same shape and sample count.
+        :return: A new curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        """
+
+    def __mul__(self, arg: Spectrum, /) -> Spectrum:
+        """
+        Per-element multiplication.
+
+        :param other: Curve with the same shape and sample count.
+        :return: A new curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        """
+
+    def __truediv__(self, arg: Spectrum, /) -> Spectrum:
+        """
+        Per-element division.
+
+        :param other: Curve with the same shape and sample count.
+        :return: A new curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        """
+
+    def __iadd__(self, arg: Spectrum, /) -> Spectrum:
+        """
+        Per-element addition in place.
+
+        :param other: Curve with the same shape and sample count.
+        :return: This curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        """
+
+    def __isub__(self, arg: Spectrum, /) -> Spectrum:
+        """
+        Per-element subtraction in place.
+
+        :param other: Curve with the same shape and sample count.
+        :return: This curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        """
+
+    def __imul__(self, arg: Spectrum, /) -> Spectrum:
+        """
+        Per-element multiplication in place.
+
+        :param other: Curve with the same shape and sample count.
+        :return: This curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        """
+
+    def __itruediv__(self, arg: Spectrum, /) -> Spectrum:
+        """
+        Per-element division in place.
+
+        :param other: Curve with the same shape and sample count.
+        :return: This curve.
+        :raises ValueError: If the operands differ in shape or sample count.
+        """
 
 class SpectralData:
     """
@@ -66,11 +270,50 @@ class SpectralData:
         :param path: path a path to the file to load data from
         :type path: str
 
-        :param reshape: if set to ``True``, the data will be reshaped to the
-            reference shape
+        :param reshape: if set to ``True``, the data will be reshaped to
+            :py:attr:`rawtoaces.Spectrum.ReferenceShape`
         :type reshape: bool
 
         :return: ``True`` if loaded successfully.
+        """
+
+    def __getitem__(self, name: str) -> Spectrum:
+        """
+        Return a copy of the named channel in the ``main`` data set.
+
+        :param name: Channel name in the ``main`` set.
+        :return: A copy of that channel's spectrum.
+        :raises ValueError: If the ``main`` set or the channel is absent.
+        """
+
+    def __setitem__(self, name: str, curve: Spectrum) -> None:
+        """
+        Replace the named channel in the ``main`` data set.
+
+        :param name: Channel name in the ``main`` set.
+        :param curve: Spectrum to store. The channel must already exist.
+        :raises ValueError: If the ``main`` set or the channel is absent.
+        """
+
+    def __contains__(self, name: str) -> bool:
+        """
+        Return whether ``name`` is a channel in the ``main`` data set.
+
+        :param name: Channel name to look up.
+        :return: ``True`` when that channel exists. An empty container and a
+            missing ``main`` set return ``False``.
+        """
+
+    __iter__: None = None
+
+    def get(self, set_name: str, channel_name: str) -> Spectrum:
+        """
+        Return a copy of one channel from a named data set.
+
+        :param set_name: Spectral set name, usually ``"main"``.
+        :param channel_name: Channel name within that set.
+        :return: A copy of the matching spectrum.
+        :raises ValueError: If the set or channel is absent.
         """
 
 class Metadata:

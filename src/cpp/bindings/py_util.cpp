@@ -554,6 +554,15 @@ void util_bindings( nanobind::module_ &m )
         "disable_exiftool", &ImageConverter::Settings::disable_exiftool, R"""(
         Disable calling exiftool to fetch missing metadata.
         )""" );
+    settings.def_rw(
+        "keep_diagnostic_attributes",
+        &ImageConverter::Settings::keep_diagnostic_attributes,
+        R"""(
+        Keep the diagnostic attributes in the output EXR file.
+
+        The attributes contain information about the transforms applied to the
+        image and start with the ``rta`` prefix.
+        )""" );
     settings.def_rw( "verbosity", &ImageConverter::Settings::verbosity, R"""(
         Verbosity level.
         )""" );

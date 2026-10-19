@@ -159,6 +159,24 @@ Verbosity Options
 ``--use-timing``
    Show timing information for each processing step.
 
+Diagnostic Options
+^^^^^^^^^^^^^^^^^^
+
+``--keep-diagnostic-attributes``
+   Keep diagnostic attributes in the output EXR file. By default, diagnostic
+   attributes are stripped from the output. These attributes contain
+   information about the transforms applied to the image and start with the
+   ``rta`` prefix:
+
+   - ``rta:AppliedColourTransformMatrix``
+   - ``rta:AppliedScale``
+   - ``rta:AppliedCrop``
+   - ``rta:AppliedLensVignetteCorrection``
+   - ``rta:AppliedLensDistortionCorrection``
+   - ``rta:AppliedLensChromaticAberrationCorrection``
+   - ``rta:AppliedWhiteBalance``
+   - ``rta:FoundIlluminant``
+
 Examples
 --------
 

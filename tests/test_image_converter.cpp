@@ -1077,11 +1077,13 @@ void check_prepare_transform_spectral(
     const rta::util::ImageConverter::Settings &settings,
     std::vector<double>                        WB_multipliers,
     bool                                       expected_result,
+    const std::string                         &expected_illuminant,
     const std::string                         &expected_error,
     const std::vector<std::string>            &expected_warnings )
 {
     bool                             success;
     std::string                      error_message;
+    std::string                      found_illuminant;
     std::vector<std::vector<double>> transform_matrix;
 
     std::string output = capture_stderr( [&]() {
@@ -1091,10 +1093,12 @@ void check_prepare_transform_spectral(
             settings,
             WB_multipliers,
             transform_matrix,
+            found_illuminant,
             error_message );
     } );
 
     OIIO_CHECK_EQUAL( success, expected_result );
+    OIIO_CHECK_EQUAL( found_illuminant, expected_illuminant );
     ASSERT_CONTAINS( error_message, expected_error );
 
     for ( const auto &warning: expected_warnings )
@@ -1127,6 +1131,7 @@ void test_missing_camera_manufacturer()
         settings,
         WB_multipliers,
         false,
+        "",
         "Missing the camera manufacturer name in the file metadata",
         {} );
 }
@@ -1308,6 +1313,7 @@ void test_illuminant_type_not_found()
         settings,
         WB_multipliers,
         false,
+        "",
         "Failed to find illuminant type 'a'",
         {} );
 }
@@ -1421,6 +1427,7 @@ void test_auto_detect_illuminant_with_wb_multipliers()
         settings,
         WB_multipliers,
         true,
+        "d60",
         "",
         { "Warning: Directory '",
           "illuminant' does not exist.",
@@ -1466,6 +1473,7 @@ void test_database_location_not_directory_warning()
         settings,
         WB_multipliers,
         true,
+        "d60",
         "",
         { "Warning: Database location '", "' is not a directory." } );
 
@@ -1509,6 +1517,7 @@ void test_database_location_missing_warning()
         settings,
         WB_multipliers,
         true,
+        "d60",
         "",
         { "Warning: Database location '", "' does not exist." } );
 }
@@ -1590,6 +1599,7 @@ void test_illuminant_file_load_failure()
         settings,
         WB_multipliers,
         false,
+        "",
         "Failed to find illuminant type 'nonexistent_type'",
         {} );
 }
@@ -1942,6 +1952,7 @@ void test_illuminant_type_mismatch()
         settings,
         WB_multipliers,
         false,
+        "",
         "Failed to find illuminant type 'typec'",
         {} );
 }
@@ -2021,6 +2032,7 @@ void test_auto_detect_illuminant_from_raw_metadata()
         settings,
         WB_multipliers,
         true,
+        "d60",
         "",
         { "Found illuminant: 'd60'." } );
 }
@@ -2060,6 +2072,7 @@ void test_auto_detect_illuminant_with_normalization()
         settings,
         WB_multipliers,
         true,
+        "d55",
         "",
         { "Found illuminant: 'd55'." } );
 }
@@ -2113,6 +2126,7 @@ void test_prepare_transform_spectral_idt_calculation_fail()
         settings,
         WB_multipliers,
         false,
+        "d65",
         "Failed to calculate IDT matrix from illuminant. "
         "Training data needs to be initialised prior to calling "
         "SpectralSolver::calculate_transform().",
@@ -3024,6 +3038,340 @@ void test_timing_wrapper()
     ASSERT_CONTAINS( output, "Timing: NAME/applying scale" );
 }
 
+/// Tests that apply_matrix cannot be executed twice on the same image.
+/// The first application succeeds and marks the destination image buffer with
+/// the `rta:AppliedColourTransformMatrix` attribute. A second application that
+/// uses the already-processed image as its source must fail.
+void test_apply_matrix_twice()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    OIIO::ImageSpec spec( 4, 4, 3, OIIO::TypeDesc::FLOAT );
+    OIIO::ImageBuf  src( "src", spec );
+    OIIO::ImageBuf  dst( "dst", spec );
+
+    // Simple identity 3x3 matrix.
+    std::vector<std::vector<double>> matrix = { { 1.0, 0.0, 0.0 },
+                                                { 0.0, 1.0, 0.0 },
+                                                { 0.0, 0.0, 1.0 } };
+
+    std::string error_message;
+
+    // First application should succeed and mark the destination image.
+    bool result = apply_matrix( matrix, dst, src, error_message );
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_EQUAL( error_message, "" );
+    OIIO_CHECK_ASSERT(
+        dst.spec().find_attribute( "rta:AppliedColourTransformMatrix" ) !=
+        nullptr );
+
+    // A second application using the already-processed image as source should
+    // fail because the colour transform matrix has already been applied.
+    OIIO::ImageBuf dst2( "dst2", spec );
+    error_message.clear();
+    result = apply_matrix( matrix, dst2, dst, error_message );
+    OIIO_CHECK_ASSERT( !result );
+    ASSERT_CONTAINS(
+        error_message, "Colour transform matrix has already been applied." );
+}
+
+/// Tests that apply_crop cannot be executed twice on the same image.
+/// The first application succeeds and marks the destination image buffer with
+/// the `rta:AppliedCrop` attribute. A second application that uses the
+/// already-cropped image as its source must fail.
+void test_apply_crop_twice()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    ImageConverter converter;
+    converter.settings.crop_mode = ImageConverter::Settings::CropMode::Off;
+
+    OIIO::ImageSpec spec( 4, 4, 3, OIIO::TypeDesc::FLOAT );
+    OIIO::ImageBuf  src( "src", spec );
+    OIIO::ImageBuf  dst( "dst", spec );
+
+    // First application should succeed and mark the destination image.
+    bool result = converter.apply_crop( dst, src );
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_EQUAL(
+        dst.spec().get_string_attribute( "rta:AppliedCrop" ), "Off" );
+
+    // A second application using the already-cropped image as source should
+    // fail because the crop has already been applied.
+    OIIO::ImageBuf dst2( "dst2", spec );
+    result = converter.apply_crop( dst2, dst );
+    OIIO_CHECK_ASSERT( !result );
+    ASSERT_CONTAINS(
+        converter.last_error_message, "Crop has already been applied." );
+}
+
+/// Tests that apply_scale cannot be executed twice on the same image.
+/// The first application succeeds and marks the destination image buffer with
+/// the `rta:AppliedScale` attribute. A second application that uses the
+/// already-scaled image as its source must fail.
+void test_apply_scale_twice()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    ImageConverter converter;
+
+    OIIO::ImageSpec spec( 4, 4, 3, OIIO::TypeDesc::FLOAT );
+    OIIO::ImageBuf  src( "src", spec );
+    OIIO::ImageBuf  dst( "dst", spec );
+
+    // First application should succeed and mark the destination image.
+    bool result = converter.apply_scale( dst, src );
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_ASSERT(
+        dst.spec().find_attribute( "rta:AppliedScale" ) != nullptr );
+
+    // A second application using the already-scaled image as source should
+    // fail because the scale has already been applied.
+    OIIO::ImageBuf dst2( "dst2", spec );
+    result = converter.apply_scale( dst2, dst );
+    OIIO_CHECK_ASSERT( !result );
+    ASSERT_CONTAINS(
+        converter.last_error_message, "Scale has already been applied." );
+}
+
+/// Tests that remove_diagnostic_attributes removes the diagnostic
+/// attributes from an ImageSpec.
+/// The attributes rta:AppliedLensVignetteCorrection,
+/// rta:AppliedLensDistortionCorrection,
+/// rta:AppliedLensChromaticAberrationCorrection,
+/// rta:AppliedColourTransformMatrix, rta:AppliedCrop, and
+/// rta:AppliedScale are all removed.
+void test_remove_diagnostic_attributes()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    OIIO::ImageSpec spec( 4, 4, 3, OIIO::TypeDesc::FLOAT );
+
+    // Add all diagnostic attributes to the spec.
+    spec["rta:FoundIlluminant"]                          = "d55";
+    spec["rta:AppliedWhiteBalance"]                      = 1;
+    spec["rta:AppliedLensVignetteCorrection"]            = 1;
+    spec["rta:AppliedLensDistortionCorrection"]          = 1;
+    spec["rta:AppliedLensChromaticAberrationCorrection"] = 1;
+    spec["rta:AppliedColourTransformMatrix"]             = 1;
+    spec["rta:AppliedCrop"]                              = "Off";
+    spec["rta:AppliedScale"]                             = 2.0f;
+
+    // Verify all attributes are present before removal.
+    OIIO_CHECK_ASSERT(
+        spec.find_attribute( "rta:FoundIlluminant" ) != nullptr );
+    OIIO_CHECK_ASSERT(
+        spec.find_attribute( "rta:AppliedWhiteBalance" ) != nullptr );
+    OIIO_CHECK_ASSERT(
+        spec.find_attribute( "rta:AppliedLensVignetteCorrection" ) != nullptr );
+    OIIO_CHECK_ASSERT(
+        spec.find_attribute( "rta:AppliedLensDistortionCorrection" ) !=
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        spec.find_attribute( "rta:AppliedLensChromaticAberrationCorrection" ) !=
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        spec.find_attribute( "rta:AppliedColourTransformMatrix" ) != nullptr );
+    OIIO_CHECK_ASSERT( spec.find_attribute( "rta:AppliedCrop" ) != nullptr );
+    OIIO_CHECK_ASSERT( spec.find_attribute( "rta:AppliedScale" ) != nullptr );
+
+    // Remove diagnostic attributes.
+    remove_diagnostic_attributes( spec );
+
+    // Verify all diagnostic attributes are removed.
+    OIIO_CHECK_ASSERT(
+        spec.find_attribute( "rta:FoundIlluminant" ) == nullptr );
+    OIIO_CHECK_ASSERT(
+        spec.find_attribute( "rta:AppliedWhiteBalance" ) == nullptr );
+    OIIO_CHECK_ASSERT(
+        spec.find_attribute( "rta:AppliedLensVignetteCorrection" ) == nullptr );
+    OIIO_CHECK_ASSERT(
+        spec.find_attribute( "rta:AppliedLensDistortionCorrection" ) ==
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        spec.find_attribute( "rta:AppliedLensChromaticAberrationCorrection" ) ==
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        spec.find_attribute( "rta:AppliedColourTransformMatrix" ) == nullptr );
+    OIIO_CHECK_ASSERT( spec.find_attribute( "rta:AppliedCrop" ) == nullptr );
+
+    // AppliedScale is also removed by remove_diagnostic_attributes.
+    OIIO_CHECK_ASSERT( spec.find_attribute( "rta:AppliedScale" ) == nullptr );
+}
+
+/// Tests that save_image removes diagnostic attributes from the output
+/// ImageSpec when keep_diagnostic_attributes is false (the default).
+/// An ImageBuf with diagnostic attributes is saved to an EXR file, which is
+/// then read back to confirm the rta:* attributes are not present.
+void test_save_image_removes_diagnostic_attributes()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    if ( OIIO::openimageio_version() < 30000 )
+        return;
+
+    ImageConverter converter;
+    converter.settings.overwrite = true;
+
+    // Create a buffer with all diagnostic attributes set.
+    OIIO::ImageSpec spec( 4, 4, 3, OIIO::TypeDesc::FLOAT );
+    OIIO::ImageBuf  buf( "test", spec );
+    buf.specmod()["rta:AppliedLensVignetteCorrection"]            = 1;
+    buf.specmod()["rta:AppliedLensDistortionCorrection"]          = 1;
+    buf.specmod()["rta:AppliedLensChromaticAberrationCorrection"] = 1;
+    buf.specmod()["rta:AppliedColourTransformMatrix"]             = 1;
+    buf.specmod()["rta:AppliedCrop"]                              = "Off";
+    buf.specmod()["rta:AppliedScale"]                             = 2.0f;
+    buf.specmod()["rta:AppliedWhiteBalance"]                      = 1.0f;
+    buf.specmod()["rta:FoundIlluminant"]                          = "D65";
+
+    // Verify all attributes are present before saving.
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute( "rta:AppliedLensVignetteCorrection" ) !=
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute( "rta:AppliedLensDistortionCorrection" ) !=
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute(
+            "rta:AppliedLensChromaticAberrationCorrection" ) != nullptr );
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute( "rta:AppliedColourTransformMatrix" ) !=
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute( "rta:AppliedCrop" ) != nullptr );
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute( "rta:AppliedScale" ) != nullptr );
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute( "rta:AppliedWhiteBalance" ) != nullptr );
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute( "rta:FoundIlluminant" ) != nullptr );
+
+    std::filesystem::path output_path =
+        std::filesystem::temp_directory_path() /
+        "test_save_image_removes_diagnostic_attributes.exr";
+
+    bool result = converter.save_image(
+        output_path.string(), buf, OIIO::TypeDesc::FLOAT );
+    OIIO_CHECK_ASSERT( result );
+
+    // Read back the output file and verify diagnostic attributes are removed.
+    auto input = OIIO::ImageInput::open( output_path.string() );
+    OIIO_CHECK_ASSERT( input );
+    OIIO::ImageSpec read_spec = input->spec();
+
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute( "rta:AppliedLensVignetteCorrection" ) ==
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute( "rta:AppliedLensDistortionCorrection" ) ==
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute(
+            "rta:AppliedLensChromaticAberrationCorrection" ) == nullptr );
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute( "rta:AppliedColourTransformMatrix" ) ==
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute( "rta:AppliedCrop" ) == nullptr );
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute( "rta:AppliedScale" ) == nullptr );
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute( "rta:AppliedWhiteBalance" ) == nullptr );
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute( "rta:FoundIlluminant" ) == nullptr );
+
+    input->close();
+    std::filesystem::remove( output_path );
+}
+
+/// Tests that save_image keeps diagnostic attributes in the output when
+/// keep_diagnostic_attributes is set to true.
+/// An ImageBuf with diagnostic attributes is saved to an EXR file, which is
+/// then read back to confirm the rta:* attributes are preserved.
+void test_save_image_keeps_diagnostic_attributes()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    if ( OIIO::openimageio_version() < 30000 )
+        return;
+
+    ImageConverter converter;
+    converter.settings.overwrite                  = true;
+    converter.settings.keep_diagnostic_attributes = true;
+
+    // Create a buffer with all diagnostic attributes set.
+    OIIO::ImageSpec spec( 4, 4, 3, OIIO::TypeDesc::FLOAT );
+    OIIO::ImageBuf  buf( "test", spec );
+    buf.specmod()["rta:AppliedLensVignetteCorrection"]            = 1;
+    buf.specmod()["rta:AppliedLensDistortionCorrection"]          = 1;
+    buf.specmod()["rta:AppliedLensChromaticAberrationCorrection"] = 1;
+    buf.specmod()["rta:AppliedColourTransformMatrix"]             = 1;
+    buf.specmod()["rta:AppliedCrop"]                              = "Off";
+    buf.specmod()["rta:AppliedScale"]                             = 2.0f;
+    buf.specmod()["rta:AppliedWhiteBalance"]                      = 1.0f;
+    buf.specmod()["rta:FoundIlluminant"]                          = "D65";
+
+    // Verify all attributes are present before saving.
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute( "rta:AppliedLensVignetteCorrection" ) !=
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute( "rta:AppliedLensDistortionCorrection" ) !=
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute(
+            "rta:AppliedLensChromaticAberrationCorrection" ) != nullptr );
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute( "rta:AppliedColourTransformMatrix" ) !=
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute( "rta:AppliedCrop" ) != nullptr );
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute( "rta:AppliedScale" ) != nullptr );
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute( "rta:AppliedWhiteBalance" ) != nullptr );
+    OIIO_CHECK_ASSERT(
+        buf.spec().find_attribute( "rta:FoundIlluminant" ) != nullptr );
+
+    std::filesystem::path output_path =
+        std::filesystem::temp_directory_path() /
+        "test_save_image_keeps_diagnostic_attributes.exr";
+
+    bool result = converter.save_image(
+        output_path.string(), buf, OIIO::TypeDesc::FLOAT );
+    OIIO_CHECK_ASSERT( result );
+
+    // Read back the output file and verify diagnostic attributes are kept.
+    auto input = OIIO::ImageInput::open( output_path.string() );
+    OIIO_CHECK_ASSERT( input );
+    OIIO::ImageSpec read_spec = input->spec();
+
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute( "rta:AppliedLensVignetteCorrection" ) !=
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute( "rta:AppliedLensDistortionCorrection" ) !=
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute(
+            "rta:AppliedLensChromaticAberrationCorrection" ) != nullptr );
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute( "rta:AppliedColourTransformMatrix" ) !=
+        nullptr );
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute( "rta:AppliedCrop" ) != nullptr );
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute( "rta:AppliedScale" ) != nullptr );
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute( "rta:AppliedWhiteBalance" ) != nullptr );
+    OIIO_CHECK_ASSERT(
+        read_spec.find_attribute( "rta:FoundIlluminant" ) != nullptr );
+
+    input->close();
+    std::filesystem::remove( output_path );
+}
+
 int main( int, char ** )
 {
     try
@@ -3150,6 +3498,12 @@ int main( int, char ** )
         test_load_image_types();
 
         test_timing_wrapper();
+        test_apply_matrix_twice();
+        test_apply_crop_twice();
+        test_apply_scale_twice();
+        test_remove_diagnostic_attributes();
+        test_save_image_removes_diagnostic_attributes();
+        test_save_image_keeps_diagnostic_attributes();
     }
     catch ( const std::exception &e )
     {

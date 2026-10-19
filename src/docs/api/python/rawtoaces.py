@@ -1210,6 +1210,18 @@ class ImageConverter:
         def disable_exiftool(self, arg: bool, /) -> None: ...
 
         @property
+        def keep_diagnostic_attributes(self) -> bool:
+            """
+            Keep the diagnostic attributes in the output EXR file.
+
+            The attributes contain information about the transforms applied to the
+            image and start with the ``rta`` prefix.
+            """
+
+        @keep_diagnostic_attributes.setter
+        def keep_diagnostic_attributes(self, arg: bool, /) -> None: ...
+
+        @property
         def verbosity(self) -> int:
             """Verbosity level."""
 

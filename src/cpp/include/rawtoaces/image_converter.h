@@ -316,6 +316,11 @@ public:
         /// Disable calling exiftool to fetch missing metadata.
         bool disable_exiftool = false;
 
+        /// Keep the diagnostic attributes in the output exr file.
+        /// The attributes contain the information about the transforms being
+        /// applied to the image and start with the prefix ``"rta"``.
+        bool keep_diagnostic_attributes = false;
+
         /// Verbosity level.
         int verbosity = 0;
     };

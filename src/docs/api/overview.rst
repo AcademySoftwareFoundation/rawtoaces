@@ -46,11 +46,7 @@ end.
 OpenImageIO 3.2
 ---------------
 
-The buffer methods are part of the documented API on every build of this site.
-Building these pages does not require OpenImageIO: the Python reference is the
-checked-in module, and Sphinx mocks its ``OpenImageIO`` import.
-
-Calling those methods from Python requires an extension built against
+Calling the buffer methods from Python requires an extension built against
 OpenImageIO 3.2 or later, with ``ImageBuf``, ``ParamValueList``, and
 ``ImageSpec`` registered for nanobind. Importing that extension also imports
 the ``OpenImageIO`` Python module. An earlier OpenImageIO build still provides

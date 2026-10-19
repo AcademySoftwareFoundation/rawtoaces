@@ -11,8 +11,7 @@ automatically generated from the source code using Doxygen and Breathe.
 Start with the :doc:`API overview <../overview>` to choose file conversion, an
 OpenImageIO buffer pipeline, or a metadata or spectral solve. Go directly to
 :doc:`C++ Reference <api_reference>` for class and function signatures. The
-buffer methods are documented here for every documentation build; the matching
-Python methods require OpenImageIO 3.2 or later
+matching Python buffer methods require OpenImageIO 3.2 or later
 (:ref:`overview-oiio-notice`).
 
 .. toctree::

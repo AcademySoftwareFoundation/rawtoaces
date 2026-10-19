@@ -62,11 +62,9 @@ corresponds to multiplying the factor by ``2 ** s``.
 OpenImageIO interoperability
 ----------------------------
 
-This documentation always lists the lower-level image APIs, including when the
-documentation build has no OpenImageIO installed. See
-:ref:`overview-oiio-notice` for that requirement. Whether the methods exist at
-runtime depends on the extension you import: a method shown here may be absent
-from an installed build that predates OpenImageIO 3.2.
+Whether these methods exist at runtime depends on the extension you import.
+A method shown here may be absent from a build that predates OpenImageIO 3.2.
+See :ref:`overview-oiio-notice`.
 
 .. list-table:: Python capabilities
    :header-rows: 1

@@ -72,8 +72,8 @@ an ``OIIO::ImageBuf``. ``process_buffer`` applies lens correction, the colour
 matrix, scale, and crop; those steps are also available individually.
 ``save_image`` writes the ACES container.
 
-These C++ methods are part of ``rawtoaces_util`` and are documented in every
-build of this site. The matching Python methods require OpenImageIO 3.2 or
-later; see :ref:`overview-oiio-notice`. Signatures are in the
+These C++ methods are part of ``rawtoaces_util``. The matching Python methods
+require OpenImageIO 3.2 or later; see :ref:`overview-oiio-notice`. Signatures
+are in the
 :doc:`C++ Reference <api_reference>`. The :doc:`API overview <../overview>`
 says when the buffer layer is the right choice.

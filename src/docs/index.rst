@@ -12,6 +12,9 @@ integration into other applications.
 Programming references
 ----------------------
 
+:doc:`api/overview` chooses a file conversion, an OpenImageIO buffer pipeline,
+or a metadata or spectral solve. The language references list signatures:
+
 - :doc:`api/cpp/api_reference`: C++ classes, settings, and functions.
 - :doc:`api/python/api_reference`: Python classes and methods.
 
@@ -22,6 +25,7 @@ Programming references
    getting_started
    user_guide
    lens_correction
+   api/overview
    api/cpp/index
    api/python/index
    contributing

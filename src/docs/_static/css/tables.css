@@ -1,0 +1,19 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright Contributors to the rawtoaces project. */
+
+/*
+ * sphinx_rtd_theme keeps every table cell on one line, so a long cell sets
+ * the table width and the page scrolls sideways. Let cells wrap between
+ * words. Inline literals stay on one line.
+ */
+
+.rst-content table.docutils thead,
+.rst-content .wy-table-responsive table.docutils th,
+.rst-content .wy-table-responsive table.docutils td {
+    white-space: normal;
+}
+
+.rst-content .wy-table-responsive table.docutils th span.pre,
+.rst-content .wy-table-responsive table.docutils td span.pre {
+    white-space: nowrap;
+}

@@ -787,6 +787,168 @@ void set_path( bool enable )
     }
 }
 
+/// Tests that apply_vignette_map cannot be executed twice on the same image.
+/// The first application succeeds and marks the destination image buffer with
+/// the `rta:AppliedLensVignetteCorrection` attribute. A second application
+/// using the already-processed image as source must fail.
+void test_apply_vignette_map_twice()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    OIIO::ImageSpec spec( 10, 10, 3, OIIO::TypeDesc::FLOAT );
+    OIIO::ImageBuf  src( "src", spec );
+    OIIO::ImageBuf  dst( "dst", spec );
+
+    std::string error_message;
+
+    // First application should succeed and mark the destination image.
+    bool result = rta::util::apply_vignette_map(
+        dst,
+        src,
+        camera_make,
+        camera_model,
+        lens_make,
+        lens_model,
+        focal_length,
+        aperture,
+        focus_distance,
+        0,
+        true,
+        error_message );
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_EQUAL( error_message, "" );
+    OIIO_CHECK_ASSERT(
+        dst.spec().get_int_attribute(
+            "rta:AppliedLensVignetteCorrection", 0 ) != 0 );
+
+    // Second application using the already-processed image as source should
+    // fail immediately without touching the lensfun database.
+    OIIO::ImageBuf dst2( "dst2", spec );
+    error_message.clear();
+    result = rta::util::apply_vignette_map(
+        dst2,
+        dst,
+        camera_make,
+        camera_model,
+        lens_make,
+        lens_model,
+        focal_length,
+        aperture,
+        focus_distance,
+        0,
+        true,
+        error_message );
+    OIIO_CHECK_ASSERT( !result );
+    ASSERT_CONTAINS(
+        error_message, "Lens vignette correction has already been applied." );
+}
+
+/// Tests that apply_distortion_map cannot be executed twice on the same image.
+/// The first application succeeds and marks the destination image buffer with
+/// the `rta:AppliedLensDistortionCorrection` attribute. A second application
+/// using the already-processed image as source must fail.
+void test_apply_distortion_map_twice()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    OIIO::ImageSpec spec( 10, 10, 3, OIIO::TypeDesc::FLOAT );
+    OIIO::ImageBuf  src( "src", spec );
+    OIIO::ImageBuf  dst( "dst", spec );
+
+    std::string error_message;
+
+    // First application should succeed and mark the destination image.
+    bool result = rta::util::apply_distortion_map(
+        dst,
+        src,
+        camera_make,
+        camera_model,
+        lens_make,
+        lens_model,
+        focal_length,
+        0,
+        true,
+        error_message );
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_EQUAL( error_message, "" );
+    OIIO_CHECK_ASSERT(
+        dst.spec().get_int_attribute(
+            "rta:AppliedLensDistortionCorrection", 0 ) != 0 );
+
+    // Second application using the already-processed image as source should
+    // fail immediately without touching the lensfun database.
+    OIIO::ImageBuf dst2( "dst2", spec );
+    error_message.clear();
+    result = rta::util::apply_distortion_map(
+        dst2,
+        dst,
+        camera_make,
+        camera_model,
+        lens_make,
+        lens_model,
+        focal_length,
+        0,
+        true,
+        error_message );
+    OIIO_CHECK_ASSERT( !result );
+    ASSERT_CONTAINS(
+        error_message, "Lens distortion correction has already been applied." );
+}
+
+/// Tests that apply_aberration_map cannot be executed twice on the same image.
+/// The first application succeeds and marks the destination image buffer with
+/// the `rta:AppliedLensChromaticAberrationCorrection` attribute. A second
+/// application using the already-processed image as source must fail.
+void test_apply_aberration_map_twice()
+{
+    std::cout << "\n" << __FUNCTION__ << std::endl;
+
+    OIIO::ImageSpec spec( 10, 10, 3, OIIO::TypeDesc::FLOAT );
+    OIIO::ImageBuf  src( "src", spec );
+    OIIO::ImageBuf  dst( "dst", spec );
+
+    std::string error_message;
+
+    // First application should succeed and mark the destination image.
+    bool result = rta::util::apply_aberration_map(
+        dst,
+        src,
+        camera_make,
+        camera_model,
+        lens_make,
+        lens_model,
+        focal_length,
+        0,
+        true,
+        error_message );
+    OIIO_CHECK_ASSERT( result );
+    OIIO_CHECK_EQUAL( error_message, "" );
+    OIIO_CHECK_ASSERT(
+        dst.spec().get_int_attribute(
+            "rta:AppliedLensChromaticAberrationCorrection", 0 ) != 0 );
+
+    // Second application using the already-processed image as source should
+    // fail immediately without touching the lensfun database.
+    OIIO::ImageBuf dst2( "dst2", spec );
+    error_message.clear();
+    result = rta::util::apply_aberration_map(
+        dst2,
+        dst,
+        camera_make,
+        camera_model,
+        lens_make,
+        lens_model,
+        focal_length,
+        0,
+        true,
+        error_message );
+    OIIO_CHECK_ASSERT( !result );
+    ASSERT_CONTAINS(
+        error_message,
+        "Lens chromatic aberration correction has already been "
+        "applied." );
+}
+
 int main( int, char ** )
 {
     set_path( false );
@@ -814,6 +976,10 @@ int main( int, char ** )
     test_apply_lens_correction_fail_init();
     test_apply_lens_correction_fail_apply();
     test_apply_lens_correction_success();
+
+    test_apply_vignette_map_twice();
+    test_apply_distortion_map_twice();
+    test_apply_aberration_map_twice();
 
     return unit_test_failures;
 }

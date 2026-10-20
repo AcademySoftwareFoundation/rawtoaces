@@ -13,6 +13,7 @@
 
 #include "colour_transforms.h"
 #include "exiftool.h"
+#include "attributes.h"
 
 #include <set>
 #include <filesystem>
@@ -407,6 +408,7 @@ bool prepare_transform_spectral(
     const ImageConverter::Settings   &settings,
     std::vector<double>              &WB_multipliers,
     std::vector<std::vector<double>> &out_transform_matrix,
+    std::string                      &out_found_illuminant,
     std::string                      &error_message )
 {
     // Initialize and validate camera identification
@@ -422,8 +424,6 @@ bool prepare_transform_spectral(
     // Initialize spectral solver
     core::SpectralSolver solver( settings.database_directories );
     solver.verbosity = settings.verbosity;
-
-    std::string found_illuminant = "";
 
     if ( lower_illuminant.empty() )
     {
@@ -469,7 +469,7 @@ bool prepare_transform_spectral(
             solver,
             settings.verbosity,
             settings.disable_cache,
-            found_illuminant,
+            out_found_illuminant,
             error_message );
 
         if ( !success )
@@ -496,14 +496,14 @@ bool prepare_transform_spectral(
             return false;
         }
 
-        found_illuminant = lower_illuminant;
+        out_found_illuminant = lower_illuminant;
     }
 
     // Calculate Input Device Transform (IDT) matrix.
     success = fetch_matrix_from_illuminant(
         camera_identifier.make,
         camera_identifier.model,
-        found_illuminant,
+        out_found_illuminant,
         solver,
         settings.verbosity,
         settings.disable_cache,
@@ -1098,6 +1098,13 @@ void ImageConverter::init_parser( OIIO::ArgParse &arg_parser )
         .help( "Disable using exiftool to fetch missing metadata." )
         .action( OIIO::ArgParse::store_true() );
 
+    arg_parser.arg( "--keep-diagnostic-attributes" )
+        .help(
+            "Keep the diagnostic attributes in the output EXR file. "
+            "The attributes contain information about the transforms "
+            "applied to the image and start with the prefix \"rta\"." )
+        .action( OIIO::ArgParse::store_true() );
+
     arg_parser.arg( "--verbose" )
         .help(
             "(-v) Print progress messages. "
@@ -1396,7 +1403,9 @@ bool ImageConverter::parse_parameters( const OIIO::ArgParse &arg_parser )
     settings.use_timing       = arg_parser["use-timing"].get<int>();
     settings.disable_cache    = arg_parser["disable-cache"].get<int>();
     settings.disable_exiftool = arg_parser["disable-exiftool"].get<int>();
-    settings.bad_pixels_path  = arg_parser["bad-pixels-path"].get();
+    settings.keep_diagnostic_attributes =
+        arg_parser["keep-diagnostic-attributes"].get<int>();
+    settings.bad_pixels_path = arg_parser["bad-pixels-path"].get();
 
 #if ( RTA_ENABLE_LENSFUN )
     std::string lens_correction = arg_parser["lens-correction"].get();
@@ -1846,8 +1855,8 @@ bool ImageConverter::apply_lens_correction(
 
             if ( &dst != src_ptr )
             {
-                dst.specmod().extra_attribs = src.spec().extra_attribs;
-                src_ptr                     = &dst;
+                dst.specmod().extra_attribs.merge( src.spec().extra_attribs );
+                src_ptr = &dst;
             }
         }
 
@@ -1872,8 +1881,8 @@ bool ImageConverter::apply_lens_correction(
 
             if ( &dst != src_ptr )
             {
-                dst.specmod().extra_attribs = src.spec().extra_attribs;
-                src_ptr                     = &dst;
+                dst.specmod().extra_attribs.merge( src.spec().extra_attribs );
+                src_ptr = &dst;
             }
         }
 
@@ -1898,7 +1907,7 @@ bool ImageConverter::apply_lens_correction(
 
             if ( &dst != src_ptr )
             {
-                dst.specmod().extra_attribs = src.spec().extra_attribs;
+                dst.specmod().extra_attribs.merge( src.spec().extra_attribs );
             }
         }
 #else
@@ -2173,12 +2182,14 @@ bool ImageConverter::configure(
 
     if ( is_spectral_white_balance || is_spectral_matrix )
     {
+        std::string found_illuminant;
         std::string error_msg;
         if ( !prepare_transform_spectral(
                  image_spec,
                  settings,
                  _wb_multipliers,
                  _transform_matrix,
+                 found_illuminant,
                  error_msg ) )
         {
             status             = Status::ConfigurationError;
@@ -2188,6 +2199,8 @@ bool ImageConverter::configure(
                                      : error_msg;
             return false;
         }
+
+        options[attributes::FoundIlluminant] = found_illuminant;
 
         if ( is_spectral_white_balance )
         {
@@ -2477,6 +2490,35 @@ bool ImageConverter::load_image(
         return false;
     }
 
+    if ( _wb_multipliers.size() == 3 )
+    {
+        float mults[3];
+        mults[0] = (float)_wb_multipliers[0];
+        mults[1] = (float)_wb_multipliers[1];
+        mults[2] = (float)_wb_multipliers[2];
+
+        buffer.specmod().attribute(
+            attributes::AppliedWhiteBalance, OIIO::TypeVector, mults );
+    }
+    else if ( _wb_multipliers.size() == 4 )
+    {
+        float mults[4];
+        mults[0] = (float)_wb_multipliers[0];
+        mults[1] = (float)_wb_multipliers[1];
+        mults[2] = (float)_wb_multipliers[2];
+        mults[3] = (float)_wb_multipliers[3];
+
+        buffer.specmod().attribute(
+            attributes::AppliedWhiteBalance, OIIO::TypeVector4, mults );
+    }
+
+    std::string found_illuminant =
+        hints.get_string( attributes::FoundIlluminant );
+    if ( !found_illuminant.empty() )
+    {
+        buffer.specmod()[attributes::FoundIlluminant] = found_illuminant;
+    }
+
     status = Status::Success;
     return true;
 }
@@ -2484,8 +2526,15 @@ bool ImageConverter::load_image(
 bool apply_matrix(
     const std::vector<std::vector<double>> &matrix,
     OIIO::ImageBuf                         &dst,
-    const OIIO::ImageBuf                   &src )
+    const OIIO::ImageBuf                   &src,
+    std::string                            &error_message )
 {
+    if ( src.spec().find_attribute( attributes::AppliedColourTransformMatrix ) )
+    {
+        error_message = "Colour transform matrix has already been applied.";
+        return false;
+    }
+
     float M[4][4];
 
     size_t num_rows = matrix.size();
@@ -2514,7 +2563,18 @@ bool apply_matrix(
         }
     }
 
-    return OIIO::ImageBufAlgo::colormatrixtransform( dst, src, M, false );
+    bool result =
+        OIIO::ImageBufAlgo::colormatrixtransform( dst, src, M, false );
+    if ( result )
+    {
+        dst.specmod().attribute(
+            attributes::AppliedColourTransformMatrix, OIIO::TypeMatrix44, M );
+    }
+    else
+    {
+        error_message = OIIO::geterror();
+    }
+    return result;
 }
 
 bool ImageConverter::apply_matrix(
@@ -2536,11 +2596,14 @@ bool ImageConverter::apply_matrix(
 
     if ( _transform_matrix.size() )
     {
-        success = rta::util::apply_matrix( _transform_matrix, dst, src );
+        std::string error_message;
+        success = rta::util::apply_matrix(
+            _transform_matrix, dst, src, error_message );
         if ( !success )
         {
-            status             = Status::MatrixApplicationError;
-            last_error_message = "Failed to apply the colour transform matrix.";
+            status = Status::MatrixApplicationError;
+            last_error_message =
+                "Failed to apply the colour transform matrix. " + error_message;
             return false;
         }
     }
@@ -2561,11 +2624,18 @@ bool ImageConverter::apply_scale(
     if ( settings.verbosity > 0 )
         std::cerr << "Applying scale" << std::endl;
 
+    if ( src.spec().find_attribute( attributes::AppliedScale ) )
+    {
+        status             = Status::ScaleApplicationError;
+        last_error_message = "Scale has already been applied.";
+        return false;
+    }
+
     UsageTimerWrapper usage_timer(
         src.name(), "applying scale", settings.use_timing );
 
-    bool result =
-        OIIO::ImageBufAlgo::mul( dst, src, settings.headroom * settings.scale );
+    float scale  = settings.headroom * settings.scale;
+    bool  result = OIIO::ImageBufAlgo::mul( dst, src, scale );
     if ( !result )
     {
         status             = Status::ScaleApplicationError;
@@ -2573,7 +2643,8 @@ bool ImageConverter::apply_scale(
     }
     else
     {
-        status = Status::Success;
+        dst.specmod()[attributes::AppliedScale] = scale;
+        status                                  = Status::Success;
     }
     return result;
 }
@@ -2593,6 +2664,20 @@ bool ImageConverter::apply_crop(
     UsageTimerWrapper usage_timer(
         src.name(), "applying crop", settings.use_timing );
 
+    // Soft crop is no-op. We can apply another crop mode on top of soft.
+    // The other modes are destructive.
+    if ( settings.crop_mode != Settings::CropMode::Soft )
+    {
+        std::string applied_crop =
+            src.spec().get_string_attribute( attributes::AppliedCrop );
+        if ( applied_crop == "Off" || applied_crop == "Hard" )
+        {
+            status             = Status::CropApplicationError;
+            last_error_message = "Crop has already been applied.";
+            return false;
+        }
+    }
+
     if ( settings.crop_mode == Settings::CropMode::Off )
     {
         if ( !OIIO::ImageBufAlgo::copy( dst, src ) )
@@ -2602,10 +2687,11 @@ bool ImageConverter::apply_crop(
                 "Failed to copy image buffer for crop operation";
             return false;
         }
-        dst.specmod().full_x      = dst.specmod().x;
-        dst.specmod().full_y      = dst.specmod().y;
-        dst.specmod().full_width  = dst.specmod().width;
-        dst.specmod().full_height = dst.specmod().height;
+        dst.specmod().full_x                   = dst.specmod().x;
+        dst.specmod().full_y                   = dst.specmod().y;
+        dst.specmod().full_width               = dst.specmod().width;
+        dst.specmod().full_height              = dst.specmod().height;
+        dst.specmod()[attributes::AppliedCrop] = "Off";
     }
     else if ( settings.crop_mode == Settings::CropMode::Hard )
     {
@@ -2637,10 +2723,11 @@ bool ImageConverter::apply_crop(
                 return false;
             }
         }
-        dst.specmod().x      = 0;
-        dst.specmod().y      = 0;
-        dst.specmod().full_x = 0;
-        dst.specmod().full_y = 0;
+        dst.specmod().x                        = 0;
+        dst.specmod().y                        = 0;
+        dst.specmod().full_x                   = 0;
+        dst.specmod().full_y                   = 0;
+        dst.specmod()[attributes::AppliedCrop] = "Hard";
     }
 
     status = Status::Success;
@@ -2720,6 +2807,25 @@ bool ImageConverter::make_output_path(
     }
 }
 
+void remove_diagnostic_attributes( OIIO::ImageSpec &image_spec )
+{
+    const std::string keys_to_remove[] = {
+        attributes::FoundIlluminant,
+        attributes::AppliedWhiteBalance,
+        attributes::AppliedLensVignetteCorrection,
+        attributes::AppliedLensDistortionCorrection,
+        attributes::AppliedLensChromaticAberrationCorrection,
+        attributes::AppliedColourTransformMatrix,
+        attributes::AppliedCrop,
+        attributes::AppliedScale
+    };
+
+    for ( size_t i = 0;
+          i < sizeof( keys_to_remove ) / sizeof( keys_to_remove[0] );
+          i++ )
+        image_spec.erase_attribute( keys_to_remove[i] );
+}
+
 bool ImageConverter::save_image(
     const std::string    &output_filename,
     const OIIO::ImageBuf &buf,
@@ -2746,6 +2852,11 @@ bool ImageConverter::save_image(
         OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 8 ),
         chromaticities );
     image_spec["oiio:ColorSpace"] = "lin_ap0_scene";
+
+    if ( !settings.keep_diagnostic_attributes )
+    {
+        remove_diagnostic_attributes( image_spec );
+    }
 
     bool is_compliant = true;
 

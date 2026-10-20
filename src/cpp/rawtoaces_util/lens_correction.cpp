@@ -3,6 +3,7 @@
 
 #include "lens_correction.h"
 #include "lens_correction_cache.h"
+#include "attributes.h"
 
 #include <OpenImageIO/imagebufalgo.h>
 #include <OpenImageIO/imagebufalgo_util.h>
@@ -305,6 +306,13 @@ bool apply_vignette_map(
     bool                  disable_cache,
     std::string          &error_message )
 {
+    if ( src_buffer.spec().get_int_attribute(
+             attributes::AppliedLensVignetteCorrection, 0 ) != 0 )
+    {
+        error_message = "Lens vignette correction has already been applied.";
+        return false;
+    }
+
 #if OIIO_VERSION < OIIO_MAKE_VERSION( 3, 1, 0 )
     const int nchannels = 3;
 #else
@@ -346,6 +354,7 @@ bool apply_vignette_map(
         return false;
     }
 
+    dst_buffer.specmod()[attributes::AppliedLensVignetteCorrection] = 1;
     return true;
 }
 
@@ -433,6 +442,13 @@ bool apply_distortion_map(
     bool                  disable_cache,
     std::string          &error_message )
 {
+    if ( src_buffer.spec().get_int_attribute(
+             attributes::AppliedLensDistortionCorrection, 0 ) != 0 )
+    {
+        error_message = "Lens distortion correction has already been applied.";
+        return false;
+    }
+
     const int nthreads = 0;
 
     OIIO::ImageSpec spec = init_lens_map_spec(
@@ -481,6 +497,7 @@ bool apply_distortion_map(
     }
 
     dst_buffer = temp_buffer;
+    dst_buffer.specmod()[attributes::AppliedLensDistortionCorrection] = 1;
     return true;
 }
 
@@ -575,6 +592,14 @@ bool apply_aberration_map(
     bool                  disable_cache,
     std::string          &error_message )
 {
+    if ( src_buffer.spec().get_int_attribute(
+             attributes::AppliedLensChromaticAberrationCorrection, 0 ) != 0 )
+    {
+        error_message =
+            "Lens chromatic aberration correction has already been applied.";
+        return false;
+    }
+
     OIIO::ImageSpec spec = init_lens_map_spec(
         src_buffer.spec(),
         6,
@@ -628,6 +653,8 @@ bool apply_aberration_map(
     }
 
     dst_buffer = temp_buffer;
+    dst_buffer.specmod()[attributes::AppliedLensChromaticAberrationCorrection] =
+        1;
     return true;
 }
 

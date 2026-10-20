@@ -44,7 +44,18 @@ bool prepare_transform_spectral(
     const ImageConverter::Settings   &settings,
     std::vector<double>              &WB_multipliers,
     std::vector<std::vector<double>> &out_transform_matrix,
+    std::string                      &out_found_illuminant,
     std::string                      &error_message );
+
+/// Apply a colour transform matrix to an image buffer.
+/// Exposed for unit-testing of the double-application guard.
+bool apply_matrix(
+    const std::vector<std::vector<double>> &matrix,
+    OIIO::ImageBuf                         &dst,
+    const OIIO::ImageBuf                   &src,
+    std::string                            &error_message );
+
+void remove_diagnostic_attributes( OIIO::ImageSpec &image_spec );
 
 namespace exiftool
 {

@@ -6,8 +6,9 @@ Python API
 ==========
 
 The Python bindings provide file conversion and metadata/spectral transform
-solving. Start with the :doc:`API overview <../overview>` to choose a layer,
-then use the :doc:`image conversion guide <image_converter>` or the
+solving. Start with the :doc:`API overview <../overview>` to choose a layer.
+The :doc:`task examples <../tasks/index>` show each task in C++ and Python.
+Then use the :doc:`image conversion guide <image_converter>` or the
 :doc:`core workflows <rawtoaces_core>`. The
 :doc:`Python Reference <api_reference>` lists signatures and settings.
 

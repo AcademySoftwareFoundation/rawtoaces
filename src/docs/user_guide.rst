@@ -180,7 +180,9 @@ Diagnostic Options
 Examples
 --------
 
-Convert a single file with default settings:
+:ref:`task-examples` shows the same tasks with those settings written out
+for the command line, C++, and Python. Convert a single file with default
+settings:
 
 .. code-block:: bash
 

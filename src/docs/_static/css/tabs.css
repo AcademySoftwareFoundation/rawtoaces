@@ -1,0 +1,14 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright Contributors to the rawtoaces project. */
+
+/* Let Shell / C++ / Python tabs wrap inside a narrow content column. */
+.wy-nav-content [role="tablist"] {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .sphinx-tabs-tab {
+        padding: 0.55rem 0.75rem;
+    }
+}

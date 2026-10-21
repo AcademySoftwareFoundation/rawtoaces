@@ -43,12 +43,12 @@ display window — to match the CLI. C++ and Python default to hard crop.
 Request correction of geometric distortion and vignetting:
 
 .. tabs::
-  .. tab:: Shell
+  .. group-tab:: Shell
     .. code-block:: bash
 
       rawtoaces --crop-mode soft --lens-correction dv <INPUT_PATH>
 
-  .. tab:: C++
+  .. group-tab:: C++
     .. code-block:: C++
 
       #include <rawtoaces/image_converter.h>
@@ -78,7 +78,7 @@ Request correction of geometric distortion and vignetting:
           return 0;
       }
 
-  .. tab:: Python
+  .. group-tab:: Python
     .. code-block:: Python
 
       import sys
@@ -106,7 +106,7 @@ and lens information used for correction. Match the overrides to the image, and
 use a Lensfun profile calibrated for every requested correction:
 
 .. tabs::
-  .. tab:: Shell
+  .. group-tab:: Shell
     .. code-block:: bash
 
       rawtoaces                                    \
@@ -122,7 +122,7 @@ use a Lensfun profile calibrated for every requested correction:
       --custom-focus-distance 240.0                \
       <INPUT_PATH>
 
-  .. tab:: C++
+  .. group-tab:: C++
     .. code-block:: C++
 
       #include <rawtoaces/image_converter.h>
@@ -161,7 +161,7 @@ use a Lensfun profile calibrated for every requested correction:
           return 0;
       }
 
-  .. tab:: Python
+  .. group-tab:: Python
     .. code-block:: Python
 
       import sys

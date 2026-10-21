@@ -73,7 +73,11 @@ sys.path.insert(0, str(docs_dir / '_ext'))
 
 html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
-html_css_files = ['css/tables.css']
+html_css_files = ['css/tables.css', 'css/tabs.css']
+
+# Keep one language example visible. The extension otherwise lets a second
+# click on the selected tab hide every panel.
+sphinx_tabs_disable_tab_closing = True
 
 html_theme_options = {
     'logo_only': False,

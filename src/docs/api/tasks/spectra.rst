@@ -40,7 +40,6 @@ The paths below are relative to a database directory from that layout.
    .. group-tab:: C++
 
       .. code-block:: cpp
-         :caption: C++
 
          #include <rawtoaces/rawtoaces_core.h>
          #include <iostream>
@@ -98,7 +97,6 @@ The paths below are relative to a database directory from that layout.
       three, raises ``ValueError``.
 
       .. code-block:: python
-         :caption: Python
 
          import rawtoaces
 

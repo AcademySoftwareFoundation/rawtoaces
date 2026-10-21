@@ -34,7 +34,6 @@ For ``photo.dng`` the output is ``/path/to/output/photo_aces.exr``.
    .. group-tab:: Shell
 
       .. code-block:: bash
-         :caption: Shell
 
          rawtoaces --crop-mode soft \
              --output-dir /path/to/output --create-dirs --overwrite \
@@ -43,7 +42,6 @@ For ``photo.dng`` the output is ``/path/to/output/photo_aces.exr``.
    .. group-tab:: C++
 
       .. code-block:: cpp
-         :caption: C++
 
          #include <rawtoaces/image_converter.h>
          #include <iostream>
@@ -91,7 +89,6 @@ For ``photo.dng`` the output is ``/path/to/output/photo_aces.exr``.
    .. group-tab:: Python
 
       .. code-block:: python
-         :caption: Python
 
          import sys
          import rawtoaces

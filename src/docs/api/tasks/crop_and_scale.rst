@@ -27,7 +27,6 @@ The output is ``<stem>_aces.exr`` beside the input. A failed call sets
    .. group-tab:: Shell
 
       .. code-block:: bash
-         :caption: Shell
 
          rawtoaces --crop-mode hard --crop-box 100 100 1000 800 \
              --headroom 12 --scale 1 \
@@ -36,7 +35,6 @@ The output is ``<stem>_aces.exr`` beside the input. A failed call sets
    .. group-tab:: C++
 
       .. code-block:: cpp
-         :caption: C++
 
          #include <rawtoaces/image_converter.h>
          #include <iostream>
@@ -75,7 +73,6 @@ The output is ``<stem>_aces.exr`` beside the input. A failed call sets
       raises ``ValueError``.
 
       .. code-block:: python
-         :caption: Python
 
          import sys
          import rawtoaces

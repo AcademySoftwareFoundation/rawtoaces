@@ -34,7 +34,6 @@ The output for ``photo.dng`` is ``/path/to/output/photo_aces.exr``.
    .. group-tab:: Shell
 
       .. code-block:: bash
-         :caption: Shell
 
          rawtoaces --crop-mode soft \
              --wb-method illuminant --illuminant D55 \
@@ -45,7 +44,6 @@ The output for ``photo.dng`` is ``/path/to/output/photo_aces.exr``.
    .. group-tab:: C++
 
       .. code-block:: cpp
-         :caption: C++
 
          #include <rawtoaces/image_converter.h>
          #include <iostream>
@@ -82,7 +80,6 @@ The output for ``photo.dng`` is ``/path/to/output/photo_aces.exr``.
    .. group-tab:: Python
 
       .. code-block:: python
-         :caption: Python
 
          import sys
          import rawtoaces
@@ -125,7 +122,6 @@ the nine-value argument order.
    .. group-tab:: Shell
 
       .. code-block:: bash
-         :caption: Shell
 
          rawtoaces --crop-mode soft \
              --wb-method custom --custom-wb 2.1 1.0 1.5 1.0 \
@@ -137,7 +133,6 @@ the nine-value argument order.
       ``custom_WB`` is a 4-element array.
 
       .. code-block:: cpp
-         :caption: C++
 
          #include <rawtoaces/image_converter.h>
          #include <iostream>
@@ -178,7 +173,6 @@ the nine-value argument order.
       ``ValueError`` and does not start the conversion.
 
       .. code-block:: python
-         :caption: Python
 
          import sys
          import rawtoaces

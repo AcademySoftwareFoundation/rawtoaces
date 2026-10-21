@@ -30,14 +30,12 @@ do not use ``ImageConverter.Status``. See
    .. group-tab:: Shell
 
       .. code-block:: bash
-         :caption: Shell
 
          rawtoaces --crop-mode soft photo.dng
 
    .. group-tab:: C++
 
       .. code-block:: cpp
-         :caption: C++
 
          #include <rawtoaces/image_converter.h>
          #include <iostream>
@@ -72,7 +70,6 @@ do not use ``ImageConverter.Status``. See
    .. group-tab:: Python
 
       .. code-block:: python
-         :caption: Python
 
          import sys
          import rawtoaces

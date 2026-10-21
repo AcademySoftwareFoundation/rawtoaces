@@ -32,14 +32,12 @@ format that carries the calibration used by the metadata white balance.
    .. group-tab:: Shell
 
       .. code-block:: bash
-         :caption: Shell
 
          rawtoaces --crop-mode soft photo.dng
 
    .. group-tab:: C++
 
       .. code-block:: cpp
-         :caption: C++
 
          #include <rawtoaces/image_converter.h>
          #include <iostream>
@@ -68,7 +66,6 @@ format that carries the calibration used by the metadata white balance.
    .. group-tab:: Python
 
       .. code-block:: python
-         :caption: Python
 
          import sys
          import rawtoaces

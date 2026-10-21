@@ -39,7 +39,6 @@ check.
    .. group-tab:: C++
 
       .. code-block:: cpp
-         :caption: C++
 
          #include <rawtoaces/image_converter.h>
          #include <OpenImageIO/imagebuf.h>
@@ -99,7 +98,6 @@ check.
       calling them. Use ``process_image`` on that build.
 
       .. code-block:: python
-         :caption: Python
 
          import sys
          from pathlib import Path

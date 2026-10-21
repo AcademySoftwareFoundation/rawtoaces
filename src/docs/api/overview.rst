@@ -41,6 +41,9 @@ end.
      - ``calculate_daylight_SPD``, ``calculate_blackbody_SPD``, and ``XYZD65Solver``
      - C++. Python can load the built-in named illuminants through ``SpectralSolver.find_illuminant``
 
+:doc:`Task examples <tasks/index>` repeats each of these tasks with the same
+settings in Shell, C++, and Python.
+
 .. _overview-oiio-notice:
 
 OpenImageIO 3.2
@@ -93,9 +96,13 @@ A failed call returns false. Read ``status`` and ``last_error_message``.
 spectral database, and a failure in configuration, reading, lens correction,
 the matrix, scale, crop, or writing.
 
-Worked examples:
-:doc:`C++ ImageConverter <cpp/image_converter>` and
-:doc:`Python ImageConverter <python/image_converter>`.
+:doc:`Convert one image <tasks/convert_one>` shows this call in Shell, C++,
+and Python. :doc:`Convert a batch <tasks/batch>`,
+:doc:`white balance and matrix <tasks/white_balance>`,
+:doc:`crop and scale <tasks/crop_and_scale>`, and
+:doc:`errors <tasks/errors>` continue from it. The
+:doc:`C++ <cpp/image_converter>` and :doc:`Python <python/image_converter>`
+guides expand on the same class.
 Signatures:
 :doc:`C++ Reference <cpp/api_reference>` and
 :doc:`Python Reference <python/api_reference>`.
@@ -104,14 +111,6 @@ Signatures:
 into batches. :cpp:func:`rta::util::ImageConverter::make_output_path`,
 ``init_parser``, and ``parse_parameters`` are C++ only; Python sets
 ``settings`` directly.
-
-.. code-block:: python
-
-   import rawtoaces
-
-   converter = rawtoaces.ImageConverter()
-   if not converter.process_image("/path/to/input.dng"):
-       raise RuntimeError(converter.last_error_message)
 
 OpenImageIO buffers
 -------------------
@@ -141,7 +140,8 @@ Each step returns false and sets ``status`` and ``last_error_message`` when it
 fails. Call ``configure`` again after changing settings that affect the
 transform.
 
-The C++ signatures are on :cpp:class:`rta::util::ImageConverter` in the
+:doc:`OpenImageIO buffers <tasks/buffer>` shows the sequence in C++ and
+Python. The C++ signatures are on :cpp:class:`rta::util::ImageConverter` in the
 :doc:`C++ Reference <cpp/api_reference>`. The Python signatures are on
 :py:class:`rawtoaces.ImageConverter` in the
 :doc:`Python Reference <python/api_reference>`.
@@ -164,9 +164,11 @@ read a spectral database.
 A false return leaves the explanation in ``last_error_message``. Python raises
 ``ValueError`` when a required vector has the wrong length.
 
-The worked Python example is the metadata workflow in
-:doc:`Core <python/rawtoaces_core>`. C++ signatures are in the
-:doc:`C++ Reference <cpp/api_reference>`.
+:doc:`Solve from metadata <tasks/metadata>` shows the same calibration in
+C++ and Python. The :doc:`Python core guide <python/rawtoaces_core>`
+explains the data model. Signatures are in the
+:doc:`C++ Reference <cpp/api_reference>` and the
+:doc:`Python Reference <python/api_reference>`.
 
 Solve from spectral data
 ------------------------
@@ -194,11 +196,13 @@ observer, or training set makes ``calculate_transform`` return false and sets
 
 The dataset layout and schema are documented with the
 `rawtoaces-data repository <https://github.com/AcademySoftwareFoundation/rawtoaces-data>`_.
-The worked Python example is the spectral workflow in
-:doc:`Core <python/rawtoaces_core>`. C++ types are introduced in
+:doc:`Solve from spectra <tasks/spectra>` shows the same database lookup
+in C++ and Python. The :doc:`Python core guide <python/rawtoaces_core>`
+explains the containers. C++ types are introduced in
 :doc:`rawtoaces Core <cpp/rawtoaces_core>` and
 :doc:`Spectral Data <cpp/spectral_data>`, with signatures in the
-:doc:`C++ Reference <cpp/api_reference>`.
+:doc:`C++ Reference <cpp/api_reference>` and the
+:doc:`Python Reference <python/api_reference>`.
 
 C++-only helpers
 ----------------

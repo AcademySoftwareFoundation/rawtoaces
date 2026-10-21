@@ -63,6 +63,8 @@ format that carries the calibration used by the metadata white balance.
              return 0;
          }
 
+      C++ types live in ``rta::util``.
+
    .. group-tab:: Python
 
       .. code-block:: python
@@ -80,10 +82,10 @@ format that carries the calibration used by the metadata white balance.
          if not converter.process_image(input_path):
              raise RuntimeError(converter.last_error_message)
 
-C++ types live in ``rta::util``. Python raises from
-``last_error_message``; the binding itself returns ``False`` for a failed
-conversion. Passing a white-balance or matrix vector of the wrong length
-raises ``ValueError`` before the conversion runs.
+      Python raises from ``last_error_message``. The binding itself
+      returns ``False`` for a failed conversion. Passing a white-balance
+      or matrix vector of the wrong length raises ``ValueError`` before
+      the conversion runs.
 
 See also :doc:`white balance and matrix <white_balance>`,
 :doc:`batch conversion <batch>`, :doc:`errors <errors>`, and the

@@ -98,8 +98,10 @@ return.
              raise RuntimeError(solver.last_error_message)
          transform = solver.transform_matrix
 
-A ``neutral_RGB`` or matrix of the wrong length raises ``ValueError``
-in Python. The :doc:`Python core guide <../python/rawtoaces_core>`
+      A ``neutral_RGB`` or matrix of the wrong length raises
+      ``ValueError``.
+
+The :doc:`Python core guide <../python/rawtoaces_core>`
 describes the same workflow and the deprecated solver methods.
 Signatures are in the :doc:`C++ Reference <../cpp/api_reference>` and
 the :doc:`Python Reference <../python/api_reference>`.

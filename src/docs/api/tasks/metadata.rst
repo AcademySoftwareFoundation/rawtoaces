@@ -29,7 +29,6 @@ return.
       the metadata it is given.
 
       .. code-block:: cpp
-         :caption: C++
 
          #include <rawtoaces/rawtoaces_core.h>
          #include <iostream>
@@ -71,7 +70,6 @@ return.
       an item in the list you just read does not update the metadata.
 
       .. code-block:: python
-         :caption: Python
 
          import rawtoaces
 

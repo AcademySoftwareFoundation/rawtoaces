@@ -14,9 +14,9 @@
 }
 
 /*
- * The theme puts 24px under every code block. Inside a tab that margin
- * sits in the frame, so the code looks like it has a blank line under it.
+ * The theme puts 24px under code blocks, paragraphs, and lists. Inside a
+ * tab that margin sits in the frame, under whichever item comes last.
  */
-.rst-content .sphinx-tabs-panel > div[class^="highlight"]:last-child {
+.rst-content .sphinx-tabs-panel > :last-child {
     margin-bottom: 0;
 }

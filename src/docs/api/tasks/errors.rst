@@ -88,25 +88,23 @@ do not use ``ImageConverter.Status``. See
                  message += " Set overwrite to replace the existing file."
              raise RuntimeError(message)
 
-Python argument shape
----------------------
+      A vector of the wrong length raises ``ValueError`` and does not
+      change the setting. C++ ``custom_WB`` is a fixed 4-element array,
+      so the same mistake is a compile error rather than a runtime status.
 
-A vector of the wrong length raises ``ValueError`` and does not change
-the setting. C++ ``custom_WB`` is a fixed 4-element array, so the same
-mistake is a compile error rather than a runtime status.
+      .. code-block:: python
 
-.. code-block:: python
+         import rawtoaces
 
-   import rawtoaces
+         converter = rawtoaces.ImageConverter()
+         try:
+             converter.settings.custom_WB = [1.0, 1.0, 1.0]
+         except ValueError as error:
+             print(error)
 
-   converter = rawtoaces.ImageConverter()
-   try:
-       converter.settings.custom_WB = [1.0, 1.0, 1.0]
-   except ValueError as error:
-       print(error)
-
-``Metadata.calibration`` raises ``ValueError`` unless it is assigned a
-sequence of two calibration sets. See :doc:`solve from metadata <metadata>`.
+      ``Metadata.calibration`` raises ``ValueError`` unless it is assigned
+      a sequence of two calibration sets. See
+      :doc:`solve from metadata <metadata>`.
 
 See also :doc:`OpenImageIO buffers <buffer>` for a check after each
 pipeline step.

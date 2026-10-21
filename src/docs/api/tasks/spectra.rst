@@ -91,6 +91,10 @@ The paths below are relative to a database directory from that layout.
              return white_balance.empty() || transform.empty() ? 1 : 0;
          }
 
+      C++ can also fill a spectrum with ``calculate_daylight_SPD`` or
+      ``calculate_blackbody_SPD`` and adapt D65 XYZ with
+      ``XYZD65Solver``.
+
    .. group-tab:: Python
 
       An empty illuminant name, or a multiplier list whose length is not
@@ -127,10 +131,9 @@ The paths below are relative to a database directory from that layout.
          white_balance = solver.get_WB_multipliers()
          transform = solver.transform_matrix
 
-C++ can also fill a spectrum with ``calculate_daylight_SPD`` or
-``calculate_blackbody_SPD`` and adapt D65 XYZ with ``XYZD65Solver``.
-Those functions are not in the Python module. Python reaches the
-built-in illuminants through ``find_illuminant``, as this example does.
+      ``calculate_daylight_SPD``, ``calculate_blackbody_SPD``, and
+      ``XYZD65Solver`` are C++ only. Python reaches the built-in
+      illuminants through ``find_illuminant``, as this example does.
 
 The :doc:`Python core guide <../python/rawtoaces_core>` explains the
 containers. Signatures are in the

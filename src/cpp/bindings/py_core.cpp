@@ -87,9 +87,11 @@ void bind_spectrum( nanobind::module_ &m )
     shape.def_rw( "step", &Spectrum::Shape::step, R"""(
         Spacing between samples, in nanometers.
         )""" );
+    // NOLINTBEGIN(misc-redundant-expression)
     shape.def( nanobind::self == nanobind::self, R"""(
         Return whether ``first``, ``last``, and ``step`` all match.
         )""" );
+    // NOLINTEND(misc-redundant-expression)
     // Equality is by value, and a shape is mutable, so it cannot be hashed.
     shape.attr( "__hash__" ) = nanobind::none();
 

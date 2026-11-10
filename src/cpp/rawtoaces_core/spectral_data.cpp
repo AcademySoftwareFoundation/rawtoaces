@@ -2,6 +2,7 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include <rawtoaces/spectral_data.h>
+#include "../misc/helpers.h"
 
 #include <assert.h>
 #include <fstream>
@@ -278,7 +279,17 @@ bool SpectralData::load(
             for ( auto &[bin_wavelength, bin_values]:
                   spectral_data[set_name].items() )
             {
-                float this_wavelength = std::stof( bin_wavelength );
+                float this_wavelength = 0.0f;
+                if ( !rta::helpers::parse_float(
+                         bin_wavelength, this_wavelength ) )
+                {
+                    if ( error_message != nullptr )
+                    {
+                        *error_message = "Error: Failed to parse wavelength '" +
+                                         bin_wavelength + "' in " + path + ".";
+                    }
+                    return false;
+                }
 
                 if ( prev_wavelength != -1 )
                 {

@@ -2,6 +2,7 @@
 // Copyright Contributors to the rawtoaces Project.
 
 #include "exiftool.h"
+#include "../misc/helpers.h"
 
 #include <cerrno>
 #include <cstdio>
@@ -314,18 +315,24 @@ bool fetch_metadata(
     {
         if ( exiftool_key == "FocusDistance" )
         {
-            do_focus_distance = true;
-            focus_distance    = std::stof( value );
+            if ( rta::helpers::parse_float( value, focus_distance ) )
+            {
+                do_focus_distance = true;
+            }
         }
         else if ( exiftool_key == "FocusDistanceUpper" )
         {
-            do_focus_distance    = true;
-            focus_distance_upper = std::stof( value );
+            if ( rta::helpers::parse_float( value, focus_distance_upper ) )
+            {
+                do_focus_distance = true;
+            }
         }
         else if ( exiftool_key == "FocusDistanceLower" )
         {
-            do_focus_distance    = true;
-            focus_distance_lower = std::stof( value );
+            if ( rta::helpers::parse_float( value, focus_distance_lower ) )
+            {
+                do_focus_distance = true;
+            }
         }
         else if ( exiftool_key != "FileName" )
         {
@@ -337,7 +344,11 @@ bool fetch_metadata(
 
             if ( to_float )
             {
-                spec[oiio_key] = std::stof( value );
+                float parsed = 0.0f;
+                if ( rta::helpers::parse_float( value, parsed ) )
+                {
+                    spec[oiio_key] = parsed;
+                }
             }
             else
             {

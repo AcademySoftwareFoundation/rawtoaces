@@ -18,6 +18,7 @@ add_library( ${RAWTOACES_CORE_LIB} ${DO_SHARED}
     rawtoaces_core.cpp
     spectral_data.cpp
     core_math.cpp
+    ../misc/helpers.cpp
 
     # Make the headers visible in IDEs. This should not affect the builds.
     ${CORE_PUBLIC_HEADER}
@@ -25,6 +26,7 @@ add_library( ${RAWTOACES_CORE_LIB} ${DO_SHARED}
     define.h
     core_math.h
     core_math_priv.h
+    ../misc/helpers.h
 )
 
 target_link_libraries(

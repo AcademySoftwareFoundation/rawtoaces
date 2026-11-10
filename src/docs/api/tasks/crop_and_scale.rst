@@ -90,5 +90,5 @@ The output is ``<stem>_aces.exr`` beside the input. A failed call sets
          if not converter.process_image(input_path):
              raise RuntimeError(converter.last_error_message)
 
-See also :doc:`convert one image <convert_one>` and the crop options in
+See also :doc:`convert a single image <convert_one>` and the crop options in
 the :doc:`user guide <../../user_guide>`.

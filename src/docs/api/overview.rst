@@ -96,7 +96,7 @@ A failed call returns false. Read ``status`` and ``last_error_message``.
 spectral database, and a failure in configuration, reading, lens correction,
 the matrix, scale, crop, or writing.
 
-:doc:`Convert one image <tasks/convert_one>` shows this call in Shell, C++,
+:doc:`Convert a single image <tasks/convert_one>` shows this call in Shell, C++,
 and Python. :doc:`Convert a batch <tasks/batch>`,
 :doc:`white balance and matrix <tasks/white_balance>`,
 :doc:`crop and scale <tasks/crop_and_scale>`, and

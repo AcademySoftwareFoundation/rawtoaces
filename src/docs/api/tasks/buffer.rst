@@ -14,7 +14,7 @@ form. The command line calls this sequence internally.
 The order is the one ``process_image`` uses: build the output path,
 ``configure``, ``load_image``, ``process_buffer``, then ``save_image``.
 ``process_buffer`` applies lens correction, the matrix, scale, and crop.
-Soft crop is set so the result matches :doc:`convert one image <convert_one>`.
+Soft crop is set so the result matches :doc:`convert a single image <convert_one>`.
 ``save_image`` stores half-float samples unless another type is passed.
 ``get_WB_multipliers`` and ``get_transform_matrix`` are valid after a
 successful ``configure``.

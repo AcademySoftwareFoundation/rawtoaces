@@ -19,8 +19,8 @@ forms describe the same pixels.
    :maxdepth: 1
 
    convert_one
-   white_balance
    batch
+   white_balance
    crop_and_scale
    errors
    buffer

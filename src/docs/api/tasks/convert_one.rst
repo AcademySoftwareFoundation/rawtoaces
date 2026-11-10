@@ -4,8 +4,8 @@
 
 .. _task-convert-one:
 
-Convert one image
-=================
+Convert a single image
+======================
 
 Convert one RAW file to an ACES EXR with
 :cpp:func:`rta::util::ImageConverter::process_image` or

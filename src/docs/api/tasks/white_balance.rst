@@ -194,5 +194,5 @@ the nine-value argument order.
          if not converter.process_image(input_path):
              raise RuntimeError(converter.last_error_message)
 
-See also :doc:`convert one image <convert_one>` and
+See also :doc:`convert a single image <convert_one>` and
 :doc:`solve from spectra <spectra>`.

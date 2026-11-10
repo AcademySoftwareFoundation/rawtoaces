@@ -117,4 +117,4 @@ For ``photo.dng`` the output is ``/path/to/output/photo_aces.exr``.
 
 The first batch is empty when every argument is a directory. Loop over
 every batch, including that empty one. See also
-:doc:`convert one image <convert_one>`.
+:doc:`convert a single image <convert_one>`.

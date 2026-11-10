@@ -190,6 +190,8 @@ add_test ( NAME Test_Logic COMMAND Test_Logic )
 add_executable (
 	Test_Misc
 	testMisc.cpp
+    ../../src/cpp/misc/helpers.cpp
+    ../../src/cpp/misc/helpers.h
 )
 
 target_link_libraries(

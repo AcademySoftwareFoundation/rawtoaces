@@ -5,6 +5,7 @@
 #include <filesystem>
 
 #include "../src/cpp/rawtoaces_core/define.h"
+#include "../src/cpp/misc/helpers.h"
 
 #define DATA_PATH "../_deps/rawtoaces_data-src/data/"
 
@@ -111,6 +112,31 @@ void test_IsValidCT()
     OIIO_CHECK_EQUAL( false, isValidCT( val14 ) );
 }
 
+void test_parse_float()
+{
+    float out = 0.0f;
+
+    // Normal decimal value
+    OIIO_CHECK_EQUAL( true, rta::helpers::parse_float( "1.5", out ) );
+    OIIO_CHECK_EQUAL( 1.5f, out );
+
+    // Integer string
+    OIIO_CHECK_EQUAL( true, rta::helpers::parse_float( "100", out ) );
+    OIIO_CHECK_EQUAL( 100.0f, out );
+
+    // Negative value
+    OIIO_CHECK_EQUAL( true, rta::helpers::parse_float( "-2.25", out ) );
+    OIIO_CHECK_EQUAL( -2.25f, out );
+
+    // Prefix parse accepted (matches std::stof behaviour): "100/1" yields 100
+    OIIO_CHECK_EQUAL( true, rta::helpers::parse_float( "100/1", out ) );
+    OIIO_CHECK_EQUAL( 100.0f, out );
+
+    // Non-numeric input returns false without throwing
+    OIIO_CHECK_EQUAL( false, rta::helpers::parse_float( "abc", out ) );
+    OIIO_CHECK_EQUAL( false, rta::helpers::parse_float( "", out ) );
+}
+
 int main( int, char ** )
 {
     test_OpenDir();
@@ -118,6 +144,7 @@ int main( int, char ** )
     test_IsNumeric();
     test_IsCTLetterDigit();
     test_IsValidCT();
+    test_parse_float();
 
     return unit_test_failures;
 }

@@ -6,6 +6,7 @@
 #include <OpenImageIO/unittest.h>
 
 #include <rawtoaces/usage_timer.h>
+#include "../../../src/cpp/misc/helpers.h"
 
 #include <chrono>
 #include <iostream>
@@ -35,16 +36,9 @@ float extractTimeFromOutput( const std::string &output )
 
             if ( !timeStr.empty() )
             {
-                try
-                {
-                    return std::stof( timeStr );
-                }
-                catch ( const std::exception &e )
-                {
-                    // always fails
-                    OIIO_CHECK_EQUAL(
-                        "Failed to parse time value: " + timeStr, e.what() );
-                }
+                float parsed = 0.0f;
+                if ( rta::helpers::parse_float( timeStr, parsed ) )
+                    return parsed;
             }
         }
     }

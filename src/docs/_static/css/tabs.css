@@ -1,0 +1,22 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* Copyright Contributors to the rawtoaces project. */
+
+/* Let Shell / C++ / Python tabs wrap inside a narrow content column. */
+.wy-nav-content [role="tablist"] {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .sphinx-tabs-tab {
+        padding: 0.55rem 0.75rem;
+    }
+}
+
+/*
+ * The theme puts 24px under code blocks, paragraphs, and lists. Inside a
+ * tab that margin sits in the frame, under whichever item comes last.
+ */
+.rst-content .sphinx-tabs-panel > :last-child {
+    margin-bottom: 0;
+}

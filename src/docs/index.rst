@@ -13,7 +13,8 @@ Programming references
 ----------------------
 
 :doc:`api/overview` chooses a file conversion, an OpenImageIO buffer pipeline,
-or a metadata or spectral solve. The language references list signatures:
+or a metadata or spectral solve. :doc:`api/tasks/index` shows each task in
+Shell, C++, and Python. The language references list signatures:
 
 - :doc:`api/cpp/api_reference`: C++ classes, settings, and functions.
 - :doc:`api/python/api_reference`: Python classes and methods.
@@ -24,6 +25,7 @@ or a metadata or spectral solve. The language references list signatures:
 
    getting_started
    user_guide
+   api/tasks/index
    lens_correction
    api/overview
    api/cpp/index

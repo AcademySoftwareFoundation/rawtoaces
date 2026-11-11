@@ -9,7 +9,9 @@ This section contains the API documentation for the rawtoaces C++ libraries,
 automatically generated from the source code using Doxygen and Breathe.
 
 Start with the :doc:`API overview <../overview>` to choose file conversion, an
-OpenImageIO buffer pipeline, or a metadata or spectral solve. Go directly to
+OpenImageIO buffer pipeline, or a metadata or spectral solve. The
+:doc:`task examples <../tasks/index>` show each task in C++ and Python.
+Go directly to
 :doc:`C++ Reference <api_reference>` for class and function signatures. The
 matching Python buffer methods require OpenImageIO 3.2 or later
 (:ref:`overview-oiio-notice`).

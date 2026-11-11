@@ -1,0 +1,16 @@
+{# SPDX-License-Identifier: Apache-2.0 #}
+{# Copyright Contributors to the rawtoaces project. #}
+{% extends "!layout.html" %}
+{% block extrahead %}
+{{ super() }}
+{# Inactive tab panels use the hidden attribute. Without JavaScript that
+   hides every language except the first, so show them all. #}
+<noscript>
+<style>
+.sphinx-tabs-panel[hidden] {
+  display: block !important;
+  margin-top: 0.75rem;
+}
+</style>
+</noscript>
+{% endblock %}

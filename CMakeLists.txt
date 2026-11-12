@@ -208,13 +208,6 @@ endif ( RTA_INSTALL_DATABASE )
 set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/
     CACHE PATH "Location of header files" )
 
-export( EXPORT RAWTOACESTargets )
-
-install( EXPORT RAWTOACESTargets
-    FILE RAWTOACESTargets.cmake
-    DESTINATION lib/cmake/RAWTOACES
-)
-
 include(CMakePackageConfigHelpers)
 
 configure_package_config_file(
@@ -222,6 +215,7 @@ configure_package_config_file(
     ${CMAKE_CURRENT_BINARY_DIR}/RAWTOACESConfig.cmake
     INSTALL_DESTINATION lib/cmake/RAWTOACES
     PATH_VARS INCLUDE_INSTALL_DIR
+    NO_CHECK_REQUIRED_COMPONENTS_MACRO
 )
 
 write_basic_package_version_file(

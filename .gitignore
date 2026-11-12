@@ -8,3 +8,6 @@ __pycache__/
 docs/_build/
 docs/doxygen/
 docs/html/
+
+# IDE
+.vscode/

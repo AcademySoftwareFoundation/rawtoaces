@@ -9,7 +9,7 @@
 #include <filesystem>
 #include <rawtoaces/image_converter.h>
 
-#include <OpenImageIO/unittest.h>
+#include "../assert.h"
 
 void test_AcesRender()
 {
@@ -42,7 +42,7 @@ void test_AcesRender()
         pathToRaw = std::filesystem::absolute( "../../../.." + image_path );
     }
 
-    OIIO_CHECK_ASSERT( std::filesystem::exists( pathToRaw ) );
+    RTA_CHECK_ASSERT( std::filesystem::exists( pathToRaw ) );
 
     rta::util::ImageConverter converter;
 
@@ -50,37 +50,18 @@ void test_AcesRender()
     arg_parser.arg( "filename" ).action( OIIO::ArgParse::append() ).hidden();
     converter.init_parser( arg_parser );
 
-    OIIO_CHECK_ASSERT( arg_parser.parse_args( argc, argv ) >= 0 );
-    OIIO_CHECK_ASSERT( converter.parse_parameters( arg_parser ) );
+    RTA_CHECK_ASSERT( arg_parser.parse_args( argc, argv ) >= 0 );
+    RTA_CHECK_ASSERT( converter.parse_parameters( arg_parser ) );
 
     auto files = arg_parser["filename"].as_vec<std::string>();
-    OIIO_CHECK_EQUAL( files.size(), 1 );
+    RTA_CHECK_EQUAL( files.size(), size_t( 1 ) );
 
-    OIIO_CHECK_ASSERT(
+    RTA_CHECK_ASSERT(
         converter.settings.WB_method ==
         rta::util::ImageConverter::Settings::WBMethod::Metadata );
-    OIIO_CHECK_ASSERT(
+    RTA_CHECK_ASSERT(
         converter.settings.matrix_method ==
         rta::util::ImageConverter::Settings::MatrixMethod::Metadata );
-
-    // Disable for now. Needs better checks if the installed OIIO version
-    // is compatible.
-    if ( false ) //(OIIO::openimageio_version() > 20500 )
-    {
-        OIIO::ParamValueList hints;
-        bool result = converter.configure( pathToRaw.string(), hints );
-        OIIO_CHECK_EQUAL( result, true );
-
-        const auto &idt = converter.get_transform_matrix();
-
-        double matrix[3][3] = { { 1.0536466144, 0.0039044182, 0.0049084502 },
-                                { -0.4899562165, 1.3614787986, 0.1020844728 },
-                                { -0.0024498461, 0.0060497128, 1.0139159537 } };
-
-        for ( size_t i = 0; i < 3; i++ )
-            for ( size_t j = 0; j < 3; j++ )
-                OIIO_CHECK_EQUAL_THRESH( idt[i][j], matrix[i][j], 1e-5 );
-    }
 }
 
 int main( int, char ** )

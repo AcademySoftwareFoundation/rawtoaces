@@ -7,11 +7,11 @@ set(rawtoaces_VERSION "@RAWTOACES_VERSION@")
 
 @PACKAGE_INIT@
 
-set( _supported_components core util )
+set( _supported_components rawtoaces_core rawtoaces_util )
 set( _requested_components ${RAWTOACES_FIND_COMPONENTS} )
 
 if ( NOT _requested_components )
-    set( _requested_components core util )
+    set( _requested_components rawtoaces_core rawtoaces_util )
 endif()
 
 foreach( _comp IN LISTS _requested_components )
@@ -37,7 +37,7 @@ endif ( NOT @ENABLE_SHARED@ )
 
 include( "${CMAKE_CURRENT_LIST_DIR}/RAWTOACESCoreTargets.cmake" )
 
-if ( "util" IN_LIST _requested_components )
+if ( "rawtoaces_util" IN_LIST _requested_components )
     find_dependency ( OpenImageIO )
     include( "${CMAKE_CURRENT_LIST_DIR}/RAWTOACESUtilTargets.cmake" )
 endif ()

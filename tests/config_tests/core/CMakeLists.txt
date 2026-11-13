@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 3.12)
 
 enable_testing()
 
-find_package ( RAWTOACES CONFIG REQUIRED COMPONENTS core )
+find_package ( RAWTOACES CONFIG REQUIRED COMPONENTS rawtoaces_core )
 
 add_executable( test_installed_core
     test_installed_core.cpp

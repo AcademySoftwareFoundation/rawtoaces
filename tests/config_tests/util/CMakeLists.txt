@@ -3,9 +3,9 @@
 
 cmake_minimum_required(VERSION 3.12)
 
-#include_directories( "${CMAKE_CURRENT_SOURCE_DIR}" )
-
 enable_testing()
+
+find_package ( RAWTOACES CONFIG REQUIRED COMPONENTS rawtoaces_util )
 
 add_executable( test_installed_util
     test_installed_util.cpp
@@ -15,7 +15,6 @@ target_link_libraries(
     test_installed_util
     PUBLIC
         rawtoaces_util
-        OpenImageIO::OpenImageIO
 )
 
 # Enable coverage for this test if coverage is enabled

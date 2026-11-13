@@ -383,9 +383,5 @@ endif()
 ################################################################################
 # Coverage report generation
 if( ENABLE_COVERAGE AND COVERAGE_SUPPORTED )
-    # Include config_tests subdirectories
-    add_subdirectory(config_tests/core)
-    add_subdirectory(config_tests/util)
-
     generate_coverage_report()
 endif()

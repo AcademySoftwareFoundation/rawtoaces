@@ -401,48 +401,6 @@ void test_parse_raw_extensions()
     OIIO_CHECK_EQUAL( exts.count( ".jpeg" ), 0 );
 }
 
-/// Tests both a present extension list and a missing OpenImageIO attribute.
-void test_raw_extensions_from_attribute()
-{
-    std::cout << std::endl
-              << "test_raw_extensions_from_attribute()" << std::endl;
-
-    const std::set<std::string> parsed =
-        raw_extensions_from_attribute( true, "raw:cr2,nef" );
-    OIIO_CHECK_EQUAL( parsed.count( ".cr2" ), 1 );
-    OIIO_CHECK_EQUAL( parsed.count( ".nef" ), 1 );
-
-    std::stringstream           captured;
-    std::streambuf             *previous = std::cerr.rdbuf( captured.rdbuf() );
-    const std::set<std::string> missing =
-        raw_extensions_from_attribute( false, "raw:cr2" );
-    std::cerr.rdbuf( previous );
-
-    OIIO_CHECK_EQUAL( missing.size(), 0 );
-    ASSERT_CONTAINS( captured.str(), "did not provide extension_list" );
-}
-
-/// Tests three-channel, four-channel, and rejected white-balance lengths.
-void test_make_raw_user_multipliers()
-{
-    std::cout << std::endl << "test_make_raw_user_multipliers()" << std::endl;
-
-    const auto rgb = make_raw_user_multipliers( { 1.5, 1.0, 2.0 } );
-    OIIO_CHECK_ASSERT( rgb.has_value() );
-    OIIO_CHECK_EQUAL( ( *rgb )[0], 1.5f );
-    OIIO_CHECK_EQUAL( ( *rgb )[1], 1.0f );
-    OIIO_CHECK_EQUAL( ( *rgb )[2], 2.0f );
-    OIIO_CHECK_EQUAL( ( *rgb )[3], 1.0f );
-
-    const auto rgb_green = make_raw_user_multipliers( { 1.5, 1.0, 2.0, 0.5 } );
-    OIIO_CHECK_ASSERT( rgb_green.has_value() );
-    OIIO_CHECK_EQUAL( ( *rgb_green )[0], 1.5f );
-    OIIO_CHECK_EQUAL( ( *rgb_green )[3], 0.5f );
-
-    OIIO_CHECK_ASSERT( !make_raw_user_multipliers( {} ).has_value() );
-    OIIO_CHECK_ASSERT( !make_raw_user_multipliers( { 1.0, 1.0 } ).has_value() );
-}
-
 /// Tests database_paths with no environment variables set (uses default paths)
 void test_database_paths_default()
 {
@@ -2937,6 +2895,94 @@ void test_lens_correction_type()
         rta::util::ImageConverter::Settings::LensCorrectionType::Aberration ) );
 }
 
+/// Illuminant white balance solves three RGB multipliers and passes four
+/// values to LibRaw, repeating the first green.
+void test_illuminant_wb_sets_raw_user_mul()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    TestFixture fixture;
+    auto       &test_dir =
+        fixture.with_camera( "Blackmagic", "Cinema Camera" ).build();
+
+    auto image_spec =
+        ImageSpecBuilder().camera( "Blackmagic", "Cinema Camera" ).build();
+    auto settings = SettingsBuilder()
+                        .database( test_dir.get_database_path() )
+                        .wb_method( "illuminant" )
+                        .illuminant( "D65" )
+                        .mat_method( "spectral" )
+                        .build();
+
+    ImageConverter converter;
+    converter.settings               = settings;
+    converter.settings.disable_cache = true;
+
+    OIIO::ParamValueList options;
+    bool                 success = converter.configure( image_spec, options );
+    OIIO_CHECK_ASSERT( success );
+
+    const auto &solved = converter.get_WB_multipliers();
+    OIIO_CHECK_EQUAL( solved.size(), 3 );
+
+    const auto user_mul = options.find(
+        "raw:user_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
+    OIIO_CHECK_ASSERT( user_mul != options.end() );
+    OIIO_CHECK_EQUAL_THRESH(
+        user_mul->get_float_indexed( 0 ),
+        static_cast<float>( solved[0] ),
+        1e-5f );
+    OIIO_CHECK_EQUAL_THRESH(
+        user_mul->get_float_indexed( 1 ),
+        static_cast<float>( solved[1] ),
+        1e-5f );
+    OIIO_CHECK_EQUAL_THRESH(
+        user_mul->get_float_indexed( 2 ),
+        static_cast<float>( solved[2] ),
+        1e-5f );
+    // Second green repeats the first when the solve only produced RGB.
+    OIIO_CHECK_EQUAL_THRESH(
+        user_mul->get_float_indexed( 3 ),
+        static_cast<float>( solved[1] ),
+        1e-5f );
+}
+
+/// Auto-detected illuminant white balance does not invent multipliers, so
+/// LibRaw is not given a raw:user_mul hint.
+void test_illuminant_wb_without_solved_multipliers_skips_user_mul()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    TestFixture fixture;
+    auto       &test_dir =
+        fixture.with_camera( "Blackmagic", "Cinema Camera" ).build();
+
+    float pre_mul[4] = { 1.5f, 1.0f, 1.2f, 1.0f };
+    auto  image_spec = ImageSpecBuilder()
+                          .camera( "Blackmagic", "Cinema Camera" )
+                          .raw_pre_mul( pre_mul, 4 )
+                          .build();
+    auto settings = SettingsBuilder()
+                        .database( test_dir.get_database_path() )
+                        .wb_method( "illuminant" )
+                        .illuminant( "" )
+                        .mat_method( "spectral" )
+                        .build();
+
+    ImageConverter converter;
+    converter.settings               = settings;
+    converter.settings.disable_cache = true;
+
+    OIIO::ParamValueList options;
+    bool                 success = converter.configure( image_spec, options );
+    OIIO_CHECK_ASSERT( success );
+    OIIO_CHECK_EQUAL( converter.get_WB_multipliers().size(), 0 );
+    OIIO_CHECK_ASSERT(
+        options.find(
+            "raw:user_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) ) ==
+        options.end() );
+}
+
 void test_metadata_wb_being_set()
 {
     // Set the WB multipliers in the image spec, as if they came from an
@@ -3429,8 +3475,6 @@ int main( int, char ** )
 
         // Tests for raw extensions
         test_parse_raw_extensions();
-        test_raw_extensions_from_attribute();
-        test_make_raw_user_multipliers();
 
         // Tests for database_paths
         test_database_paths_default();
@@ -3529,6 +3573,8 @@ int main( int, char ** )
         test_main_error_message_without_hint();
         test_main_error_data_dir_hint();
 
+        test_illuminant_wb_sets_raw_user_mul();
+        test_illuminant_wb_without_solved_multipliers_skips_user_mul();
         test_metadata_wb_being_set();
         test_custom_wb_being_set();
 

@@ -3,9 +3,7 @@
 
 #pragma once
 
-#include <array>
 #include <filesystem>
-#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
@@ -22,18 +20,7 @@ namespace util
 {
 const std::set<std::string>
 parse_raw_extensions( const std::string &extensionlist );
-
-/// RAW extensions from an OpenImageIO `extension_list` attribute.
-/// An attribute that was not found yields an empty set.
-const std::set<std::string>
-raw_extensions_from_attribute( bool found, const std::string &extensionlist );
 const std::set<std::string> supported_raw_extensions();
-
-/// Four LibRaw white-balance multipliers.
-/// Three RGB multipliers duplicate green into the fourth channel.
-/// Any other length is rejected.
-std::optional<std::array<float, 4>>
-make_raw_user_multipliers( const std::vector<double> &multipliers );
 std::vector<std::string>
      database_paths( const std::string &override_path = "" );
 void fix_metadata( OIIO::ImageSpec &spec );

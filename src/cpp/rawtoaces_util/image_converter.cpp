@@ -149,17 +149,26 @@ parse_raw_extensions( const std::string &extensionlist )
     return result;
 }
 
-const std::set<std::string>
-raw_extensions_from_attribute( bool found, const std::string &extensionlist )
+namespace
 {
-    if ( !found )
-    {
-        std::cerr << "OpenImageIO did not provide extension_list" << std::endl;
-        return {};
-    }
 
-    return parse_raw_extensions( extensionlist );
+// LibRaw white balance is four multipliers. Spectral illuminant data
+// provides three RGB values, so the second green repeats the first.
+// Any other length is left unset.
+std::optional<std::array<float, 4>>
+make_raw_user_multipliers( const std::vector<double> &multipliers )
+{
+    if ( multipliers.size() != 3 )
+        return std::nullopt;
+
+    const float green = static_cast<float>( multipliers[1] );
+    return std::array<float, 4>{ static_cast<float>( multipliers[0] ),
+                                 green,
+                                 static_cast<float>( multipliers[2] ),
+                                 green };
 }
+
+} // namespace
 
 /**
  * Returns the set of file extensions supported for RAW image processing.
@@ -174,24 +183,8 @@ raw_extensions_from_attribute( bool found, const std::string &extensionlist )
 const std::set<std::string> supported_raw_extensions()
 {
     std::string extensionlist;
-    bool        found = OIIO::getattribute( "extension_list", extensionlist );
-    return raw_extensions_from_attribute( found, extensionlist );
-}
-
-std::optional<std::array<float, 4>>
-make_raw_user_multipliers( const std::vector<double> &multipliers )
-{
-    if ( multipliers.size() != 3 && multipliers.size() != 4 )
-        return std::nullopt;
-
-    // LibRaw expects four multipliers. Duplicate green when only RGB
-    // multipliers are known.
-    return std::array<float, 4>{ static_cast<float>( multipliers[0] ),
-                                 static_cast<float>( multipliers[1] ),
-                                 static_cast<float>( multipliers[2] ),
-                                 multipliers.size() == 4
-                                     ? static_cast<float>( multipliers[3] )
-                                     : static_cast<float>( multipliers[1] ) };
+    OIIO::getattribute( "extension_list", extensionlist );
+    return parse_raw_extensions( extensionlist );
 }
 
 /**

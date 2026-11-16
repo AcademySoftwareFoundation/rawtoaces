@@ -29,10 +29,13 @@ add_library( ${RAWTOACES_CORE_LIB} ${DO_SHARED}
     ../misc/helpers.h
 )
 
-target_link_libraries(
-    ${RAWTOACES_CORE_LIB}
-    PRIVATE
-        nlohmann_json::nlohmann_json
+# Header-only, and not included by any public header. Linking the imported
+# target would put it in the static export and force consumers to find it.
+target_include_directories( ${RAWTOACES_CORE_LIB} PRIVATE
+    $<TARGET_PROPERTY:nlohmann_json::nlohmann_json,INTERFACE_INCLUDE_DIRECTORIES>
+)
+target_compile_definitions( ${RAWTOACES_CORE_LIB} PRIVATE
+    $<TARGET_PROPERTY:nlohmann_json::nlohmann_json,INTERFACE_COMPILE_DEFINITIONS>
 )
 
 if ( RTA_ENABLE_EIGEN )
@@ -71,10 +74,16 @@ set_target_properties( ${RAWTOACES_CORE_LIB} PROPERTIES
 
 install( TARGETS ${RAWTOACES_CORE_LIB}
     EXPORT RAWTOACESCoreTargets
+    ARCHIVE DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT rawtoaces_core
     LIBRARY DESTINATION ${INSTALL_LIB_DIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        COMPONENT rawtoaces_core
+        NAMELINK_COMPONENT rawtoaces_core
+    RUNTIME DESTINATION ${INSTALL_BIN_DIR}
+        COMPONENT rawtoaces_core
     PUBLIC_HEADER DESTINATION include/rawtoaces
-    COMPONENT rawtoaces_core
+        COMPONENT rawtoaces_core
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 # generate and install export file

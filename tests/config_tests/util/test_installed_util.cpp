@@ -32,11 +32,10 @@ void test_AcesRender()
     std::string image_path =
         "/tests/materials/blackmagic_cinema_camera_cinemadng.dng";
 
+    // ctest runs from build_config_test/util, two levels below the source root.
+    // The extra ../ covers a build directory nested inside the source tree.
     std::filesystem::path pathToRaw =
         std::filesystem::absolute( "../.." + image_path );
-
-    // Depending if it run via tests/config_tests/CMakeLists.txt or
-    // as part of coverage via tests/CMakeLists.txt
     if ( !std::filesystem::exists( pathToRaw ) )
     {
         pathToRaw = std::filesystem::absolute( "../../../.." + image_path );

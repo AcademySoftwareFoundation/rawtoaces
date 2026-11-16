@@ -7,25 +7,30 @@ set(rawtoaces_VERSION "@RAWTOACES_VERSION@")
 
 @PACKAGE_INIT@
 
+# Empty COMPONENTS keeps the historical find_package(RAWTOACES) behavior:
+# both libraries, with OpenImageIO required only because util is included.
 set( _supported_components rawtoaces_core rawtoaces_util )
-set( _requested_components ${RAWTOACES_FIND_COMPONENTS} )
-
-if ( NOT _requested_components )
+if ( NOT DEFINED RAWTOACES_FIND_COMPONENTS OR NOT RAWTOACES_FIND_COMPONENTS )
     set( _requested_components rawtoaces_core rawtoaces_util )
+else()
+    set( _requested_components ${RAWTOACES_FIND_COMPONENTS} )
 endif()
 
 foreach( _comp IN LISTS _requested_components )
-  if ( NOT _comp IN_LIST _supported_components )
-    set( RAWTOACES_FOUND False )
-    set( RAWTOACES_NOT_FOUND_MESSAGE "Unsupported component: ${_comp}" )
-  endif()
+    if ( NOT _comp IN_LIST _supported_components )
+        set( ${CMAKE_FIND_PACKAGE_NAME}_FOUND FALSE )
+        set( ${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE
+            "Unsupported RAWTOACES component: ${_comp}" )
+        unset( _supported_components )
+        unset( _requested_components )
+        unset( _comp )
+        return()
+    endif()
 endforeach()
 
 include(CMakeFindDependencyMacro)
 
 if ( NOT @ENABLE_SHARED@ )
-    find_dependency ( nlohmann_json )
-
     if ( @RTA_ENABLE_EIGEN@ )
         find_dependency ( Eigen3 )
     endif ()
@@ -35,9 +40,44 @@ if ( NOT @ENABLE_SHARED@ )
     endif ()
 endif ( NOT @ENABLE_SHARED@ )
 
-include( "${CMAKE_CURRENT_LIST_DIR}/RAWTOACESCoreTargets.cmake" )
+set( _core_targets "${CMAKE_CURRENT_LIST_DIR}/RAWTOACESCoreTargets.cmake" )
+if ( NOT EXISTS "${_core_targets}" )
+    set( ${CMAKE_FIND_PACKAGE_NAME}_rawtoaces_core_FOUND FALSE )
+    set( ${CMAKE_FIND_PACKAGE_NAME}_FOUND FALSE )
+    set( ${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE
+        "RAWTOACES component rawtoaces_core is not installed (missing RAWTOACESCoreTargets.cmake)" )
+    unset( _supported_components )
+    unset( _requested_components )
+    unset( _comp )
+    unset( _core_targets )
+    return()
+endif()
+
+include( "${_core_targets}" )
+set( ${CMAKE_FIND_PACKAGE_NAME}_rawtoaces_core_FOUND TRUE )
 
 if ( "rawtoaces_util" IN_LIST _requested_components )
-    find_dependency ( OpenImageIO )
-    include( "${CMAKE_CURRENT_LIST_DIR}/RAWTOACESUtilTargets.cmake" )
-endif ()
+    set( _util_targets "${CMAKE_CURRENT_LIST_DIR}/RAWTOACESUtilTargets.cmake" )
+    if ( NOT EXISTS "${_util_targets}" )
+        set( ${CMAKE_FIND_PACKAGE_NAME}_rawtoaces_util_FOUND FALSE )
+        # No COMPONENTS means both libraries. An explicit optional request
+        # leaves the package found and reports the component as missing.
+        if ( NOT RAWTOACES_FIND_COMPONENTS OR RAWTOACES_FIND_REQUIRED_rawtoaces_util )
+            set( ${CMAKE_FIND_PACKAGE_NAME}_FOUND FALSE )
+            set( ${CMAKE_FIND_PACKAGE_NAME}_NOT_FOUND_MESSAGE
+                "RAWTOACES component rawtoaces_util is not installed (missing RAWTOACESUtilTargets.cmake)" )
+        endif()
+    else()
+        find_dependency ( OpenImageIO )
+        include( "${_util_targets}" )
+        set( ${CMAKE_FIND_PACKAGE_NAME}_rawtoaces_util_FOUND TRUE )
+    endif()
+endif()
+
+check_required_components( ${CMAKE_FIND_PACKAGE_NAME} )
+
+unset( _supported_components )
+unset( _requested_components )
+unset( _comp )
+unset( _core_targets )
+unset( _util_targets )

@@ -210,12 +210,19 @@ set(INCLUDE_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/include/
 
 include(CMakePackageConfigHelpers)
 
+# Build-tree package: RAWTOACESConfig.cmake in this directory includes these.
+export( EXPORT RAWTOACESCoreTargets
+    FILE ${CMAKE_CURRENT_BINARY_DIR}/RAWTOACESCoreTargets.cmake
+)
+export( EXPORT RAWTOACESUtilTargets
+    FILE ${CMAKE_CURRENT_BINARY_DIR}/RAWTOACESUtilTargets.cmake
+)
+
 configure_package_config_file(
     config/RAWTOACESConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/RAWTOACESConfig.cmake
     INSTALL_DESTINATION lib/cmake/RAWTOACES
     PATH_VARS INCLUDE_INSTALL_DIR
-    NO_CHECK_REQUIRED_COMPONENTS_MACRO
 )
 
 write_basic_package_version_file(
@@ -224,8 +231,13 @@ write_basic_package_version_file(
     COMPATIBILITY SameMajorVersion
 )
 
-install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/RAWTOACESConfig.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/RAWTOACESConfigVersion.cmake
-    DESTINATION lib/cmake/RAWTOACES
-)
+# Each library component must ship the config, or
+# `cmake --install --component rawtoaces_core` cannot be found.
+foreach( _rawtoaces_component IN ITEMS rawtoaces_core rawtoaces_util )
+    install( FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/RAWTOACESConfig.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/RAWTOACESConfigVersion.cmake
+        DESTINATION lib/cmake/RAWTOACES
+        COMPONENT ${_rawtoaces_component}
+    )
+endforeach()

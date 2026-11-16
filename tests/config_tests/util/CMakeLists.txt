@@ -17,9 +17,4 @@ target_link_libraries(
         rawtoaces_util
 )
 
-# Enable coverage for this test if coverage is enabled
-if( ENABLE_COVERAGE AND COVERAGE_SUPPORTED )
-    setup_coverage_flags(test_installed_util)
-endif()
-
 add_test ( NAME test_installed_util COMMAND test_installed_util )

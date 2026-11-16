@@ -2,22 +2,38 @@
 // Copyright Contributors to the rawtoaces project.
 
 #pragma once
+
 #include <iostream>
 
-int unit_test_failures = 0;
+inline int unit_test_failures = 0;
+
+template <typename Actual, typename Expected>
+inline void rta_check_equal(
+    const Actual   &actual,
+    const Expected &expected,
+    const char     *expression,
+    const char     *file,
+    int             line )
+{
+    if ( actual != expected )
+    {
+        std::cout << file << ":" << line << "\n";
+        std::cout << "FAILED: " << expression << " (" << actual << ") == ("
+                  << expected << ")\n";
+        unit_test_failures++;
+    }
+}
 
 #define RTA_CHECK_ASSERT( x )                                                  \
-    if ( !( x ) )                                                              \
+    do                                                                         \
     {                                                                          \
-        std::cout << __FILE__ << ":" << __LINE__ << "\n";                      \
-        std::cout << "FAILED: " << #x << "\n";                                 \
-        unit_test_failures++;                                                  \
-    }
+        if ( !( x ) )                                                          \
+        {                                                                      \
+            std::cout << __FILE__ << ":" << __LINE__ << "\n";                  \
+            std::cout << "FAILED: " << #x << "\n";                             \
+            unit_test_failures++;                                              \
+        }                                                                      \
+    } while ( 0 )
 
 #define RTA_CHECK_EQUAL( x, y )                                                \
-    if ( ( x ) != ( y ) )                                                      \
-    {                                                                          \
-        std::cout << __FILE__ << ":" << __LINE__ << "\n";                      \
-        std::cout << "FAILED: " << #x << "==" << #y << "\n";                   \
-        unit_test_failures++;                                                  \
-    }
+    rta_check_equal( ( x ), ( y ), #x " == " #y, __FILE__, __LINE__ )

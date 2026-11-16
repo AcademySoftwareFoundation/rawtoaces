@@ -15,9 +15,10 @@
 #include "exiftool.h"
 #include "attributes.h"
 
-#include <cstdlib>
+#include <array>
 #include <filesystem>
 #include <iostream>
+#include <optional>
 #include <set>
 
 #include <OpenImageIO/imageio.h>
@@ -148,6 +149,18 @@ parse_raw_extensions( const std::string &extensionlist )
     return result;
 }
 
+const std::set<std::string>
+raw_extensions_from_attribute( bool found, const std::string &extensionlist )
+{
+    if ( !found )
+    {
+        std::cerr << "OpenImageIO did not provide extension_list" << std::endl;
+        return {};
+    }
+
+    return parse_raw_extensions( extensionlist );
+}
+
 /**
  * Returns the set of file extensions supported for RAW image processing.
  *
@@ -161,19 +174,24 @@ parse_raw_extensions( const std::string &extensionlist )
 const std::set<std::string> supported_raw_extensions()
 {
     std::string extensionlist;
-    bool        ok = OIIO::getattribute( "extension_list", extensionlist );
-    // OIIO_ASSERT formats __LINE__ with "%u", which cppcheck rejects.
-    if ( !ok )
-    {
-        std::cerr << __FILE__ << ":" << __LINE__
-                  << ": OpenImageIO did not provide extension_list"
-                  << std::endl;
-#ifndef NDEBUG
-        std::abort();
-#endif
-    }
+    bool        found = OIIO::getattribute( "extension_list", extensionlist );
+    return raw_extensions_from_attribute( found, extensionlist );
+}
 
-    return parse_raw_extensions( extensionlist );
+std::optional<std::array<float, 4>>
+make_raw_user_multipliers( const std::vector<double> &multipliers )
+{
+    if ( multipliers.size() != 3 && multipliers.size() != 4 )
+        return std::nullopt;
+
+    // LibRaw expects four multipliers. Duplicate green when only RGB
+    // multipliers are known.
+    return std::array<float, 4>{ static_cast<float>( multipliers[0] ),
+                                 static_cast<float>( multipliers[1] ),
+                                 static_cast<float>( multipliers[2] ),
+                                 multipliers.size() == 4
+                                     ? static_cast<float>( multipliers[3] )
+                                     : static_cast<float>( multipliers[1] ) };
 }
 
 /**
@@ -2213,24 +2231,16 @@ bool ImageConverter::configure(
 
         options[attributes::FoundIlluminant] = found_illuminant;
 
-        if ( is_spectral_white_balance &&
-             ( _wb_multipliers.size() == 3 || _wb_multipliers.size() == 4 ) )
+        if ( is_spectral_white_balance )
         {
-            // LibRaw expects four multipliers. Duplicate green when only RGB
-            // multipliers are known.
-            float custom_WB[4] = {
-                static_cast<float>( _wb_multipliers[0] ),
-                static_cast<float>( _wb_multipliers[1] ),
-                static_cast<float>( _wb_multipliers[2] ),
-                _wb_multipliers.size() == 4
-                    ? static_cast<float>( _wb_multipliers[3] )
-                    : static_cast<float>( _wb_multipliers[1] )
-            };
-
-            options.attribute(
-                "raw:user_mul",
-                OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
-                custom_WB );
+            if ( const auto custom_WB =
+                     make_raw_user_multipliers( _wb_multipliers ) )
+            {
+                options.attribute(
+                    "raw:user_mul",
+                    OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
+                    custom_WB->data() );
+            }
         }
     }
 

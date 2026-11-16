@@ -29,7 +29,8 @@ if [ "$RTA_ENABLE_LENSFUN" != "OFF" ];
 then
     time sudo apt-get -q -f install -y \
         liblensfun-dev \
-        liblensfun-data-v1
+        liblensfun-data-v1 \
+        libglib2.0-dev # lensfun.pc Requires glib-2.0.
 fi
 
 

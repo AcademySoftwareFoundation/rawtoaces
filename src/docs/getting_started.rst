@@ -28,7 +28,7 @@ The default CMake configuration builds the CLI, C++ libraries, Python bindings, 
    * - Eigen3 and Ceres Solver
      - Enabled by default. Ceres may also require Eigen and other dependencies from the package it was built against.
    * - Lensfun and pkg-config
-     - Lensfun 0.3.2 or later, discoverable through pkg-config. Required when ``RTA_ENABLE_LENSFUN=ON`` (the default).
+     - Lensfun 0.3.2 or later, discoverable through pkg-config. ``lensfun.pc`` requires the GLib development package (``libglib2.0-dev`` on Debian and Ubuntu). Required when ``RTA_ENABLE_LENSFUN=ON`` (the default).
    * - Python and nanobind
      - Python 3.10 or later, its development headers, and nanobind's CMake package. Required when ``RTA_BUILD_PYTHON_BINDINGS=ON`` (the default).
    * - pytest
@@ -45,7 +45,7 @@ On macOS, the native dependencies can be obtained from Homebrew:
 
 The source-build and conversion steps below were checked with these dependencies already installed on macOS. Distribution packages on Linux and Windows differ in their versions and optional OpenImageIO plugins. This guide does not claim that an untested package-manager recipe supplies a compatible default build. Install the dependencies listed above through your package manager or from source, then use the same CMake build steps. The old CentOS 7 Word documents in the repository describe historical installations.
 
-If CMake cannot find a dependency, add its installation prefix to ``CMAKE_PREFIX_PATH`` or provide its package directory, such as ``-DEigen3_DIR=/path/to/eigen/share/eigen3/cmake``. For Lensfun, ensure ``pkg-config --modversion lensfun`` succeeds; set ``PKG_CONFIG_PATH`` to the directory containing ``lensfun.pc`` for a custom installation. A Ceres package must find the Eigen version it was compiled against.
+If CMake cannot find a dependency, add its installation prefix to ``CMAKE_PREFIX_PATH`` or provide its package directory, such as ``-DEigen3_DIR=/path/to/eigen/share/eigen3/cmake``. For Lensfun, ensure ``pkg-config --modversion lensfun`` succeeds. That check fails when ``glib-2.0`` is missing, because ``lensfun.pc`` requires it. Set ``PKG_CONFIG_PATH`` to the directory containing ``lensfun.pc`` for a custom installation. A Ceres package must find the Eigen version it was compiled against.
 
 From Source
 ^^^^^^^^^^^

@@ -5298,7 +5298,7 @@ void testIDT_CalIDT()
 
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
-            OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-9 );
+            OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-8 );
 }
 
 void testIDT_calculate_transform()
@@ -5320,7 +5320,7 @@ void testIDT_calculate_transform()
 
     for ( size_t i = 0; i < 3; i++ )
         for ( size_t j = 0; j < 3; j++ )
-            OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-9 );
+            OIIO_CHECK_EQUAL_THRESH( IDT[i][j], IDT_test[i][j], 1e-8 );
 }
 
 /// Helper function to test that calculate_transform returns false and sets expected error

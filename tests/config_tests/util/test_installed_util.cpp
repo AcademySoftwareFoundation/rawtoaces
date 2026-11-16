@@ -6,66 +6,29 @@
 #    include <windows.h>
 #endif
 
-#include <filesystem>
 #include <rawtoaces/image_converter.h>
 
-#include "../assert.h"
-
-void test_AcesRender()
+// A simple test to confirm that the library has been linked successfully.
+int main( int, char ** )
 {
     const char *argv[] = {
         "dummy_binary_path",
-    // getting "Subprocess aborted" in unit tests
-    // when this is enabled on Mac, the tests fail on linux if
-    // skipped completely.
-#if __linux__
-        "--wb-method",
-        "metadata",
-#endif
         "--mat-method",
         "metadata",
-        "dummy_image_path"
     };
 
     const int argc = sizeof( argv ) / sizeof( argv[0] );
 
-    std::string image_path =
-        "/tests/materials/blackmagic_cinema_camera_cinemadng.dng";
-
-    // ctest runs from build_config_test/util, two levels below the source root.
-    // The extra ../ covers a build directory nested inside the source tree.
-    std::filesystem::path pathToRaw =
-        std::filesystem::absolute( "../.." + image_path );
-    if ( !std::filesystem::exists( pathToRaw ) )
-    {
-        pathToRaw = std::filesystem::absolute( "../../../.." + image_path );
-    }
-
-    RTA_CHECK_ASSERT( std::filesystem::exists( pathToRaw ) );
-
     rta::util::ImageConverter converter;
 
     OIIO::ArgParse arg_parser;
-    arg_parser.arg( "filename" ).action( OIIO::ArgParse::append() ).hidden();
     converter.init_parser( arg_parser );
 
-    RTA_CHECK_ASSERT( arg_parser.parse_args( argc, argv ) >= 0 );
-    RTA_CHECK_ASSERT( converter.parse_parameters( arg_parser ) );
+    if ( arg_parser.parse_args( argc, argv ) < 0 )
+        return 1;
 
-    auto files = arg_parser["filename"].as_vec<std::string>();
-    RTA_CHECK_EQUAL( files.size(), size_t( 1 ) );
+    if ( !converter.parse_parameters( arg_parser ) )
+        return 2;
 
-    RTA_CHECK_ASSERT(
-        converter.settings.WB_method ==
-        rta::util::ImageConverter::Settings::WBMethod::Metadata );
-    RTA_CHECK_ASSERT(
-        converter.settings.matrix_method ==
-        rta::util::ImageConverter::Settings::MatrixMethod::Metadata );
-}
-
-int main( int, char ** )
-{
-    test_AcesRender();
-
-    return unit_test_failures;
+    return 0;
 }

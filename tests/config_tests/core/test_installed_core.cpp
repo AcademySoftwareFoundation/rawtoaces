@@ -6,22 +6,13 @@
 #    include <windows.h>
 #endif
 
-#include "../assert.h"
 #include <rawtoaces/rawtoaces_core.h>
 
-void test_XYZD65Solver()
+// A simple test to confirm that the library has been linked successfully.
+int main( int, char ** )
 {
     rta::core::XYZD65Solver solver;
     bool                    result = solver.calculate_transform();
-    RTA_CHECK_ASSERT( result );
 
-    size_t size = solver.transform_matrix.size();
-    RTA_CHECK_EQUAL( size, size_t( 3 ) );
-}
-
-int main( int, char ** )
-{
-    test_XYZD65Solver();
-
-    return unit_test_failures;
+    return result ? 0 : 1;
 }

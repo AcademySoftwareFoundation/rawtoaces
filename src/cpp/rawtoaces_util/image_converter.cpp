@@ -15,8 +15,11 @@
 #include "exiftool.h"
 #include "attributes.h"
 
-#include <set>
+#include <array>
 #include <filesystem>
+#include <iostream>
+#include <optional>
+#include <set>
 
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/imagebuf.h>
@@ -146,6 +149,27 @@ parse_raw_extensions( const std::string &extensionlist )
     return result;
 }
 
+namespace
+{
+
+// LibRaw white balance is four multipliers. Spectral illuminant data
+// provides three RGB values, so the second green repeats the first.
+// Any other length is left unset.
+std::optional<std::array<float, 4>>
+make_raw_user_multipliers( const std::vector<double> &multipliers )
+{
+    if ( multipliers.size() != 3 )
+        return std::nullopt;
+
+    const float green = static_cast<float>( multipliers[1] );
+    return std::array<float, 4>{ static_cast<float>( multipliers[0] ),
+                                 green,
+                                 static_cast<float>( multipliers[2] ),
+                                 green };
+}
+
+} // namespace
+
 /**
  * Returns the set of file extensions supported for RAW image processing.
  *
@@ -159,9 +183,7 @@ parse_raw_extensions( const std::string &extensionlist )
 const std::set<std::string> supported_raw_extensions()
 {
     std::string extensionlist;
-    bool        ok = OIIO::getattribute( "extension_list", extensionlist );
-    OIIO_ASSERT( ok && "OIIO did not provide extension_list" );
-
+    OIIO::getattribute( "extension_list", extensionlist );
     return parse_raw_extensions( extensionlist );
 }
 
@@ -2204,19 +2226,14 @@ bool ImageConverter::configure(
 
         if ( is_spectral_white_balance )
         {
-            float custom_WB[4];
-
-            for ( size_t i = 0; i < _wb_multipliers.size(); i++ )
+            if ( const auto custom_WB =
+                     make_raw_user_multipliers( _wb_multipliers ) )
             {
-                custom_WB[i] = static_cast<float>( _wb_multipliers[i] );
+                options.attribute(
+                    "raw:user_mul",
+                    OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
+                    custom_WB->data() );
             }
-            if ( _wb_multipliers.size() == 3 )
-                custom_WB[3] = static_cast<float>( _wb_multipliers[1] );
-
-            options.attribute(
-                "raw:user_mul",
-                OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ),
-                custom_WB );
         }
     }
 

@@ -2895,6 +2895,94 @@ void test_lens_correction_type()
         rta::util::ImageConverter::Settings::LensCorrectionType::Aberration ) );
 }
 
+/// Illuminant white balance solves three RGB multipliers and passes four
+/// values to LibRaw, repeating the first green.
+void test_illuminant_wb_sets_raw_user_mul()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    TestFixture fixture;
+    auto       &test_dir =
+        fixture.with_camera( "Blackmagic", "Cinema Camera" ).build();
+
+    auto image_spec =
+        ImageSpecBuilder().camera( "Blackmagic", "Cinema Camera" ).build();
+    auto settings = SettingsBuilder()
+                        .database( test_dir.get_database_path() )
+                        .wb_method( "illuminant" )
+                        .illuminant( "D65" )
+                        .mat_method( "spectral" )
+                        .build();
+
+    ImageConverter converter;
+    converter.settings               = settings;
+    converter.settings.disable_cache = true;
+
+    OIIO::ParamValueList options;
+    bool                 success = converter.configure( image_spec, options );
+    OIIO_CHECK_ASSERT( success );
+
+    const auto &solved = converter.get_WB_multipliers();
+    OIIO_CHECK_EQUAL( solved.size(), 3 );
+
+    const auto user_mul = options.find(
+        "raw:user_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) );
+    OIIO_CHECK_ASSERT( user_mul != options.end() );
+    OIIO_CHECK_EQUAL_THRESH(
+        user_mul->get_float_indexed( 0 ),
+        static_cast<float>( solved[0] ),
+        1e-5f );
+    OIIO_CHECK_EQUAL_THRESH(
+        user_mul->get_float_indexed( 1 ),
+        static_cast<float>( solved[1] ),
+        1e-5f );
+    OIIO_CHECK_EQUAL_THRESH(
+        user_mul->get_float_indexed( 2 ),
+        static_cast<float>( solved[2] ),
+        1e-5f );
+    // Second green repeats the first when the solve only produced RGB.
+    OIIO_CHECK_EQUAL_THRESH(
+        user_mul->get_float_indexed( 3 ),
+        static_cast<float>( solved[1] ),
+        1e-5f );
+}
+
+/// Auto-detected illuminant white balance does not invent multipliers, so
+/// LibRaw is not given a raw:user_mul hint.
+void test_illuminant_wb_without_solved_multipliers_skips_user_mul()
+{
+    std::cout << std::endl << __FUNCTION__ << std::endl;
+
+    TestFixture fixture;
+    auto       &test_dir =
+        fixture.with_camera( "Blackmagic", "Cinema Camera" ).build();
+
+    float pre_mul[4] = { 1.5f, 1.0f, 1.2f, 1.0f };
+    auto  image_spec = ImageSpecBuilder()
+                          .camera( "Blackmagic", "Cinema Camera" )
+                          .raw_pre_mul( pre_mul, 4 )
+                          .build();
+    auto settings = SettingsBuilder()
+                        .database( test_dir.get_database_path() )
+                        .wb_method( "illuminant" )
+                        .illuminant( "" )
+                        .mat_method( "spectral" )
+                        .build();
+
+    ImageConverter converter;
+    converter.settings               = settings;
+    converter.settings.disable_cache = true;
+
+    OIIO::ParamValueList options;
+    bool                 success = converter.configure( image_spec, options );
+    OIIO_CHECK_ASSERT( success );
+    OIIO_CHECK_EQUAL( converter.get_WB_multipliers().size(), 0 );
+    OIIO_CHECK_ASSERT(
+        options.find(
+            "raw:user_mul", OIIO::TypeDesc( OIIO::TypeDesc::FLOAT, 4 ) ) ==
+        options.end() );
+}
+
 void test_metadata_wb_being_set()
 {
     // Set the WB multipliers in the image spec, as if they came from an
@@ -3485,6 +3573,8 @@ int main( int, char ** )
         test_main_error_message_without_hint();
         test_main_error_data_dir_hint();
 
+        test_illuminant_wb_sets_raw_user_mul();
+        test_illuminant_wb_without_solved_multipliers_skips_user_mul();
         test_metadata_wb_being_set();
         test_custom_wb_being_set();
 

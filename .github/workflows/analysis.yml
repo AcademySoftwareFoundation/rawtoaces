@@ -81,6 +81,10 @@ jobs:
         with:
           logfile: ${{ github.workspace }}/build/compile_commands.json
           config: '/home/runner/work/rawtoaces/rawtoaces/tests/static_analysis/codechecker.json'
+          # The action's LLVM installer still pipes a key into `apt-key`, which
+          # Ubuntu 26.04 (current ubuntu-latest) no longer ships. The runner
+          # already provides Clang and clang-tidy, so skip that install.
+          llvm-version: ignore
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: ${{ steps.codechecker.outputs.warnings == 'true' }}

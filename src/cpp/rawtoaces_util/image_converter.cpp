@@ -15,8 +15,10 @@
 #include "exiftool.h"
 #include "attributes.h"
 
-#include <set>
+#include <cstdlib>
 #include <filesystem>
+#include <iostream>
+#include <set>
 
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/imagebuf.h>
@@ -160,7 +162,16 @@ const std::set<std::string> supported_raw_extensions()
 {
     std::string extensionlist;
     bool        ok = OIIO::getattribute( "extension_list", extensionlist );
-    OIIO_ASSERT( ok && "OIIO did not provide extension_list" );
+    // OIIO_ASSERT formats __LINE__ with "%u", which cppcheck rejects.
+    if ( !ok )
+    {
+        std::cerr << __FILE__ << ":" << __LINE__
+                  << ": OpenImageIO did not provide extension_list"
+                  << std::endl;
+#ifndef NDEBUG
+        std::abort();
+#endif
+    }
 
     return parse_raw_extensions( extensionlist );
 }
@@ -2202,16 +2213,19 @@ bool ImageConverter::configure(
 
         options[attributes::FoundIlluminant] = found_illuminant;
 
-        if ( is_spectral_white_balance )
+        if ( is_spectral_white_balance &&
+             ( _wb_multipliers.size() == 3 || _wb_multipliers.size() == 4 ) )
         {
-            float custom_WB[4];
-
-            for ( size_t i = 0; i < _wb_multipliers.size(); i++ )
-            {
-                custom_WB[i] = static_cast<float>( _wb_multipliers[i] );
-            }
-            if ( _wb_multipliers.size() == 3 )
-                custom_WB[3] = static_cast<float>( _wb_multipliers[1] );
+            // LibRaw expects four multipliers. Duplicate green when only RGB
+            // multipliers are known.
+            float custom_WB[4] = {
+                static_cast<float>( _wb_multipliers[0] ),
+                static_cast<float>( _wb_multipliers[1] ),
+                static_cast<float>( _wb_multipliers[2] ),
+                _wb_multipliers.size() == 4
+                    ? static_cast<float>( _wb_multipliers[3] )
+                    : static_cast<float>( _wb_multipliers[1] )
+            };
 
             options.attribute(
                 "raw:user_mul",

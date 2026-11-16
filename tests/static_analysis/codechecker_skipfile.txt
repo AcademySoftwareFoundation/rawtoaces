@@ -3,6 +3,7 @@
 
 # The paths are based on Ubuntu builds
 -*/tests/*
+-/usr/include
 -/usr/include/OpenImageIO/detail/fmt/format.h
 -/usr/lib/llvm-*/lib/clang/*/include/cetintrin.h
 -/usr/share/nanobind/*

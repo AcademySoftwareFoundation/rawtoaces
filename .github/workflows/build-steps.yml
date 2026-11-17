@@ -132,7 +132,12 @@ jobs:
         run: >
           cmake --install build
       
+      # The core-only install test loads Ceres/oneTBB without OpenImageIO.
+      # oneTBB's exit destructor then SIGSEGVs under ASan and TSan. These
+      # tests check the CMake package, which the unsanitised jobs already
+      # cover. The sanitiser signal is run_valid.sh below.
       - name: Configure config_tests
+        if: inputs.sanitiser_mode == 'none'
         run: >
           cmake
           -B build_config_test
@@ -143,10 +148,12 @@ jobs:
           -D CMAKE_BUILD_TYPE=${{ inputs.build_type }}
 
       - name: Build config_tests
+        if: inputs.sanitiser_mode == 'none'
         run: >
           cmake --build build_config_test --config ${{ inputs.build_type }}
           
       - name: Test config_tests
+        if: inputs.sanitiser_mode == 'none'
         run: >
           ctest
           --build-config ${{ inputs.build_type }}

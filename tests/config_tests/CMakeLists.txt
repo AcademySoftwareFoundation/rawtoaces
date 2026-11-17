@@ -11,6 +11,11 @@
 #    cmake -S . -B build -D rawtoaces_DIR=PATH_TO_INSTALL_DIR 
 
 cmake_minimum_required(VERSION 3.12)
+
+if( NOT DEFINED CMAKE_CXX_STANDARD )
+    set(CMAKE_CXX_STANDARD 17)
+endif()
+
 project( rawtoaces_config_test )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -18,8 +23,6 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     add_compile_options ( /utf-8 )
     add_compile_definitions( NOMINMAX )
 endif()
-
-find_package ( RAWTOACES CONFIG REQUIRED )
 
 enable_testing()
 add_subdirectory(core)

@@ -39,7 +39,7 @@ add_library ( ${RAWTOACES_UTIL_LIB} ${DO_SHARED}
     # Make the headers visible in IDEs. This should not affect the builds.
     ${UTIL_PUBLIC_HEADER}
 )
- 
+
 target_link_libraries ( ${RAWTOACES_UTIL_LIB}
     PUBLIC
         ${RAWTOACES_CORE_LIB}
@@ -76,8 +76,22 @@ set_target_properties( ${RAWTOACES_UTIL_LIB} PROPERTIES
 )
 
 install( TARGETS ${RAWTOACES_UTIL_LIB}
-    EXPORT RAWTOACESTargets
+    EXPORT RAWTOACESUtilTargets
+    ARCHIVE DESTINATION ${INSTALL_LIB_DIR}
+        COMPONENT rawtoaces_util
     LIBRARY DESTINATION ${INSTALL_LIB_DIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        COMPONENT rawtoaces_util
+        NAMELINK_COMPONENT rawtoaces_util
+    RUNTIME DESTINATION ${INSTALL_BIN_DIR}
+        COMPONENT rawtoaces_util
     PUBLIC_HEADER DESTINATION include/rawtoaces
+        COMPONENT rawtoaces_util
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+# generate and install export file
+install(EXPORT RAWTOACESUtilTargets
+        FILE RAWTOACESUtilTargets.cmake
+        DESTINATION lib/cmake/RAWTOACES
+        COMPONENT rawtoaces_util
 )

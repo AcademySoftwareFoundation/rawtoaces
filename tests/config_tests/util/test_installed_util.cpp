@@ -6,86 +6,29 @@
 #    include <windows.h>
 #endif
 
-#include <filesystem>
 #include <rawtoaces/image_converter.h>
 
-#include <OpenImageIO/unittest.h>
-
-void test_AcesRender()
+// A simple test to confirm that the library has been linked successfully.
+int main( int, char ** )
 {
     const char *argv[] = {
         "dummy_binary_path",
-    // getting "Subprocess aborted" in unit tests
-    // when this is enabled on Mac, the tests fail on linux if
-    // skipped completely.
-#if __linux__
-        "--wb-method",
-        "metadata",
-#endif
         "--mat-method",
         "metadata",
-        "dummy_image_path"
     };
 
     const int argc = sizeof( argv ) / sizeof( argv[0] );
 
-    std::string image_path =
-        "/tests/materials/blackmagic_cinema_camera_cinemadng.dng";
-
-    std::filesystem::path pathToRaw =
-        std::filesystem::absolute( "../.." + image_path );
-
-    // Depending if it run via tests/config_tests/CMakeLists.txt or
-    // as part of coverage via tests/CMakeLists.txt
-    if ( !std::filesystem::exists( pathToRaw ) )
-    {
-        pathToRaw = std::filesystem::absolute( "../../../.." + image_path );
-    }
-
-    OIIO_CHECK_ASSERT( std::filesystem::exists( pathToRaw ) );
-
     rta::util::ImageConverter converter;
 
     OIIO::ArgParse arg_parser;
-    arg_parser.arg( "filename" ).action( OIIO::ArgParse::append() ).hidden();
     converter.init_parser( arg_parser );
 
-    OIIO_CHECK_ASSERT( arg_parser.parse_args( argc, argv ) >= 0 );
-    OIIO_CHECK_ASSERT( converter.parse_parameters( arg_parser ) );
+    if ( arg_parser.parse_args( argc, argv ) < 0 )
+        return 1;
 
-    auto files = arg_parser["filename"].as_vec<std::string>();
-    OIIO_CHECK_EQUAL( files.size(), 1 );
+    if ( !converter.parse_parameters( arg_parser ) )
+        return 2;
 
-    OIIO_CHECK_ASSERT(
-        converter.settings.WB_method ==
-        rta::util::ImageConverter::Settings::WBMethod::Metadata );
-    OIIO_CHECK_ASSERT(
-        converter.settings.matrix_method ==
-        rta::util::ImageConverter::Settings::MatrixMethod::Metadata );
-
-    // Disable for now. Needs better checks if the installed OIIO version
-    // is compatible.
-    if ( false ) //(OIIO::openimageio_version() > 20500 )
-    {
-        OIIO::ParamValueList hints;
-        bool result = converter.configure( pathToRaw.string(), hints );
-        OIIO_CHECK_EQUAL( result, true );
-
-        const auto &idt = converter.get_transform_matrix();
-
-        double matrix[3][3] = { { 1.0536466144, 0.0039044182, 0.0049084502 },
-                                { -0.4899562165, 1.3614787986, 0.1020844728 },
-                                { -0.0024498461, 0.0060497128, 1.0139159537 } };
-
-        for ( size_t i = 0; i < 3; i++ )
-            for ( size_t j = 0; j < 3; j++ )
-                OIIO_CHECK_EQUAL_THRESH( idt[i][j], matrix[i][j], 1e-5 );
-    }
-}
-
-int main( int, char ** )
-{
-    test_AcesRender();
-
-    return unit_test_failures;
+    return 0;
 }

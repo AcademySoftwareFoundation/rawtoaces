@@ -81,11 +81,25 @@ The install layout under the configured prefix is:
    * - ``include/rawtoaces``
      - Public C++ headers.
    * - ``lib/cmake/RAWTOACES``
-     - CMake package configuration and exported library targets.
+     - CMake package config plus ``RAWTOACESCoreTargets.cmake`` and ``RAWTOACESUtilTargets.cmake``.
    * - ``share/rawtoaces/data``
      - Spectral data and its license on macOS and Unix when ``RTA_INSTALL_DATABASE=ON``.
 
 Library and executable locations can be changed with ``INSTALL_LIB_DIR`` and ``INSTALL_BIN_DIR``. The Python extension installs into the configured library directory, rather than automatically into Python's site-packages.
+
+``find_package(RAWTOACES REQUIRED)`` loads both libraries. OpenImageIO is a dependency of ``rawtoaces_util`` only. A static build also finds Eigen3 or Ceres when those options were enabled for that build. ``nlohmann_json`` is used only while building ``rawtoaces_core`` and is not a dependency of the installed package. Select one library with its component name:
+
+.. code-block:: cmake
+
+   find_package(RAWTOACES REQUIRED COMPONENTS rawtoaces_core)
+   target_link_libraries(my_app PRIVATE rawtoaces_core)
+
+.. code-block:: cmake
+
+   find_package(RAWTOACES REQUIRED COMPONENTS rawtoaces_util)
+   target_link_libraries(my_app PRIVATE rawtoaces_util)
+
+The util component links publicly to ``rawtoaces_core``, so that request loads the core targets as well. ``RAWTOACES_rawtoaces_core_FOUND`` and ``RAWTOACES_rawtoaces_util_FOUND`` report which components were loaded. ``cmake --install build --component rawtoaces_core`` installs the core library and the package config. Installing ``rawtoaces_util`` the same way also requires the core component in that prefix, because the util library links to core. After configuration, ``RAWTOACES_DIR`` may point at the build directory; build the libraries before linking against that package.
 
 Build Options
 ^^^^^^^^^^^^^

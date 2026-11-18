@@ -1,6 +1,40 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- Copyright Contributors to the rawtoaces project. -->
 
+Release 2.3.0 (November 24 2026) -- compared to 2.2.2
+--------------------------------------------------------
+
+
+**This version is API-compatible but not ABI-compatible with the previous versions.**
+
+### Changes:
+
+- *feat*: add --bad-pixels-path [#315](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/315)
+- *feat*: add --compression [#316](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/316)
+- *feat*: add pixel format param to load_image and save_image [#339](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/339)
+- *feat*: add ImageConverter::process_buffer() method [#354](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/354)
+- *feat*: add diagnostic attributes [#365](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/365)
+- *python*: add python bindings for all methods exposing OIIO objects [#322](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/332), [#338](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/338), [#361](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/361)
+- *python*: add bindings for rta::core::Spectrum [#363](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/363)
+- *python*: add python docstrings [#324](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/324)
+- *fix*: improve matrix accuracy under some illuminants [#337](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/337)
+- *API*: deprecate the ROI param in apply_xxx methods [#356](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/356)
+- *refactor*: avoid Kelvin/mired round-trip in DNG solver [#277](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/277)
+- *refactor*: prefer std::filesystem error_code overloads over exceptions [#295](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/295)
+- *refactor*: extract check_input from process_image for focused unit tests [#309](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/309)
+- *refactor*: remove calculate_CM [#340](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/340)
+- *refactor*: move fix_metadata and fetch_missing_metadata inside load_image [#341](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/341)
+- *refactor*: move the logging and usage timer into the conversion steps [#353](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/353)
+- *refactor*: restructure codebase - move C++ to src/cpp, rename bindings to python [#360](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/360)
+- *refactor*: replace std::stof with parse_float [#368](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/368)
+- *refactor*: split cmake export targets per component [#369](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/369)
+- *docs*: documentation overhaul [#342](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/342), [#343](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/343), [#345](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/345), [#346](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/346), [#347](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/347), [#348](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/348), [#362](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/362), [#364](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/364), [#366](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/366)
+- *build*: bump python and cmake minimum versions [#352](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/352)
+- *CI*: various CI improvements and fixes [#312](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/312), [#350](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/350), [#358](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/358), [#370](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/370), [#371](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/371), [#372](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/372), [#373](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/373)
+- *analysis*: fix false positive in python equality operator [#367](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/367)
+- *admin*: add AI policy [#312](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/321)
+- *admin*: add missing licence statements [#357](https://github.com/AcademySoftwareFoundation/rawtoaces/pull/357)
+
 Release 2.2.2 (September 30 2026) -- compared to 2.2.1
 --------------------------------------------------------
 
